@@ -253,7 +253,7 @@ public:
 		std::swap(yz, zy);
 	}
 
-	mat9<T> transpose1() { return mat9<T>(xx, yx, zx, xy, yy, zy, xz, yz, zz); }
+	mat9<T> transposed() { return mat9<T>(xx, yx, zx, xy, yy, zy, xz, yz, zz); }
 
 	vec3<T> get_xcol() const {
 		return vec3<T>(xx, yx, zx);

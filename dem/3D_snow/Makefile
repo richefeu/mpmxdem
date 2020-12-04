@@ -7,7 +7,7 @@ ifeq ($(UNAME_S),Darwin) # ==========================================
 # The compiler to be used
 CXX = clang++
 # The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++11
+CXXFLAGS = -O3 -Wall -std=c++11 -I $(COMMON_FOLDER)
 # Link flags for OpenGL and glut
 GLLINK = -framework OpenGL -framework GLUT
 
@@ -23,8 +23,7 @@ GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXmu -lXext -lX11 -lXi
 endif # =============================================================
 
 # The list of source files
-SOURCES = PBC3D.cpp Particle.cpp Sphere.cpp Interaction.cpp Loading.cpp PeriodicCell.cpp \
-quat.cpp vec3.cpp mat9.cpp ColorTable.cpp
+SOURCES = PBC3D.cpp Particle.cpp Sphere.cpp Interaction.cpp Loading.cpp PeriodicCell.cpp
 
 # Each cpp file listed below corresponds to an object file
 OBJECTS = $(SOURCES:%.cpp=%.o)
@@ -39,7 +38,7 @@ HEADERS = $(SOURCES:%.cpp=%.hpp)
 
 .PHONY: all lib clean
 
-all: run see
+all: run
 
 clean:
 	rm -f *.o libPBC3D.a *.gch run see
@@ -53,29 +52,8 @@ run: run.cpp lib
 	$(CXX) $(CXXFLAGS) -c run.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
 
-stressProcess: stressProcess.cpp mat9.cpp vec3.cpp
-	$(CXX) $(CXXFLAGS) -c stressProcess.cpp mat9.cpp vec3.cpp
-	$(CXX) $(CXXFLAGS) -o stressProcess stressProcess.o mat9.o vec3.o
-
-confInfo: confInfo.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c confInfo.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-	
-confOrientations: confOrientations.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c confOrientations.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-
-# The application that converts a conf to a list of position + radius
-convertListDisks: convertListDisks.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c convertListDisks.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-
-conf2revini: conf2revini.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c conf2revini.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-
 # The application that visualizes the conf files
-see: see.cpp see.hpp graphGL.hpp $(HEADERS) $(OBJECTS)
+see: see.cpp see.hpp $(HEADERS) $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -c see.cpp -Wno-deprecated
 	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS) $(GLLINK)
 

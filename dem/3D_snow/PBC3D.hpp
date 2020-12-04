@@ -16,8 +16,8 @@
 #include "Loading.hpp"
 #include "Particle.hpp"
 #include "PeriodicCell.hpp"
+
 #include "fileTool.hpp"
-#include "geoPack3D.hpp"
 
 // This is useful to make fortran-like outputs
 #define __FORMATED(P, W, V) std::fixed << std::setprecision(P) << std::setw(W) << std::left << (V)
