@@ -1,0 +1,105 @@
+#include "Line.hpp"
+#include <Core/MPMbox.hpp>
+#include <Core/MaterialPoint.hpp>
+
+#include <factory.hpp>
+static Registrar<Obstacle, Line> registrar("Line");
+
+void Line::read(std::istream& is) {
+  vec2r end;
+  is >> group >> pos >> end;
+  t = end - pos;
+  len = t.normalize();
+  n.x = t.y;
+  n.y = -t.x;  // so that n ^ t = z
+
+  std::string driveMode;
+  is >> driveMode;
+  if (driveMode == "freeze") {
+    isFree = false;
+    vel.reset();
+  } else if (driveMode == "velocity") {
+    isFree = false;
+    is >> vel;
+  } else {
+    std::cerr << "@Line::read, driveMode " << driveMode << " is not allowed!" << std::endl;
+  }
+}
+
+int Line::touch(MaterialPoint& MP, double& dn) {
+  int Corner = -1;
+  vec2r c;
+
+  // Corner 0
+  c = MP.corner[0] - pos;
+  dn = c * n;
+  if (dn < 0.0) {
+    double proj = c * t;
+    if (proj >= 0.0 && proj <= len) Corner = 0;
+  }
+
+  // Corners 1, 2 and 3
+  for (int r = 1; r < 4; r++) {
+    c = MP.corner[r] - pos;
+    double dst = c * n;
+    if (dst < dn) {
+      double proj = c * t;
+      if (proj >= 0.0 && proj <= len) {
+        Corner = r;
+        dn = dst;
+      }
+    }
+  }
+
+  return Corner;
+}
+
+void Line::getContactFrame(MaterialPoint&, vec2r& N, vec2r& T) {
+  // Remark: the line is not supposed to rotate
+  N = n;
+  T = t;
+}
+
+void Line::checkProximity(MPMbox& MPM) {
+  // Temporarily store the forces
+  std::vector<Neighbor> Store = Neighbors;
+
+  // Rebuild the list
+  Neighbors.clear();
+  Neighbor N;
+  vec2r c;
+  for (size_t p = 0; p < MPM.MP.size(); p++) {
+    double sumSecurDistMin = MPM.MP[p].size;
+    double sumSecurDist = MPM.MP[p].securDist + securDist;
+    if (sumSecurDist < sumSecurDistMin) sumSecurDist = sumSecurDistMin;
+    c = MPM.MP[p].pos - pos;
+    double dstt = c * t;
+    if (dstt > -sumSecurDist && dstt < len + sumSecurDist) {
+      double dstn = c * n;
+      if (dstn < sumSecurDist) {
+        N.PointNumber = p;
+        Neighbors.push_back(N);
+      }
+    }
+  }
+
+  // Get the known forces back
+  size_t istore = 0;
+  for (size_t inew = 0; inew < Neighbors.size(); inew++) {
+    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) ++istore;
+    if (istore == Store.size()) break;
+
+    if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
+      Neighbors[inew].fn = Store[istore].fn;
+      Neighbors[inew].ft = Store[istore].ft;
+
+      ++istore;
+    }
+  }
+}
+
+int Line::addVtkPoints(std::vector<vec2r>& coords) {
+  coords.push_back(pos);
+  coords.push_back(pos + len * t);
+  return 2;
+}

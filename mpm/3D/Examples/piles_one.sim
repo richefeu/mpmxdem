@@ -1,0 +1,90 @@
+# Plane strain (uncomment to set, defaut is plane stress)
+# planeStrain
+
+#anything (onestep) and modifiedLagrangian
+oneStepType modifiedLagrangian
+
+result_folder ./piles_one
+
+# Mass tolerance
+tolmass 1.e-6
+
+# Gravity    gx   	gy 			gz
+gravity      0.0  	-9.81		0
+
+# Number of steps to be done
+nstep 300000
+
+# Periode of storing (in number of steps)
+vtkPeriod 2000
+
+proxPeriod 100
+
+# Time increment
+dt 0.00001
+
+# Current time
+t 0.0
+
+#Manage contacts using MP, not corners  (1 =on, 0 =off). Don't forget to use LineMP obstacles when it's on
+actualMP 	1
+
+# shape function
+ShapeFunction RegularHexahedronLinear
+
+# Materials
+#                                          Young     Poisson
+model HookeElasticity           Elast      200.0e8   0.42
+
+#     modelID                   modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+model MohrCoulomb              MC        70.0e6    0.42       0.5           5.0e2      0.05
+#     modelID                   modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+model MohrCoulomb              MC2        70.0e6    0.42       0.5           5.0e2      0.05
+
+#     modelID                   modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)	n
+model VanEekelen             	VE        80.0e6    0.33       0.9            1e0      0.05									-0.229
+#     modelID                   modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+model Matsuoka                  MK        80.0e9    0.42       0.5           1e7      0.5
+
+
+#               lengthX   lengthY   lengthZ     spacing
+new_set_grid    10           5       10          0.25
+
+#                   group   modelname  mass_density(kg/m3)  fileName            size
+blender_set_MP_grid2 0       MC          2000.               slope.stl     0.125
+
+#                   group   modelname  mass_density(kg/m3)  fileName
+#blender_modify_MP   0       MC2        2000.                modifyMP.txt
+
+
+#                           group   fileName
+blender_Obstacle  Plane2    0       coordPlanes0.txt
+blender_Obstacle  Plane2    0       coordPlanes1.txt
+blender_Obstacle  Plane2    0       coordPlanes2.txt
+blender_Obstacle  Plane2    0       coordPlanes3.txt
+blender_Obstacle  Plane2    0       coordPlanes4.txt
+
+
+#                           group   fileName          driveMode  rho        vx     vy     vz     vrot
+#blender_Obstacle Sphere2      1      coordSpheres.txt  free       2700.0     0.0   -0.0    0 0    0.0
+
+#                       group   posx posy posz  radius  length  dirx  diry   dirz
+Obstacle Cylinder       1       5.5   0   3.0   0.4     4       0     1      0
+
+
+#properties			mu		Kn		e2		Kt
+#set_properties	   	0.1   	1e6		0.8		0.5e6
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         0          0.0
+set              kn         0         0          1.0e6
+set              en2        0         0          1.0
+set              kt         0         0          0.5e6
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0.3
+set              kn         0         1          1.0e6
+set              en2        0         1          1.0
+set              kt         0         1          0.5e6
+
+#set_K0_stress 0.42  2700.

@@ -1,0 +1,111 @@
+# Plane strain (uncomment to set, default is plane stress)
+# planeStrain
+
+oneStepType ModifiedLagrangian
+
+#typeOfAnalysis (regular or trajectory)
+
+result_folder ./4_00layerUpToDate
+
+# Mass tolerance
+tolmass 1.e-6
+
+# Gravity    gx   gy
+gravity      0.0  -9.81
+
+finalTime 2
+
+# Period of storing (in number of steps)
+vtkPeriod 200
+
+proxPeriod 100
+
+# Time increment
+dt 0.00001
+
+# Current time
+t 0.0
+
+# MP display style
+parallelogramMP  1
+
+# shape function can be RegularQuadLinear or BSpline
+ShapeFunction BSpline
+
+# Materials
+#     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+model MohrCoulomb    MC        1.0e7    0.42      0.5            5e5        0.01
+
+#           Nx  Ny  grid-spacing
+set_grid    100  90  0.1 0.1
+
+#            group   modelName     mass_density(kg/m3)     x0     y0      x1     y1      size of boxes
+set_MP_grid  0       MC            2700.                   0.2    3.2     9.8    5.2     0.05
+
+#              line number,  line from   to,    xfixed   yfixed
+#set_BC_line     2                  0     100     0        1
+
+#              column number,  line from   to,    xfixed   yfixed
+#set_BC_column  2                    0     100     1        0
+#              column number,  line from   to,    xfixed   yfixed
+#set_BC_column  98                    0     100     1        0
+
+#                 group xc   yc   R    driveMode  rho      vx   vy      vrot
+#Obstacle Circle   0     4.0 5.901   0.4  free       2700.0   3.0   -1.0  0
+#                   group   Nbvert  xc    yc     rotation  radius   driveMode  density   vx     vy   vrot
+#Obstacle Polygon   0       8       4.0   5.601  25        0.4      free       2700.0    3.0   -1.0  0
+
+#                           group   Nbvert  xc    yc     rotation   driveMode  density   vx     vy   vrot
+#Obstacle IrregularPolygon   0         6     4.0   5.601  0           free       2700.0    3.0   -1.0  -0
+#0 0
+#0.5 0
+#0.65 0.25
+#0.5 0.5
+#0.25 0.7
+#0 0.5
+
+#                group  x0   y0     x1     y1    driveMode
+Obstacle Line    1      10   3.2    0.0    3.2   freeze
+Obstacle Line    1      9.8    6.0    9.8      0.0   freeze
+Obstacle Line    1      0.2    0.0    0.2      6.0   freeze
+
+#              boundaryName     obstacleGroup
+BoundaryType   KelvinVoigt      1
+#BoundaryType IncrementalLinear 1
+
+set_K0_stress 0.42  2700.
+
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         0          0.2
+set              kn         0         0          1.0e7
+set              en2        0         0          1.0
+set              kt         0         0          1e7
+set              viscosity  0         0          1
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0.2
+set              kn         0         1          1.0e6
+set              en2        0         1          1.1
+set              kt         0         1          1e7
+set              viscosity  0         1          1
+
+
+# Adaptative refinement
+splitting 	0
+splitCriterionValue 4.0               0                   3.0
+
+#NumericalDissipation 0.01 0.5
+
+
+VtkOutput plastic
+VtkOutput smoothed_velocity
+VtkOutput plasticStressNorm
+VtkOutput smoothed_totalStress
+VtkOutput forcesContact
+
+#Spy Work  100  Work.txt  0.0  19.0  100
+Spy ObstaclePosition  0  200 obstaclePos.txt
+Spy ObstacleVelTouching  0 20 obstacleVelTouching.txt
+Spy Work  100  Work.txt  0.2  9.8  100
+Spy ObstacleVelAllTimes 0 100 obstacleVelAllTimes.txt

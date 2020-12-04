@@ -1,0 +1,83 @@
+# Plane strain (uncomment to set, default is plane stress)
+# planeStrain
+
+result_folder ./timelapse
+
+# Mass tolerance
+tolmass 1.e-6
+
+# Gravity    gx   gy 
+gravity      0.0  -9.81
+
+# Number of steps to be done
+nstep 200000
+
+# Period of storing (in number of steps)
+vtkPeriod 1000
+
+proxPeriod 4000
+
+# Time increment
+dt 0.00001
+
+# Current time
+t 0.0
+
+# MP display style
+parallelogramMP  1
+
+# shape function can be RegularQuadLinear or BSpline
+ShapeFunction BSpline
+
+# Materials
+#     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+model MohrCoulomb    MC1        1.0e8    0.42      0.5            1e8        0.01
+model MohrCoulomb    MC2        1.0e8    0.42      0.5            1e5        0.01
+
+#           Nx  Ny  grid-spacing
+set_grid    100  90  0.1 0.1
+
+#            group   modelName     mass_density(kg/m3)     x0     y0      x1     y1      size of boxes
+set_MP_grid  0       MC1            2700.                   0.2    0.2     9.85    3.2     0.05   
+set_MP_grid  0       MC2            2700.                   0.2    3.2     9.85    5.2     0.05   
+
+#              line number,  line from   to,    xfixed   yfixed
+#set_BC_line     2                  0     100     0        1 
+
+#              column number,  line from   to,    xfixed   yfixed
+#set_BC_column  2                    0     100     1        0 
+#              column number,  line from   to,    xfixed   yfixed
+#set_BC_column  98                    0     100     1        0 
+
+#                 group xc   yc   R    driveMode  rho      vx   vy      vrot
+Obstacle Circle   0     4.0 5.601   0.4  free       2700.0   7.0   -7.0  0
+
+#                group  x0   y0     x1     y1    driveMode
+Obstacle Line    0      10   0.2    0.0    0.2   freeze
+Obstacle Line    0      9.8    6.0    9.8      0.0   freeze
+Obstacle Line    0      0.2    0.0    0.2      6.0   freeze
+
+set_K0_stress 0.42  2700.
+
+
+#                   mu      Kn      e2      Kt  
+set_properties      0.2    1e7     1.0     1e7
+
+
+# Adaptative refinement
+splitting 	0
+splitCriterionValue 4.0               0                   3.0
+
+NumericalDissipation 0.1 0.5
+
+
+VtkOutput plastic
+VtkOutput smoothed_velocity
+VtkOutput plasticStressNorm
+
+#Spy Work  100  Work.txt  0.0  19.0  100
+Spy ObstaclePosition  0  200 obstaclePos.txt
+Spy ObstacleVelTouching  0 20 obstacleVelTouching.txt
+Spy Work  100  Work.txt  0.2  9.8  100
+Spy ObstacleVelAllTimes 0 100 obstacleVelAllTimes.txt
+

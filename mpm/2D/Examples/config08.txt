@@ -1,0 +1,70 @@
+# Plane strain (uncomment to set, default is plane stress)
+# planeStrain
+
+oneStepType ModifiedLagrangian
+result_folder ./Config08
+
+# Mass tolerance
+tolmass 1.e-6
+
+# Gravity    gx   gy
+gravity      0.0  -9.81
+
+# Number of steps to be done
+finalTime 2.0
+
+# Period of storing (in number of steps)
+vtkPeriod 1000
+
+proxPeriod 4000
+
+# Time increment
+dt 0.00001
+
+# Current time
+t 0.0
+
+# MP display style
+parallelogramMP 	0
+
+# shape function can be Linear or GIMP (not yet implemented)
+ShapeFunction BSpline
+
+# Materials
+#     modelID          modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+model MohrCoulomb      MC        80.0e4    0.42       0.5            1e0      0.00
+
+
+#           Nx  Ny  grid spacing
+#set_grid    800  260  0.015 0.015
+#              lengthX   lengthY   spacing
+new_set_grid    7           4      0.015
+
+
+#            		setObject# 	modelName       mass_density(kg/m3)    	x0   		y0   		x1   		y1   	size of boxes
+set_MP_grid  		0			MC		  		390.          		2.87573593 	0.5  		3.07573593 	0.736	    0.005
+
+
+#		 Object#		x0			y0		dx		dy		angle deg (neg rotates clockwise)  if you dont want any movement, set everything to 0
+move_MP  0				2.87573593  0.5 	-1.6	1.6  	45 		#-0.7853981634
+
+#						x0	  y0      l1	l2    R		angle deg(for arc)
+Obstacle LeftBiplanar	9	  0.5	  6		4	  0.3 	45
+
+
+
+
+#properties			mu		Kn		e2		Kt
+set_properties	   	0.3 	1e6		0.2		0.5e6
+
+
+set_K0_stress 0.42  390.
+
+# Adaptative refinement
+splitting 	1
+splitCriterionValue 4.0 
+
+
+VtkOutput plastic
+VtkOutput smoothed_velocity
+VtkOutput plasticStressNorm

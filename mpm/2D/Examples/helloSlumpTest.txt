@@ -1,0 +1,60 @@
+# Plane strain (uncomment to set, default is plane stress)
+# planeStrain
+
+# integration strategy
+oneStepType ModifiedLagrangian
+
+# path to the folder for results
+result_folder ./helloSlumpTest
+
+# Mass tolerance
+tolmass 1.e-6
+
+# Gravity    gx   gy
+gravity      0.0  -9.81
+
+finalTime 2
+
+# Period of storing (in number of steps)
+vtkPeriod 200
+
+proxPeriod 100
+
+# Time increment
+dt 1e-6
+
+# Current time
+t 0.0
+
+# MP display style
+parallelogramMP  1
+
+# shape function can be RegularQuadLinear or BSpline
+ShapeFunction BSpline
+
+# Definition of materials
+#     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+model MohrCoulomb    MC         1.0e7     0.42      0.5            5e5        0.01
+
+#               lx   ly   spacing
+new_set_grid    0.4  0.2  0.01
+
+#            group   modelName     mass_density(kg/m3)     x0     y0      x1     y1      size of boxes
+set_MP_grid  0       MC            2700.0                  0.12   0.04    0.28   0.15    0.01
+
+BoundaryType KelvinVoigt 1
+
+#                group  x0     y0     x1     y1    driveMode
+Obstacle Line    1      -0.02  0.04   0.42   0.04  freeze
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0.3
+set              kn         0         1          1.0e7
+set              en2        0         1          0.02
+set              kt         0         1          1.0e7
+set              viscosity  0         1          1
+
+set_K0_stress 0.42  2700.
+
+
+
