@@ -1,4 +1,6 @@
 dem/3D_snow/*.o
 dem/3D_snow/run
 dem/3D_snow/see
+dem/3D_snow/lookShape
 dem/3D_snow/libPBC3D.a
+*.DS_Store
