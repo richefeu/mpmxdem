@@ -1,30 +1,69 @@
 <
 volume 1
 I/m 1 1 1
-obb.extent 2 1 1
+obb.extent 1.5e-3 1e-3 1e-3
 obb.center 0 0 0
 obb.e1 1 0 0 
 obb.e2 0 1 0 
 obb.e3 0 0 1 
-position 0 0 0
-orientation 1 0 0 0
-nv 2
--1 0 0 1
-1 0 0 1
+nv 3
+-0.5e-3 0 0 1e-3
+0.5e-3 0 0 1e-3
+0.4e-3 0.3e-3 0 1e-3
 >
 
 <
 volume 1
 I/m 1 1 1
-obb.extent 1.5 1 1
+obb.extent 1.5e-3 1e-3 1e-3
 obb.center 0 0 0
 obb.e1 1 0 0 
 obb.e2 0 1 0 
 obb.e3 0 0 1 
-position 0 0 0
-orientation 1 0 0 0
 nv 3
--0.5 0 0 1
-0.5 0 0 1
-0.4 0.3 0 1
+-0.5e-3 0 0 1e-3
+0.5e-3 0 0 1e-3
+0.4e-3 0.3e-3 0 1e-3
+>
+
+<
+volume 1
+I/m 1 1 1
+obb.extent 1.5e-3 1e-3 1e-3
+obb.center 0 0 0
+obb.e1 1 0 0 
+obb.e2 0 1 0 
+obb.e3 0 0 1 
+nv 3
+-0.5e-3 0 0 1e-3
+0.5e-3 0 0 1e-3
+0.4e-3 0.3e-3 0 1e-3
+>
+
+<
+volume 1
+I/m 1 1 1
+obb.extent 1.5e-3 1e-3 1e-3
+obb.center 0 0 0
+obb.e1 1 0 0 
+obb.e2 0 1 0 
+obb.e3 0 0 1 
+nv 3
+-0.5e-3 0 0 1e-3
+0.5e-3 0 0 1e-3
+0.4e-3 0.3e-3 0 1e-3
+>
+
+<
+volume 1
+I/m 1 1 1
+obb.extent 1.5e-3 1e-3 1e-3
+obb.center 0 0 0
+obb.e1 1 0 0 
+obb.e2 0 1 0 
+obb.e3 0 0 1 
+nv 3
+-0.5e-3 0 0 1e-3
+0.5e-3 0 0 1e-3
+0.4e-3 0.3e-3 0 1e-3
 >

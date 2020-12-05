@@ -102,7 +102,8 @@ public:
 	void updateNeighborList(double dmax);           ///< Updates the neighbor-list
   void saveConf(int i);                           ///< Saves the current configuration in a file named confX, where X=i
   void loadConf(const char *name);                ///< Loads a configuration from a file
-  void clearMemory();                             ///< Clears the Particles and Interactions.
+  void loadShapes(); 
+	void clearMemory();                             ///< Clears the Particles and Interactions.
   //void computeSampleData();                       ///< Computes a number of usefull data (Rmin, Rmax, Vsolid, etc.)
   //void ActivateBonds(double epsiDist, int state); ///< Replace contacts by cemented bonds when dn is lower than epsiDist
   //void RemoveBonds(double percentRemove, int StrategyId); ///< ....

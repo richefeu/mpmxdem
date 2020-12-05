@@ -1,8 +1,10 @@
+#include "AABB.hpp"
 #include "kwParser.hpp"
+#include "polyhTool.hpp"
 
 #include "Particle.hpp"
 
-Particle::Particle() : pos(), vel(), acc(), Q(), vrot(), arot(), inertia(), mass(0.0), force(), moment() {}
+Particle::Particle() : pos(), vel(), acc(), Q(), vrot(), arot(), I_m(), mass(0.0), volume(0.0), force(), moment() {}
 
 void Particle::readShape(std::istream& is) {
   kwParser parser;
@@ -16,8 +18,8 @@ void Particle::readShape(std::istream& is) {
   parser.kwMap["obb.e2"] = __GET__(is, obb.e[1]);
   parser.kwMap["obb.e3"] = __GET__(is, obb.e[2]);
   // parser.kwMap["OBBtreeLevel"] = __GET__(is, OBBtreeLevel);
-  parser.kwMap["position"] = __GET__(is, pos);
-  parser.kwMap["orientation"] = __GET__(is, Q);
+  //parser.kwMap["position"] = __GET__(is, pos);
+  //parser.kwMap["orientation"] = __GET__(is, Q);
   // parser.kwMap["MCnstep"] = __GET__(is, MCnstep);
   parser.kwMap["nv"] = __DO__(is) {
     size_t nv;
@@ -125,7 +127,122 @@ void Particle::fitObb() {
   obb.enlarge(rmax);  // Add the Minskowski radius
 }
 
+bool Particle::inside(const vec3r& point) {
+  for (size_t is = 0; is < subSpheres.size(); is++) {
+    vec3r b = subSpheres[is].localPos - point;
+    double r2 = subSpheres[is].radius * subSpheres[is].radius;
+    double l2 = norm2(b);
+    if (l2 < r2) return true;
+  }
+  return false;
+}
 
 void Particle::massProperties() {
-	
+  std::cout << std::endl;
+  std::cout << "Computation of mass properties (volume, mass-center, inertia "
+               "and body-frame)\n";
+
+  // 1- Get the bounding volume
+  double rmax = subSpheres[0].radius;
+  AABB box(subSpheres[0].localPos);
+  for (size_t is = 1; is < subSpheres.size(); is++) {
+    box.add(subSpheres[is].localPos);
+    if (subSpheres[is].radius > rmax) rmax = subSpheres[is].radius;
+  }
+  box.enlarge(rmax);
+  double Vbox = (box.max.x - box.min.x) * (box.max.y - box.min.y) * (box.max.z - box.min.z);
+
+  // 2- Monte Carlo integration to compute the volume and the mass-center
+  double int_vol = 0.0, vol_err = 0.0;
+  vec3r OG;
+  std::vector<double> vv(3);
+  polyhTool::sobolSequence(-3, vv);  // Initialize the Sobol sequence
+  vec3r pt3;
+  size_t MCnstep = 1000 * subSpheres.size();
+  for (size_t i = 0; i < MCnstep; ++i) {
+    polyhTool::sobolSequence(3, vv);
+    pt3.set(box.min.x + vv[0] * (box.max.x - box.min.x), box.min.y + vv[1] * (box.max.y - box.min.y),
+            box.min.z + vv[2] * (box.max.z - box.min.z));
+    if (inside(pt3)) {
+      OG += pt3;
+      int_vol += 1.0;
+      vol_err += 1.0;
+    }
+  }
+
+  if (int_vol == 0.0) {
+    std::cout << "@Particle::massProperties, No point inside!!\n";  // should be FATAL (?)
+    return;
+  }
+
+  double inv_nstep = 1.0 / (double)MCnstep;
+  volume = Vbox * int_vol * inv_nstep;
+
+  vol_err = Vbox * sqrt((vol_err * inv_nstep - (int_vol * inv_nstep) * (int_vol * inv_nstep)) * inv_nstep);
+
+  OG = inv_nstep * Vbox * OG;
+  if (volume > 1.0e-20) OG = (1.0 / volume) * OG;
+
+  // 3- Monte Carlo integration to compute (1/m) I(G)
+  double I11_m = 0.0;
+  double I12_m = 0.0;
+  double I13_m = 0.0;
+  double I22_m = 0.0;
+  double I23_m = 0.0;
+  double I33_m = 0.0;
+
+  double lx, ly, lz;
+  for (size_t i = 0; i < MCnstep; ++i) {
+    polyhTool::sobolSequence(3, vv);
+    pt3.set(box.min.x + vv[0] * (box.max.x - box.min.x), box.min.y + vv[1] * (box.max.y - box.min.y),
+            box.min.z + vv[2] * (box.max.z - box.min.z));
+    if (inside(pt3)) {
+      lx = pt3.x - OG.x;
+      ly = pt3.y - OG.y;
+      lz = pt3.z - OG.z;
+
+      I11_m += (ly * ly + lz * lz);
+      I12_m -= (lx * ly);
+      I13_m -= (lx * lz);
+      I22_m += (lx * lx + lz * lz);
+      I23_m -= (ly * lz);
+      I33_m += (lx * lx + ly * ly);
+    }
+  }
+
+  double fact = (Vbox / volume) * inv_nstep;
+  I11_m *= fact;
+  I12_m *= fact;
+  I13_m *= fact;
+  I22_m *= fact;
+  I23_m *= fact;
+  I33_m *= fact;
+
+  mat9r matI_m(I11_m, I12_m, I13_m, I12_m, I22_m, I23_m, I13_m, I23_m, I33_m);
+
+  mat9r VP;  // Eigen vectors
+  vec3r D;   // Eigen values
+  matI_m.sym_eigen(VP, D);
+
+  // 4- set the precomputed properties
+  Q.set_rot_matrix(VP.c_mtx());
+  Q.normalize();
+
+  quat Qinv = Q.get_conjugated();
+  for (size_t i = 0; i < subSpheres.size(); ++i) {
+    subSpheres[i].localPos = Qinv * (subSpheres[i].localPos - OG);
+  }
+  // position = OG;
+  I_m = D;
+  fitObb();
+
+  // 5- Display some information
+  std::cout << "Number of steps in the Monte Carlo integration: " << MCnstep << std::endl;
+  std::cout << "      Estimated error for the volume (err/vol): " << vol_err / volume << std::endl;
+  std::cout << "                                        Volume: " << volume << std::endl;
+  // std::cout << "                                   Mass center: " << position << std::endl;
+  std::cout << "                                  inertia/mass: " << I_m << std::endl;
+  std::cout << "                 Angular position (quaternion): " << Q << std::endl;
+  // std::cout << "                                      Position: " << position << std::endl;
+  std::cout << std::endl;
 }

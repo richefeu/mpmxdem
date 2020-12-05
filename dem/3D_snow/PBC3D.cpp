@@ -102,12 +102,13 @@ void PBC3Dbox::saveConf(int i) {
   conf << "Interactions " << nbActiveInteractions << '\n';
   for (size_t i = 0; i < Interactions.size(); i++) {
     if (Interactions[i].state == noContactState) continue;
-    conf << Interactions[i].i << ' ' << Interactions[i].j<< Interactions[i].is << ' ' << Interactions[i].js << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
-         << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
-         << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
-         << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' '
-         << Interactions[i].mom << ' ' << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' '
-         << Interactions[i].state << ' ' << Interactions[i].D << '\n';
+    conf << Interactions[i].i << ' ' << Interactions[i].j << Interactions[i].is << ' ' << Interactions[i].js << ' '
+         << Interactions[i].gap0 << ' ' << Interactions[i].n << ' ' << Interactions[i].fn << ' '
+         << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' ' << Interactions[i].ft << ' '
+         << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' ' << Interactions[i].dt_fric << ' '
+         << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' ' << Interactions[i].mom << ' '
+         << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' ' << Interactions[i].state << ' '
+         << Interactions[i].D << '\n';
   }
 }
 
@@ -189,7 +190,7 @@ void PBC3Dbox::loadConf(const char* name) {
     else if (token == "iconf")
       conf >> iconf;
     else if (token == "h")
-      conf >> Cell.h;
+    	conf >> Cell.h; 
     else if (token == "vh")
       conf >> Cell.vh;
     else if (token == "ah")
@@ -254,7 +255,7 @@ void PBC3Dbox::loadConf(const char* name) {
       Particle P;
       for (size_t i = 0; i < nb; i++) {
         // remember that pos, vel and acc are expressed in reduced coordinates
-        conf >> P.pos >> P.vel >> P.acc >> P.Q >> P.vrot >> P.arot;  // >> P.radius >> P.inertia >> P.mass;
+        conf >> P.pos >> P.vel >> P.acc >> P.Q >> P.vrot >> P.arot;
         Particles.push_back(P);
       }
     } else if (token == "Interactions") {
@@ -263,8 +264,8 @@ void PBC3Dbox::loadConf(const char* name) {
       Interactions.clear();
       Interaction I;
       for (size_t i = 0; i < nb; i++) {
-        conf >> I.i >> I.j >> I.is >> I.js  >> I.gap0 >> I.n >> I.fn >> I.fn_elas >> I.fn_bond >> I.ft >> I.ft_fric >> I.ft_bond >>
-            I.dt_fric >> I.dt_bond >> I.drot_bond >> I.mom >> I.dampn >> I.dampt >> I.state >> I.D;
+        conf >> I.i >> I.j >> I.is >> I.js >> I.gap0 >> I.n >> I.fn >> I.fn_elas >> I.fn_bond >> I.ft >> I.ft_fric >>
+            I.ft_bond >> I.dt_fric >> I.dt_bond >> I.drot_bond >> I.mom >> I.dampn >> I.dampt >> I.state >> I.D;
         Interactions.push_back(I);
       }
     }
@@ -291,9 +292,47 @@ void PBC3Dbox::loadConf(const char* name) {
 
     conf >> token;
   }
-
+	
+  loadShapes();
+std::cout << "*********"<< Particles[0].pos << '\n';
   // computeSampleData();
   accelerations();  // a fake time-increment that will compute missing thinks
+}
+
+void PBC3Dbox::loadShapes() {
+  std::ifstream shp("shapes.txt");
+  if (!shp.is_open()) {
+    std::cerr << "@PBC3Dbox::loadShapes, Cannot read shapes.txt";
+  }
+
+  size_t current = 0;
+
+  std::string token;
+  shp >> token;
+  while (shp.good()) {
+    if (token[0] == '/' || token[0] == '#' || token[0] == '!') {
+      getline(shp, token);  // ignore the rest of the current line
+      shp >> token;         // next token
+      continue;
+    } else if (token == "<") {
+      if (current < Particles.size()) {
+				Particles[current].readShape(shp);
+				current++;
+      }
+			else {
+				std::cout << "More shapes that clumps!\n";
+			}
+    } else {
+      std::cerr << "Unknown token: " << token << std::endl;
+      exit(0);
+    }
+
+    shp >> token;
+  }
+	
+	if (current != Particles.size()) {
+		std::cout << "The number of particles does not egal the number of shapes!\n";
+	}
 }
 
 /// @brief Computes a single step with the velocity-Verlet algorithm
@@ -500,10 +539,8 @@ void PBC3Dbox::updateNeighborList(double dmax) {
       }
     }
   }
-	
-	
-	
-	// ***** TODO utiliser is et js pour l'ordre lexico
+
+  // ***** TODO utiliser is et js pour l'ordre lexico
 
   // retrieve previous contacts or bonds
   size_t k, kold = 0;
@@ -590,7 +627,16 @@ void PBC3Dbox::accelerations() {
 #endif
 
     Particles[i].acc = hinv * acc;
-    //Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // FIXME !!!!! It's ok only for spheres
+
+    // Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // FIXME !!!!! It's ok only for spheres
+    quat Qinv = Particles[i].Q.get_conjugated();
+    vec3r omega = Qinv * Particles[i].vrot;  // Express omega in the body framework
+    vec3r M = Qinv * Particles[i].moment;    // Express torque in the body framework
+    vec3r inertia = Particles[i].I_m * Particles[i].mass;
+    vec3r domega((M[0] - (inertia[2] - inertia[1]) * omega[1] * omega[2]) / inertia[0],
+                 (M[1] - (inertia[0] - inertia[2]) * omega[2] * omega[0]) / inertia[1],
+                 (M[2] - (inertia[1] - inertia[0]) * omega[0] * omega[1]) / inertia[2]);
+    Particles[i].arot = Particles[i].Q * domega;  // Express arot in the global framework
   }
 }
 
@@ -602,19 +648,19 @@ void PBC3Dbox::computeForcesAndMoments() {
     i = Interactions[k].i;
     j = Interactions[k].j;
     is = Interactions[k].is;
-		js = Interactions[k].js;
-		
+    js = Interactions[k].js;
+
     vec3r sij = Particles[j].pos - Particles[i].pos;
     sij.x -= floor(sij.x + 0.5);
     sij.y -= floor(sij.y + 0.5);
     sij.z -= floor(sij.z + 0.5);
     vec3r branch = Cell.h * sij;
-		
+
     vec3r posi = Particles[i].Q * Particles[i].subSpheres[is].localPos;
     double Ri = Particles[i].subSpheres[is].radius;
     vec3r posj = branch + Particles[j].Q * Particles[j].subSpheres[js].localPos;
     double Rj = Particles[j].subSpheres[js].radius;
-		vec3r sbranch= posj-posi;
+    vec3r sbranch = posj - posi;
 
     // ===========================================================
     // ======= A NON-BONDED FRICTIONAL CONTACT INTERACTION =======
@@ -630,9 +676,9 @@ void PBC3Dbox::computeForcesAndMoments() {
       double len = n.normalize();
 
       // real relative velocities
-      vec3r vel = Particles[j].vel - Particles[i].vel; // FIXME vel devrait être vel des subSPheres
+      vec3r vel = Particles[j].vel - Particles[i].vel;  // FIXME vel devrait être vel des subSPheres
       vec3r realVel = Cell.h * vel + Cell.vh * sij;
-			realVel -= Ri * cross(n, Particles[i].vrot) + Rj * cross(n, Particles[j].vrot);
+      realVel -= Ri * cross(n, Particles[i].vrot) + Rj * cross(n, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
       double dn = len - Ri - Rj;
@@ -663,7 +709,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       Particles[j].force += f;
 
       // Resultant moments
-      vec3r Ci = posi + (Ri + 0.5 * dn) * n; // FIXME ???
+      vec3r Ci = posi + (Ri + 0.5 * dn) * n;  // FIXME ???
       vec3r Cj = posj - (Rj + 0.5 * dn) * n;
       Particles[i].moment += cross(Ci, f);
       Particles[j].moment += cross(Cj, -f);

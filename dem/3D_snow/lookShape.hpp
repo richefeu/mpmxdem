@@ -1,5 +1,5 @@
-#ifndef SEE_HPP_E29BD15E
-#define SEE_HPP_E29BD15E
+#ifndef SEE_HPP
+#define SEE_HPP
 
 #include <GL/freeglut.h>
 
@@ -60,4 +60,4 @@ void fit_view();
 int readShapeLib(const char* fileName);
 void saveShapeLib(const char* fileName);
 
-#endif /* end of include guard: SEE_HPP_E29BD15E */
+#endif /* end of include guard: SEE_HPP */

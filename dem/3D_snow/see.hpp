@@ -1,19 +1,16 @@
 #ifndef SEE_HPP
 #define SEE_HPP
 
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <GL/freeglut.h>
 
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
 
-#include "ColorTable.hpp"
 #include "PBC3D.hpp"
+
+#include "ColorTable.hpp"
 #include "graphGL.hpp"
 
 PBC3Dbox box;
