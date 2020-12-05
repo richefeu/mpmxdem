@@ -98,7 +98,8 @@ public:
 
   void printScreen(double elapsedTime);           ///< Prints usefull data on screen during computation
   //void dataOutput();                              ///< Outputs usefull data during computation
-  void updateNeighborList(double dmax);           ///< Updates the neighbor-list
+  void getSubSpheres(vec3r& branch, size_t i, size_t j, std::vector<std::pair<size_t, size_t> > duoIDs);
+	void updateNeighborList(double dmax);           ///< Updates the neighbor-list
   void saveConf(int i);                           ///< Saves the current configuration in a file named confX, where X=i
   void loadConf(const char *name);                ///< Loads a configuration from a file
   void clearMemory();                             ///< Clears the Particles and Interactions.

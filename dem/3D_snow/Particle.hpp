@@ -7,7 +7,7 @@
 
 #include "quat.hpp"
 #include "vec3.hpp"
-
+#include "OBB.hpp"
 
 
 /*
@@ -40,16 +40,26 @@ struct Particle {
   vec3r vrot; ///< Angular velocity
   vec3r arot; ///< Angular acceleration
 
-  double radius;  ///< The particle radius -> remplacé par OBB
-  double inertia; ///< Inertia value of a sphere -> vec3r I_m;
-  double mass;    ///< The particle mass
-
+  //double radius;  ///< The particle radius -> remplacé par OBB
+  vec3r inertia; ///< Inertia values 
+	double mass;    ///< The particle mass
+	
+	// shape
+	vec3r I_m;
+	double volume;
+  
   vec3r force;  ///< Resultant force acting on the particle
   vec3r moment; ///< Resultant moment acting on the particle
 	
 	std::vector<Sphere> subSpheres;
+	OBB obb;
 
   Particle(); // Ctor
+	
+	void readShape(std::istream& is);
+	void fitObb();
+	void massProperties();
+	
 };
 
 #endif /* end of include guard: PARTICLE_HPP */

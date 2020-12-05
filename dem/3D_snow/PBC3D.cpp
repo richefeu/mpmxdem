@@ -97,13 +97,12 @@ void PBC3Dbox::saveConf(int i) {
   conf << "Particles " << Particles.size() << '\n';
   for (size_t i = 0; i < Particles.size(); i++) {
     conf << Particles[i].pos << ' ' << Particles[i].vel << ' ' << Particles[i].acc << ' ' << Particles[i].Q << ' '
-         << Particles[i].vrot << ' ' << Particles[i].arot << ' ' << Particles[i].radius << ' ' << Particles[i].inertia
-         << ' ' << Particles[i].mass << '\n';
+         << Particles[i].vrot << ' ' << Particles[i].arot << '\n';
   }
   conf << "Interactions " << nbActiveInteractions << '\n';
   for (size_t i = 0; i < Interactions.size(); i++) {
     if (Interactions[i].state == noContactState) continue;
-    conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
+    conf << Interactions[i].i << ' ' << Interactions[i].j<< Interactions[i].is << ' ' << Interactions[i].js << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
          << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
          << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
          << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' '
@@ -255,7 +254,7 @@ void PBC3Dbox::loadConf(const char* name) {
       Particle P;
       for (size_t i = 0; i < nb; i++) {
         // remember that pos, vel and acc are expressed in reduced coordinates
-        conf >> P.pos >> P.vel >> P.acc >> P.Q >> P.vrot >> P.arot >> P.radius >> P.inertia >> P.mass;
+        conf >> P.pos >> P.vel >> P.acc >> P.Q >> P.vrot >> P.arot;  // >> P.radius >> P.inertia >> P.mass;
         Particles.push_back(P);
       }
     } else if (token == "Interactions") {
@@ -264,7 +263,7 @@ void PBC3Dbox::loadConf(const char* name) {
       Interactions.clear();
       Interaction I;
       for (size_t i = 0; i < nb; i++) {
-        conf >> I.i >> I.j >> I.gap0 >> I.n >> I.fn >> I.fn_elas >> I.fn_bond >> I.ft >> I.ft_fric >> I.ft_bond >>
+        conf >> I.i >> I.j >> I.is >> I.js  >> I.gap0 >> I.n >> I.fn >> I.fn_elas >> I.fn_bond >> I.ft >> I.ft_fric >> I.ft_bond >>
             I.dt_fric >> I.dt_bond >> I.drot_bond >> I.mom >> I.dampn >> I.dampt >> I.state >> I.D;
         Interactions.push_back(I);
       }
@@ -399,7 +398,7 @@ void PBC3Dbox::integrate() {
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   accelerations();
-  //dataOutput();
+  // dataOutput();
 
   char fname[256];
   sprintf(fname, "conf%d", iconf);
@@ -427,12 +426,12 @@ void PBC3Dbox::integrate() {
       interVerletC = 0.0;
     }
 
-		/*
-    if (interOutC >= interOut) {
-      dataOutput();
-      interOutC = 0.0;
-    }
-		*/
+    /*
+if (interOutC >= interOut) {
+dataOutput();
+interOutC = 0.0;
+}
+    */
 
     interConfC += dt;
     interOutC += dt;
@@ -441,6 +440,21 @@ void PBC3Dbox::integrate() {
   }
 
   return;
+}
+
+void PBC3Dbox::getSubSpheres(vec3r& branch, size_t i, size_t j, std::vector<std::pair<size_t, size_t> > duoIDs) {
+  // here we could pre-select the spheres that are close with a fast algorithm
+  // Now we use the brute-forte strategy
+
+  duoIDs.clear();
+  std::pair<size_t, size_t> duoID;
+  for (size_t is = 0; is < Particles[i].subSpheres.size(); is++) {
+    for (size_t js = 0; js < Particles[j].subSpheres.size(); js++) {
+      duoID.first = is;
+      duoID.second = js;
+      duoIDs.push_back(duoID);
+    }
+  }
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
@@ -463,15 +477,33 @@ void PBC3Dbox::updateNeighborList(double dmax) {
       for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
       vec3r branch = Cell.h * sij;
 
-      double sum = dmax + Particles[i].radius + Particles[j].radius;
-      if (norm2(branch) <= sum * sum) {
-        double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
-        double Dampn = dampRate * 2.0 * sqrt(kn * m);
-        double Dampt = dampRate * 2.0 * sqrt(kt * m);
-        Interactions.push_back(Interaction(i, j, Dampn, Dampt));
+      // get list of posible subSpheres that can interact
+      std::vector<std::pair<size_t, size_t> > duoIDs;
+      getSubSpheres(branch, i, j, duoIDs);
+
+      double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
+      double Dampn = dampRate * 2.0 * sqrt(kn * m);
+      double Dampt = dampRate * 2.0 * sqrt(kt * m);
+      for (size_t k = 0; k < duoIDs.size(); k++) {
+        size_t is = duoIDs[k].first;
+        size_t js = duoIDs[k].second;
+        vec3r posi = Particles[i].Q * Particles[i].subSpheres[is].localPos;
+        double Ri = Particles[i].subSpheres[is].radius;
+        vec3r posj = branch + Particles[j].Q * Particles[j].subSpheres[js].localPos;
+        double Rj = Particles[j].subSpheres[js].radius;
+        vec3r sbranch = posj - posi;
+
+        double sum = dmax + Ri + Rj;
+        if (norm2(sbranch) <= sum * sum) {
+          Interactions.push_back(Interaction(i, j, is, js, Dampn, Dampt));
+        }
       }
     }
   }
+	
+	
+	
+	// ***** TODO utiliser is et js pour l'ordre lexico
 
   // retrieve previous contacts or bonds
   size_t k, kold = 0;
@@ -558,44 +590,52 @@ void PBC3Dbox::accelerations() {
 #endif
 
     Particles[i].acc = hinv * acc;
-    Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // It's ok for spheres
+    //Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // FIXME !!!!! It's ok only for spheres
   }
 }
 
 /// @brief Computes the interaction forces and moments,
 ///        and the tensorial moment (= Vcell * stress matrix) of the cell
 void PBC3Dbox::computeForcesAndMoments() {
-  size_t i, j;
+  size_t i, j, is, js;
   for (size_t k = 0; k < Interactions.size(); k++) {
     i = Interactions[k].i;
     j = Interactions[k].j;
-
+    is = Interactions[k].is;
+		js = Interactions[k].js;
+		
     vec3r sij = Particles[j].pos - Particles[i].pos;
     sij.x -= floor(sij.x + 0.5);
     sij.y -= floor(sij.y + 0.5);
     sij.z -= floor(sij.z + 0.5);
     vec3r branch = Cell.h * sij;
+		
+    vec3r posi = Particles[i].Q * Particles[i].subSpheres[is].localPos;
+    double Ri = Particles[i].subSpheres[is].radius;
+    vec3r posj = branch + Particles[j].Q * Particles[j].subSpheres[js].localPos;
+    double Rj = Particles[j].subSpheres[js].radius;
+		vec3r sbranch= posj-posi;
 
     // ===========================================================
     // ======= A NON-BONDED FRICTIONAL CONTACT INTERACTION =======
     // ===========================================================
 
-    double sum = Particles[i].radius + Particles[j].radius;
-    if (norm2(branch) <= sum * sum) {  // it means that particles i and j are in contact
+    double sum = Ri + Rj;
+    if (norm2(sbranch) <= sum * sum) {  // it means that particles i and j are in contact
       nbActiveInteractions++;
       Interactions[k].state = contactState;
 
       // Current normal vector (the previous one has previously been stored in Interactions[k].n)
-      vec3r n = branch;
+      vec3r n = sbranch;
       double len = n.normalize();
 
       // real relative velocities
-      vec3r vel = Particles[j].vel - Particles[i].vel;
+      vec3r vel = Particles[j].vel - Particles[i].vel; // FIXME vel devrait être vel des subSPheres
       vec3r realVel = Cell.h * vel + Cell.vh * sij;
-      realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
+			realVel -= Ri * cross(n, Particles[i].vrot) + Rj * cross(n, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
-      double dn = len - Particles[i].radius - Particles[j].radius;
+      double dn = len - Ri - Rj;
       double vn = realVel * n;
       double fne = -kn * dn;
       double fnv = -Interactions[k].dampn * vn;
@@ -607,7 +647,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       vec3r vt = realVel - (vn * n);
       vec3r deltat = vt * dt;
       Interactions[k].dt_fric += deltat;
-      Interactions[k].ft -= kt * deltat;    // no viscuous damping since friction can dissipate
+      Interactions[k].ft -= kt * deltat;                 // no viscuous damping since friction can dissipate
       double threshold = fabs(mu * Interactions[k].fn);  // Suppose that fn is elastic and without cohesion
       double ft_square = Interactions[k].ft * Interactions[k].ft;
       if (ft_square > 0.0 && ft_square >= threshold * threshold)
@@ -623,8 +663,8 @@ void PBC3Dbox::computeForcesAndMoments() {
       Particles[j].force += f;
 
       // Resultant moments
-      vec3r Ci = (Particles[i].radius + 0.5 * dn) * n;
-      vec3r Cj = -(Particles[j].radius + 0.5 * dn) * n;
+      vec3r Ci = posi + (Ri + 0.5 * dn) * n; // FIXME ???
+      vec3r Cj = posj - (Rj + 0.5 * dn) * n;
       Particles[i].moment += cross(Ci, f);
       Particles[j].moment += cross(Cj, -f);
 
