@@ -63,28 +63,22 @@ void keyboard(unsigned char Key, int x, int y) {
       break;
 
     case 'c':
-      //if (Shapes[ishape].preCompDone == 'n') {
-        Shapes[ishape].massProperties();
-        // Shapes[ishape].preCompDone = 'y';
-        fit_view();
-				//}
+      // if (Shapes[ishape].preCompDone == 'n') {
+      Shapes[ishape].massProperties();
+      // Shapes[ishape].preCompDone = 'y';
+      fit_view();
+      //}
       break;
 
     case 'C': {
       for (size_t i = 0; i < Shapes.size(); i++) {
-        //if (Shapes[i].preCompDone == 'n') {
-          Shapes[i].massProperties();
-          // Shapes[i].preCompDone = 'y';
-					//}
+        // if (Shapes[i].preCompDone == 'n') {
+        Shapes[i].massProperties();
+        // Shapes[i].preCompDone = 'y';
+        //}
       }
       fit_view();
     } break;
-
-    // case 'd': {
-    //   for (size_t i = 0; i < Shapes.size(); i++) {
-    //     Shapes[i].clean();
-    //   }
-    // } break;
 
     case 'e': {
       std::cout << "extents: " << Shapes[ishape].obb.extent[0] << " " << Shapes[ishape].obb.extent[1] << " "
@@ -132,18 +126,17 @@ void keyboard(unsigned char Key, int x, int y) {
       //   exportSample();
       //   break;
 
-
-			case 'f': {
-				Shapes[ishape].fitObb();
-			}break;
+    case 'f': {
+      Shapes[ishape].fitObb();
+    } break;
 
     case 'q':
       exit(0);
       break;
 
-      // case 's':
-      //   saveShapeLib(shapeFileName.c_str());
-      //   break;
+    case 's':
+      saveShapeLib(shapeFileName.c_str());
+      break;
 
       // case 't': {
       //   maxOBBLevel = Shapes[ishape].OBBtreeLevel;
@@ -386,7 +379,7 @@ int readShapeLib(const char* fileName) {
   while (is) {
     if (token == "<") {
       Particle S;
-      S.readShape(is);
+      S.readShape(is, 1.0);
       Shapes.push_back(S);
     }
     is >> token;
@@ -406,21 +399,21 @@ int readShapeLib(const char* fileName) {
 }
 
 void saveShapeLib(const char* fileName) {
-  // std::ofstream os;
-  //
-  // if (fileTool::fileExists(fileName)) {
-  //   std::string newFileName = fileTool::GetFilePath(fileName) + "/mod_" + fileTool::GetFileName(fileName) + "." +
-  //                             fileTool::GetFileExt(fileName);
-  //   std::cout << "save " << newFileName << std::endl;
-  //   os.open(newFileName);
-  // } else {
-  //   std::cout << "save " << fileName << std::endl;
-  //   os.open(fileName);
-  // }
-  //
-  // for (size_t s = 0; s < Shapes.size(); s++) {
-  //   Shapes[s].write(os);
-  // }
+  std::ofstream os;
+
+  if (fileTool::fileExists(fileName)) {
+    std::string newFileName = fileTool::GetFilePath(fileName) + "/mod_" + fileTool::GetFileName(fileName) + "." +
+                              fileTool::GetFileExt(fileName);
+    std::cout << "save " << newFileName << std::endl;
+    os.open(newFileName);
+  } else {
+    std::cout << "save " << fileName << std::endl;
+    os.open(fileName);
+  }
+
+  for (size_t s = 0; s < Shapes.size(); s++) {
+    Shapes[s].writeShape(os);
+  }
 }
 
 void menu(int num) {

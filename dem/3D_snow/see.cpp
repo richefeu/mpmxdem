@@ -759,15 +759,15 @@ void drawParticles() {
     color = colorParticle(i);
     glColor4f(color.r, color.g, color.b, color.a);
     vec3r pos = box.Cell.h * box.Particles[i].pos;
-		std::cout << "pos = " << box.Particles[i].pos << '\n';
+		//std::cout << "pos = " << box.Particles[i].pos << '\n';
     if (!inSlice(pos)) continue;
     
-		std::cout << "box.Particles[i].subSpheres.size() = " << box.Particles[i].subSpheres.size() << '\n';
+		//std::cout << "box.Particles[i].subSpheres.size() = " << box.Particles[i].subSpheres.size() << '\n';
     for (size_t is = 0; is < box.Particles[i].subSpheres.size(); is++) {
 	    glPushMatrix();
       double radius = box.Particles[i].subSpheres[is].radius;
       vec3r localPos = box.Particles[i].Q * box.Particles[i].subSpheres[is].localPos;
-			std::cout << "localPos = " << localPos << '\n';
+			//std::cout << "localPos = " << localPos << '\n';
       //glTranslatef(localPos.x, localPos.y, localPos.z);
 	    glTranslatef(pos.x+localPos.x, pos.y+localPos.y, pos.z+localPos.z);
       

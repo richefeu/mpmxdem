@@ -9,19 +9,6 @@
 #include "quat.hpp"
 #include "vec3.hpp"
 
-/*
-fichier shapes.txt :
-
-numero nb_spheres
-obb.center x y z
-obb.e1 x y z
-obb.e2 x y z
-obb.e3 x y z
-obb.extents lx ly lz
-I_m1 I_m2 I_m3
-nb fois [x y z r]
-*/
-
 /// A particle (which is a clump of spheres)
 struct Particle {
 
@@ -50,7 +37,8 @@ struct Particle {
 
   Particle();  // Ctor
 
-  void readShape(std::istream& is);
+  void readShape(std::istream& is, double density);
+	void writeShape(std::ostream& os);
   void fitObb();
   bool inside(const vec3r& point);
   void massProperties();

@@ -23,19 +23,10 @@ PBC3Dbox::PBC3Dbox() {
   mu = 0.8;
   mur = 0.0;
   fcoh = 0.0;
-  fn0 = 0.0;
-  ft0 = 0.0;
-  mom0 = 0.0;
-  dn0 = 0.0;
-  dt0 = 0.0;
-  drot0 = 0.0;
-  powSurf = 2.0;
   iconf = 0;
   nbActiveInteractions = 0;
   nbBonds = 0;
-  permamentGluer = 0;
   numericalDampingCoeff = 0.0;
-  Kratio = 1.0;
 }
 
 /// @brief Print a banner related with the current code
@@ -76,14 +67,6 @@ void PBC3Dbox::saveConf(int i) {
   conf << "mu " << mu << '\n';
   conf << "mur " << mur << '\n';
   conf << "fcoh " << fcoh << '\n';
-  conf << "fn0 " << fn0 << '\n';
-  conf << "ft0 " << ft0 << '\n';
-  conf << "mom0 " << mom0 << '\n';
-  conf << "dn0 " << dn0 << '\n';
-  conf << "dt0 " << dt0 << '\n';
-  conf << "drot0 " << drot0 << '\n';
-  conf << "powSurf " << powSurf << '\n';
-  conf << "zetaMax " << zetaMax << '\n';
   conf << "iconf " << iconf << '\n';
   conf << "h " << Cell.h << '\n';
   conf << "vh " << Cell.vh << '\n';
@@ -91,8 +74,6 @@ void PBC3Dbox::saveConf(int i) {
   conf << "hmass " << Cell.mass << '\n';
   conf << "enableSwitch " << enableSwitch << '\n';
   if (numericalDampingCoeff != 0) conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
-  conf << "Kratio " << Kratio << '\n';
-  if (permamentGluer != 0) conf << "permamentGluer " << permamentGluer << '\n';
   conf << "Load " << Load.StoredCommand << '\n';
   conf << "Particles " << Particles.size() << '\n';
   for (size_t i = 0; i < Particles.size(); i++) {
@@ -102,8 +83,8 @@ void PBC3Dbox::saveConf(int i) {
   conf << "Interactions " << nbActiveInteractions << '\n';
   for (size_t i = 0; i < Interactions.size(); i++) {
     if (Interactions[i].state == noContactState) continue;
-    conf << Interactions[i].i << ' ' << Interactions[i].j << Interactions[i].is << ' ' << Interactions[i].js << ' '
-         << Interactions[i].gap0 << ' ' << Interactions[i].n << ' ' << Interactions[i].fn << ' '
+    conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].is << ' ' << Interactions[i].js
+         << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n << ' ' << Interactions[i].fn << ' '
          << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' ' << Interactions[i].ft << ' '
          << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' ' << Interactions[i].dt_fric << ' '
          << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' ' << Interactions[i].mom << ' '
@@ -171,26 +152,10 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> mur;
     else if (token == "fcoh")
       conf >> fcoh;
-    else if (token == "fn0")
-      conf >> fn0;
-    else if (token == "ft0")
-      conf >> ft0;
-    else if (token == "mom0")
-      conf >> mom0;
-    else if (token == "dn0")
-      conf >> dn0;
-    else if (token == "dt0")
-      conf >> dt0;
-    else if (token == "drot0")
-      conf >> drot0;
-    else if (token == "powSurf")
-      conf >> powSurf;
-    else if (token == "zetaMax")
-      conf >> zetaMax;
     else if (token == "iconf")
       conf >> iconf;
     else if (token == "h")
-    	conf >> Cell.h; 
+      conf >> Cell.h;
     else if (token == "vh")
       conf >> Cell.vh;
     else if (token == "ah")
@@ -201,10 +166,6 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> enableSwitch;
     else if (token == "numericalDampingCoeff")
       conf >> numericalDampingCoeff;
-    else if (token == "Kratio")
-      conf >> Kratio;
-    else if (token == "permamentGluer")
-      conf >> permamentGluer;
     else if (token == "Load") {
       std::string command;
       conf >> command;
@@ -292,9 +253,9 @@ void PBC3Dbox::loadConf(const char* name) {
 
     conf >> token;
   }
-	
+
   loadShapes();
-std::cout << "*********"<< Particles[0].pos << '\n';
+
   // computeSampleData();
   accelerations();  // a fake time-increment that will compute missing thinks
 }
@@ -316,12 +277,11 @@ void PBC3Dbox::loadShapes() {
       continue;
     } else if (token == "<") {
       if (current < Particles.size()) {
-				Particles[current].readShape(shp);
-				current++;
+        Particles[current].readShape(shp, density);
+        current++;
+      } else {
+        std::cout << "More shapes that clumps!\n";
       }
-			else {
-				std::cout << "More shapes that clumps!\n";
-			}
     } else {
       std::cerr << "Unknown token: " << token << std::endl;
       exit(0);
@@ -329,10 +289,10 @@ void PBC3Dbox::loadShapes() {
 
     shp >> token;
   }
-	
-	if (current != Particles.size()) {
-		std::cout << "The number of particles does not egal the number of shapes!\n";
-	}
+
+  if (current != Particles.size()) {
+    std::cout << "The number of particles does not egal the number of shapes!\n";
+  }
 }
 
 /// @brief Computes a single step with the velocity-Verlet algorithm
@@ -465,13 +425,6 @@ void PBC3Dbox::integrate() {
       interVerletC = 0.0;
     }
 
-    /*
-if (interOutC >= interOut) {
-dataOutput();
-interOutC = 0.0;
-}
-    */
-
     interConfC += dt;
     interOutC += dt;
     interVerletC += dt;
@@ -481,7 +434,7 @@ interOutC = 0.0;
   return;
 }
 
-void PBC3Dbox::getSubSpheres(vec3r& branch, size_t i, size_t j, std::vector<std::pair<size_t, size_t> > duoIDs) {
+void PBC3Dbox::getSubSpheres(vec3r& branch, size_t i, size_t j, std::vector<std::pair<size_t, size_t> >& duoIDs) {
   // here we could pre-select the spheres that are close with a fast algorithm
   // Now we use the brute-forte strategy
 
@@ -499,6 +452,8 @@ void PBC3Dbox::getSubSpheres(vec3r& branch, size_t i, size_t j, std::vector<std:
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
 void PBC3Dbox::updateNeighborList(double dmax) {
+  // std::cout << "Update NL\n";
+
   // store ft because the list will be cleared before being rebuilt
   std::vector<Interaction> Ibak;
   Interaction I;
@@ -519,6 +474,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
       // get list of posible subSpheres that can interact
       std::vector<std::pair<size_t, size_t> > duoIDs;
       getSubSpheres(branch, i, j, duoIDs);
+      // std::cout << "duoIDs.size() = " << duoIDs.size() << "\n";
 
       double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
       double Dampn = dampRate * 2.0 * sqrt(kn * m);
@@ -539,8 +495,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
       }
     }
   }
-
-  // ***** TODO utiliser is et js pour l'ordre lexico
+  // std::cout << "Interactions.size() = " << Interactions.size() << "\n";
 
   // retrieve previous contacts or bonds
   size_t k, kold = 0;
@@ -551,7 +506,18 @@ void PBC3Dbox::updateNeighborList(double dmax) {
     while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j) ++kold;
     if (kold == Ibak.size()) break;
 
-    if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j) {
+    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j &&
+           Ibak[kold].is < Interactions[k].is)
+      ++kold;
+    if (kold == Ibak.size()) break;
+
+    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j &&
+           Ibak[kold].is == Interactions[k].is && Ibak[kold].js < Interactions[k].js)
+      ++kold;
+    if (kold == Ibak.size()) break;
+
+    if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j && Ibak[kold].is == Interactions[k].is &&
+        Ibak[kold].js == Interactions[k].js) {
       Interactions[k] = Ibak[kold];
       ++kold;
     }
@@ -628,7 +594,6 @@ void PBC3Dbox::accelerations() {
 
     Particles[i].acc = hinv * acc;
 
-    // Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // FIXME !!!!! It's ok only for spheres
     quat Qinv = Particles[i].Q.get_conjugated();
     vec3r omega = Qinv * Particles[i].vrot;  // Express omega in the body framework
     vec3r M = Qinv * Particles[i].moment;    // Express torque in the body framework
@@ -667,7 +632,7 @@ void PBC3Dbox::computeForcesAndMoments() {
     // ===========================================================
 
     double sum = Ri + Rj;
-    if (norm2(sbranch) <= sum * sum) {  // it means that particles i and j are in contact
+    if (norm2(sbranch) <= sum * sum) {  // it means that subSpheres is and js are in contact
       nbActiveInteractions++;
       Interactions[k].state = contactState;
 
@@ -676,17 +641,19 @@ void PBC3Dbox::computeForcesAndMoments() {
       double len = n.normalize();
 
       // real relative velocities
-      vec3r vel = Particles[j].vel - Particles[i].vel;  // FIXME vel devrait être vel des subSPheres
+      double dn = len - Ri - Rj;
+      vec3r ai = posi + (Ri + 0.5 * dn) * n;
+      vec3r aj = ai - branch;
+      vec3r vel = Particles[j].vel - Particles[i].vel;
       vec3r realVel = Cell.h * vel + Cell.vh * sij;
-      realVel -= Ri * cross(n, Particles[i].vrot) + Rj * cross(n, Particles[j].vrot);
+      realVel += cross(ai, Particles[i].vrot) - cross(aj, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
-      double dn = len - Ri - Rj;
       double vn = realVel * n;
       double fne = -kn * dn;
       double fnv = -Interactions[k].dampn * vn;
       Interactions[k].fn = fne + fnv;
-      if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
+      // if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
       Interactions[k].fn_elas = Interactions[k].fn;
 
       // Tangential force (friction)
@@ -709,10 +676,8 @@ void PBC3Dbox::computeForcesAndMoments() {
       Particles[j].force += f;
 
       // Resultant moments
-      vec3r Ci = posi + (Ri + 0.5 * dn) * n;  // FIXME ???
-      vec3r Cj = posj - (Rj + 0.5 * dn) * n;
-      Particles[i].moment += cross(Ci, f);
-      Particles[j].moment += cross(Cj, -f);
+      Particles[i].moment += cross(ai, f);
+      Particles[j].moment += cross(aj, -f);
 
       // Internal stress
       Sig.xx += f.x * branch.x;
@@ -730,15 +695,15 @@ void PBC3Dbox::computeForcesAndMoments() {
       // Store the normal vector
       Interactions[k].n = n;
 
-      if (permamentGluer == 1) {
-        // switch to a cemented/bonded link
-        Interactions[k].state = bondedState;
-
-        if (dn >= 0.0)
-          Interactions[k].gap0 = dn;
-        else
-          Interactions[k].gap0 = 0.0;
-      }
+      // if (permamentGluer == 1) {
+      //   // switch to a cemented/bonded link
+      //   Interactions[k].state = bondedState;
+      //
+      //   if (dn >= 0.0)
+      //     Interactions[k].gap0 = dn;
+      //   else
+      //     Interactions[k].gap0 = 0.0;
+      // }
     } else {
       Interactions[k].dt_fric.reset();
       Interactions[k].state = noContactState;

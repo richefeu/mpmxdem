@@ -6,21 +6,19 @@
 
 Particle::Particle() : pos(), vel(), acc(), Q(), vrot(), arot(), I_m(), mass(0.0), volume(0.0), force(), moment() {}
 
-void Particle::readShape(std::istream& is) {
+void Particle::readShape(std::istream& is, double density) {
   kwParser parser;
   parser.breakStr = ">";
-  // parser.kwMap["radius"] = __GET__(is, radius);
-  parser.kwMap["volume"] = __GET__(is, volume);
+  parser.kwMap["volume"] = __DO__(is) {
+  	is >> volume;
+		mass = volume * density;
+  };
   parser.kwMap["I/m"] = __GET__(is, I_m);
   parser.kwMap["obb.extent"] = __GET__(is, obb.extent);
   parser.kwMap["obb.center"] = __GET__(is, obb.center);
   parser.kwMap["obb.e1"] = __GET__(is, obb.e[0]);
   parser.kwMap["obb.e2"] = __GET__(is, obb.e[1]);
   parser.kwMap["obb.e3"] = __GET__(is, obb.e[2]);
-  // parser.kwMap["OBBtreeLevel"] = __GET__(is, OBBtreeLevel);
-  //parser.kwMap["position"] = __GET__(is, pos);
-  //parser.kwMap["orientation"] = __GET__(is, Q);
-  // parser.kwMap["MCnstep"] = __GET__(is, MCnstep);
   parser.kwMap["nv"] = __DO__(is) {
     size_t nv;
     is >> nv;
@@ -36,6 +34,23 @@ void Particle::readShape(std::istream& is) {
   // Limit MCnstep value within a reasonnable range
   // if (MCnstep > 10000000) MCnstep = 10000000;
   // if (MCnstep < 1000) MCnstep = 1000;
+}
+
+void Particle::writeShape(std::ostream& os) {
+	os << "<\n";
+	os << "volume " << volume << '\n';
+	os << "I/m " << I_m << '\n';
+	
+	os << "obb.extent " << obb.extent << '\n';
+	os << "obb.center " << obb.center << '\n';
+	os << "obb.e1 " << obb.e[0] << '\n';
+	os << "obb.e2 " << obb.e[1] << '\n';
+	os << "obb.e3 " << obb.e[2] << '\n';
+	os << "nv " << subSpheres.size() << '\n';
+  for (size_t v = 0; v < subSpheres.size(); ++v) {
+    os << subSpheres[v].localPos << ' ' << subSpheres[v].radius << '\n';
+  }
+	os << ">\n";
 }
 
 // See pdf document "Minimum-Area Rectangle Containing a Convex Polygon" (@see
@@ -139,8 +154,7 @@ bool Particle::inside(const vec3r& point) {
 
 void Particle::massProperties() {
   std::cout << std::endl;
-  std::cout << "Computation of mass properties (volume, mass-center, inertia "
-               "and body-frame)\n";
+  std::cout << "Computation of mass properties (volume, mass-center, inertia and body-frame)\n";
 
   // 1- Get the bounding volume
   double rmax = subSpheres[0].radius;
@@ -158,7 +172,7 @@ void Particle::massProperties() {
   std::vector<double> vv(3);
   polyhTool::sobolSequence(-3, vv);  // Initialize the Sobol sequence
   vec3r pt3;
-  size_t MCnstep = 1000 * subSpheres.size();
+  size_t MCnstep = 10000 * subSpheres.size();
   for (size_t i = 0; i < MCnstep; ++i) {
     polyhTool::sobolSequence(3, vv);
     pt3.set(box.min.x + vv[0] * (box.max.x - box.min.x), box.min.y + vv[1] * (box.max.y - box.min.y),
@@ -225,10 +239,11 @@ void Particle::massProperties() {
   matI_m.sym_eigen(VP, D);
 
   // 4- set the precomputed properties
-  Q.set_rot_matrix(VP.c_mtx());
-  Q.normalize();
+  quat Qtmp;
+	Qtmp.set_rot_matrix(VP.c_mtx());
+  Qtmp.normalize();
 
-  quat Qinv = Q.get_conjugated();
+  quat Qinv = Qtmp.get_conjugated();
   for (size_t i = 0; i < subSpheres.size(); ++i) {
     subSpheres[i].localPos = Qinv * (subSpheres[i].localPos - OG);
   }
@@ -242,7 +257,7 @@ void Particle::massProperties() {
   std::cout << "                                        Volume: " << volume << std::endl;
   // std::cout << "                                   Mass center: " << position << std::endl;
   std::cout << "                                  inertia/mass: " << I_m << std::endl;
-  std::cout << "                 Angular position (quaternion): " << Q << std::endl;
+  std::cout << "                 Angular position (quaternion): " << Qtmp << std::endl;
   // std::cout << "                                      Position: " << position << std::endl;
   std::cout << std::endl;
 }
