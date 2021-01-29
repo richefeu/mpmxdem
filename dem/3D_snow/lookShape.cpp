@@ -63,19 +63,13 @@ void keyboard(unsigned char Key, int x, int y) {
       break;
 
     case 'c':
-      // if (Shapes[ishape].preCompDone == 'n') {
       Shapes[ishape].massProperties();
-      // Shapes[ishape].preCompDone = 'y';
       fit_view();
-      //}
       break;
 
     case 'C': {
       for (size_t i = 0; i < Shapes.size(); i++) {
-        // if (Shapes[i].preCompDone == 'n') {
         Shapes[i].massProperties();
-        // Shapes[i].preCompDone = 'y';
-        //}
       }
       fit_view();
     } break;
@@ -237,12 +231,12 @@ void motion(int x, int y) {
   display();
 }
 
+// Les informations ecritent en bas de la fenetre
 void drawInfo() {
   switch2D::go(width, height);
   glColor3f(1.0f, 0.388f, 0.278f);  // dark-orange
 
-  // glText::print(GLUT_BITMAP_9_BY_15, 10, 10, "Shape %lu/%lu, named %s", ishape + 1, Shapes.size(),
-  //                Shapes[ishape].name.c_str());
+  glText::print(GLUT_BITMAP_9_BY_15, 10, 10, "Shape %lu/%lu", ishape + 1, Shapes.size());
   //  glText::print(GLUT_BITMAP_9_BY_15, 10, 25, "Radius = %g, OBBtreeLevel = %d, displayed level = %d",
   //                Shapes[ishape].radius, Shapes[ishape].OBBtreeLevel, maxOBBLevel);
   //  glText::print(GLUT_BITMAP_9_BY_15, 10, 40, "nb vertex = %lu, nb edge = %lu, nb face = %lu",
@@ -451,7 +445,7 @@ int main(int argc, char* argv[]) {
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH | GLUT_MULTISAMPLE);
   glutInitWindowPosition(50, 50);
   glutInitWindowSize(width, height);
-  main_window = glutCreateWindow("ShapeSurvey");
+  main_window = glutCreateWindow("lookShape for sphere-clumps");
 
   // ==== Register callbacks
   glutDisplayFunc(display);

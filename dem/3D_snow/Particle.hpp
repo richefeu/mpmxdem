@@ -33,7 +33,8 @@ struct Particle {
   vec3r moment;  ///< Resultant moment acting on the particle
 
   std::vector<Sphere> subSpheres;
-  OBB obb;
+  OBB obb; // OBB expressed in the particle frame
+  vec3r origPos;
 
   Particle();  // Ctor
 

@@ -3,6 +3,8 @@
 Interaction::Interaction()
     : i(0),
       j(0),
+      is(0),
+      js(0),
       gap0(0.0),
       n(),
       fn(0.0),
@@ -23,6 +25,8 @@ Interaction::Interaction()
 Interaction::Interaction(const Interaction& I)
     : i(I.i),
       j(I.j),
+      is(I.is),
+      js(I.js),
       gap0(I.gap0),
       n(I.n),
       fn(I.fn),

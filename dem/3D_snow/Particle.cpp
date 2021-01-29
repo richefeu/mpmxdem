@@ -4,14 +4,15 @@
 
 #include "Particle.hpp"
 
-Particle::Particle() : pos(), vel(), acc(), Q(), vrot(), arot(), I_m(), mass(0.0), volume(0.0), force(), moment() {}
+Particle::Particle()
+    : pos(), vel(), acc(), Q(), vrot(), arot(), I_m(), mass(0.0), volume(0.0), force(), moment(), origPos() {}
 
 void Particle::readShape(std::istream& is, double density) {
   kwParser parser;
   parser.breakStr = ">";
   parser.kwMap["volume"] = __DO__(is) {
-  	is >> volume;
-		mass = volume * density;
+    is >> volume;
+    mass = volume * density;
   };
   parser.kwMap["I/m"] = __GET__(is, I_m);
   parser.kwMap["obb.extent"] = __GET__(is, obb.extent);
@@ -37,20 +38,20 @@ void Particle::readShape(std::istream& is, double density) {
 }
 
 void Particle::writeShape(std::ostream& os) {
-	os << "<\n";
-	os << "volume " << volume << '\n';
-	os << "I/m " << I_m << '\n';
-	
-	os << "obb.extent " << obb.extent << '\n';
-	os << "obb.center " << obb.center << '\n';
-	os << "obb.e1 " << obb.e[0] << '\n';
-	os << "obb.e2 " << obb.e[1] << '\n';
-	os << "obb.e3 " << obb.e[2] << '\n';
-	os << "nv " << subSpheres.size() << '\n';
+  os << "<\n";
+  os << "volume " << volume << '\n';
+  os << "I/m " << I_m << '\n';
+
+  os << "obb.extent " << obb.extent << '\n';
+  os << "obb.center " << obb.center << '\n';
+  os << "obb.e1 " << obb.e[0] << '\n';
+  os << "obb.e2 " << obb.e[1] << '\n';
+  os << "obb.e3 " << obb.e[2] << '\n';
+  os << "nv " << subSpheres.size() << '\n';
   for (size_t v = 0; v < subSpheres.size(); ++v) {
     os << subSpheres[v].localPos << ' ' << subSpheres[v].radius << '\n';
   }
-	os << ">\n";
+  os << ">\n";
 }
 
 // See pdf document "Minimum-Area Rectangle Containing a Convex Polygon" (@see
@@ -111,7 +112,8 @@ void Particle::fitObb() {
   vec3r u(eigvec.xy, eigvec.yy, eigvec.zy);
   vec3r f(eigvec.xz, eigvec.yz, eigvec.zz);
   r.normalize();
-  u.normalize(), f.normalize();
+  u.normalize();
+  f.normalize();
 
   // now build the bounding box extents in the rotated frame
   vec3r minim(1e20, 1e20, 1e20), maxim(-1e20, -1e20, -1e20);
@@ -139,9 +141,16 @@ void Particle::fitObb() {
   for (size_t i = 1; i < subSpheres.size(); i++) {
     if (subSpheres[i].radius > rmax) rmax = subSpheres[i].radius;
   }
-  obb.enlarge(rmax);  // Add the Minskowski radius
+  obb.enlarge(rmax);  // Add the Minskowski radius ***** BOF !
+  
+  //il faudrait chercher dans chaque direction e1, e2 et e3 le bon extent, puis ajuster le centre et l'extent.
+  // ***********
+  // ***********
+  // ***********
+  
 }
 
+// It says wether a point in inside a clump of spheres
 bool Particle::inside(const vec3r& point) {
   for (size_t is = 0; is < subSpheres.size(); is++) {
     vec3r b = subSpheres[is].localPos - point;
@@ -240,8 +249,12 @@ void Particle::massProperties() {
 
   // 4- set the precomputed properties
   quat Qtmp;
-	Qtmp.set_rot_matrix(VP.c_mtx());
+  Qtmp.set_rot_matrix(VP.c_mtx());
   Qtmp.normalize();
+
+  origPos = OG;
+  Q = Qtmp;
+  
 
   quat Qinv = Qtmp.get_conjugated();
   for (size_t i = 0; i < subSpheres.size(); ++i) {
@@ -255,9 +268,8 @@ void Particle::massProperties() {
   std::cout << "Number of steps in the Monte Carlo integration: " << MCnstep << std::endl;
   std::cout << "      Estimated error for the volume (err/vol): " << vol_err / volume << std::endl;
   std::cout << "                                        Volume: " << volume << std::endl;
-  // std::cout << "                                   Mass center: " << position << std::endl;
   std::cout << "                                  inertia/mass: " << I_m << std::endl;
-  std::cout << "                 Angular position (quaternion): " << Qtmp << std::endl;
-  // std::cout << "                                      Position: " << position << std::endl;
+  std::cout << "                 Angular position (quaternion): " << Q << std::endl;
+  std::cout << "                             Original position: " << origPos << std::endl;
   std::cout << std::endl;
 }
