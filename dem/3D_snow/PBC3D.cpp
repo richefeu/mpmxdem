@@ -29,7 +29,7 @@ PBC3Dbox::PBC3Dbox() {
   numericalDampingCoeff = 0.0;
 }
 
-/// @brief Print a banner related with the current code
+// Print a banner related with the current code
 void PBC3Dbox::showBanner() {
   std::cout << std::endl;
   std::cout << "PBC3Dbox_snow, Periodic Boundary Conditions in 3D with cohesive clumps for snow microstructure"
@@ -38,14 +38,14 @@ void PBC3Dbox::showBanner() {
   std::cout << std::endl;
 }
 
-/// @brief Clear Particles and Interactions
+// Clear Particles and Interactions
 void PBC3Dbox::clearMemory() {
   Particles.clear();
   Interactions.clear();
 }
 
-/// @brief Save the current configuration
-/// @param[in] i File number. It will be named 'confx' where x is replaced by i
+// Save the current configuration
+// i is a file number. The file will be named 'confX' where X is replaced by i
 void PBC3Dbox::saveConf(int i) {
   char fname[256];
   sprintf(fname, "conf%d", i);
@@ -93,8 +93,8 @@ void PBC3Dbox::saveConf(int i) {
   }
 }
 
-/// @brief Load the configuration
-/// @param[in]    name     Name of the file
+// Load the configuration
+// name is the name of the conf-file to be loaded
 void PBC3Dbox::loadConf(const char* name) {
   std::ifstream conf(name);
   if (!conf.is_open()) {
@@ -291,11 +291,11 @@ void PBC3Dbox::loadShapes() {
   }
 
   if (current != Particles.size()) {
-    std::cout << "The number of particles does not egal the number of shapes!\n";
+    std::cout << "The number of particles does not equal the number of shapes!\n";
   }
 }
 
-/// @brief Computes a single step with the velocity-Verlet algorithm
+// Computes a single step with the velocity-Verlet algorithm
 void PBC3Dbox::velocityVerletStep() {
   if (Load.ServoFunction != nullptr) Load.ServoFunction(*this);
 
@@ -357,7 +357,7 @@ void PBC3Dbox::velocityVerletStep() {
   Cell.update(dt);
 }
 
-/// @brief Print information about the running computation and current state of the sample
+// Print information about the running computation and current state of the sample
 void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << "+===============================================================================" << '\n';
   std::cout << "|  iconf = " << iconf << ", Time = " << t << '\n';
@@ -391,7 +391,7 @@ void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << '\n' << std::endl;
 }
 
-/// @brief The main loop of time-integration
+// The main loop of time-integration
 void PBC3Dbox::integrate() {
   // (re)-compute some constants in case they were not yet set
   dt_2 = 0.5 * dt;
@@ -449,8 +449,8 @@ void PBC3Dbox::getSubSpheres(vec3r& branch, size_t i, size_t j, std::vector<std:
   }
 }
 
-/// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
-/// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
+// Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
+// dmax is the maximum distance for adding an Interaction in the neighbor list
 void PBC3Dbox::updateNeighborList(double dmax) {
   // std::cout << "Update NL\n";
 
@@ -462,7 +462,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
     Ibak.push_back(I);
   }
 
-  // now rebuild the list
+  // now clear the table and rebuild the list
   Interactions.clear();
   for (size_t i = 0; i < Particles.size(); i++) {
     for (size_t j = i + 1; j < Particles.size(); j++) {
@@ -498,6 +498,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
   // std::cout << "Interactions.size() = " << Interactions.size() << "\n";
 
   // retrieve previous contacts or bonds
+  /*
   size_t k, kold = 0;
   for (k = 0; k < Interactions.size(); ++k) {
     while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i) ++kold;
@@ -522,16 +523,17 @@ void PBC3Dbox::updateNeighborList(double dmax) {
       ++kold;
     }
   }
+  */
 }
 
-/// @brief Compute acceleration of the particles and of the periodic-cell.
+// This function computes acceleration of the particles and of the periodic-cell.
 void PBC3Dbox::accelerations() {
   // Set forces and moments to zero
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].force.reset();
     Particles[i].moment.reset();
   }
-  Sig.reset();  // reset internal stress
+  Sig.reset(); // reset internal stress
 
   nbActiveInteractions = 0;
   nbBonds = 0;
@@ -605,10 +607,11 @@ void PBC3Dbox::accelerations() {
   }
 }
 
-/// @brief Computes the interaction forces and moments,
-///        and the tensorial moment (= Vcell * stress matrix) of the cell
+// Computes the interaction forces and moments,
+// and the tensorial moment (= Vcell * stress matrix) of the cell
 void PBC3Dbox::computeForcesAndMoments() {
   size_t i, j, is, js;
+
   for (size_t k = 0; k < Interactions.size(); k++) {
     i = Interactions[k].i;
     j = Interactions[k].j;
@@ -643,24 +646,25 @@ void PBC3Dbox::computeForcesAndMoments() {
       // real relative velocities
       double dn = len - Ri - Rj;
       vec3r ai = posi + (Ri + 0.5 * dn) * n;
-      vec3r aj = ai - branch;
+      vec3r aj = ai - posj;
       vec3r vel = Particles[j].vel - Particles[i].vel;
       vec3r realVel = Cell.h * vel + Cell.vh * sij;
       realVel += cross(ai, Particles[i].vrot) - cross(aj, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
-      double vn = realVel * n;
+      //double vn = realVel * n;
       double fne = -kn * dn;
-      double fnv = -Interactions[k].dampn * vn;
-      Interactions[k].fn = fne + fnv;
+      //double fnv = -Interactions[k].dampn * vn;
+      Interactions[k].fn = fne /*+ fnv*/;
       // if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
       Interactions[k].fn_elas = Interactions[k].fn;
 
       // Tangential force (friction)
+      /*
       vec3r vt = realVel - (vn * n);
       vec3r deltat = vt * dt;
       Interactions[k].dt_fric += deltat;
-      Interactions[k].ft -= kt * deltat;                 // no viscuous damping since friction can dissipate
+      Interactions[k].ft -= kt * deltat;                 // no viscuous damping since friction can dissipate nrj
       double threshold = fabs(mu * Interactions[k].fn);  // Suppose that fn is elastic and without cohesion
       double ft_square = Interactions[k].ft * Interactions[k].ft;
       if (ft_square > 0.0 && ft_square >= threshold * threshold)
@@ -669,15 +673,15 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // Cohesion
       Interactions[k].fn += fcoh;
-
+*/
       // Resultant forces
-      vec3r f = Interactions[k].fn * n + Interactions[k].ft;
+      vec3r f = Interactions[k].fn * n /*+ Interactions[k].ft*/; // this is f of i acting on j
       Particles[i].force -= f;
       Particles[j].force += f;
 
       // Resultant moments
-      Particles[i].moment += cross(ai, f);
-      Particles[j].moment += cross(aj, -f);
+      Particles[i].moment += cross(ai, -f);
+      Particles[j].moment += cross(aj, f);
 
       // Internal stress
       Sig.xx += f.x * branch.x;
@@ -694,16 +698,6 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // Store the normal vector
       Interactions[k].n = n;
-
-      // if (permamentGluer == 1) {
-      //   // switch to a cemented/bonded link
-      //   Interactions[k].state = bondedState;
-      //
-      //   if (dn >= 0.0)
-      //     Interactions[k].gap0 = dn;
-      //   else
-      //     Interactions[k].gap0 = 0.0;
-      // }
     } else {
       Interactions[k].dt_fric.reset();
       Interactions[k].state = noContactState;

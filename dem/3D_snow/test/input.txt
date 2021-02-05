@@ -1,8 +1,8 @@
 PBC3D 30-01-2019
 t 0.0
-tmax 1.5
+tmax 2.0
 dt 1e-6
-interVerlet 0.05
+interVerlet 10e-6
 interConf 0.1
 dVerlet 1e-3
 density 2700
@@ -19,7 +19,7 @@ h 6e-3 0 0 0 6e-3 0 0 0 6e-3
 vh 0 0 0 0 0 0 0 0 0
 ah 0 0 0 0 0 0 0 0 0
 hmass 2700e-6
-Load IsostaticCompression 1
+Load IsostaticCompression 1.0
 Particles 5
 0.25 0.24 0.25  0 0 0   0 0 0  1 0 0 0   0 0 0    0 0 0
 0.75 0.27 0.25  0 0 0   0 0 0  1 0 0 0   0 0 0    0 0 0

@@ -1,24 +1,21 @@
 #include "PBC3D.hpp"
+#include "stackTracer.hpp"
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const* argv[]) {
+  StackTracer::initSignals();
+
   PBC3Dbox box;
   box.showBanner();
 
   if (argc < 2) {
-		/*
-    box.setSample();
-    box.saveConf(0);
-		*/
+    std::cout << "Usage: " << argv[0] << " input-conf-file\n";
     return 0;
   } else {
     box.loadConf(argv[1]);
   }
 
-  //box.initOutputFiles();
-
   box.updateNeighborList(box.dVerlet);
-  
-  
+
   box.integrate();
 
   return 0;

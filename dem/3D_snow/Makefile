@@ -10,7 +10,7 @@ CXX = clang++
 CXXFLAGS = -O3 -Wall -std=c++11 -I $(COMMON_FOLDER)
 # Link flags for OpenGL and glut
 GLLINK = `pkg-config --libs glut` -framework OpenGL
-
+GLUTFLAGS = `pkg-config --cflags glut` 
 else # ==============================================================
 
 # The compiler to be used
@@ -19,7 +19,7 @@ CXX = g++
 CXXFLAGS = -O3 -Wall -std=c++11
 # Link flags for OpenGL and glut
 GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXmu -lXext -lX11 -lXi
-
+GLFLAG =
 endif # =============================================================
 
 # The list of source files
@@ -59,6 +59,6 @@ lookShape: lookShape.cpp lookShape.hpp Particle.o Sphere.o
 
 # The application that visualizes the conf files
 see: see.cpp see.hpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c see.cpp -Wno-deprecated
+	$(CXX) $(CXXFLAGS) $(GLUTFLAGS) -c see.cpp -Wno-deprecated
 	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS) $(GLLINK)
 
