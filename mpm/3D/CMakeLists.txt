@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(MPMbox)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
 
 set(CMAKE_EXE_LINKER_FLAGS -pg )
 

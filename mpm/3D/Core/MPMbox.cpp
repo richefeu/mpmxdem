@@ -810,7 +810,8 @@ void MPMbox::save_vtk(const char* base, int num)
 	//matrix norm (frobenius norm) https://en.wikipedia.org/wiki/Matrix_norm
 	for (size_t i = 0 ; i < MP.size() ; ++i) {
 
-		mat9r temp = MP[i].plasticStress * MP[i].plasticStress.transpose1();
+		//mat9r temp = MP[i].plasticStress * MP[i].plasticStress.transpose1();
+		mat9r temp = MP[i].plasticStress * MP[i].plasticStress.transposed();
 		file << sqrt(temp.xx + temp.yy + temp.zz)  << std::endl;
 	}
 
