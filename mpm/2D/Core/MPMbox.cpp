@@ -272,12 +272,21 @@ void MPMbox::setDefaultVtkOutputs() {
   }
 }
 
-void MPMbox::init(const char* name) {
+void MPMbox::init(const char* name,const char* dconf) {
   // If the result folder does not exist, it is created
   fileTool::create_folder(result_folder);
-
+  //PBC3Dbox  box=PBC3Dbox();
+  //box.loadConf(dconf);
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_pos = MP[p].pos;
+    PBC.push_back(PBC3Dbox()); 
+    PBC[p].loadConf(dconf);
+	V0.reset(0);
+    PBC[p].Load.VelocityControl(V0);
+    PBC[p].enableSwitch = 1;
+    PBC[p].interVerlet =dt/4.0;
+    PBC[p].interOut =2*dt;
+    PBC[p].interConf =2*dt;
   }
 
   // copying input file to results folder

@@ -1,7 +1,7 @@
 #ifndef PERIODICCELL_HPP
 #define PERIODICCELL_HPP
 
-#include "mat9.hpp"
+#include <mat9.hpp>
 
 /// A Periodic Cell
 struct PeriodicCell {

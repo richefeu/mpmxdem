@@ -31,5 +31,5 @@ void PeriodicCell::Define(double XX, double XY, double XZ, double YX, double YY,
 void PeriodicCell::update(double dt) {
   mat9r hinv = h.get_inverse();
   velGrad = vh * hinv;
-  strain += 0.5 * dt * (velGrad + velGrad.get_transpose());
+  strain += 0.5 * dt * (velGrad + velGrad.transposed());
 }

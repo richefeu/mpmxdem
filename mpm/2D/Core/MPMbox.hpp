@@ -25,6 +25,7 @@
 #include <mat4.hpp>
 #include <message.hpp>
 #include <vec2.hpp>
+#include <PBC3D.hpp>
 
 #include "Element.hpp"
 #include "Grid.hpp"
@@ -39,12 +40,14 @@ struct VtkOutput;
 struct ShapeFunction;
 struct OneStep;
 struct ConstitutiveModel;
+class PBC3Dbox;
 
 struct MPMbox {
   std::vector<node> nodes;        // The nodes of the Eulerian grid
   std::vector<int> liveNodeNum;   // list of node numbers being used during each time step
   std::vector<element> Elem;      // Quad-elements of the grid
   std::vector<MaterialPoint> MP;  // Material Points
+  std::vector<PBC3Dbox> PBC; //DEM simulation containers
 
   std::ofstream logFile;
   std::ofstream logFile2;
@@ -71,6 +74,7 @@ struct MPMbox {
   int proxPeriod;    // Number of steps between proximity check (rebuild the neighbor list)
   double dt;         // Time increment
   double t;          // Current time
+  mat9r V0;
 
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
@@ -106,7 +110,7 @@ struct MPMbox {
   void save_vtk_obst(const char* base, int num);
   void save_vtk_surface();
   void save_vtk(const char* base, int num);
-  void init(const char* name);
+  void init(const char* name,const char* dconf);
   void MPinGridCheck();
   void cflCondition();
   void run();

@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(MPMbox)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone) 
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
+
 
 #set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++")
 
@@ -21,8 +23,11 @@ file( GLOB trajecto_object_files ${CMAKE_CURRENT_SOURCE_DIR}
 Trajectory/*.cpp
 )
 
-add_library( core_obj OBJECT ${core_object_files} )
-add_executable( mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj> )
+add_library( core_obj OBJECT ${core_object_files})
+add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj> )
+target_link_libraries (mpmbox  ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
+#add_executable( mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj> )
+#target_link_libraries (mpmbox  Runners/run.cpp $<TARGET_OBJECTS:core_obj> ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
 
 
 #add_executable( mpmbox ${source_files} )

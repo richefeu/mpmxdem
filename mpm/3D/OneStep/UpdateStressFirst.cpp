@@ -8,6 +8,7 @@
 #include <Core/Node.hpp>
 #include <Core/Element.hpp>
 #include <ConstitutiveModels/ConstitutiveModel.hpp>
+#include <../../dem/3D_sandstone/PBC3D.hpp>
 // #include <Spies/Spy.hpp>
 
 #include <factory.hpp>

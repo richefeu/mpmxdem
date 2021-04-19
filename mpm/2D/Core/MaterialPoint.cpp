@@ -1,5 +1,6 @@
 #include "MaterialPoint.hpp"
 
+//PBC3Dbox::PBC3Dbox(const char* name){this.loadConf(name)}
 MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveModel* CM)
     : groupNb(Group),
       mass(0.0),
@@ -24,7 +25,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       plastic(false),
       any(0),
       contactf(),
-      constitutiveModel(CM) {
+      constitutiveModel(CM){
   vol0 = vol = size * size;
   mass = vol0 * density;
   F = mat4::unit();

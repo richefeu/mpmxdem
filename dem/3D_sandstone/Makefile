@@ -1,11 +1,12 @@
 
 UNAME_S := $(shell uname -s)
+vpath %.hpp ../../common/
 ifeq ($(UNAME_S),Darwin) # ==========================================
 
 # The compiler to be used
 CXX = clang++
 # The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++11
+CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
 # Link flags for OpenGL and glut
 GLLINK = -framework OpenGL -framework GLUT
 
@@ -14,7 +15,7 @@ else # ==============================================================
 # The compiler to be used
 CXX = g++
 # The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++11
+CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
 # Link flags for OpenGL and glut
 GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXmu -lXext -lX11 -lXi
 
@@ -22,7 +23,9 @@ endif # =============================================================
 
 # The list of source files
 SOURCES = PBC3D.cpp Particle.cpp Interaction.cpp Loading.cpp PeriodicCell.cpp \
-quat.cpp vec3.cpp mat9.cpp ColorTable.cpp
+quat.cpp ColorTable.cpp 
+
+#vec3.cpp mat9.cpp
 
 # Each cpp file listed below corresponds to an object file
 OBJECTS = $(SOURCES:%.cpp=%.o)

@@ -39,7 +39,7 @@ int main(int argc, char ** argv)
 
 	SimuChrono.start();
 
-	Simulation.init(argv[1]);
+	Simulation.init(argv[1],argv[2]);
 
 	Simulation.save_vtk_grid();
 	Simulation.run();
