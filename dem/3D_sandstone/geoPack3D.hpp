@@ -105,7 +105,7 @@ public:
     // step 2
     int count = 0;
     int countMax = (int)floor((xmax - xmin) / (0.5 * (rmin + rmax)));
-    while (active.size() > 0 && sample.size() < max) {
+    while (active.size() > 0 && sample.size() < (size_t)max) {
       int randIndex = rand() % active.size();
       int currentSphere = active[randIndex];
       double packedx = sample[currentSphere].x;
@@ -137,7 +137,7 @@ public:
 
         // inter-particles
         if (ok == true) {
-          for (int i = 0; i < prox[currentSphere].size(); i++) {
+          for (size_t i = 0; i < prox[currentSphere].size(); i++) {
             int neighborSphere = prox[currentSphere][i];
 
             double dx = sample[neighborSphere].x - testx;
@@ -158,8 +158,8 @@ public:
           prox.push_back(std::vector<int>());
           int particleIndex = sample.size() - 1;
 
-          for (int i = 0; i < sample.size(); i++) {
-            if (i == particleIndex)
+          for (size_t i = 0; i < sample.size(); i++) {
+            if ((int)i == particleIndex)
               continue;
             double dx = fabs(sample[i].x - testx);
             double dy = fabs(sample[i].y - testy);
@@ -206,7 +206,7 @@ public:
     // step 2
     int count = 0;
     int countMax = (int)floor((xmax - xmin) / (0.5 * (rmin + rmax)));
-    while (active.size() > 0 && sample.size() < max) {
+    while (active.size() > 0 && sample.size() < (size_t)max) {
       int randIndex = rand() % active.size();
       int currentSphere = active[randIndex];
       double packedx = sample[currentSphere].x;
@@ -244,7 +244,7 @@ public:
           double lz = zmax - zmin;
           double half_lz = 0.5 * lz;
 
-          for (int i = 0; i < boundaries.size(); i++) {
+          for (size_t i = 0; i < boundaries.size(); i++) {
 
             int neighborDisk = boundaries[i];
 
@@ -278,7 +278,7 @@ public:
 
         // inter-particles
         if (ok == true) {
-          for (int i = 0; i < prox[currentSphere].size(); i++) {
+          for (size_t i = 0; i < prox[currentSphere].size(); i++) {
             int neighborSphere = prox[currentSphere][i];
 
             double dx = sample[neighborSphere].x - testx;
@@ -305,8 +305,8 @@ public:
             boundaries.push_back(particleIndex);
           }
 
-          for (int i = 0; i < sample.size(); i++) {
-            if (i == particleIndex)
+          for (size_t i = 0; i < sample.size(); i++) {
+            if ((int)i == particleIndex)
               continue;
             double dx = fabs(sample[i].x - testx);
             double dy = fabs(sample[i].y - testy);
