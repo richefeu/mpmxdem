@@ -48,6 +48,8 @@ struct MaterialPoint {
   vec2r contactf;      // TODO: delete this variable
 
   ConstitutiveModel* constitutiveModel;  // Pointer to the constitutive model
+  PBC3Dbox  PBC;
+  
 
   // Ctor
   MaterialPoint(int Group = 0, double Vol = 0.0, double Rho = 0.0, ConstitutiveModel* CM = nullptr);

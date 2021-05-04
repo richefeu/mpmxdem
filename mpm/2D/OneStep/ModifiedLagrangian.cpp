@@ -29,7 +29,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   double& tolmass = MPM.tolmass;
   int& step = MPM.step;
   // End of aliases
-
+std::cout << "ML : aliasses defined" << std::endl;
   int* I;  // use as node index
 
   // ==== Discard previous grid
@@ -53,11 +53,13 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::resetDEM(Obstacles[o], MPM.gravity);
   }
+std::cout << "ML : previous data deleted" << std::endl;
   // ==== Compute interpolation values
   for (size_t p = 0; p < MPM.MP.size(); p++) {
     MPM.shapeFunction->computeInterpolationValues(MPM, p);
   }
 
+std::cout << "ML : interpolation values" << std::endl;
   // ==== Update Vector of node indices
   std::set<int> sortedLive;
   for (size_t p = 0; p < MP.size(); p++) {
@@ -69,18 +71,21 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   liveNodeNum.clear();
   std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
 
+std::cout << "ML : nodes updates" << std::endl;
   // weightIncrement();  // gradually increments the weight, given a number of time steps
 
   // ==== Move the rigid obstacles according to their mode of driving
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM1(Obstacles[o], dt, MPM.activeNumericalDissipation);
   }
+std::cout << "ML : moving obsacles" << std::endl;
 
   // 0) ==== Getting material point mass (something we were not doing before)
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].mass = MP[p].density * MP[p].vol;
   }
 
+std::cout << "ML : getting material points mass" << std::endl;
   // 1) ==== Initialize grid state (mass and momentum)
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -102,6 +107,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
+std::cout << "ML : initiamise grid" << std::endl;
   // 2) ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -114,6 +120,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
+std::cout << "ML : compting forces" << std::endl;
   // 2b) ==== Boundary Conditions
   // OLD BC. Now using boundaryType
   // OneStep::boundaryConditions(MP, Obstacles, MPM.dataTable, MPM.id_kn,
@@ -137,6 +144,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
+std::cout << "ML : BC treated" << std::endl;
   // 3) ==== Compute rate of momentum and update nodes
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     // sum of boundary and volume forces:
@@ -151,6 +159,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       nodes[liveNodeNum[n]].qdot.y = 0.0;
     // nodes[liveNodeNum[n]].q += nodes[liveNodeNum[n]].qdot*dt;
   }
+std::cout << "ML : undateing nodes" << std::endl;
 
   // 3a) ==== Calculate velocity in MP (to then update q). sort of smoothing?
   for (size_t p = 0; p < MP.size(); p++) {
@@ -167,12 +176,15 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
         MPinvMass += invmass;
       }
     }
+std::cout << "ML : velocity computed" << std::endl;
     // Numerical dissipation!
     if (MPM.activeNumericalDissipation == true && MPM.step > 500) {
       vec2r newForceMP = numericalDissipation(MP[p].vel, tempForceMP);
       MP[p].vel = dt * newForceMP * MPinvMass;
     }
   }
+
+std::cout << "ML : numerical dissipation added" << std::endl;
   // 3b) ==== Calculate updated momentum in nodes
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -183,6 +195,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
+std::cout << "ML : momentum of nodes" << std::endl;
   // 3c) ==== Nodal velocities  (A)
 
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
@@ -192,6 +205,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       nodes[liveNodeNum[n]].vel.reset();
     }
   }
+std::cout << "ML : velocity of nodes" << std::endl;
 
   // 3d) ====Deformation gradient (C)
   MPM.updateTransformationGradient();
@@ -203,10 +217,12 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // }
   //
 
+std::cout << "ML : Deformation gradient computed" << std::endl;
   // 4) ==== Update strain and stress
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
   }
+std::cout << "ML : stress and strain updated" << std::endl;
 
   // 4a) ====Update Volume and density
   for (size_t p = 0; p < MP.size(); p++) {
@@ -215,6 +231,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].density /= (1 + volumetricdStrain);
   }
 
+std::cout << "ML : Volume and density updated " << std::endl;
   // 5) ==== Update positions
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -228,21 +245,25 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       }
     }
   }
+std::cout << "ML : positions updated " << std::endl;
 
   // ==== Update the corner positions of the MPs
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].updateCornersFromF();
   }
+std::cout << "ML : corners updated " << std::endl;
 
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
   if (MPM.splittingMore) MPM.adaptativeRefinementMore();
+std::cout << "ML : split passed " << std::endl;
 
   // ==== Execute the spies
   for (size_t s = 0; s < Spies.size(); ++s) {
     if (step % (Spies[s]->nstep) == 0) Spies[s]->exec();
     if (step % (Spies[s]->nrec) == 0) Spies[s]->record();
   }
+std::cout << "ML : spies done " << std::endl;
 
   // ==== Update time
   // t += dt;

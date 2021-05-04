@@ -163,19 +163,21 @@ void Loading::VelocityControl(mat9r &V) {
 
 // This loading can be usefull for multiscale modeling (FEMxDEM or MPMxDEM).
 void Loading::TransformationGradient(mat9r &h, mat9r &F, double duration) {
+ std::cout<<"entering Loading::TransformationGradient"<<std::endl;
   sprintf(StoredCommand, "TransformationGradient %g %g %g %g %g %g %g %g %g   %g %g %g %g %g %g %g %g %g   %g", h.xx,
           h.xy, h.xz, h.yx, h.yy, h.yz, h.zx, h.zy, h.zz, F.xx, F.xy, F.xz, F.yx, F.yy, F.yz, F.zx, F.zy, F.zz,
           duration);
   Drive.reset(VelocityDriven);
   Sig.reset();
-
+  std::cout<<"TG : reset done"<<std::endl;
   mat9r FmI = F;
   FmI.xx -= 1.0;
   FmI.yy -= 1.0;
   FmI.zz -= 1.0;
+  std::cout<<"TG : F defined "<<std::endl;
   v = (1.0 / duration) * (FmI * h);
-
-  ServoFunction = nullptr;
+  std::cout<<"TG : v defined "<<std::endl;
+  //ServoFunction = nullptr;
 }
 
 void Loading::LodeAnglePath(double pressure, double sigRate, double LodeAngle) {

@@ -1,6 +1,6 @@
 
 UNAME_S := $(shell uname -s)
-vpath %.hpp ../../common/
+#vpath %.hpp ../../common/
 ifeq ($(UNAME_S),Darwin) # ==========================================
 
 # The compiler to be used

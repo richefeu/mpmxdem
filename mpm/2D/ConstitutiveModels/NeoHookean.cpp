@@ -6,7 +6,7 @@
 #include <factory.hpp>
 static Registrar<ConstitutiveModel, NeoHookean> registrar("NeoHookean");
 
-NeoHookean::NeoHookean(double young, double poisson) : Young(young), Poisson(poisson) {}
+NeoHookean::NeoHookean(double young, double poisson) : Young(young), Poisson(poisson) {fileName=nullptr;}
 
 void NeoHookean::read(std::istream& is) { is >> Young >> Poisson; }
 

@@ -19,6 +19,8 @@ FiniteMohrCoulomb::FiniteMohrCoulomb(double young, double poisson, double fricti
   sinFrictionAngle = sin(FrictionAngle);
   sinDilatancyAngle = sin(DilatancyAngle);
   cosFrictionAngle = cos(FrictionAngle);
+   fileName=nullptr;
+
 }
 
 void FiniteMohrCoulomb::read(std::istream& is) {

@@ -18,6 +18,7 @@ MohrCoulomb::MohrCoulomb(double young, double poisson, double frictionAngle, dou
   sinFrictionAngle = sin(FrictionAngle);
   sinDilatancyAngle = sin(DilatancyAngle);
   cosFrictionAngle = cos(FrictionAngle);
+  fileName=nullptr;
 }
 
 void MohrCoulomb::read(std::istream& is) {

@@ -83,23 +83,24 @@ public:
 
   // Ctor
   PBC3Dbox();
+  PBC3Dbox(const PBC3Dbox & box);
 
   // Methods
-  void showBanner();              ///< Displays a banner about the code
-  void initOutputFiles();         ///< Opens output files that hold processed data (stress, fabric, etc.)
-  void setSample();               ///< Creates a sample by asking questions to the user
-  void velocityVerletStep();      ///< Makes a time increment with the velocity-Verlet scheme
-  void integrate();               ///< Simulation flow
-                                  ///< (iteratively make a time increment and check for udates or saving)
-  void accelerations();           ///< Computes accelerations (both for particles and the periodic-cell)
-  void computeForcesAndMoments(); ///< Computes forces and moments (and cell-stress)
+  void showBanner();                       ///< Displays a banner about the code
+  void initOutputFiles();                  ///< Opens output files that hold processed data (stress, fabric, etc.)
+  void setSample();                        ///< Creates a sample by asking questions to the user
+  void velocityVerletStep();               ///< Makes a time increment with the velocity-Verlet scheme
+  void integrate(const char *name="conf"); ///< Simulation flow
+                                           ///< (iteratively make a time increment and check for udates or saving)
+  void accelerations();                    ///< Computes accelerations (both for particles and the periodic-cell)
+  void computeForcesAndMoments();          ///< Computes forces and moments (and cell-stress)
   double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);
   ///< Used for interaction of type 'bondedStateDam'
 
   void printScreen(double elapsedTime);           ///< Prints usefull data on screen during computation
   void dataOutput();                              ///< Outputs usefull data during computation
   void updateNeighborList(double dmax);           ///< Updates the neighbor-list
-  void saveConf(int i);                           ///< Saves the current configuration in a file named confX, where X=i
+  void saveConf(int i,const char *name="conf");   ///< Saves the current configuration in a file named confX, where X=i
   void loadConf(const char *name);                ///< Loads a configuration from a file
   void clearMemory();                             ///< Clears the Particles and Interactions.
   void computeSampleData();                       ///< Computes a number of usefull data (Rmin, Rmax, Vsolid, etc.)

@@ -9,7 +9,7 @@ static Registrar<ConstitutiveModel, VonMisesElastoPlasticity> registrar("VonMise
 // ==== VonMisesElastoPlasticity =================================================
 
 VonMisesElastoPlasticity::VonMisesElastoPlasticity(double young, double poisson, double plasticYieldStress)
-    : Young(young), Poisson(poisson), PlasticYieldStress(plasticYieldStress) {}
+    : Young(young), Poisson(poisson), PlasticYieldStress(plasticYieldStress) {fileName=nullptr;}
 
 void VonMisesElastoPlasticity::read(std::istream& is) { is >> Young >> Poisson >> PlasticYieldStress; }
 

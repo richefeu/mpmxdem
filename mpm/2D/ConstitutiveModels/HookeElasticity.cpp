@@ -6,7 +6,9 @@
 #include <factory.hpp>
 static Registrar<ConstitutiveModel, HookeElasticity> registrar("HookeElasticity");
 
-HookeElasticity::HookeElasticity(double young, double poisson) : Young(young), Poisson(poisson) {}
+HookeElasticity::HookeElasticity(double young, double poisson) : Young(young), Poisson(poisson) 
+{fileName=nullptr;}
+
 
 void HookeElasticity::read(std::istream& is) { is >> Young >> Poisson; }
 

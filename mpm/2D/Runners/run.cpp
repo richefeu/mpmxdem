@@ -36,12 +36,13 @@ int main(int argc, char ** argv)
 		return 0;
 	}
 	else Simulation.read(argv[1]);
-
+    printf("Simultation::read done");
 	SimuChrono.start();
-
-	Simulation.init(argv[1],argv[2]);
+	Simulation.init(argv[1]);
+    printf ("Simulation::init done");
 
 	Simulation.save_vtk_grid();
+    printf ("Simulation::save_vtk_grid done");
 	Simulation.run();
 
 	SimuChrono.stop();

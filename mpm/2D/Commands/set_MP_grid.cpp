@@ -9,6 +9,7 @@ static Registrar<Command, set_MP_grid> registrar("set_MP_grid");
 void set_MP_grid::read(std::istream& is) { is >> groupNb >> modelName >> rho >> x0 >> y0 >> x1 >> y1 >> size; }
 
 void set_MP_grid::exec() {
+std::cout << "entering set_MP_grid::exec" << std::endl;
   if (box->Grid.lx / size > 3.0 || box->Grid.ly / size > 3.0) {
     std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio" << std::endl;
     exit(0);
@@ -58,7 +59,13 @@ void set_MP_grid::exec() {
   // }
 
   for (size_t p = 0; p < box->MP.size(); p++) {
-    box->MP[p].updateCornersFromF();
+    if(CM->fileName!=nullptr){
+      box->MP[p].PBC.loadConf(CM->fileName);
+      box->MP[p].PBC.initOutputFiles();
+      box->MP[p].PBC.updateNeighborList(box->MP[p].PBC.dVerlet);
+      box->MP[p].PBC.saveConf(p,"titi");
+    }
+   std::cout << "PBC3Dbox fully created" << std::endl;
     // TODO: not using this initialElement
     double invL[2];
     invL[0] = 1.0f / box->Grid.lx;

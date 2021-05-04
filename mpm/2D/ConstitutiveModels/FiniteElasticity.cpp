@@ -6,8 +6,8 @@
 #include <factory.hpp>
 static Registrar<ConstitutiveModel, FiniteElasticity> registrar("FiniteElasticity");
 
-FiniteElasticity::FiniteElasticity(double young, double poisson) : Young(young), Poisson(poisson) {}
-
+FiniteElasticity::FiniteElasticity(double young, double poisson) : Young(young), Poisson(poisson) 
+{fileName=nullptr;}
 void FiniteElasticity::read(std::istream& is) { is >> Young >> Poisson; }
 
 void FiniteElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {

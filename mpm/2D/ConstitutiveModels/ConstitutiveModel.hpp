@@ -7,7 +7,9 @@
 struct MPMbox;
 struct MaterialPoint;
 
+
 struct ConstitutiveModel {
+  const char * fileName;
   virtual ~ConstitutiveModel();
   virtual void read(std::istream& is) = 0;
   virtual void updateStrainAndStress(MPMbox& MPM, size_t p) = 0;

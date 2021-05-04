@@ -6,7 +6,7 @@
 
 #include "PBC3D.hpp"
 
-PBC3Dbox::PBC3Dbox() {
+PBC3Dbox::PBC3Dbox(): Load(),Particles(1),Interactions(1),Cell(),Sig(){
   // Some default values (actually, most of them will be (re-)set after)
   t = 0.0;
   tmax = 5.0;
@@ -38,7 +38,16 @@ PBC3Dbox::PBC3Dbox() {
   permamentGluer = 0;
   numericalDampingCoeff = 0.0;
   Kratio = 1.0;
+  nbBondsini=0;  ///< initial # of Bonds at start of Lagamine
+  porosityini=0; ///< initial porosity at start of Lagamine
+  tensfailure=0;
+  fricfailure=0;
+  dVerlet=1e-7; ///< Distance of Verlet
+  zetaMax=1;
+  enableSwitch=1;
 }
+
+PBC3Dbox::PBC3Dbox(const PBC3Dbox & box){}
 
 /// @brief Print a banner related with the current code
 void PBC3Dbox::showBanner() {
@@ -65,9 +74,9 @@ void PBC3Dbox::clearMemory() {
 
 /// @brief Save the current configuration
 /// @param[in] i File number. It will be named 'confx' where x is replaced by i
-void PBC3Dbox::saveConf(int i) {
+void PBC3Dbox::saveConf(int i,const char * name) {
   char fname[256];
-  sprintf(fname, "conf%d", i);
+  sprintf(fname, "%s%d", name,i);
   std::ofstream conf(fname);
 
   conf << "PBC3D 30-01-2019\n"; // format: progName version-date
@@ -128,6 +137,7 @@ void PBC3Dbox::saveConf(int i) {
 /// @brief Load the configuration
 /// @param[in]    name     Name of the file
 void PBC3Dbox::loadConf(const char *name) {
+std::cout << "PBC3Dbox loading " << name << std::endl;
   std::ifstream conf(name);
   if (!conf.is_open()) {
     std::cerr << "@PBC3Dbox, Cannot read " << name << std::endl;
@@ -801,19 +811,23 @@ void PBC3Dbox::printScreen(double elapsedTime) {
 }
 
 /// @brief The main loop of time-integration
-void PBC3Dbox::integrate() {
+void PBC3Dbox::integrate(const char * name) {
+std::cout<<"entering PBC3Dbox::integrate"<<std::endl;
   // (re)-compute some constants in case they were not yet set
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   accelerations();
+std::cout<<"integ : accelerations ok"<<std::endl;
   dataOutput();
+std::cout<<"integ : dataOutput ok"<<std::endl;
 
   char fname[256];
-  sprintf(fname, "conf%d", iconf);
+  sprintf(fname, "%s%d", name,iconf);
   if (!fileTool::fileExists(fname)) {
-    saveConf(iconf);
+    saveConf(iconf,name);
   }
 
+std::cout<<"integ : SaveConf ok"<<std::endl;
   double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
   while (t < tmax) {
     velocityVerletStep();
@@ -850,14 +864,19 @@ void PBC3Dbox::integrate() {
 
 /// @brief Save data in output files
 void PBC3Dbox::dataOutput() {
+std::cout<<"entering PBC3Dbox::dataOutput"<<std::endl;
+std::cout << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
   // Cell
   cellOut << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
+std::cout<<"dataOutput : cellOut used"<<std::endl;
 
   // Stress
   stressOut << t << ' ' << Sig << std::endl;
+std::cout<<"dataOutput : stressOut used"<<std::endl;
 
   // Strain
   strainOut << t << ' ' << Cell.strain << std::endl;
+std::cout<<"dataOutput : strainOut used"<<std::endl;
 
   // Resultant
   double Rmean, R0mean, fnMin, fnMean;
