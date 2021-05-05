@@ -352,8 +352,8 @@ void MPMbox::run() {
   step = 0;
   // for (step = 0 ; step <= nstep ; step++) {
   while (t < finalTime) {
-    // std::cout << "final Time: "<<finalTime << '\n';
-    // std::cout << "t: "<<t << '\n';
+    std::cout << "final Time: "<<finalTime << '\n';
+    std::cout << "t: "<<t << '\n';
     // checking cfl (should be improved but works for now)
     /*try {
       cflCondition();
@@ -386,6 +386,7 @@ void MPMbox::run() {
     t += dt;
     step++;
   }
+  std::cout << "MPMbox::run done" << '\n';
 }
 
 void MPMbox::checkNumericalDissipation() {

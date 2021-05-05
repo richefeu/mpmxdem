@@ -44,6 +44,7 @@ int main(int argc, char ** argv)
 	Simulation.save_vtk_grid();
     printf ("Simulation::save_vtk_grid done");
 	Simulation.run();
+    printf ("run finished");
 
 	SimuChrono.stop();
 
