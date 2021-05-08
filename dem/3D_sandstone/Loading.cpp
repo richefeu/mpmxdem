@@ -164,9 +164,7 @@ void Loading::VelocityControl(mat9r &V) {
 // This loading can be usefull for multiscale modeling (FEMxDEM or MPMxDEM).
 void Loading::TransformationGradient(mat9r &h, mat9r &F, double duration) {
  std::cout<<"entering Loading::TransformationGradient"<<std::endl;
-  sprintf(StoredCommand, "TransformationGradient %g %g %g %g %g %g %g %g %g   %g %g %g %g %g %g %g %g %g   %g", h.xx,
-          h.xy, h.xz, h.yx, h.yy, h.yz, h.zx, h.zy, h.zz, F.xx, F.xy, F.xz, F.yx, F.yy, F.yz, F.zx, F.zy, F.zz,
-          duration);
+  sprintf(StoredCommand, "TransformationGradient %g %g %g %g %g %g %g %g %g",F.xx, F.xy, F.xz, F.yx, F.yy, F.yz, F.zx, F.zy, F.zz);
   Drive.reset(VelocityDriven);
   Sig.reset();
   std::cout<<"TG : reset done"<<std::endl;
