@@ -55,7 +55,7 @@ vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP) {
   return forceMP;
 }
 
-// FIXME: THis boundaryCondition is deprecated. New class called BoundaryType
+// FIXME: THis boundaryCondition is deprecated. New class called BoundaryForceLaw
 // TODO: should be removed at some point
 // void OneStep::boundaryConditions(std::vector<MaterialPoint> &MP, std::vector<Obstacle*> &Obstacles,
 // 	DataTable dataTable, size_t id_kn, size_t id_kt, size_t id_en2, size_t id_mu, double dt) {

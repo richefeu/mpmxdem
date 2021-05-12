@@ -1,8 +1,9 @@
 #include "Polygon.hpp"
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
 
-#include <factory.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
+
+#include "factory.hpp"
 static Registrar<Obstacle, Polygon> registrar("Polygon");
 // UPDATE March 2018: It doesnt work with corners anymore.
 // The way we find the edge of the MP should prob be improved, although i think is not "that" speculative
@@ -34,7 +35,7 @@ void Polygon::read(std::istream& is) {
   }
 
   verticePos.clear();
-  rot *= Mth::pi / 180;  // convert to rad
+  rot *= Mth::pi / 180.0;  // convert to rad
   createPolygon(verticePos);
 }
 

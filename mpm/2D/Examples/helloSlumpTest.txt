@@ -11,7 +11,7 @@ parallelogramMP  1
 ShapeFunction BSpline
 
 #     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
-model MohrCoulomb    MC         1.0e7     0.42      0.5            5e5        0.01
+model MohrCoulomb    MC         1.0e7     0.42      0.01            5e0        0.01
 
 #               lx   ly   spacing
 new_set_grid    0.4  0.2  0.02
@@ -19,10 +19,10 @@ new_set_grid    0.4  0.2  0.02
 #            group   modelName     mass_density  x0     y0      x1     y1      size of boxes
 set_MP_grid  0       MC            2700.0        0.12   0.04    0.28   0.15    0.01
 
-BoundaryType KelvinVoigt 1
+BoundaryForceLaw frictionalViscoElastic 1
 
 #                group  x0     y0     x1     y1    driveMode
-Obstacle Line    1      0.02  0.04   0.38   0.04  freeze
+Obstacle Line    1      0.38  0.04   0.02   0.04  freeze
 
 #properties      parameter  groupMP   groupObst  value
 set              mu         0         1          0.2

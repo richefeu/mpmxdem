@@ -1,7 +1,7 @@
-#include "BoundaryType.hpp"
+#include "BoundaryForceLaw.hpp"
 
 // Ctor
-BoundaryType::BoundaryType() {}
+BoundaryForceLaw::BoundaryForceLaw() {}
 
 // Dtor
-BoundaryType::~BoundaryType() {}
+BoundaryForceLaw::~BoundaryForceLaw() {}

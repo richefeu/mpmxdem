@@ -1,7 +1,7 @@
 #ifndef OBSTACLE_HPP_DEEAEE92
 #define OBSTACLE_HPP_DEEAEE92
 
-#include <BoundaryType/BoundaryType.hpp>
+#include <BoundaryForceLaw/BoundaryForceLaw.hpp>
 #include <Core/Neighbor.hpp>
 #include <iostream>
 #include <vec2.hpp>
@@ -9,7 +9,7 @@
 
 struct MPMbox;
 struct MaterialPoint;
-struct BoundaryType;
+struct BoundaryForceLaw;
 
 struct Obstacle {
   int group;
@@ -28,7 +28,7 @@ struct Obstacle {
   double vrot;
   double arot;
   double mom;
-  BoundaryType* boundaryType;
+  BoundaryForceLaw* boundaryForceLaw;
 
   std::vector<Neighbor> Neighbors;
 

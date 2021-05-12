@@ -4,6 +4,7 @@
 #include "Obstacle.hpp"
 
 struct Polygon : public Obstacle {
+  
   double R;
   int nVertices;
   std::vector<vec2r> verticePos;

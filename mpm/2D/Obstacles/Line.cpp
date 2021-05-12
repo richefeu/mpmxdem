@@ -27,31 +27,15 @@ void Line::read(std::istream& is) {
 }
 
 int Line::touch(MaterialPoint& MP, double& dn) {
-  int Corner = -1;
-  vec2r c;
-
-  // Corner 0
-  c = MP.corner[0] - pos;
-  dn = c * n;
+  int Touch = -1;
+  vec2r c = MP.pos - pos;
+  double radiusMP = 0.5 * sqrt(MP.vol);
+  dn = c * n - radiusMP;
   if (dn < 0.0) {
     double proj = c * t;
-    if (proj >= 0.0 && proj <= len) Corner = 0;
+    if (proj >= 0.0 && proj <= len) Touch = 1;
   }
-
-  // Corners 1, 2 and 3
-  for (int r = 1; r < 4; r++) {
-    c = MP.corner[r] - pos;
-    double dst = c * n;
-    if (dst < dn) {
-      double proj = c * t;
-      if (proj >= 0.0 && proj <= len) {
-        Corner = r;
-        dn = dst;
-      }
-    }
-  }
-
-  return Corner;
+  return Touch;
 }
 
 void Line::getContactFrame(MaterialPoint&, vec2r& N, vec2r& T) {

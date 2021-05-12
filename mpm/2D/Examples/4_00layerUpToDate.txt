@@ -70,8 +70,8 @@ Obstacle Line    1      9.8    6.0    9.8      0.0   freeze
 Obstacle Line    1      0.2    0.0    0.2      6.0   freeze
 
 #              boundaryName     obstacleGroup
-BoundaryType   KelvinVoigt      1
-#BoundaryType IncrementalLinear 1
+BoundaryForceLaw   frictionalViscoElastic      1
+#BoundaryForceLaw frictionalNormalRestitution 1
 
 set_K0_stress 0.42  2700.
 

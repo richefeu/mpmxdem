@@ -132,9 +132,8 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
 
   // TODO: new: This assummes that every obstacle has a boundaryType associated
   for (size_t o = 0; o < Obstacles.size(); ++o) {
-    Obstacle* currentObstacle = Obstacles[o];
-    Obstacles[o]->boundaryType->calculateContactForces(MP, MPM.dataTable, currentObstacle, MPM.id_kn, MPM.id_kt,
-                                                       MPM.id_en2, MPM.id_mu, MPM.id_viscosity, MPM.dt);
+    //Obstacle* currentObstacle = Obstacles[o];
+    Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
 
   // Updating free boundary conditions

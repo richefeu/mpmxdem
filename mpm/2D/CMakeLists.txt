@@ -8,7 +8,7 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
 #set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++")
 
 file( GLOB core_object_files ${CMAKE_CURRENT_SOURCE_DIR}
-BoundaryType/*.cpp
+BoundaryForceLaw/*.cpp
 ConstitutiveModels/*.cpp
 OneStep/*.cpp
 Core/*.cpp

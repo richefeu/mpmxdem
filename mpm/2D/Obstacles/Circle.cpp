@@ -5,10 +5,7 @@
 #include <factory.hpp>
 static Registrar<Obstacle, Circle> registrar("Circle");
 
-// TODO: It should have the the contact as the square. Double check, not only if corners are inside the circle (it might
-// change some of the results)
 void Circle::read(std::istream& is) {
-  // std::string boundaryName;
   is >> group >> pos >> R;
   std::string driveMode;
   is >> driveMode;
@@ -31,42 +28,18 @@ void Circle::read(std::istream& is) {
 }
 
 int Circle::touch(MaterialPoint& MP, double& dn) {
-  /* //part for corners. removed (21/03/2018)
-  int Corner = -1;
-  vec2r c;
-  // Corner 0
-  c = MP.corner[0] - pos;
-  dn = norm(c) - R;
-  if (dn < 0.0) Corner = 0;
-
-  //there is (was) a bug here but apparently its not affecting the simulations. if e.g. dn = 3 and then dst < dn but
-  still positive (so no interpenetration) then youre assigning a corner anyways, which you shouldnt.
-  // Corners 1, 2 and 3
-  for (int r = 1 ; r < 4 ; r++) {
-          c = MP.corner[r] - pos;
-          double dst = norm(c) - R;
-          //~ if (dst < dn) {  //original line
-          if (dst < dn and dst < 0.0) {
-                  Corner = r;
-                  dn = dst;
-          }
-  }
-  return Corner;
-  */
-  int Corner = -1;
   vec2r c = MP.pos - pos;
-  double len = sqrt(MP.vol) / 2.0;
-  dn = norm(c) - R - len;
+  double radiusMP = 0.5 * sqrt(MP.vol);
+  dn = norm(c) - R - radiusMP;
   if (dn < 0.0)
     return 1;  // true;
   else
-    return Corner;
-  // else return false;
+    return -1;
 }
 
 void Circle::getContactFrame(MaterialPoint& MP, vec2r& N, vec2r& T) {
   vec2r N1 = MP.pos - pos;
-  N = N1.normalized();  // it was normalize before (27/03/2018)
+  N = N1.normalized();
   T.x = -N.y;
   T.y = N.x;
 }
@@ -121,7 +94,7 @@ int Circle::addVtkPoints(std::vector<vec2r>& coords) {
 
 bool Circle::MPisInside(MaterialPoint& MP) {
   vec2r l = MP.pos - pos;
-  double radiusMP = 0.5 * MP.vol;
+  double radiusMP = 0.5 * sqrt(MP.vol);
   double sumR = (R + radiusMP);
   return (norm2(l) < sumR * sumR);
 }

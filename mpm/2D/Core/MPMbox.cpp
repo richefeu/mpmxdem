@@ -1,5 +1,5 @@
 #include "MPMbox.hpp"
-#include <BoundaryType/BoundaryType.hpp>
+#include <BoundaryForceLaw/BoundaryForceLaw.hpp>
 #include <Commands/Command.hpp>
 #include <ConstitutiveModels/ConstitutiveModel.hpp>
 #include <Core/MaterialPoint.hpp>
@@ -185,15 +185,15 @@ void MPMbox::read(const char* name) {
       }
     }
 
-    else if (token == "BoundaryType") {
+    else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
       std::string boundaryName;
       int obstacleGroup;
       file >> boundaryName >> obstacleGroup;
-      BoundaryType* bType = Factory<BoundaryType>::Instance()->Create(boundaryName);
+      BoundaryForceLaw* bType = Factory<BoundaryForceLaw>::Instance()->Create(boundaryName);
       for (size_t o = 0; o < Obstacles.size(); o++) {
         if (Obstacles[o]->group == obstacleGroup) {
-          Obstacles[o]->boundaryType = bType;
+          Obstacles[o]->boundaryForceLaw = bType;
         }
       }
     }
