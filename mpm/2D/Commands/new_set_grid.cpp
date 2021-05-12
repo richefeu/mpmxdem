@@ -37,7 +37,6 @@ void new_set_grid::exec() {
       N.pos.y = j * spacing;
       counter++;
       box->nodes.push_back(N);
-      // std::cout<<N.pos<<std::endl;
     }
   }
 

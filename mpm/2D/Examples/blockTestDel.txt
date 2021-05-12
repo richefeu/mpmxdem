@@ -1,97 +1,54 @@
-# Plane strain (uncomment to set, default is plane stress)
-# planeStrain
-
 oneStepType ModifiedLagrangian
-
-#typeOfAnalysis (regular or trajectory)
-
 result_folder ./blockTestDel
-
-# Mass tolerance
 tolmass 1.e-6
-
-# Gravity    gx   gy
-gravity      0.0  -9.81
-
-# Number of steps to be done
-#nstep 200000
-
+gravity 0.0 -9.81
 finalTime 2
-
-# Period of storing (in number of steps)
-vtkPeriod 500
-
+vtkPeriod 1000
 proxPeriod 100
-
-# Time increment
 dt 0.00001
-
-# Current time
 t 0.0
-
-# MP display style
 parallelogramMP  1
-
-# shape function can be RegularQuadLinear or BSpline
 ShapeFunction BSpline
 
 # Materials
-#     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
-model MohrCoulomb    MC        1.0e7    0.42      0.5            5e5        0.01
+#      modelID        modelName  Young   Poisson   FrictionAngle  Cohesion   DilatancyAngle
+model  MohrCoulomb    MC         1.0e7   0.42      0.5            5e5        0.01
 
-#           Nx  Ny  grid-spacing
+#           Nx   Ny  grid-spacing
 set_grid    100  90  0.1 0.1
 
-#            group   modelName     mass_density(kg/m3)     x0     y0      x1     y1      size of boxes
-set_MP_grid  0       MC            2700.                   2.25    3.5     2.35    3.6     0.05
+#            group   modelName     mass_density   x0     y0      x1     y1      size of boxes
+set_MP_grid  0       MC            2700.          2.25   3.5     2.35   3.6     0.05
 
-#              line number,  line from   to,    xfixed   yfixed
-#set_BC_line     2                  0     100     0        1
+#                group  x0   y0   x1   y1    driveMode
+Obstacle Line    1      10   3.2  0.0  3.2   freeze
+Obstacle Line    1      9.8  6.0  9.8  0.0   freeze
+Obstacle Line    1      0.2  0.0  0.2  6.0   freeze
 
-#              column number,  line from   to,    xfixed   yfixed
-#set_BC_column  2                    0     100     1        0
-#              column number,  line from   to,    xfixed   yfixed
-#set_BC_column  98                    0     100     1        0
+#              type         group
+BoundaryType   KelvinVoigt  1
 
-#                 group xc   yc   R    driveMode  rho      vx   vy      vrot
-#Obstacle Circle   0     4.0 5.901   0.4  free       2700.0   3.0   -1.0  0
-#                   group   Nbvert  xc    yc     rotation  radius   driveMode  density   vx     vy   vrot
-#Obstacle Polygon   0       8       4.0   5.601  25        0.4      free       2700.0    3.0   -1.0  0
+#set_K0_stress  0.42 2700.
 
+#      parameter  groupMP   groupObst  value
+set    mu         0         0          0.2
+set    kn         0         0          1.0e7
+set    en2        0         0          1.0
+set    kt         0         0          1e7
+set    viscosity  0         0          8.9E-04
 
-#                group  x0   y0     x1     y1    driveMode
-Obstacle Line    1      10   3.2    0.0    3.2   freeze
-Obstacle Line    1      9.8    6.0    9.8      0.0   freeze
-Obstacle Line    1      0.2    0.0    0.2      6.0   freeze
-
-#             boundaryName     obstacleGroup
-BoundaryType KelvinVoigt 1
-#BoundaryType IncrementalLinear 1
-
-set_K0_stress 0.42  2700.
-
-
-#properties      parameter  groupMP   groupObst  value
-set              mu         0         0          0.2
-set              kn         0         0          1.0e7
-set              en2        0         0          1.0
-set              kt         0         0          1e7
-set              viscosity  0         0          8.9E-04
-
-#properties      parameter  groupMP   groupObst  value
-set              mu         0         1          0.2
-set              kn         0         1          1.0e7
-set              en2        0         1          1.0
-set              kt         0         1          1e7
-set              viscosity  0         1          8.9E1
-
+#      parameter  groupMP   groupObst  value
+set    mu         0         1          0.2
+set    kn         0         1          1.0e7
+set    en2        0         1          1.0
+set    kt         0         1          1e7
+set    viscosity  0         1          8.9e1
 
 # Adaptative refinement
 splitting 	0
-splitCriterionValue 4.0               0                   3.0
+splitCriterionValue 4.0  0  3.0
 
 #NumericalDissipation 0.1 0.5
-
 
 VtkOutput plastic
 VtkOutput smoothed_velocity

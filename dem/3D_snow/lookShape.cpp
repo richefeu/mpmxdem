@@ -8,7 +8,7 @@ void printHelp() {
 
   glColor4f(1.0f, 1.0f, 1.0f, 0.6f);
   glBegin(GL_QUADS);
-  int nbLines = 16;  // update this value when a line is added
+  int nbLines = 9;  // update this value when a line is added
   int by = height - nbLines * 15 - 3;
   glVertex2i(0, height);
   glVertex2i(width, height);
@@ -22,24 +22,13 @@ void printHelp() {
 #define _nextLine_ (hline += dhline)
   glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[A][a]   Tune alpha (transparency)");
   glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[b]      Background (color gradient) on/off");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_,
-                "[c]      Compute mass properties of the current shape (only "
-                "if preCompDone = n)");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_,
-                "[C]      Compute mass properties of ALL shapes (only if "
-                "preCompDone = n)");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[d]      delete duplicated edges in all shapes");
+  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[c]      Compute mass properties of the current shape");
+  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[C]      Compute mass properties of ALL shapes");
   glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[e]      print extents of the current shape");
   glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[h]      Show this help");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[K][k]   Tune the level of displayed OBB-tree");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[L][l]   Tune OBB-tree level of the current shape");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[N][n]   Tune number of Monte-Carlo steps");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[p]      Export as particles (Rockable sample)");
   glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[q]      Quit");
   glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[s]      Save the shape library");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[t]      Compute the OBB-tree of the current shape");
   glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[+][-]   Navigate through the shapes");
-  glText::print(GLUT_BITMAP_8_BY_13, 15, _nextLine_, "[*]      reset preCompDone to 'n'");
 #undef _nextLine_
 
   switch2D::back();
@@ -83,47 +72,15 @@ void keyboard(unsigned char Key, int x, int y) {
       show_help = 1 - show_help;
       break;
 
-      // case 'K':
-      //   if (maxOBBLevel < Shapes[ishape].OBBtreeLevel) {
-      //     maxOBBLevel += 1;
-      //   }
-      //   break;
-      // case 'k':
-      //   if (maxOBBLevel > 0) {
-      //     maxOBBLevel -= 1;
-      //   }
-      //   break;
-
-      // case 'L':
-      //   if (Shapes[ishape].OBBtreeLevel < 50) {
-      //     Shapes[ishape].OBBtreeLevel += 1;
-      //   }
-      //   break;
-      // case 'l':
-      //   if (Shapes[ishape].OBBtreeLevel > 0) {
-      //     Shapes[ishape].OBBtreeLevel -= 1;
-      //   }
-      //   break;
-
-      // case 'N':  // The max is 10,000,000
-      //   if (Shapes[ishape].MCnstep < 100000000) {
-      //     Shapes[ishape].MCnstep *= 10;
-      //   }
-      //   break;
-      // case 'n':
-      //   if (Shapes[ishape].MCnstep > 1000) {
-      //     Shapes[ishape].MCnstep = (size_t)floor(Shapes[ishape].MCnstep * 0.1);
-      //   }
-      //   break;
-
-      // case 'p':
-      //   exportSample();
-      //   break;
-
     case 'f': {
       Shapes[ishape].fitObb();
     } break;
 
+
+    case 'P': {
+      prepro("clumps.txt");
+    } break;
+    
     case 'q':
       exit(0);
       break;
@@ -132,27 +89,16 @@ void keyboard(unsigned char Key, int x, int y) {
       saveShapeLib(shapeFileName.c_str());
       break;
 
-      // case 't': {
-      //   maxOBBLevel = Shapes[ishape].OBBtreeLevel;
-      //   Shapes[ishape].buildOBBtree();
-      // } break;
-
     case '-': {
       if (ishape > 0) ishape--;
-      // if (Shapes[ishape].preCompDone == 'n') Shapes[ishape].fitObb();
       fit_view();
     } break;
 
     case '+': {
       ishape++;
       if (ishape >= Shapes.size()) ishape = Shapes.size() - 1;
-      // if (Shapes[ishape].preCompDone == 'n') Shapes[ishape].fitObb();
       fit_view();
     } break;
-
-      // case '*': {
-      //      if (Shapes[ishape].preCompDone == 'y') Shapes[ishape].preCompDone = 'n';
-      //    } break;
   };
 
   glutPostRedisplay();
@@ -237,20 +183,8 @@ void drawInfo() {
   glColor3f(1.0f, 0.388f, 0.278f);  // dark-orange
 
   glText::print(GLUT_BITMAP_9_BY_15, 10, 10, "Shape %lu/%lu", ishape + 1, Shapes.size());
-  //  glText::print(GLUT_BITMAP_9_BY_15, 10, 25, "Radius = %g, OBBtreeLevel = %d, displayed level = %d",
-  //                Shapes[ishape].radius, Shapes[ishape].OBBtreeLevel, maxOBBLevel);
-  //  glText::print(GLUT_BITMAP_9_BY_15, 10, 40, "nb vertex = %lu, nb edge = %lu, nb face = %lu",
-  //                Shapes[ishape].vertex.size(), Shapes[ishape].edge.size(), Shapes[ishape].face.size());
-  //  glText::print(GLUT_BITMAP_9_BY_15, 10, 55, "preCompDone %c", Shapes[ishape].preCompDone);
-  //
-  //  if (Shapes[ishape].preCompDone == 'y') glColor3f(0.0f, 1.0f, 0.0f);  // green
-  //
-  //  glText::print(GLUT_BITMAP_9_BY_15, 10, 70, "MCnstep = %lu, Volume = %g", Shapes[ishape].MCnstep,
-  //                Shapes[ishape].volume);
-  //  std::string v = "Solid";
-  //  if (Shapes[ishape].isSurface) v = "Surface";
-
-  glText::print(GLUT_BITMAP_9_BY_15, 10, 85, "I/m %g %g %g", Shapes[ishape].I_m[0], Shapes[ishape].I_m[1],
+  glText::print(GLUT_BITMAP_9_BY_15, 10, 25, "nb spheres = %lu", Shapes[ishape].subSpheres.size());
+  glText::print(GLUT_BITMAP_9_BY_15, 10, 40, "I/m %g %g %g", Shapes[ishape].I_m[0], Shapes[ishape].I_m[1],
                 Shapes[ishape].I_m[2]);
 
   switch2D::back();
@@ -407,6 +341,22 @@ void saveShapeLib(const char* fileName) {
 
   for (size_t s = 0; s < Shapes.size(); s++) {
     Shapes[s].writeShape(os);
+  }
+}
+
+void prepro(const char* fileName) {
+
+  for (size_t i = 0; i < Shapes.size(); i++) {
+    std::cout << "Shape " << i << "/" << Shapes.size() << '\n';
+    Shapes[i].massProperties();
+  }
+
+  saveShapeLib("shapes.txt");
+  
+  std::ofstream os(fileName);
+  os << "Particles " << Shapes.size() << '\n';
+  for (size_t i = 0; i < Shapes.size(); i++) {
+    os << Shapes[i].origPos/0.005 << "  0 0 0  0 0 0  " << Shapes[i].Q << "  0 0 0  0 0 0\n";
   }
 }
 

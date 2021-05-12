@@ -1,5 +1,5 @@
-#ifndef SET_PROPERTIES_HPP_B279D594
-#define SET_PROPERTIES_HPP_B279D594
+#ifndef SET_PROPERTIES_HPP
+#define SET_PROPERTIES_HPP
 
 #include "Command.hpp"
 
@@ -12,4 +12,4 @@ struct set_properties : public Command {
   double en2, mu;
 };
 
-#endif /* end of include guard: SET_PROPERTIES_HPP_B279D594 */
+#endif /* end of include guard: SET_PROPERTIES_HPP */

@@ -6,7 +6,9 @@
 #include <factory.hpp>
 static Registrar<ConstitutiveModel, FiniteElasticity> registrar("FiniteElasticity");
 
-FiniteElasticity::FiniteElasticity(double young, double poisson) : Young(young), Poisson(poisson) {}
+FiniteElasticity::FiniteElasticity(double young, double poisson) : Young(young), Poisson(poisson) {
+  initFileName = "none";
+}
 
 void FiniteElasticity::read(std::istream& is) { is >> Young >> Poisson; }
 

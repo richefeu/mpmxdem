@@ -59,5 +59,6 @@ void adjust_clipping_plans();
 void fit_view();
 int readShapeLib(const char* fileName);
 void saveShapeLib(const char* fileName);
+void prepro(const char* fileName);
 
 #endif /* end of include guard: LOOKSHAPE_HPP */

@@ -149,7 +149,10 @@ void Loading::SimpleShearXY(double pressure, double gammaDot) {
   v.yz = v.zy = 0.0;
   v.xy = 0.0; // will be driven by the servoFunction
 
-  ServoFunction = [gammaDot](PBC3Dbox &box) -> void { box.Load.v.xy = gammaDot * box.Cell.h.yy; };
+  ServoFunction = [gammaDot](PBC3Dbox &box) -> void { 
+    // FIXME: voir avec Gael une façon de faire plus précise
+    box.Load.v.xy = gammaDot * box.Cell.h.yy; 
+  };
 }
 
 void Loading::VelocityControl(mat9r &V) {

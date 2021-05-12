@@ -1,10 +1,10 @@
 #ifndef MATERIALPOINT_HPP
 #define MATERIALPOINT_HPP
 
+#include <PBC3D.hpp>
 #include <mat4.hpp>
 #include <vec2.hpp>
 #include <vector>
-#include <PBC3D.hpp>
 
 struct ConstitutiveModel;
 
@@ -19,8 +19,8 @@ struct MaterialPoint {
   vec2r pos;         // Position
   vec2r vel;         // Raw velocity (not smoothed)
   double securDist;  // Security distance for contact detection (it is updated as a function of MP velocity)
-  vec2r f;  // Force
-  vec2r q;  // Momentum (mass times velocity)
+  vec2r f;           // Force
+  vec2r q;           // Momentum (mass times velocity)
 
   mat4 strain;         // Total strain
   mat4 plasticStrain;  // Plastic Strain

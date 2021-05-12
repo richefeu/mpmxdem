@@ -66,8 +66,7 @@ void Particle::fitObb() {
   vec3r mu;
   mat9r C;
 
-  // loop over the points to find the mean point
-  // location
+  // loop over the points to find the mean point location
   for (size_t i = 0; i < subSpheres.size(); i++) {
     mu += subSpheres[i].localPos;
   }
@@ -79,8 +78,6 @@ void Particle::fitObb() {
   // portion since the matrix is symmetric
   double cxx = 0.0, cxy = 0.0, cxz = 0.0, cyy = 0.0, cyz = 0.0, czz = 0.0;
   for (size_t i = 0; i < subSpheres.size(); i++) {
-    // size_t i = vertexID[id];
-
     vec3r p = subSpheres[i].localPos;
     cxx += p.x * p.x - mu.x * mu.x;
     cxy += p.x * p.y - mu.x * mu.y;
@@ -119,13 +116,14 @@ void Particle::fitObb() {
   vec3r minim(1e20, 1e20, 1e20), maxim(-1e20, -1e20, -1e20);
   for (size_t i = 0; i < subSpheres.size(); i++) {
     // size_t i = vertexID[id];
+    double ri = subSpheres[i].radius;
     vec3r p_prime(r * subSpheres[i].localPos, u * subSpheres[i].localPos, f * subSpheres[i].localPos);
-    if (minim.x > p_prime.x) minim.x = p_prime.x;
-    if (minim.y > p_prime.y) minim.y = p_prime.y;
-    if (minim.z > p_prime.z) minim.z = p_prime.z;
-    if (maxim.x < p_prime.x) maxim.x = p_prime.x;
-    if (maxim.y < p_prime.y) maxim.y = p_prime.y;
-    if (maxim.z < p_prime.z) maxim.z = p_prime.z;
+    if (minim.x > p_prime.x - ri) minim.x = p_prime.x - ri;
+    if (minim.y > p_prime.y - ri) minim.y = p_prime.y - ri;
+    if (minim.z > p_prime.z - ri) minim.z = p_prime.z - ri;
+    if (maxim.x < p_prime.x + ri) maxim.x = p_prime.x + ri;
+    if (maxim.y < p_prime.y + ri) maxim.y = p_prime.y + ri;
+    if (maxim.z < p_prime.z + ri) maxim.z = p_prime.z + ri;
   }
 
   // set the center of the OBB to be the average of the
@@ -136,18 +134,6 @@ void Particle::fitObb() {
   obb.e[1] = u;
   obb.e[2] = f;
   obb.extent = 0.5 * (maxim - minim);
-
-  double rmax = subSpheres[0].radius;
-  for (size_t i = 1; i < subSpheres.size(); i++) {
-    if (subSpheres[i].radius > rmax) rmax = subSpheres[i].radius;
-  }
-  obb.enlarge(rmax);  // Add the Minskowski radius ***** BOF !
-  
-  //il faudrait chercher dans chaque direction e1, e2 et e3 le bon extent, puis ajuster le centre et l'extent.
-  // ***********
-  // ***********
-  // ***********
-  
 }
 
 // It says wether a point in inside a clump of spheres
@@ -254,7 +240,6 @@ void Particle::massProperties() {
 
   origPos = OG;
   Q = Qtmp;
-  
 
   quat Qinv = Qtmp.get_conjugated();
   for (size_t i = 0; i < subSpheres.size(); ++i) {

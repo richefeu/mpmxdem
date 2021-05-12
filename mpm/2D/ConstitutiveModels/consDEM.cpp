@@ -53,5 +53,5 @@ void consDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
 }
 
 double consDEM::getYoung() {return 0;}
-void consDEM::read(std::istream& is) {}
+void consDEM::read(std::istream& /*is*/) {}
 

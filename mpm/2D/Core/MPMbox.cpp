@@ -272,29 +272,31 @@ void MPMbox::setDefaultVtkOutputs() {
   }
 }
 
-void MPMbox::init(const char* name,const char* dconf) {
+void MPMbox::init(/*const char* name, const char* dconf*/) {
   // If the result folder does not exist, it is created
   fileTool::create_folder(result_folder);
-  //PBC3Dbox  box=PBC3Dbox();
-  //box.loadConf(dconf);
+  // PBC3Dbox  box=PBC3Dbox();
+  // box.loadConf(dconf);
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_pos = MP[p].pos;
-    PBC.push_back(PBC3Dbox()); 
-    PBC[p].loadConf(dconf);
-	V0.reset(0);
-    PBC[p].Load.VelocityControl(V0);
-    PBC[p].enableSwitch = 1;
-    PBC[p].interVerlet =dt/4.0;
-    PBC[p].interOut =2*dt;
-    PBC[p].interConf =2*dt;
+    // PBC.push_back(PBC3Dbox());
+    // PBC[p].loadConf(dconf);
+    // V0.reset(0);
+    // PBC[p].Load.VelocityControl(V0);
+    // PBC[p].enableSwitch = 1;
+    // PBC[p].interVerlet = dt / 4.0;
+    // PBC[p].interOut = 2 * dt;
+    // PBC[p].interConf = 2 * dt;
   }
 
   // copying input file to results folder
+  /*
   std::ifstream src(name, std::ios::binary);
   char newName[256];
   sprintf(newName, "%s/INPUTFILE.sim", result_folder.c_str());
   std::ofstream dst(newName, std::ios::binary);
   dst << src.rdbuf();
+  */
 
   /*
   //good way to set initial vol but bugs the boundary condition when element (cell) is not full
@@ -343,7 +345,7 @@ void MPMbox::init(const char* name,const char* dconf) {
 }
 
 void MPMbox::run() {
-  // ****Presimulation checks ****
+  // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
   // *****************************
@@ -357,7 +359,7 @@ void MPMbox::run() {
     try {
       cflCondition();
     } catch (char const* e) {
-      std::cout << "Error testing cfl: " << e << std::endl;
+      std::cerr << "Error in function cflCondition: " << e << std::endl;
     }
 
     if (step % vtkPeriod == 0) {
@@ -381,22 +383,22 @@ void MPMbox::run() {
     for (size_t s = 0; s < Spies.size(); ++s) {
       Spies[s]->end();  // normally there is nothing implemented
     }
-    // std::cout << t << '\n';
     t += dt;
     step++;
   }
 }
 
+// This function deactivate the numerical dissipation if all MP-velocities are less than a prescribed value.
 void MPMbox::checkNumericalDissipation() {
   // we check the velocity of MPs and if its less than a limit we set activeNumericalDissipation to false
   for (size_t p = 0; p < MP.size(); p++) {
-    if (norm(MP[p].vel) > 5E-3) {
+    if (norm(MP[p].vel) > 5e-3) {
       return;
     }
   }
   // if we come here it means vels were small enough
   activeNumericalDissipation = false;
-  std::cout << "*************Setting activeNumericalDissipation to false**********" << '\n';
+  std::cout << "activeNumericalDissipation is set to 'false'\n";
 }
 
 void MPMbox::checkProximity() {
@@ -429,8 +431,8 @@ void MPMbox::cflCondition() {
   double YoungMax = negInf;
   double rhoMin = inf;
   double knMax = negInf;
-  double massMin =
-      inf;  // FIXME: Mass is recalculated. this changes every timestep (for now we'll only check at the beginning)
+  double massMin = inf;
+  // FIXME: Mass is recalculated. this changes every timestep (for now we'll only check at the beginning)
   double velMax = negInf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;
@@ -483,7 +485,7 @@ void MPMbox::cflCondition() {
   }
 
   if (dt > criticalDt / 9) {
-    std::cout << "\n@MPMbox::cflCondition, The timestep is too large!\n";
+    std::cout << "\n@MPMbox::cflCondition, timestep seems too large!\n";
     dt = criticalDt / 11.0;
     std::cout << "--> Adjusting to: " << dt << std::endl;
     std::cout << "dt_crit/dt (MPM): " << crit_dt1 / dt << "\ndt_crit/dt  (DEM): " << crit_dt2 / dt
@@ -491,11 +493,11 @@ void MPMbox::cflCondition() {
   }
 }
 
-// ===============================
-//  Functions called in OneStep!!!
-// ===============================
+// =================================================
+//  Functions called by the 'OneStep'-type functions
+// =================================================
 
-// Node velocities (vel = q/m) need to be already updated
+// Node velocities (vel = q/m) need to be already updated after calling this function
 void MPMbox::updateTransformationGradient() {
   int* I;
   for (size_t p = 0; p < MP.size(); p++) {
@@ -676,6 +678,7 @@ void MPMbox::adaptativeRefinementMore()  /// PENDING DEVEL!!!!!!! (DO NOT USE)
   }    // for
 }
 
+// VR: what was the purpose of this function (???)
 void MPMbox::weightIncrement() {
   /*
   int numberStepsforIncrement = 100;  //just for testing
@@ -687,7 +690,6 @@ void MPMbox::weightIncrement() {
                   MP[p].mass /= numberStepsforIncrement;
           }
   }
-
 
   else if (step < numberStepsforIncrement) {
           for (size_t p = 0; p < MP.size(); p++) {

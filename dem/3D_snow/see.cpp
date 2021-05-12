@@ -749,7 +749,7 @@ void drawTube(vec3r& orig, vec3r& arrow, double diam) {
 }
 
 void drawParticles() {
-  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
+  if (mouse_mode != NOTHING && box.Particles.size() > 100) return;
 	
 	//std::cout << "box.Particles.size() = " << box.Particles.size() << '\n';
 	

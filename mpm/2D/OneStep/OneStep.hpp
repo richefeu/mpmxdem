@@ -1,13 +1,14 @@
-#ifndef ONESTEP_HPP_64744727
-#define ONESTEP_HPP_64744727
+#ifndef ONESTEP_HPP
+#define ONESTEP_HPP
+
+#include <fstream>
 
 #include <Core/MaterialPoint.hpp>
 #include <DataTable.hpp>
 #include <Obstacles/Obstacle.hpp>
-#include <fstream>
 
 struct MPMbox;
-// struct MaterialPoint;
+
 struct OneStep {
   MPMbox* box;
 
@@ -24,4 +25,4 @@ struct OneStep {
   virtual ~OneStep();  // Dtor
 };
 
-#endif /* end of include guard: ONESTEP_HPP_64744727 */
+#endif /* end of include guard: ONESTEP_HPP */

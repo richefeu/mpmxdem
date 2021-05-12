@@ -18,15 +18,17 @@
 
 #include <stdlib.h>
 
-#include <DataTable.hpp>
-#include <Mth.hpp>
-#include <factory.hpp>
-#include <fileTool.hpp>
-#include <mat4.hpp>
-#include <message.hpp>
-#include <vec2.hpp>
-#include <PBC3D.hpp>
+// Headers in common
+#include "DataTable.hpp"
+#include "Mth.hpp"
+#include "PBC3D.hpp"
+#include "factory.hpp"
+#include "fileTool.hpp"
+#include "mat4.hpp"
+#include "message.hpp"
+#include "vec2.hpp"
 
+// Headers that are part of MPMbox
 #include "Element.hpp"
 #include "Grid.hpp"
 #include "Neighbor.hpp"
@@ -47,7 +49,7 @@ struct MPMbox {
   std::vector<int> liveNodeNum;   // list of node numbers being used during each time step
   std::vector<element> Elem;      // Quad-elements of the grid
   std::vector<MaterialPoint> MP;  // Material Points
-  std::vector<PBC3Dbox> PBC; //DEM simulation containers
+  std::vector<PBC3Dbox> PBC;      // DEM simulation containers
 
   std::ofstream logFile;
   std::ofstream logFile2;
@@ -110,7 +112,7 @@ struct MPMbox {
   void save_vtk_obst(const char* base, int num);
   void save_vtk_surface();
   void save_vtk(const char* base, int num);
-  void init(const char* name,const char* dconf);
+  void init(/*const char* name, const char* dconf*/);
   void MPinGridCheck();
   void cflCondition();
   void run();

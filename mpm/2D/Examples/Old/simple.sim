@@ -12,7 +12,7 @@ tolmass 1.e-8
 gravity      0.0  -9.81
 
 # Number of steps to be done
-nstep 60000
+finalTime 1.
 
 # Period of storing (in number of steps)
 vtkPeriod 300

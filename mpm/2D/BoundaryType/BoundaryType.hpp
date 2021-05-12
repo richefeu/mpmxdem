@@ -11,6 +11,7 @@
 struct MPMbox;
 struct MaterialPoint;
 struct Obstacle;
+
 struct BoundaryType {
   virtual void calculateContactForces(std::vector<MaterialPoint>& MP, DataTable dataTable, Obstacle* currentObstacle,
                                       size_t id_kn, size_t id_kt, size_t id_en2, size_t id_mu, size_t viscosity,
