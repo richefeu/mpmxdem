@@ -17,13 +17,13 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
     double dn;
     int contact = MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
     // if it returns -1 there is no contact, else it returns a positive number
-    
+
     if (contact >= 0) {  // Check if there is contact
       g1 = (size_t)(MPM.MP[pn].groupNb);
       g2 = MPM.Obstacles[o]->group;
       kn = MPM.dataTable.get(MPM.id_kn, g1, g2);
       kt = MPM.dataTable.get(MPM.id_kt, g1, g2);
-      //en2 = MPM.dataTable.get(MPM.id_en2, g1, g2);
+      // en2 = MPM.dataTable.get(MPM.id_en2, g1, g2);
       mu = MPM.dataTable.get(MPM.id_mu, g1, g2);
       viscosity = MPM.dataTable.get(MPM.id_viscosity, g1, g2);
 
@@ -32,15 +32,10 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 
       // === Normal force
       if (dn < 0.0) {  // overlapping
-        // in all cases
         // TODO: take into account the velocity of the obstacle (velobst - velmp or viceversa)
         double normalVel = MPM.MP[pn].vel * N;
-        // currentObstacle->Neighbors[nn].fn = -kn * dn + (-viscosity) * dn/dt;
-        double visc = 2 * sqrt(MPM.MP[pn].mass * kn);
-        // std::cout << "visc: "<<visc << '\n';
-        // currentObstacle->Neighbors[nn].fn = -kn * dn - viscosity * normalVel;
+        double visc = 2.0 * sqrt(MPM.MP[pn].mass * kn);
         MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn - visc * normalVel;
-        // std::cout << "regular: "<< -kn * dn <<"  dashpot: "<< currentObstacle->Neighbors[nn].fn<< '\n';
       }
 
       MPM.Obstacles[o]->Neighbors[nn].dn = dn;
@@ -60,9 +55,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 
       // === Resultant force
       vec2r f = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
-      MPM.MP[pn].contactf.x = f.x * -1;  // just to show the contact forces in the vtk
-      MPM.MP[pn].contactf.y = f.y * -1;
-      // std::cout<<f<<std::endl;
+      MPM.MP[pn].contactf = -f;  // useful for display
       MPM.MP[pn].f += f;
       MPM.Obstacles[o]->force -= f;
 
