@@ -1,13 +1,13 @@
 #include "MohrCoulomb.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<ConstitutiveModel, MohrCoulomb> registrar("MohrCoulomb");
 
 // ==================================================================================
-//  2D version of Mohr-Coulomb model
+//  2D version of Mohr-Coulomb model (elasto-plastic without hardening)
 //   - plane strain
 //   - take care of the apex-area
 //   - DO NOT apply correction on the displacement in case of return to the apex-area
@@ -82,8 +82,8 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
     if (s < apex) {  // okay, we can iterate
       int iter = 0;
-      while (iter < 50 and yieldF > 1e-10) {  // Actually a single iteration should be okay	HERE WE HAD || INSTEAD
-                                              // OF && AND WAS A SOURCE OF ISSUES
+      while (iter < 50 && yieldF > 1e-10) {  // Actually a single iteration should be okay	HERE WE HAD || INSTEAD
+                                             // OF && AND WAS A SOURCE OF ISSUES
 
         iter++;
 
@@ -109,9 +109,6 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
         deltaPlasticStrain.yx = deltaPlasticStrain.xy;
 
         MPM.MP[p].plasticStrain += deltaPlasticStrain;  // FIXME: INCREMENTED AT EACH ITERATION?
-
-        // Updating total strain for later use
-        // MPM.MP[p].elasticStrain = MPM.MP[p].strain - deltaPlasticStrain; /// ??delta??
 
         // Correcting state of stress
         mat4 delta_sigma_corrector;

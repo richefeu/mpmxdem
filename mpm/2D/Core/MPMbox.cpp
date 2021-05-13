@@ -39,7 +39,7 @@ MPMbox::MPMbox() {
   id_kt = dataTable.add("kt");
   id_en2 = dataTable.add("en2");
   id_mu = dataTable.add("mu");
-  id_viscosity = dataTable.add("viscosity");
+  id_viscRate = dataTable.add("viscRate");
 }
 
 MPMbox::~MPMbox() {

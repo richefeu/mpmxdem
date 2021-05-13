@@ -1,16 +1,16 @@
 #include "ModifiedLagrangian.hpp"
 
-#include <ConstitutiveModels/ConstitutiveModel.hpp>
-#include <Core/Element.hpp>
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
-#include <Core/Node.hpp>
-#include <Obstacles/Obstacle.hpp>
-#include <ShapeFunctions/ShapeFunction.hpp>
-#include <Spies/Spy.hpp>
-#include <../../dem/3D_sandstone/PBC3D.hpp>
+#include "ConstitutiveModels/ConstitutiveModel.hpp"
+#include "Core/Element.hpp"
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
+#include "Core/Node.hpp"
+#include "Obstacles/Obstacle.hpp"
+#include "ShapeFunctions/ShapeFunction.hpp"
+#include "Spies/Spy.hpp"
+#include "../../dem/3D_sandstone/PBC3D.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
 
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
@@ -69,8 +69,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   liveNodeNum.clear();
   std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
 
-  // weightIncrement();  // gradually increments the weight, given a number of time steps
-
   // ==== Move the rigid obstacles according to their mode of driving
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM1(Obstacles[o], dt, MPM.activeNumericalDissipation);
@@ -114,14 +112,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // 2b) ==== Boundary Conditions
-  // OLD BC. Now using boundaryType
-  // OneStep::boundaryConditions(MP, Obstacles, MPM.dataTable, MPM.id_kn,
-  // MPM.id_kt, MPM.id_en2, MPM.id_mu, MPM.dt);
-
-  // TODO: new: This assummes that every obstacle has a boundaryType associated
+  // FIXME: This assummes that every obstacle has a boundaryType associated
   for (size_t o = 0; o < Obstacles.size(); ++o) {
-    //Obstacle* currentObstacle = Obstacles[o];
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
   // Updating free boundary conditions
@@ -194,13 +186,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // 3d) ====Deformation gradient (C)
   MPM.updateTransformationGradient();
-  //
-  // for (size_t p = 0; p < MP.size(); p++) {
-  //
-  // 	MP[p].vol = MP[p].F.det() * MP[p].vol0;
-  //
-  // }
-  //
 
   // 4) ==== Update strain and stress
   for (size_t p = 0; p < MP.size(); p++) {
@@ -243,7 +228,5 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     if (step % (Spies[s]->nrec) == 0) Spies[s]->record();
   }
 
-  // ==== Update time
-  // t += dt;
   return 0;
 }

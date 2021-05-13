@@ -1,5 +1,5 @@
-#ifndef CIRCLE_HPP_C1EB5D8D
-#define CIRCLE_HPP_C1EB5D8D
+#ifndef CIRCLE_HPP
+#define CIRCLE_HPP
 
 #include "Obstacle.hpp"
 
@@ -14,4 +14,4 @@ struct Circle : public Obstacle {
   virtual bool MPisInside(MaterialPoint& MP);
 };
 
-#endif /* end of include guard: CIRCLE_HPP_C1EB5D8D */
+#endif /* end of include guard: CIRCLE_HPP */

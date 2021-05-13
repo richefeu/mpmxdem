@@ -1,9 +1,9 @@
 #include "VonMisesElastoPlasticity.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<ConstitutiveModel, VonMisesElastoPlasticity> registrar("VonMisesElastoPlasticity");
 
 // ==== VonMisesElastoPlasticity =================================================
@@ -21,8 +21,10 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   for (int r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {
       vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
-    } else
+    } else {
       continue;
+    }
+      
     dstrain.xx += (vn.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy += 0.5 * (vn.x * MPM.MP[p].gradN[r].y + vn.y * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.yy += (vn.y * MPM.MP[p].gradN[r].y) * MPM.dt;
@@ -31,6 +33,7 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   // Update strain
   MPM.MP[p].strain += dstrain;
+  MPM.MP[p].deltaStrain = dstrain;
 
   int N = 1;
 

@@ -81,14 +81,14 @@ set              mu         0         0          0.2
 set              kn         0         0          1.0e7
 set              en2        0         0          1.0
 set              kt         0         0          1e7
-set              viscosity  0         0          1
+set              viscRate  0         0          1
 
 #properties      parameter  groupMP   groupObst  value
 set              mu         0         1          0.2
 set              kn         0         1          1.0e6
 set              en2        0         1          1.1
 set              kt         0         1          1e7
-set              viscosity  0         1          1
+set              viscRate  0         1          1
 
 
 # Adaptative refinement

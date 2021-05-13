@@ -1,33 +1,31 @@
 #include "UpdateStressFirst.hpp"
 
-#include <ConstitutiveModels/ConstitutiveModel.hpp>
-#include <Core/Element.hpp>
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
-#include <Core/Node.hpp>
-#include <Obstacles/Obstacle.hpp>
-#include <ShapeFunctions/ShapeFunction.hpp>
-#include <Spies/Spy.hpp>
-#include <../../dem/3D_sandstone/PBC3D.hpp>
+#include "ConstitutiveModels/ConstitutiveModel.hpp"
+#include "Core/Element.hpp"
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
+#include "Core/Node.hpp"
+#include "Obstacles/Obstacle.hpp"
+#include "ShapeFunctions/ShapeFunction.hpp"
+#include "Spies/Spy.hpp"
+#include "../../dem/3D_sandstone/PBC3D.hpp"
 
 #include <factory.hpp>
 static Registrar<OneStep, UpdateStressFirst> registrar("UpdateStressFirst");
 
 int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
-  // Defining aliases
+  // Defining aliases =============================
   std::vector<node>& nodes = MPM.nodes;
   std::vector<int>& liveNodeNum = MPM.liveNodeNum;
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
-  std::vector<Obstacle*>& Obstacles = MPM.Obstacles;  // List of rigid obstacles
+  std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
   std::vector<Spy*>& Spies = MPM.Spies;
-  // double &t = MPM.t;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
   int& step = MPM.step;
   vec2r& gravity = MPM.gravity;
-
-  // End of aliases
+  // End of aliases ================================
 
   if (step == 0) std::cout << "Running UpdateStressFirst" << std::endl;
   int* I;  // use as node index
@@ -70,8 +68,6 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   liveNodeNum.clear();
   std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
 
-  // weightIncrement();  // gradually increments the weight, given a number of time steps
-
   // ==== Move the rigid obstacles according to their mode of driving
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM1(Obstacles[o], dt, MPM.activeNumericalDissipation);
@@ -95,7 +91,6 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
         nodes[I[r]].q.y = 0.0;
       }
     }
-    // if (step % 100 == 0 and p == 0) std::cout<<"sumvel/mass: "<<sumvel<<"\nrealvel: "<<MP[p].vel<<std::endl;
   }
 
   // ==== Nodal velocities  (A)
@@ -107,29 +102,9 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
       nodes[liveNodeNum[n]].vel.reset();
   }
 
-  /*
-  // ==== Gradient Velocity (B)
-
-  for (size_t p = 0; p< MP.size(); p++) {
-          I = &(Elem[MP[p].e].I[0]);
-          double invmass;
-          //double testVely = 0;
-          MP[p].velGrad.reset();
-
-
-          for (int r = 0 ; r < element::nbNodes ; r++) {
-                  MP[p].velGrad.xx += (MP[p].gradN[r].x * nodes[I[r]].vel.x);
-                  MP[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
-                  MP[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
-                  MP[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
-          }
-  }
-
-  */
-  // ====Deformation gradient and Volume (C)
+  // ==== Deformation gradient and Volume (C)
   MPM.updateTransformationGradient();
   for (size_t p = 0; p < MP.size(); p++) {
-
     MP[p].vol = MP[p].F.det() * MP[p].vol0;
   }
 
@@ -141,7 +116,6 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   // ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-
     for (int r = 0; r < element::nbNodes; r++) {
       // Internal forces
       nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
@@ -151,12 +125,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Boundary Conditions
-  // OneStep::boundaryConditions(MP, Obstacles, MPM.dataTable, MPM.id_kn,
-  // MPM.id_kt, MPM.id_en2, MPM.id_mu, MPM.dt);
-
-  // TODO: new: This assummes that every obstacle has a boundaryType associated
   for (size_t o = 0; o < Obstacles.size(); ++o) {
-    //Obstacle* currentObstacle = Obstacles[o];
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
 
@@ -186,8 +155,6 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
       nodes[liveNodeNum[n]].qdot.y = 0.0;
 
     nodes[liveNodeNum[n]].q += nodes[liveNodeNum[n]].qdot * dt;  // newline! we were not updating the q (21-02-2017)
-    // std::cout<<"livenode:"<<liveNodeNum[n]<<"\nqdot ="<<nodes[liveNodeNum[n]].qdot<<"\nq =
-    // "<<nodes[liveNodeNum[n]].qdot<<std::endl;
   }
 
   // ==== Update positions and velocities of the MPs
@@ -195,23 +162,13 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
     I = &(Elem[MP[p].e].I[0]);
     MP[p].prev_pos = MP[p].pos;
     double invmass;
-    // std::cout<<"Prev vel: "<<MP[p].vel<<std::endl;
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > tolmass) {
         invmass = 1.0 / nodes[I[r]].mass;
         MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;
-
         MP[p].pos += dt * MP[p].N[r] * nodes[I[r]].q * invmass;
       }
     }
-    //~ if (p == 0) {
-    //~ std::cout<<"Pos: "<<MP[p].pos<<std::endl;
-    //~ double delvar;
-    //~ std::cin>>delvar;
-    //~ }
-
-    // if (p == 0 and step % 1 == 0) {std::cout<<"step: "<<step<<std::endl<<"Pos: "<<MP[p].pos<<std::endl<<"Vel:
-    // "<<MP[p].vel<<std::endl;double delvar; std::cin>>delvar;}
   }
 
   // ==== Update the corner positions of the MPs

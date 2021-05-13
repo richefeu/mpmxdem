@@ -1,5 +1,5 @@
 #include "Obstacle.hpp"
-#include <factory.hpp>
+#include "factory.hpp"
 
 bool Obstacle::MPisInside(MaterialPoint&) { return false; }
 

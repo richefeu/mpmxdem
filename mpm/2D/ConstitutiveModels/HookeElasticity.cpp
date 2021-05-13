@@ -1,9 +1,9 @@
 #include "HookeElasticity.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<ConstitutiveModel, HookeElasticity> registrar("HookeElasticity");
 
 HookeElasticity::HookeElasticity(double young, double poisson) : Young(young), Poisson(poisson) {}
@@ -20,9 +20,10 @@ void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   for (int r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {
       vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
-    } else
+    } else {
       continue;
-    //~ std::cout<<"q: "<<MPM.nodes[I[r]].q <<std::endl;
+    }
+
     dstrain.xx += (vn.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy += 0.5 * (vn.x * MPM.MP[p].gradN[r].y + vn.y * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.yy += (vn.y * MPM.MP[p].gradN[r].y) * MPM.dt;
@@ -30,6 +31,7 @@ void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   dstrain.yx = dstrain.xy;
 
   MPM.MP[p].strain += dstrain;
+  MPM.MP[p].deltaStrain = dstrain;
 
   //      |De11 De12 0   |       |a        Poisson  0  |  with a = 1-Poisson
   // De = |De12 De22 0   | = f * |Poisson  a        0  |       b = 1-2Poisson

@@ -1,5 +1,5 @@
-#ifndef SET_K0_STRESS_HPP_745F3B15
-#define SET_K0_STRESS_HPP_745F3B15
+#ifndef SET_K0_STRESS_HPP
+#define SET_K0_STRESS_HPP
 
 #include "Command.hpp"
 
@@ -11,4 +11,4 @@ struct set_K0_stress : public Command {
   double nu, rho0;
 };
 
-#endif /* end of include guard: SET_K0_STRESS_HPP_745F3B15 */
+#endif /* end of include guard: SET_K0_STRESS_HPP */

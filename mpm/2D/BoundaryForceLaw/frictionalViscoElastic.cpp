@@ -10,43 +10,36 @@ static Registrar<BoundaryForceLaw, frictionalViscoElastic> registrar("frictional
 
 void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 
-  double kn, kt, en2, mu, viscosity;
+  double kn, kt, mu, viscRate;
   size_t g1, g2;
   for (size_t nn = 0; nn < MPM.Obstacles[o]->Neighbors.size(); ++nn) {
     size_t pn = MPM.Obstacles[o]->Neighbors[nn].PointNumber;
     double dn;
-    int contact = MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
-    // if it returns -1 there is no contact, else it returns a positive number
+    MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
 
-    if (contact >= 0) {  // Check if there is contact
+    if (dn < 0.0) {  // Check if there is contact
       g1 = (size_t)(MPM.MP[pn].groupNb);
       g2 = MPM.Obstacles[o]->group;
       kn = MPM.dataTable.get(MPM.id_kn, g1, g2);
       kt = MPM.dataTable.get(MPM.id_kt, g1, g2);
-      // en2 = MPM.dataTable.get(MPM.id_en2, g1, g2);
       mu = MPM.dataTable.get(MPM.id_mu, g1, g2);
-      viscosity = MPM.dataTable.get(MPM.id_viscosity, g1, g2);
+      viscRate = MPM.dataTable.get(MPM.id_viscRate, g1, g2);
 
       vec2r N, T;
       MPM.Obstacles[o]->getContactFrame(MPM.MP[pn], N, T);
 
       // === Normal force
-      if (dn < 0.0) {  // overlapping
-        // TODO: take into account the velocity of the obstacle (velobst - velmp or viceversa)
-        double normalVel = MPM.MP[pn].vel * N;
-        double visc = 2.0 * sqrt(MPM.MP[pn].mass * kn);
-        MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn - visc * normalVel;
-      }
-
+      vec2r velRelative = MPM.MP[pn].vel - MPM.Obstacles[o]->vel; 
+      // remark: not really correct because the Obstable rotation is not accounted for.
+      // This can be corrected by approximating that the MP position IS the contact position (see lever below)
+      double normalVel = velRelative * N;
+      double visc = viscRate * 2.0 * sqrt(MPM.MP[pn].mass * kn);
+      MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn - visc * normalVel;
       MPM.Obstacles[o]->Neighbors[nn].dn = dn;
 
       // === Friction force
-      vec2r lever = MPM.MP[pn].pos - MPM.Obstacles[o]->pos;
-      vec2r zCrossLever(-lever.y, lever.x);
-      double delta_dt = ((MPM.MP[pn].pos - MPM.MP[pn].prev_pos) -
-                         MPM.dt * (MPM.Obstacles[o]->vel + MPM.Obstacles[o]->vrot * zCrossLever)) *
-                        T;
-
+      vec2r lever = MPM.MP[pn].pos - MPM.Obstacles[o]->pos;      
+      double delta_dt = (velRelative * T) * MPM.dt;
       MPM.Obstacles[o]->Neighbors[nn].ft += -kt * delta_dt;
       double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
 

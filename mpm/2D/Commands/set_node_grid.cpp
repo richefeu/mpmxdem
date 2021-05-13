@@ -1,18 +1,49 @@
-#include "set_grid.hpp"
+#include <string>
 
-#include <Core/MPMbox.hpp>
+#include "set_node_grid.hpp"
+#include "Core/MPMbox.hpp"
 
-#include <factory.hpp>
-static Registrar<Command, set_grid> registrar("set_grid");
+#include "factory.hpp"
+static Registrar<Command, set_node_grid> registrar("set_node_grid");
 
-void set_grid::read(std::istream& is) {
-  std::cout << "*****USE 'new_set_grid' INSTEAD OF 'set_grid'*****" << '\n';
-  is >> nbElemX >> nbElemY >> lx >> ly;
+void set_node_grid::read(std::istream& is) {
+  
+  //   +---+---+---+
+  //   |   |   |   |
+  //   +---+---+---+
+  //   |   |   |   |  Here Nx = nbElemX = 3, Ny = nbElemY = 3
+  //   +---+---+---+ ^
+  //   |   |   |   | ly
+  // 0 +---+---+---+ v
+  //   0   <lx>
+  //
+  // usage:
+  //       1. set_node_grid  Nx.Ny.lx.ly  Nx Ny lx ly
+  //       2. set_node_grid  W.H.lx.ly    TotalWidth TotalHeight lx ly
+  //       3. set_node_grid  W.H.Nx.Ny    TotalWidth TotalHeight Nx Ny
+  std::string inputChoice;
+  is >> inputChoice;
+  if (inputChoice == "Nx.Ny.lx.ly") {
+    is >> nbElemX >> nbElemY >> lx >> ly;
+  } else if (inputChoice == "W.H.lx.ly") {
+    double W, H;
+    is >> W >> H >> lx >> ly;
+    nbElemX = floor(W / lx);
+    nbElemY = floor(H / ly);
+  } else if (inputChoice == "W.H.Nx.Ny") {
+    double W, H;
+    is >> W >> H >> nbElemX >> nbElemX;
+    lx = W / (double)nbElemX;
+    ly = H / (double)nbElemY;
+  } else {
+    std::cerr << "@set_node_grid, inputChoice: '" << inputChoice << "' is not known\n";
+  }
+  
 }
 
-void set_grid::exec() {
+void set_node_grid::exec() {
   if (box->shapeFunction == nullptr) {
-    std::cerr << "@set_grid::exec, ShapeFunction has to be set BEFORE set_grid." << std::endl;
+    std::cerr << "@set_node_grid::exec, ShapeFunction has to be set BEFORE set_node_grid." << std::endl;
     exit(0);
   }
 
@@ -20,9 +51,6 @@ void set_grid::exec() {
   box->Grid.Ny = nbElemY;
   box->Grid.lx = lx;
   box->Grid.ly = ly;
-
-  std::cout << "Grid dimensions: x: " << box->Grid.Nx * box->Grid.lx << "\ty: " << box->Grid.Ny * box->Grid.ly
-            << std::endl;
 
   // Create the nodes and set their positions
   if (!box->nodes.empty()) box->nodes.clear();

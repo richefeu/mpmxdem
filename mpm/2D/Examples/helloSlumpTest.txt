@@ -29,7 +29,7 @@ set              mu         0         1          0.2
 set              kn         0         1          1.0e7
 set              en2        0         1          1.0
 set              kt         0         1          1e7
-set              viscosity  0         1          8.9e1
+set              viscRate  0         1          8.9e1
 
 #set_K0_stress 0.42  2700.
 

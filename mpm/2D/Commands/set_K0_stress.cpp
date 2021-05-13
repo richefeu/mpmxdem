@@ -1,15 +1,16 @@
 #include "set_K0_stress.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<Command, set_K0_stress> registrar("set_K0_stress");
 
 void set_K0_stress::read(std::istream& is) { is >> nu >> rho0; }
 
 void set_K0_stress::exec() {
   if (box->MP.empty()) return;
+  
   vec2r ug = box->gravity;
   double g = ug.normalize();
 

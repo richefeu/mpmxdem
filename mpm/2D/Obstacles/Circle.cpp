@@ -1,8 +1,8 @@
 #include "Circle.hpp"
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<Obstacle, Circle> registrar("Circle");
 
 void Circle::read(std::istream& is) {
@@ -94,7 +94,7 @@ int Circle::addVtkPoints(std::vector<vec2r>& coords) {
 
 bool Circle::MPisInside(MaterialPoint& MP) {
   vec2r l = MP.pos - pos;
-  double radiusMP = 0.5 * sqrt(MP.vol);
+  double radiusMP = 0.5 * sqrt(MP.vol0);
   double sumR = (R + radiusMP);
   return (norm2(l) < sumR * sumR);
 }

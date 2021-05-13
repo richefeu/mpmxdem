@@ -81,7 +81,7 @@ struct MPMbox {
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
   DataTable dataTable;
-  size_t id_mu, id_kn, id_en2, id_kt, id_viscosity;
+  size_t id_mu, id_kn, id_en2, id_kt, id_viscRate;
 
   bool splitting;                   // Consistent splitting (vertical and horizontal)
   bool extremeShearing;             // Extreme shearing

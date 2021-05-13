@@ -29,7 +29,7 @@ void Line::read(std::istream& is) {
 int Line::touch(MaterialPoint& MP, double& dn) {
   int Touch = -1;
   vec2r c = MP.pos - pos;
-  double radiusMP = 0.5 * sqrt(MP.vol);
+  double radiusMP = 0.5 * sqrt(MP.vol0);
   dn = c * n - radiusMP;
   if (dn < 0.0) {
     double proj = c * t;

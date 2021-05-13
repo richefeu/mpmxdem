@@ -1,11 +1,12 @@
-#ifndef OBSTACLE_HPP_DEEAEE92
-#define OBSTACLE_HPP_DEEAEE92
+#ifndef OBSTACLE_HPP
+#define OBSTACLE_HPP
 
-#include <BoundaryForceLaw/BoundaryForceLaw.hpp>
-#include <Core/Neighbor.hpp>
 #include <iostream>
-#include <vec2.hpp>
 #include <vector>
+
+#include "BoundaryForceLaw/BoundaryForceLaw.hpp"
+#include "Core/Neighbor.hpp"
+#include "vec2.hpp"
 
 struct MPMbox;
 struct MaterialPoint;
@@ -44,4 +45,4 @@ struct Obstacle {
   virtual ~Obstacle();
 };
 
-#endif /* end of include guard: OBSTACLE_HPP_DEEAEE92 */
+#endif /* end of include guard: OBSTACLE_HPP */

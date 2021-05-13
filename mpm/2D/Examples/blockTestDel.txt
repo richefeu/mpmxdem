@@ -2,7 +2,7 @@ oneStepType ModifiedLagrangian
 result_folder ./blockTestDel
 tolmass 1.e-6
 gravity 0.0 -9.81
-finalTime 2
+finalTime 1
 vtkPeriod 1000
 proxPeriod 100
 dt 0.00001
@@ -12,52 +12,32 @@ ShapeFunction BSpline
 
 # Materials
 #      modelID        modelName  Young   Poisson   FrictionAngle  Cohesion   DilatancyAngle
-model  MohrCoulomb    MC         1.0e7   0.42      0.5            5e5        0.01
+model  MohrCoulomb    MC         1.0e7   0.42      0.5            1e5        0.01
 
-#           Nx   Ny  grid-spacing
-set_grid    100  90  0.1 0.1
+set_node_grid  Nx.Ny.lx.ly  10  20  0.1 0.1
 
 #            group   modelName     mass_density   x0     y0      x1     y1      size of boxes
-set_MP_grid  0       MC            2700.          2.25   3.5     2.35   3.6     0.05
+set_MP_grid  0       MC            2700.          0.45   0.95    0.55   1.05    0.05
 
-#                group  x0   y0   x1   y1    driveMode
-Obstacle Line    1      10   3.2  0.0  3.2   freeze
-Obstacle Line    1      9.8  6.0  9.8  0.0   freeze
-Obstacle Line    1      0.2  0.0  0.2  6.0   freeze
+#                group  x0    y0   x1   y1    driveMode
+Obstacle Line    1      1.0   0.2  0.0  0.5   freeze
 
-#              type         group
-BoundaryForceLaw   frictionalViscoElastic  1
-
-#set_K0_stress  0.42 2700.
+#                  type                     group
+BoundaryForceLaw   frictionalViscoElastic   1
 
 #      parameter  groupMP   groupObst  value
-set    mu         0         0          0.2
-set    kn         0         0          1.0e7
-set    en2        0         0          1.0
-set    kt         0         0          1e7
-set    viscosity  0         0          8.9E-04
-
-#      parameter  groupMP   groupObst  value
-set    mu         0         1          0.2
-set    kn         0         1          1.0e7
-set    en2        0         1          1.0
+set    mu         0         1          0.4
+set    kn         0         1          1e7
 set    kt         0         1          1e7
-set    viscosity  0         1          8.9e1
+set    viscRate   0         1          0.95
 
 # Adaptative refinement
 splitting 	0
-splitCriterionValue 4.0  0  3.0
 
-#NumericalDissipation 0.1 0.5
-
-VtkOutput plastic
 VtkOutput smoothed_velocity
-VtkOutput plasticStressNorm
-VtkOutput smoothed_totalStress
 VtkOutput forcesContact
 
-#Spy Work  100  Work.txt  0.0  19.0  100
-Spy ObstaclePosition  0  200 obstaclePos.txt
-Spy ObstacleVelTouching  0 20 obstacleVelTouching.txt
-Spy Work  100  Work.txt  0.2  9.8  100
-Spy ObstacleVelAllTimes 0 100 obstacleVelAllTimes.txt
+#Spy ObstaclePosition  0  200 obstaclePos.txt
+#Spy ObstacleVelTouching  0 20 obstacleVelTouching.txt
+#Spy Work  100  Work.txt  0.2  9.8  100
+#Spy ObstacleVelAllTimes 0 100 obstacleVelAllTimes.txt
