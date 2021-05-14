@@ -1,8 +1,8 @@
 #ifndef NODE_HPP
 #define NODE_HPP
 
-#include <mat4.hpp>
-#include <vec2.hpp>
+#include "mat4.hpp"
+#include "vec2.hpp"
 
 struct node {
   vec2r pos;    // Position

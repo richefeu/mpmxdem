@@ -27,7 +27,7 @@ List of parameters for each modelName:
 
 ## Commands
 
-**`set_grid`**   (_int_)Nx  (_int_)Ny  (_double_)gridSpacing
+**`set_node_grid`**   ...
 
 **`set_MP_grid`**  (_int_)group (_string_)modelName (_double_)massDensity (_double_)x0  (_double_)y0  (_double_)x1  (_double_)y1 (_double_)sizeOfBoxes
 

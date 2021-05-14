@@ -1,8 +1,8 @@
 #include "reset_model.hpp"
 
-#include <ConstitutiveModels/ConstitutiveModel.hpp>
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "ConstitutiveModels/ConstitutiveModel.hpp"
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
 #include <factory.hpp>
 static Registrar<Command, reset_model> registrar("reset_model");

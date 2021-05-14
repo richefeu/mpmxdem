@@ -256,6 +256,20 @@ void MPMbox::read(const char* name) {
   }
 }
 
+void MPMbox::save(const char* name) {
+  std::ofstream file(name);
+  file << "oneStepType " << oneStep->getRegistrationName() << '\n';
+  file << "gravity " << gravity << '\n'; 
+}
+
+void MPMbox::save(int num) {
+  // Open file
+  char name[256];
+  sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
+  std::cout << "Save " << name << " #MP: " << MP.size() << " Time: " << t << " ... ";
+  save(name);
+}
+
 void MPMbox::setDefaultVtkOutputs() {
   std::vector<std::string> defaultVtkOutputs = {
       "smoothed_velocity", "smoothed_totalStress", /*"meanPressure"*/
@@ -348,13 +362,11 @@ void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
-  // *****************************
   int ivtk = 0;
   step = 0;
-  // for (step = 0 ; step <= nstep ; step++) {
+
   while (t < finalTime) {
-    // std::cout << "final Time: "<<finalTime << '\n';
-    // std::cout << "t: "<<t << '\n';
+
     // checking cfl (should be improved but works for now)
     try {
       cflCondition();
@@ -363,6 +375,7 @@ void MPMbox::run() {
     }
 
     if (step % vtkPeriod == 0) {
+      // save(ivtk);
       save_vtk("mpm", ivtk);
       save_vtk_obst("obstacle", ivtk);
       ivtk++;

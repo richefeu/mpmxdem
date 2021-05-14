@@ -1,11 +1,12 @@
-#ifndef UPDATESTRESSFIRST_HPP_64744727
-#define UPDATESTRESSFIRST_HPP_64744727
+#ifndef UPDATESTRESSFIRST_HPP
+#define UPDATESTRESSFIRST_HPP
 
 #include "OneStep.hpp"
 struct MPMbox;
 
 struct UpdateStressFirst : public OneStep {
+  virtual std::string getRegistrationName();
   virtual int advanceOneStep(MPMbox& MPM);
 };
 
-#endif /* end of include guard: UPDATESTRESSFIRST_HPP_64744727 */
+#endif /* end of include guard: UPDATESTRESSFIRST_HPP */

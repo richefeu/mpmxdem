@@ -1,10 +1,11 @@
-#include "RegularQuadLinear.hpp"
 #include <cstdlib>
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "RegularQuadLinear.hpp"
 
-#include <factory.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
+
+#include "factory.hpp"
 static Registrar<ShapeFunction, RegularQuadLinear> registrar("RegularQuadLinear");
 
 RegularQuadLinear::RegularQuadLinear() { element::nbNodes = 4; }

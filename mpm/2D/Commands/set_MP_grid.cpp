@@ -1,12 +1,14 @@
 #include "set_MP_grid.hpp"
-#include <ConstitutiveModels/ConstitutiveModel.hpp>
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "ConstitutiveModels/ConstitutiveModel.hpp"
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<Command, set_MP_grid> registrar("set_MP_grid");
 
-void set_MP_grid::read(std::istream& is) { is >> groupNb >> modelName >> rho >> x0 >> y0 >> x1 >> y1 >> size; }
+void set_MP_grid::read(std::istream& is) { 
+  is >> groupNb >> modelName >> rho >> x0 >> y0 >> x1 >> y1 >> size;
+}
 
 void set_MP_grid::exec() {
   if (box->Grid.lx / size > 3.0 || box->Grid.ly / size > 3.0) {
@@ -46,16 +48,6 @@ void set_MP_grid::exec() {
       box->MP.push_back(P);
     }
   }
-
-  // old loop
-  // for (double y = y0 + halfSizeMP ; y <= y1 - halfSizeMP ; y += size) {
-  // 	for (double x = x0 + halfSizeMP ; x <= x1 - halfSizeMP ; x += size) {
-  // 		P.pos.set(x, y);
-  // 		P.nb = counter;
-  // 		counter++;
-  // 		box->MP.push_back(P);
-  // 	}
-  // }
 
   for (size_t p = 0; p < box->MP.size(); p++) {
     box->MP[p].updateCornersFromF();

@@ -39,7 +39,6 @@ void OneStep::moveDEM2(Obstacle* obst, double dt) {
 
 vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP) {
   // because there is no sign function...
-
   int sign = 0;
   double product = forceMP * velMP;
   if (product >= 0)

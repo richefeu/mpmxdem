@@ -1,9 +1,9 @@
 #include "move_MP.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
+#include "factory.hpp"
 static Registrar<Command, move_MP> registrar("move_MP");
 
 void move_MP::read(std::istream& is) { is >> groupNb >> x0 >> y0 >> dx >> dy >> thetaDeg; }
@@ -17,6 +17,7 @@ void move_MP::exec() {
   rotation.yy = cos(theta);
 
   // FIXME: I DON'T UNDERSTAND WHY WE DO THAT ????????
+  /*
   for (size_t p = 0; p < box->MP.size(); p++) {
     if (box->MP[p].groupNb == groupNb) {
       box->MP[p].corner[0].x = -0.5 * box->MP[p].size;
@@ -29,7 +30,8 @@ void move_MP::exec() {
       box->MP[p].corner[3].y = +0.5 * box->MP[p].size;
     }
   }
-
+  */
+  
   double newx, newy;
   for (size_t p = 0; p < box->MP.size(); p++) {
     if (box->MP[p].groupNb == groupNb) {

@@ -8,10 +8,13 @@
 #include "Obstacles/Obstacle.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 #include "Spies/Spy.hpp"
-#include "../../dem/3D_sandstone/PBC3D.hpp"
+
+#include "PBC3D.hpp"
 
 #include "factory.hpp"
 static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
+
+std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); };
 
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 

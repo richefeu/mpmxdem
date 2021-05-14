@@ -30,7 +30,5 @@ void set_K0_stress::exec() {
     box->MP[p].stress.yy = -d * g * rho0;
     box->MP[p].stress.xx = -d * g * rho0 * nu / (1.0 - nu);
     box->MP[p].stress.xy = box->MP[p].stress.yx = 0.0;
-
-    // box->MP[p].prevStress = box->MP[p].stress;
   }
 }

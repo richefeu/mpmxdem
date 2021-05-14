@@ -1,11 +1,12 @@
-#ifndef MODIFIEDLAGRANGIAN_HPP_64744727
-#define MODIFIEDLAGRANGIAN_HPP_64744727
+#ifndef MODIFIEDLAGRANGIAN_HPP
+#define MODIFIEDLAGRANGIAN_HPP
 
 #include "OneStep.hpp"
 struct MPMbox;
 
 struct ModifiedLagrangian : public OneStep {
+  virtual std::string getRegistrationName();
   virtual int advanceOneStep(MPMbox& MPM);
 };
 
-#endif /* end of include guard: MODIFIEDLAGRANGIAN_HPP_64744727 */
+#endif /* end of include guard: MODIFIEDLAGRANGIAN_HPP */

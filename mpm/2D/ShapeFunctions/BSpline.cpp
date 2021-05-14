@@ -1,10 +1,11 @@
-#include "BSpline.hpp"
 #include <cstdlib>
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "BSpline.hpp"
 
-#include <factory.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
+
+#include "factory.hpp"
 static Registrar<ShapeFunction, BSpline> registrar("BSpline");
 
 // REference: Paper Steffen - Analysis and reduction of quadrature errors in mpm

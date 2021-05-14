@@ -1,5 +1,5 @@
-#ifndef SET_BC_LINE_HPP_64CA2B7F
-#define SET_BC_LINE_HPP_64CA2B7F
+#ifndef SET_BC_LINE_HPP
+#define SET_BC_LINE_HPP
 
 #include "Command.hpp"
 
@@ -12,4 +12,4 @@ struct set_BC_line : public Command {
   bool Xfixed, Yfixed;
 };
 
-#endif /* end of include guard: SET_BC_LINE_HPP_64CA2B7F */
+#endif /* end of include guard: SET_BC_LINE_HPP */

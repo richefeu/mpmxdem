@@ -1,33 +1,13 @@
-# Plane strain (uncomment to set, default is plane stress)
-# planeStrain
-
 oneStepType ModifiedLagrangian
 result_folder ./Config08
-
-# Mass tolerance
 tolmass 1.e-6
-
-# Gravity    gx   gy
 gravity      0.0  -9.81
-
-# Number of steps to be done
 finalTime 2.0
-
-# Period of storing (in number of steps)
 vtkPeriod 1000
-
 proxPeriod 4000
-
-# Time increment
 dt 0.00001
-
-# Current time
 t 0.0
-
-# MP display style
 parallelogramMP 0
-
-# shape function can be Linear or GIMP (not yet implemented)
 ShapeFunction BSpline
 
 # Materials
@@ -44,7 +24,8 @@ set_MP_grid     0     MC          390.                 2.87573593 0.5  3.0757359
 move_MP  0  2.87573593  0.5  -1.6  1.6  45  
 
 #                     x0  y0    l1  l2  R     angle deg(for arc)
-Obstacle LeftBiplanar	9	  0.5	  6		4	  0.3 	45
+#Obstacle LeftBiplanar	9	  0.5	  6		4	  0.3 	45
+#Obstacle Line 
 
 #properties      mu   Kn   e2   Kt
 set_properties   0.3  1e6  0.2  0.5e6

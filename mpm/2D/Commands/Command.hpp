@@ -1,5 +1,5 @@
-#ifndef COMMAND_HPP_64744727
-#define COMMAND_HPP_64744727
+#ifndef COMMAND_HPP
+#define COMMAND_HPP
 
 #include <fstream>
 struct MPMbox;
@@ -15,4 +15,4 @@ struct Command {
   virtual ~Command();  // Dtor
 };
 
-#endif /* end of include guard: COMMAND_HPP_64744727 */
+#endif /* end of include guard: COMMAND_HPP */

@@ -63,7 +63,7 @@ struct MPMbox {
   std::map<std::string, ConstitutiveModel*> models;  // The models
 
   std::string result_folder;  // The folder into which the result files will be saved
-  std::string oneStepType;
+  std::string oneStepType;    // Name Identifier of the step algorithm
   bool planeStrain;  // Plane strain assumption (plane stress if false, default)
   grid Grid;         // The fixed grid
   double tolmass;    // Tolerance for the mass of a MaterialPoint
@@ -105,6 +105,8 @@ struct MPMbox {
 
   void showAppBanner();
   void read(const char* name);
+  void save(const char* name);
+  void save(int num);
   void setDefaultVtkOutputs();
   void checkNumericalDissipation();
   void checkProximity();

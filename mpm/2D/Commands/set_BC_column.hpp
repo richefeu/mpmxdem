@@ -1,5 +1,5 @@
-#ifndef SET_BC_COLUMN_HPP_5101B5C4
-#define SET_BC_COLUMN_HPP_5101B5C4
+#ifndef SET_BC_COLUMN_HPP
+#define SET_BC_COLUMN_HPP
 
 #include "Command.hpp"
 
@@ -12,4 +12,4 @@ struct set_BC_column : public Command {
   bool Xfixed, Yfixed;
 };
 
-#endif /* end of include guard: SET_BC_COLUMN_HPP_5101B5C4 */
+#endif /* end of include guard: SET_BC_COLUMN_HPP */

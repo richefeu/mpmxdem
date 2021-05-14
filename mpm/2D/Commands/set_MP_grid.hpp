@@ -1,5 +1,5 @@
-#ifndef SET_MP_GRID_HPP_AAE2DD27
-#define SET_MP_GRID_HPP_AAE2DD27
+#ifndef SET_MP_GRID_HPP
+#define SET_MP_GRID_HPP
 
 #include "Command.hpp"
 
@@ -18,4 +18,4 @@ struct set_MP_grid : public Command {
   double size;
 };
 
-#endif /* end of include guard: SET_MP_GRID_HPP_AAE2DD27 */
+#endif /* end of include guard: SET_MP_GRID_HPP */

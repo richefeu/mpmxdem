@@ -1,10 +1,11 @@
 #ifndef MATERIALPOINT_HPP
 #define MATERIALPOINT_HPP
 
-#include <PBC3D.hpp>
-#include <mat4.hpp>
-#include <vec2.hpp>
 #include <vector>
+
+#include "PBC3D.hpp"
+#include "mat4.hpp"
+#include "vec2.hpp"
 
 struct ConstitutiveModel;
 

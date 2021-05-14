@@ -1,5 +1,5 @@
-#ifndef RESET_MODEL_HPP_8105857F
-#define RESET_MODEL_HPP_8105857F
+#ifndef RESET_MODEL_HPP
+#define RESET_MODEL_HPP
 
 #include <string>
 
@@ -15,4 +15,4 @@ struct reset_model : public Command {
   double rho, x0, y0, x1, y1;
 };
 
-#endif /* end of include guard: RESET_MODEL_HPP_8105857F */
+#endif /* end of include guard: RESET_MODEL_HPP */

@@ -1,10 +1,10 @@
-#ifndef SET_MP_POLYGON_HPP_6BC17ABB
-#define SET_MP_POLYGON_HPP_6BC17ABB
+#ifndef SET_MP_POLYGON_HPP
+#define SET_MP_POLYGON_HPP
 
 #include <string>
 #include <vector>
 
-#include <vec2.hpp>
+#include "vec2.hpp"
 
 #include "Command.hpp"
 
@@ -25,4 +25,4 @@ struct set_MP_polygon : public Command {
   std::vector<vec2r> vertices;
 };
 
-#endif /* end of include guard: SET_MP_POLYGON_HPP_6BC17ABB */
+#endif /* end of include guard: SET_MP_POLYGON_HPP */

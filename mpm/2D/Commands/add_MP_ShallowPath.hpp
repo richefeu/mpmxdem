@@ -1,5 +1,5 @@
-#ifndef ADD_MP_SHALLOWPATH_HPP_5896A17D
-#define ADD_MP_SHALLOWPATH_HPP_5896A17D
+#ifndef ADD_MP_SHALLOWPATH_HPP
+#define ADD_MP_SHALLOWPATH_HPP
 
 #include <string>
 #include <vector>
@@ -24,4 +24,4 @@ struct add_MP_ShallowPath : public Command {
   std::vector<vec2r> pathPoints;
 };
 
-#endif /* end of include guard: ADD_MP_SHALLOWPATH_HPP_5896A17D */
+#endif /* end of include guard: ADD_MP_SHALLOWPATH_HPP */

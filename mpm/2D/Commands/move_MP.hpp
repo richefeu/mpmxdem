@@ -1,5 +1,5 @@
-#ifndef MOVE_MP_HPP_2C140B65
-#define MOVE_MP_HPP_2C140B65
+#ifndef MOVE_MP_HPP
+#define MOVE_MP_HPP
 
 #include "Command.hpp"
 
@@ -16,4 +16,4 @@ struct move_MP : public Command {
   double thetaDeg;
 };
 
-#endif /* end of include guard: MOVE_MP_HPP_2C140B65 */
+#endif /* end of include guard: MOVE_MP_HPP */

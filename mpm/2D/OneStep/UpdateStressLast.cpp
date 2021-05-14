@@ -8,10 +8,13 @@
 #include "Obstacles/Obstacle.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 #include "Spies/Spy.hpp"
-#include "../../dem/3D_sandstone/PBC3D.hpp"
+
+#include "PBC3D.hpp"
 
 #include "factory.hpp"
 static Registrar<OneStep, UpdateStressLast> registrar("UpdateStressLast");
+
+std::string UpdateStressLast::getRegistrationName() { return std::string("UpdateStressLast"); };
 
 int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   // Defining aliases ==============================
@@ -119,7 +122,7 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
     MP[p].vol = MP[p].F.det() * MP[p].vol0;
   }
 
-  for (size_t o = 0; o < Obstacles.size(); ++o) { 
+  for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
 
