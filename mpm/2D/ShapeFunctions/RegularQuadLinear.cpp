@@ -7,6 +7,7 @@
 
 #include "factory.hpp"
 static Registrar<ShapeFunction, RegularQuadLinear> registrar("RegularQuadLinear");
+std::string RegularQuadLinear::getRegistrationName() { return std::string("RegularQuadLinear"); }
 
 RegularQuadLinear::RegularQuadLinear() { element::nbNodes = 4; }
 

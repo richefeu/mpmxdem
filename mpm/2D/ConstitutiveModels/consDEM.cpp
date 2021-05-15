@@ -1,13 +1,13 @@
 #include "consDEM.hpp"
   
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <factory.hpp>
-#include <PBC3D.hpp>
+#include "PBC3D.hpp"
 
-
+#include "factory.hpp"
 static Registrar<ConstitutiveModel, consDEM> registrar("consDEM");
+std::string consDEM::getRegistrationName() { return std::string("consDEM"); }
 
 consDEM::consDEM(const char * fileName):dname(fileName){}
 
@@ -54,4 +54,4 @@ void consDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
 double consDEM::getYoung() {return 0;}
 void consDEM::read(std::istream& /*is*/) {}
-
+void consDEM::write(std::ostream& /*os*/) {}

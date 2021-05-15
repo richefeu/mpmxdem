@@ -5,8 +5,8 @@
 struct MPMbox;
 
 struct ModifiedLagrangian : public OneStep {
-  virtual std::string getRegistrationName();
-  virtual int advanceOneStep(MPMbox& MPM);
+  std::string getRegistrationName();
+  int advanceOneStep(MPMbox& MPM);
 };
 
 #endif /* end of include guard: MODIFIEDLAGRANGIAN_HPP */

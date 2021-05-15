@@ -5,6 +5,7 @@
 
 #include "factory.hpp"
 static Registrar<ConstitutiveModel, MohrCoulomb> registrar("MohrCoulomb");
+std::string MohrCoulomb::getRegistrationName() { return std::string("MohrCoulomb"); }
 
 // ==================================================================================
 //  2D version of Mohr-Coulomb model (elasto-plastic without hardening)
@@ -25,6 +26,10 @@ void MohrCoulomb::read(std::istream& is) {
   sinFrictionAngle = sin(FrictionAngle);
   sinDilatancyAngle = sin(DilatancyAngle);
   cosFrictionAngle = cos(FrictionAngle);
+}
+
+void MohrCoulomb::write(std::ostream& os) {
+  os << Young << ' ' << Poisson << ' ' << FrictionAngle << ' ' << Cohesion << ' ' << DilatancyAngle << '\n';
 }
 
 double MohrCoulomb::getYoung() { return Young; }

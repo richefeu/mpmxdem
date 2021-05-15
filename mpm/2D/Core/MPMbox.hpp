@@ -46,9 +46,11 @@ class PBC3Dbox;
 
 struct MPMbox {
   std::vector<node> nodes;        // The nodes of the Eulerian grid
-  std::vector<int> liveNodeNum;   // list of node numbers being used during each time step
   std::vector<element> Elem;      // Quad-elements of the grid
   std::vector<MaterialPoint> MP;  // Material Points
+  
+  std::vector<int> liveNodeNum;   // list of node numbers being used during each time step
+  
   std::vector<PBC3Dbox> PBC;      // DEM simulation containers
 
   std::ofstream logFile;
@@ -64,14 +66,16 @@ struct MPMbox {
 
   std::string result_folder;  // The folder into which the result files will be saved
   std::string oneStepType;    // Name Identifier of the step algorithm
-  bool planeStrain;  // Plane strain assumption (plane stress if false, default)
-  grid Grid;         // The fixed grid
-  double tolmass;    // Tolerance for the mass of a MaterialPoint
-  vec2r gravity;     // The gravity acceleration vector
+  bool planeStrain;           // Plane strain assumption (plane stress if false, default)
+  grid Grid;                  // The fixed grid
+  double tolmass;             // Tolerance for the mass of a MaterialPoint
+  vec2r gravity;              // The gravity acceleration vector
 
   int nstep;         // Number of steps to be done
   double finalTime;  // Time in seconds at which the simulation ends (to replace nstep)
   int step;          // The current step
+  int iconf;         // File number of the comming save
+  int confPeriod;    // Number of steps between conf files
   int vtkPeriod;     // Number of steps between vtk files
   int proxPeriod;    // Number of steps between proximity check (rebuild the neighbor list)
   double dt;         // Time increment

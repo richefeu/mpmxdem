@@ -5,8 +5,8 @@
 struct MPMbox;
 
 struct UpdateStressFirst : public OneStep {
-  virtual std::string getRegistrationName();
-  virtual int advanceOneStep(MPMbox& MPM);
+  std::string getRegistrationName();
+  int advanceOneStep(MPMbox& MPM);
 };
 
 #endif /* end of include guard: UPDATESTRESSFIRST_HPP */

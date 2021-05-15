@@ -7,6 +7,7 @@
 
 #include "factory.hpp"
 static Registrar<ShapeFunction, BSpline> registrar("BSpline");
+std::string BSpline::getRegistrationName() { return std::string("BSpline"); }
 
 // REference: Paper Steffen - Analysis and reduction of quadrature errors in mpm
 BSpline::BSpline() : TwoThirds(2.0 / 3.0), FourThirds(4.0 / 3.0), OneSixth(1.0 / 6.0) { element::nbNodes = 16; }

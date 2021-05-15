@@ -21,8 +21,10 @@ MPMbox::MPMbox() {
   tolmass = 1.0e-6;
   gravity.set(0.0, -9.81);
 
+  iconf = 0;
   nstep = 100000;
   vtkPeriod = 5000;
+  confPeriod = 5000;
 
   dt = 0.00001;
   t = 0.0;
@@ -104,6 +106,8 @@ void MPMbox::read(const char* name) {
       file >> finalTime;
     } else if (token == "vtkPeriod") {
       file >> vtkPeriod;
+    } else if (token == "confPeriod") {
+      file >> confPeriod;
     } else if (token == "proxPeriod") {
       file >> proxPeriod;
     } else if (token == "parallelogramMP") {
@@ -258,15 +262,76 @@ void MPMbox::read(const char* name) {
 
 void MPMbox::save(const char* name) {
   std::ofstream file(name);
+
+  file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
+  if (planeStrain == true) {
+    file << "planeStrain\n";
+  }
   file << "oneStepType " << oneStep->getRegistrationName() << '\n';
-  file << "gravity " << gravity << '\n'; 
+  file << "result_folder .\n";
+  file << "tolmass " << tolmass << '\n';
+  file << "gravity " << gravity << '\n';
+  file << "finalTime " << finalTime << '\n';
+  file << "proxPeriod " << proxPeriod << '\n';
+  file << "confPeriod " << confPeriod << '\n';
+  file << "parallelogramMP " << parallelogramMP << '\n';
+  file << "dt " << dt << '\n';
+  file << "t " << t << '\n';
+  file << "splitting " << splitting << '\n';
+  file << "ShapeFunction " << shapeFunction->getRegistrationName() << '\n';
+
+  std::map<std::string, ConstitutiveModel*>::iterator itModel;
+  for (itModel = models.begin(); itModel != models.end(); ++itModel) {
+    file << "model " << itModel->second->getRegistrationName() << ' ' << itModel->first << ' ';
+    itModel->second->write(file);
+  }
+
+  // MP-Obstacle interaction properties
+  size_t ngroup = dataTable.get_ngroup();
+  for (size_t MPgroup = 0; MPgroup < ngroup; MPgroup++) {
+    for (size_t ObstGroup = 0; ObstGroup < ngroup; ObstGroup++) {
+      if (dataTable.isDefined(id_kn, MPgroup, ObstGroup)) {
+        file << "set kn " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_kn, MPgroup, ObstGroup) << '\n';
+      }
+      if (dataTable.isDefined(id_kt, MPgroup, ObstGroup)) {
+        file << "set kt " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_kt, MPgroup, ObstGroup) << '\n';
+      }
+      if (dataTable.isDefined(id_mu, MPgroup, ObstGroup)) {
+        file << "set mu " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_mu, MPgroup, ObstGroup) << '\n';
+      }
+      if (dataTable.isDefined(id_en2, MPgroup, ObstGroup)) {
+        file << "set en2 " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_en2, MPgroup, ObstGroup) << '\n';
+      }
+      if (dataTable.isDefined(id_viscRate, MPgroup, ObstGroup)) {
+        file << "set viscRate " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_viscRate, MPgroup, ObstGroup)
+             << '\n';
+      }
+    }
+  }
+
+  // fixe-grid
+  file << "node " << nodes.size() << '\n';
+  for (size_t inode = 0; inode < nodes.size(); inode++) {
+    file << nodes[inode].number << ' ' << nodes[inode].pos << '\n';
+  }
+
+  file << "Elem " << element::nbNodes << ' ' << Elem.size() << '\n';
+  for (size_t iElem = 0; iElem < Elem.size(); iElem++) {
+    for (size_t e = 0; e < (size_t)element::nbNodes; e++) {
+      file << Elem[iElem].I[e];
+      if (e == (size_t)element::nbNodes - 1)
+        file << '\n';
+      else
+        file << ' ';
+    }
+  }
 }
 
 void MPMbox::save(int num) {
   // Open file
   char name[256];
   sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
-  std::cout << "Save " << name << " #MP: " << MP.size() << " Time: " << t << " ... ";
+  std::cout << "Save " << name << " #MP: " << MP.size() << " Time: " << t << '\n';
   save(name);
 }
 
@@ -362,7 +427,7 @@ void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
-  int ivtk = 0;
+  // int ivtk = 0;
   step = 0;
 
   while (t < finalTime) {
@@ -374,12 +439,20 @@ void MPMbox::run() {
       std::cerr << "Error in function cflCondition: " << e << std::endl;
     }
 
+    if (step % confPeriod == 0) {
+      save(iconf);
+      iconf++;
+    }
+
+    /*
     if (step % vtkPeriod == 0) {
-      // save(ivtk);
+      save(ivtk);
       save_vtk("mpm", ivtk);
       save_vtk_obst("obstacle", ivtk);
       ivtk++;
     }
+    */
+
     if (step % proxPeriod == 0 or MP.size() != number_MP) {  // second condition is needed because of the splitting
       checkProximity();
     }
@@ -396,6 +469,7 @@ void MPMbox::run() {
     for (size_t s = 0; s < Spies.size(); ++s) {
       Spies[s]->end();  // normally there is nothing implemented
     }
+
     t += dt;
     step++;
   }

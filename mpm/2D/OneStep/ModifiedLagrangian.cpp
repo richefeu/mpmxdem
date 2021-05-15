@@ -14,7 +14,7 @@
 #include "factory.hpp"
 static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
 
-std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); };
+std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 

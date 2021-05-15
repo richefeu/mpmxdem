@@ -5,10 +5,12 @@
 
 #include "factory.hpp"
 static Registrar<ConstitutiveModel, HookeElasticity> registrar("HookeElasticity");
+std::string HookeElasticity::getRegistrationName() { return std::string("HookeElasticity"); }
 
 HookeElasticity::HookeElasticity(double young, double poisson) : Young(young), Poisson(poisson) {}
 
 void HookeElasticity::read(std::istream& is) { is >> Young >> Poisson; }
+void HookeElasticity::write(std::ostream& os) { os << Young << ' ' << Poisson << '\n'; }
 
 void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);

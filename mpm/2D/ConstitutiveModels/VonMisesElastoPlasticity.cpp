@@ -5,6 +5,7 @@
 
 #include "factory.hpp"
 static Registrar<ConstitutiveModel, VonMisesElastoPlasticity> registrar("VonMisesElastoPlasticity");
+std::string VonMisesElastoPlasticity::getRegistrationName() { return std::string("VonMisesElastoPlasticity"); }
 
 // ==== VonMisesElastoPlasticity =================================================
 
@@ -12,6 +13,10 @@ VonMisesElastoPlasticity::VonMisesElastoPlasticity(double young, double poisson,
     : Young(young), Poisson(poisson), PlasticYieldStress(plasticYieldStress) {}
 
 void VonMisesElastoPlasticity::read(std::istream& is) { is >> Young >> Poisson >> PlasticYieldStress; }
+
+void VonMisesElastoPlasticity::write(std::ostream& os) {
+  os << Young << ' ' << Poisson << ' ' << PlasticYieldStress << '\n';
+}
 
 void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
@@ -24,7 +29,7 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
     } else {
       continue;
     }
-      
+
     dstrain.xx += (vn.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy += 0.5 * (vn.x * MPM.MP[p].gradN[r].y + vn.y * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.yy += (vn.y * MPM.MP[p].gradN[r].y) * MPM.dt;

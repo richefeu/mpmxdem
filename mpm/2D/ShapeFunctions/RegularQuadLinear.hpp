@@ -4,6 +4,7 @@
 #include "ShapeFunction.hpp"
 
 struct RegularQuadLinear : public ShapeFunction {
+  std::string getRegistrationName();
   void computeInterpolationValues(MPMbox& MPM, size_t p);
   RegularQuadLinear();
 };

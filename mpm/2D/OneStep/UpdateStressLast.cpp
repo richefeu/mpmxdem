@@ -14,7 +14,7 @@
 #include "factory.hpp"
 static Registrar<OneStep, UpdateStressLast> registrar("UpdateStressLast");
 
-std::string UpdateStressLast::getRegistrationName() { return std::string("UpdateStressLast"); };
+std::string UpdateStressLast::getRegistrationName() { return std::string("UpdateStressLast"); }
 
 int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   // Defining aliases ==============================
