@@ -56,8 +56,11 @@ void set_MP_grid::exec() {
     invL[0] = 1.0f / box->Grid.lx;
     invL[1] = 1.0f / box->Grid.ly;
 
+    /*
     box->MP[p].initialElement =
         (int)(trunc(box->MP[p].pos.x * invL[0]) + trunc(box->MP[p].pos.y * invL[1]) * box->Grid.Nx);
+    */
+    
     /*
     box->MP[p].corner[0].x = box->MP[p].pos.x - halfSizeMP;
     box->MP[p].corner[0].y = box->MP[p].pos.y - halfSizeMP;

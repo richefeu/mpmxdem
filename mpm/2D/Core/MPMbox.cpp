@@ -12,7 +12,6 @@
 MPMbox::MPMbox() {
   shapeFunction = nullptr;
   oneStep = nullptr;
-  oneStepType = "initialOneStep";
   planeStrain = false;
   activeNumericalDissipation = false;
 
@@ -22,8 +21,6 @@ MPMbox::MPMbox() {
   gravity.set(0.0, -9.81);
 
   iconf = 0;
-  nstep = 100000;
-  vtkPeriod = 5000;
   confPeriod = 5000;
 
   dt = 0.00001;
@@ -33,7 +30,6 @@ MPMbox::MPMbox() {
   securDistFactor = 2.0;
 
   splitting = true;
-  splittingMore = false;
   splitCriterionValue = 2.0;
   MaxSplitNumber = 5;
 
@@ -44,17 +40,7 @@ MPMbox::MPMbox() {
   id_viscRate = dataTable.add("viscRate");
 }
 
-MPMbox::~MPMbox() {
-  /*
-  if (shapeFunction) { delete shapeFunction; shapeFunction = nullptr; }
-
-  for (auto &M : models) delete &M;
-  models.clear();
-
-  for (auto &O : Obstacles) delete &O;
-  Obstacles.clear();
-  */
-}
+MPMbox::~MPMbox() { clean(); }
 
 void MPMbox::showAppBanner() {
   std::cout << std::endl;
@@ -64,6 +50,23 @@ void MPMbox::showAppBanner() {
   std::cout << " _/      _/  _/        _/      _/  _/    _/  _/    _/  _/    _/  " << std::endl;
   std::cout << "_/      _/  _/        _/      _/  _/_/_/      _/_/    _/    _/   " << std::endl;
   std::cout << std::endl;
+}
+
+void MPMbox::clean() {
+  nodes.clear();
+  Elem.clear();
+  MP.clear();
+
+  for (size_t i = 0; i < Obstacles.size(); i++) {
+    delete (Obstacles[i]);
+  }
+  Obstacles.clear();
+
+  std::map<std::string, ConstitutiveModel*>::iterator itModel;
+  for (itModel = models.begin(); itModel != models.end(); ++itModel) {
+    delete itModel->second;
+  }
+  models.clear();
 }
 
 void MPMbox::read(const char* name) {
@@ -98,32 +101,20 @@ void MPMbox::read(const char* name) {
       file >> tolmass;
     } else if (token == "gravity") {
       file >> gravity;
-    } else if (token == "nstep") {
-      file >> nstep;
-      std::cout << "*****'nstep' IS NO LONGER SUPPORTED. USE 'finalTime'*****" << '\n';
-      exit(0);
     } else if (token == "finalTime") {
       file >> finalTime;
-    } else if (token == "vtkPeriod") {
-      file >> vtkPeriod;
     } else if (token == "confPeriod") {
       file >> confPeriod;
     } else if (token == "proxPeriod") {
       file >> proxPeriod;
-    } else if (token == "parallelogramMP") {
-      file >> parallelogramMP;
     } else if (token == "dt") {
       file >> dt;
-    }  // TODO: create a check to see if the block vel for example is too high (i think you have to compare it also to
-       // the grid size?)
-    else if (token == "t") {
+    } else if (token == "t") {
       file >> t;
     } else if (token == "splitting") {
       file >> splitting;
     } else if (token == "splittingExtremeShearing") {
       file >> extremeShearing >> extremeShearingval;
-    } else if (token == "splittingMore") {
-      file >> splittingMore;
     } else if (token == "splitCriterionValue") {
       file >> splitCriterionValue;
     } else if (token == "shearLimit") {
@@ -133,15 +124,6 @@ void MPMbox::read(const char* name) {
     } else if (token == "NumericalDissipation") {
       file >> NumericalDissipation;
       activeNumericalDissipation = true;
-    } else if (token == "Surface") {
-      int nbPoints;
-      file >> nbPoints;
-      for (int i = 0; i < nbPoints; i++) {
-        vec2r point;
-        file >> point;
-        surfacePoints.push_back(point);
-      }
-      save_vtk_surface();
     } else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
@@ -171,6 +153,7 @@ void MPMbox::read(const char* name) {
       ConstitutiveModel* CM = Factory<ConstitutiveModel>::Instance()->Create(modelID);
       if (CM != nullptr) {
         models[modelName] = CM;
+        CM->key = modelName;
         CM->read(file);
       } else {
         std::cerr << "model " << modelID << " is unknown!" << std::endl;
@@ -213,18 +196,52 @@ void MPMbox::read(const char* name) {
       } else {
         std::cerr << "Spy " << spyName << " is unknown!" << std::endl;
       }
-    } else if (token == "VtkOutput") {
-      std::string outName;
-      file >> outName;
-      VtkOutput* out = Factory<VtkOutput>::Instance()->Create(outName);
-      if (out != nullptr) {
-        out->plug(this);
-        out->read(file);
-        VtkOutputs.push_back(out);
-      } else {
-        std::cerr << "VtkOutput " << outName << " is unknown!" << std::endl;
+    } else if (token == "node") {
+      size_t nb;
+      file >> nb;
+      nodes.clear();
+      node N;
+      for (size_t inode = 0; inode < nb; inode++) {
+        file >> N.number >> N.pos;
+        nodes.push_back(N);
       }
-    } else {
+    } else if (token == "Elem") {
+      size_t nb;
+      file >> element::nbNodes >> nb;
+      Elem.clear();
+      element E;
+      for (size_t e = 0; e < nb; e++) {
+
+        for (size_t r = 0; r < (size_t)element::nbNodes; r++) {
+          file >> E.I[r];
+        }
+        Elem.push_back(E);
+      }
+    } else if (token == "MPs") {
+      size_t nb;
+      file >> nb;
+      MP.clear();
+      MaterialPoint P;
+      std::string modelName;
+      for (size_t iMP = 0; iMP < nb; iMP++) {
+        file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
+            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount;
+
+        auto itCM = models.find(modelName);
+        if (itCM == models.end()) {
+          std::cerr << "@MPMbox::read, model " << modelName << " not found" << std::endl;
+        }
+        P.constitutiveModel = itCM->second;
+        P.constitutiveModel->key = modelName;
+
+        P.mass = P.vol * P.density;
+        P.size = sqrt(P.vol0);
+
+        MP.push_back(P);
+      }
+    }
+
+    else {
       Command* com = Factory<Command>::Instance()->Create(token);
       if (com != nullptr) {
         com->plug(this);
@@ -238,9 +255,6 @@ void MPMbox::read(const char* name) {
     file >> token;
   }  // while-loop
 
-  // Display some informations (it can help to find issues)
-  std::cout << "Duration of simulation: " << nstep * dt << " sec" << std::endl;
-
   // Some checks before running a simulation
   if (!shapeFunction) {
     std::string defaultShapeFunction = "Linear";
@@ -252,11 +266,6 @@ void MPMbox::read(const char* name) {
     std::string defaultOneStep = "ModifiedLagrangian";
     oneStep = Factory<OneStep>::Instance()->Create(defaultOneStep);
     std::cout << "No OneStep type defined, automatically set to 'ModifiedLagrangian'." << std::endl;
-  }
-
-  if (VtkOutputs.empty()) {
-    std::cout << "No VtkOutputs defined, the default ones have been automatically added." << std::endl;
-    setDefaultVtkOutputs();
   }
 }
 
@@ -274,7 +283,6 @@ void MPMbox::save(const char* name) {
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
   file << "confPeriod " << confPeriod << '\n';
-  file << "parallelogramMP " << parallelogramMP << '\n';
   file << "dt " << dt << '\n';
   file << "t " << t << '\n';
   file << "splitting " << splitting << '\n';
@@ -310,6 +318,8 @@ void MPMbox::save(const char* name) {
   }
 
   // fixe-grid
+  file << "set_node_grid Nx.Ny.lx.ly " << Grid.Nx << ' ' << Grid.Ny << ' ' << Grid.lx << ' ' << Grid.ly << '\n';
+  /*
   file << "node " << nodes.size() << '\n';
   for (size_t inode = 0; inode < nodes.size(); inode++) {
     file << nodes[inode].number << ' ' << nodes[inode].pos << '\n';
@@ -325,6 +335,16 @@ void MPMbox::save(const char* name) {
         file << ' ';
     }
   }
+  */
+
+  // Material points
+  file << "MPs " << MP.size() << '\n';
+  for (size_t iMP = 0; iMP < MP.size(); iMP++) {
+    file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
+         << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
+         << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
+         << MP[iMP].splitCount << '\n';
+  }
 }
 
 void MPMbox::save(int num) {
@@ -333,22 +353,6 @@ void MPMbox::save(int num) {
   sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
   std::cout << "Save " << name << " #MP: " << MP.size() << " Time: " << t << '\n';
   save(name);
-}
-
-void MPMbox::setDefaultVtkOutputs() {
-  std::vector<std::string> defaultVtkOutputs = {
-      "smoothed_velocity", "smoothed_totalStress", /*"meanPressure"*/
-  };
-
-  for (size_t s = 0; s < defaultVtkOutputs.size(); s++) {
-    VtkOutput* out = Factory<VtkOutput>::Instance()->Create(defaultVtkOutputs[s]);
-    if (out != nullptr) {
-      out->plug(this);
-      VtkOutputs.push_back(out);
-    } else {
-      std::cerr << "@setDefaultVtkOutputs, vtkOutput " << defaultVtkOutputs[s] << " has not been found" << std::endl;
-    }
-  }
 }
 
 void MPMbox::init(/*const char* name, const char* dconf*/) {
@@ -414,20 +418,19 @@ void MPMbox::init(/*const char* name, const char* dconf*/) {
   */
   // Output files
   // std::string namelogFile = "global_stream";
-  std::string namelogFile2 = "dataStream";
+  // std::string namelogFile2 = "dataStream";
 
-  char name1[256];
+  // char name1[256];
   // sprintf(name1, "%s.txt", namelogFile.c_str());
   // logFile.open(name1, std::fstream::app);  // global file
-  sprintf(name1, "%s/%s.txt", result_folder.c_str(), namelogFile2.c_str());
-  logFile2.open(name1);  // save any kind of data here
+  // sprintf(name1, "%s/%s.txt", result_folder.c_str(), namelogFile2.c_str());
+  // logFile2.open(name1);  // save any kind of data here
 }
 
 void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
-  // int ivtk = 0;
   step = 0;
 
   while (t < finalTime) {
@@ -444,16 +447,7 @@ void MPMbox::run() {
       iconf++;
     }
 
-    /*
-    if (step % vtkPeriod == 0) {
-      save(ivtk);
-      save_vtk("mpm", ivtk);
-      save_vtk_obst("obstacle", ivtk);
-      ivtk++;
-    }
-    */
-
-    if (step % proxPeriod == 0 or MP.size() != number_MP) {  // second condition is needed because of the splitting
+    if (step % proxPeriod == 0 || MP.size() != number_MP) {  // second condition is needed because of the splitting
       checkProximity();
     }
 
@@ -680,114 +674,74 @@ void MPMbox::adaptativeRefinement() {
         MP.push_back(MP2);
       }
     }  // if crit
+
     // checking extremeShearing after checking the above criteria
     if (extremeShearing) {
       bool critExtremeShearing =
           (MP[p].F.xx / MP[p].F.xy < extremeShearingval || MP[p].F.yy / MP[p].F.yx < extremeShearingval);
       if (critExtremeShearing) {
+        // ... ???
       }
     }
 
   }  // for
 }
 
-void MPMbox::adaptativeRefinementMore()  /// PENDING DEVEL!!!!!!! (DO NOT USE)
-{
+void MPMbox::smooth(std::vector<ProcessedDataMP>& Data) {
+  Data.clear();
+  Data.resize(MP.size());
+    
+  // Preparation for smoothed data
+  int* I;
   for (size_t p = 0; p < MP.size(); p++) {
-    if (MP[p].splitCount > MaxSplitNumber) continue;
+    shapeFunction->computeInterpolationValues(*this, p);
+  }
+  
+  // Update Vector of node indices
+  std::set<int> sortedLive;
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      sortedLive.insert(I[r]);
+    }
+  }
+  liveNodeNum.clear();
+  std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
 
-    double XSquaredExtent = (MP[p].F.xx * MP[p].F.xx + MP[p].F.yx * MP[p].F.yx);
-    double YSquaredExtent = (MP[p].F.xy * MP[p].F.xy + MP[p].F.yy * MP[p].F.yy);
-    double SquaredCrit = splitCriterionValue * splitCriterionValue;
-
-    bool critX = ((XSquaredExtent / YSquaredExtent) >= SquaredCrit);
-    bool critY = ((YSquaredExtent / XSquaredExtent) >= SquaredCrit);
-
-    if ((critX || critY) == true) {
-      MP[p].splitCount += 1;
-      double halfSizeMP = 0.5 * MP[p].size;
-
-      MP[p].mass *= 0.5;
-      MP[p].vol *= 0.5;
-
-      // All properties are copied thank to the auto-generated copy-ctor
-      MaterialPoint MP2 = MP[p];
-      // MP[p] will go to the left or bottom
-      // and MP2 will go to the right or top
-
-      if (critX == true) {  // -> left-right splitting
-        vec2r sx = MP[p].F * vec2r(halfSizeMP, 0.0);
-        MP[p].pos -= 0.5 * sx;
-        MP2.pos += 0.5 * sx;
-
-        MP[p].F.xx *= 0.5;
-        MP[p].F.yx *= 0.5;
-
-        MP2.F.xx = MP[p].F.xx;
-        MP2.F.yx = MP[p].F.yx;
-
-        // MP[p]     MP2
-        // 3 - <-2   3-> - 2
-        // |     |   |     |
-        // 0 - <-1   0-> - 1
-        MP[p].corner[1] -= sx;
-        MP[p].corner[2] -= sx;
-        MP2.corner[0] += sx;
-        MP2.corner[3] += sx;
-
-        MP.push_back(MP2);
-      } else {  // -> top-bottom splitting
-        vec2r sy = MP[p].F * vec2r(0.0, halfSizeMP);
-        MP[p].pos -= 0.5 * sy;
-        MP2.pos += 0.5 * sy;
-
-        MP[p].F.xy *= 0.5;
-        MP[p].F.yy *= 0.5;
-
-        MP2.F.xy = MP[p].F.xy;
-        MP2.F.yy = MP[p].F.yy;
-
-        // 3 - 2
-        // ^   ^  MP2
-        // 0 - 1
-        //
-        // 3 - 2
-        // v   v  MP[p]
-        // 0 - 1
-        MP[p].corner[2] -= sy;
-        MP[p].corner[3] -= sy;
-        MP2.corner[0] += sy;
-        MP2.corner[1] += sy;
-
-        MP.push_back(MP2);
-      }
-    }  // if crit
-  }    // for
+  // Reset nodal mass
+  for (size_t n = 0; n < liveNodeNum.size(); n++) {
+    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].vel.reset();
+    nodes[liveNodeNum[n]].stress.reset();
+  }
+  
+  // Nodal mass
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+    }
+  }
+  
+  // smoothed velocities
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      nodes[I[r]].vel += MP[p].N[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
+    }
+  }
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      Data[p].vel += nodes[I[r]].vel * MP[p].N[r];
+    }
+  }
+  
 }
 
-// VR: what was the purpose of this function (???)
-void MPMbox::weightIncrement() {
-  /*
-  int numberStepsforIncrement = 100;  //just for testing
 
-  if (step == 0) {
-          for (size_t p = 0; p < MP.size(); p++) {
-                  MPmassIncrement.push_back(MP[p].mass/numberStepsforIncrement);
-                  //MP[p].mass = MPmassIncrement[p];
-                  MP[p].mass /= numberStepsforIncrement;
-          }
-  }
 
-  else if (step < numberStepsforIncrement) {
-          for (size_t p = 0; p < MP.size(); p++) {
-                  MP[p].mass += MPmassIncrement[p];
-          }
-          if (step == numberStepsforIncrement -1) std::cout<<"finished progressive weight increment!"<<std::endl;
-  }
-
-  */
-}
-
+/*
 // =======================
 //  vtk-storing Routines
 // =======================
@@ -937,6 +891,7 @@ void MPMbox::save_vtk_obst(const char* base, int numb) {
   }
 }
 
+
 void MPMbox::save_vtk_surface() {
   char name[256];
   sprintf(name, "%s/%s.vtk", result_folder.c_str(), "Surface");
@@ -981,3 +936,4 @@ void MPMbox::save_state(const char* base, int num) {
     file << MP[i].pos << std::endl;
   }
 }
+*/

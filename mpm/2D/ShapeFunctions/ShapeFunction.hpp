@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 #include <string>
-struct MPMbox;
+class MPMbox;
 
 struct ShapeFunction {
   virtual ~ShapeFunction();

@@ -367,7 +367,11 @@ public:
 	}
 
 	friend std::ostream & operator << (std::ostream& pStr, const mat4& pV) {
-		return (pStr <<  pV.xx << CommBox().sep << pV.xy << CommBox().sep << pV.yx << CommBox().sep << pV.yy << '\n');
+		return (pStr <<  pV.xx << CommBox().sep << pV.xy << CommBox().sep << pV.yx << CommBox().sep << pV.yy);
+	}
+  
+	friend std::istream& operator >> (std::istream& pStr, mat4& M) {
+		return (pStr >> M.xx >> M.xy >> M.yx >> M.yy);
 	}
 };
 

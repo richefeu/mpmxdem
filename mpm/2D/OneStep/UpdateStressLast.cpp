@@ -180,7 +180,7 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
 
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
-  if (MPM.splittingMore) MPM.adaptativeRefinementMore();
+  //if (MPM.splittingMore) MPM.adaptativeRefinementMore();
 
   // ==== Execute the spies
   for (size_t s = 0; s < Spies.size(); ++s) {

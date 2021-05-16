@@ -39,11 +39,11 @@ void consDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   h.yx=MPM.MP[p].velGrad.yx;
   h.yy=MPM.MP[p].velGrad.yy; 
   F.reset(0);
-  F.xx=MPM.MP[p].Fincrement.xx; 
-  F.xy=MPM.MP[p].Fincrement.xy;
-  F.yx=MPM.MP[p].Fincrement.yx;
-  F.yy=MPM.MP[p].Fincrement.yy;
-  F.zz=1;
+  //F.xx=MPM.MP[p].Fincrement.xx; 
+  //F.xy=MPM.MP[p].Fincrement.xy;
+  //F.yx=MPM.MP[p].Fincrement.yx;
+  //F.yy=MPM.MP[p].Fincrement.yy;
+  //F.zz=1;
   MPM.PBC[p].Load.TransformationGradient(h, F, 1);
   // Elastic stress
   MPM.MP[p].stress.xx += MPM.PBC[p].Sig.xx;

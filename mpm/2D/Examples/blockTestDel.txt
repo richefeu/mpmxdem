@@ -4,11 +4,9 @@ tolmass 1.e-6
 gravity 0.0 -9.81
 finalTime 1
 confPeriod 1000
-vtkPeriod 1000
 proxPeriod 100
 dt 0.00001
 t 0.0
-parallelogramMP  1
 ShapeFunction BSpline
 
 # Materials
@@ -35,8 +33,8 @@ set    viscRate   0         1          0.95
 # Adaptative refinement
 splitting 	0
 
-VtkOutput smoothed_velocity
-VtkOutput forcesContact
+#VtkOutput smoothed_velocity
+#VtkOutput forcesContact
 
 #Spy ObstaclePosition  0  200 obstaclePos.txt
 #Spy ObstacleVelTouching  0 20 obstacleVelTouching.txt

@@ -9,7 +9,7 @@
 
 #include "DataTable.hpp" // util ??
 
-struct MPMbox;
+class MPMbox;
 
 struct OneStep {
   MPMbox* box;

@@ -1,7 +1,7 @@
 #ifndef VTKOUTPUT_HPP
 #define VTKOUTPUT_HPP
 
-struct MPMbox;
+class MPMbox;
 #include <fstream>
 
 struct VtkOutput {

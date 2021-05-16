@@ -8,7 +8,7 @@
 #include "Core/Neighbor.hpp"
 #include "vec2.hpp"
 
-struct MPMbox;
+class MPMbox;
 struct MaterialPoint;
 struct BoundaryForceLaw;
 

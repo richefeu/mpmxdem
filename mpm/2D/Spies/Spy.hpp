@@ -1,7 +1,7 @@
 #ifndef SPY_HPP
 #define SPY_HPP
 
-struct MPMbox;
+class MPMbox;
 #include <fstream>
 #include <string>
 

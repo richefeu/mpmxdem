@@ -8,9 +8,9 @@ X. dans BoundaryForceLaw : calculateContactForces(...) -> computeForces(MPMbox &
 
 X. supression des 'Obstacles' où je n'ai pas confiance : CircleInside, IrregularPolygon, LeftBilinear, LineMP 
 
-O. revision des lois de forces (frictionalViscoElastic et frictionalNormalRestitution)
-O. revision ou suppression des commandes obsoletes 
-O. suppression des modèles constitutifs qui ne fonctionne pas
+X. revision des lois de forces (frictionalViscoElastic et frictionalNormalRestitution)
+X. revision ou suppression des commandes obsoletes 
+X. suppression des modèles constitutifs qui ne fonctionne pas
 
 O. faire un visualiseur pour remplacer paraview
 

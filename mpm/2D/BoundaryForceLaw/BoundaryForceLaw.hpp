@@ -10,7 +10,7 @@
 #include <iostream>
 #include <vector>
 
-struct MPMbox;
+class MPMbox;
 struct MaterialPoint;
 struct Obstacle;
 

@@ -2,7 +2,7 @@
 #define MODIFIEDLAGRANGIAN_HPP
 
 #include "OneStep.hpp"
-struct MPMbox;
+class MPMbox;
 
 struct ModifiedLagrangian : public OneStep {
   std::string getRegistrationName();

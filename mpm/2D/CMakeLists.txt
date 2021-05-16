@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 project(MPMbox)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone) 
+find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR}) 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
-
-
-#set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++")
 
 file( GLOB core_object_files ${CMAKE_CURRENT_SOURCE_DIR}
 BoundaryForceLaw/*.cpp
@@ -16,26 +16,23 @@ ShapeFunctions/*.cpp
 Obstacles/*.cpp
 Commands/*.cpp
 Spies/*.cpp
-VtkOutputs/*.cpp
 )
 
 file( GLOB trajecto_object_files ${CMAKE_CURRENT_SOURCE_DIR}
 Trajectory/*.cpp
 )
 
-add_library( core_obj OBJECT ${core_object_files})
-add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj> )
+add_library(core_obj OBJECT ${core_object_files})
+add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries (mpmbox  ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
-#add_executable( mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj> )
-#target_link_libraries (mpmbox  Runners/run.cpp $<TARGET_OBJECTS:core_obj> ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
 
-
-#add_executable( mpmbox ${source_files} )
-#target_link_libraries( mpmbox ${CMAKE_SOURCE_DIR}/../../OTHER/PBC3D/libPBC3D.a )
+add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
+target_link_libraries (see ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 
 ADD_DEFINITIONS(
 -O3
 -std=c++11
+-Wno-deprecated-declarations
 -Wall
 -Wextra
 )

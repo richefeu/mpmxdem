@@ -2,7 +2,7 @@
 #define UPDATESTRESSFIRST_HPP
 
 #include "OneStep.hpp"
-struct MPMbox;
+class MPMbox;
 
 struct UpdateStressFirst : public OneStep {
   std::string getRegistrationName();

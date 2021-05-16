@@ -4,10 +4,11 @@
 #include <iostream>
 #include <string>
 
-struct MPMbox;
+class MPMbox;
 struct MaterialPoint;
 
 struct ConstitutiveModel {
+  std::string key;
   virtual ~ConstitutiveModel();
   virtual std::string getRegistrationName() = 0;
   virtual void read(std::istream& is) = 0;

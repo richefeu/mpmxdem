@@ -2,7 +2,7 @@
 #define COMMAND_HPP
 
 #include <fstream>
-struct MPMbox;
+class MPMbox;
 
 struct Command {
   MPMbox* box;
