@@ -4,6 +4,7 @@
 
 #include "factory.hpp"
 static Registrar<Obstacle, Circle> registrar("Circle");
+std::string Circle::getRegistrationName() { return std::string("Circle"); }
 
 void Circle::read(std::istream& is) {
   is >> group >> pos >> R;
@@ -24,6 +25,16 @@ void Circle::read(std::istream& is) {
     is >> vel >> vrot;
   } else {
     std::cerr << "@Circle::read, driveMode " << driveMode << " is unknown!" << std::endl;
+  }
+}
+
+void Circle::write(std::ostream& os) {
+  os << group << ' ' << pos << ' ' << R << ' ';
+  if (isFree == false) {
+    os << "velocity " << vel << '\n';
+  } else {
+    double density = mass / (Mth::pi * R * R);
+    os << "free " << density << ' ' << vel << ' ' << vrot << '\n';
   }
 }
 

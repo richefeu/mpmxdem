@@ -20,23 +20,21 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   if (MPM.step == 0) std::cout << "Running Modified Lagrangian!" << std::endl;
 
-  // Defining aliases
+  // Defining aliases ======================================
   std::vector<node>& nodes = MPM.nodes;
   std::vector<int>& liveNodeNum = MPM.liveNodeNum;
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;  // List of rigid obstacles
   std::vector<Spy*>& Spies = MPM.Spies;
-  // double &t = MPM.t;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
   int& step = MPM.step;
-  // End of aliases
+  // End of aliases ========================================
 
   int* I;  // use as node index
 
   // ==== Discard previous grid
-
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     nodes[liveNodeNum[n]].mass = 0.0;
     nodes[liveNodeNum[n]].q.reset();
@@ -198,8 +196,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // 4a) ====Update Volume and density
   for (size_t p = 0; p < MP.size(); p++) {
     double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy;
-    MP[p].vol *= (1 + volumetricdStrain);
-    MP[p].density /= (1 + volumetricdStrain);
+    MP[p].vol *= (1.0 + volumetricdStrain);
+    MP[p].density /= (1.0 + volumetricdStrain);
   }
 
   // 5) ==== Update positions
@@ -217,13 +215,14 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Update the corner positions of the MPs
+  /*
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].updateCornersFromF();
   }
-
+  */
+  
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
-  //if (MPM.splittingMore) MPM.adaptativeRefinementMore();
 
   // ==== Execute the spies
   for (size_t s = 0; s < Spies.size(); ++s) {

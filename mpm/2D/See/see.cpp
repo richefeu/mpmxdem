@@ -1,5 +1,10 @@
 #include "see.hpp"
 
+#include <typeinfo>
+
+#include "Obstacles/Circle.hpp"
+#include "Obstacles/Line.hpp"
+
 void printHelp() {
   using namespace std;
   cout << endl;
@@ -15,28 +20,6 @@ void printInfo() {
   using namespace std;
 
   cout << "\nCurrent Conf = " << confNum << "\n\n";
-  /*
-  cout << "Cell.h: " << Conf.Cell.h << '\n';
-  cout << "Cell.vh: " << Conf.Cell.vh << '\n';
-  cout << "Cell.mass: " << Conf.Cell.mass << '\n';
-
-  cout << "Vsolid: " << Conf.Vsolid << '\n';
-  cout << "Vmin: " << Conf.Vmin << '\n';
-  cout << "Vmax: " << Conf.Vmax << '\n';
-  cout << "Vmean: " << Conf.Vmean << '\n';
-
-  cout << "Rmin: " << Conf.Rmin << '\n';
-  cout << "Rmax: " << Conf.Rmax << '\n';
-  cout << "Rmean: " << Conf.Rmean << '\n';
-
-  cout << "FnMin: " << Conf.FnMin << '\n';
-  cout << "FnMax: " << Conf.FnMax << '\n';
-  cout << "FnMean: " << Conf.FnMean << '\n';
-
-  cout << "VelMin: " << Conf.VelMin << '\n';
-  cout << "VelMax: " << Conf.VelMax << '\n';
-  cout << "VelMean: " << Conf.VelMean << '\n';
-  */
 }
 
 void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
@@ -49,14 +32,29 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     case '1': {
       color_option = 1;
       double vmax = 0.0;
-      for (size_t i = 0 ; i < Conf.MP.size(); i++) {
-        double vel = norm(Conf.MP[i].vel);
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        double vel = norm(SmoothedData[i].vel);
         if (vel > vmax) vmax = vel;
       }
       colorTable.setMinMax(0.0, vmax);
-      colorTable.setTableID(7);
+      colorTable.setTableID(3);
       colorTable.Rebuild();
-      
+      std::cout << "MP colored by velocity magnitude (vmax = " << vmax << ")\n";
+    } break;
+
+    case '2': {
+      color_option = 2;
+      double pmax = -1e20;
+      double pmin = 1e20;
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        if (p > pmax) pmax = p;
+        if (p < pmin) pmin = p;
+      }
+      colorTable.setMinMax(pmin, pmax);
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
+      std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
     } break;
 
     case 'i': {
@@ -69,6 +67,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case 'q': {
       exit(0);
+    } break;
+
+    case 's': {
+      MP_deformed_shape = 1 - MP_deformed_shape;
     } break;
 
     case '-': {
@@ -111,7 +113,6 @@ void mouse(int button, int state, int x, int y) {
 }
 
 void motion(int x, int y) {
-
   if (mouse_mode == NOTHING) return;
 
   double dx = (double)(x - mouse_start[0]) / (double)width;
@@ -158,8 +159,8 @@ void display() {
   glEnable(GL_DEPTH_TEST);
 
   if (show_grid == 1) drawGrid();
-
   drawMPs();
+  if (show_obstacles == 1) drawObstacles();
 
   glFlush();
   glutSwapBuffers();
@@ -213,7 +214,7 @@ void reshape(int w, int h) {
 }
 
 void drawGrid() {
-  glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+  glColor4f(0.6f, 0.6f, 0.6f, 1.0f);
   glLineWidth(1.0f);
 
   std::vector<node>& nodes = Conf.nodes;
@@ -235,8 +236,15 @@ void setColor(int i) {
 
     case 1: {
       colorRGBA col;
-      double vel = norm(Conf.MP[i].vel);
+      double vel = norm(SmoothedData[i].vel);
       colorTable.getRGB(vel, &col);
+      glColor3f(col.r / 255.0, col.g / 255.0, col.b / 255.0);
+    } break;
+
+    case 2: {
+      colorRGBA col;
+      double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+      colorTable.getRGB(p, &col);
       glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, 1.0f);
     } break;
 
@@ -250,62 +258,88 @@ void drawMPs() {
   glLineWidth(1.0f);
 
   for (size_t i = 0; i < Conf.MP.size(); ++i) {
-    
+
     double xc = Conf.MP[i].pos.x;
     double yc = Conf.MP[i].pos.y;
-    double R = 0.5* Conf.MP[i].size;
+    double R = 0.5 * Conf.MP[i].size;
 
-    setColor(i);
-    glBegin(GL_POLYGON);
-    for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-      glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
-    }
-    glEnd();
+    if (MP_deformed_shape == 1) {
+      setColor(i);
 
-    
-    glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-    glBegin(GL_LINE_LOOP);
-    for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-      glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
+      glBegin(GL_POLYGON);
+      for (size_t r = 0; r < 4; r++) {
+        glVertex2f(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
+      }
+      glEnd();
+
+      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+      glBegin(GL_LINE_LOOP);
+      for (size_t r = 0; r < 4; r++) {
+        glVertex2f(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
+      }
+      glEnd();
+    } else {
+      setColor(i);
+
+      glBegin(GL_POLYGON);
+      for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+        glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
+      }
+      glEnd();
+
+      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+      glBegin(GL_LINE_LOOP);
+      for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+        glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
+      }
+      glEnd();
     }
-    glEnd();
-    
   }
 }
 
-// void drawContacts() {}
-/*
-void drawForces() {
-  if (Conf.Interactions.empty()) return;
+void drawObstacles() {
+  for (size_t iObst = 0; iObst < Conf.Obstacles.size(); iObst++) {
+    if (Conf.Obstacles[iObst]->getRegistrationName() == "Circle") {
+      Circle* C = static_cast<Circle*>(Conf.Obstacles[iObst]);
 
-  double fnMax = Conf.Interactions[0].fn;
-  for (size_t k = 1; k < Conf.Interactions.size(); ++k) {
-    if (Conf.Interactions[k].fn > fnMax) fnMax = Conf.Interactions[k].fn;
-  }
+      glColor4f(0.5f, 0.0f, 0.0f, 0.1f);
+      glLineWidth(1.0f);
+      glBegin(GL_POLYGON);
+      for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+        glVertex2f(C->pos.x + C->R * cos(angle), C->pos.y + C->R * sin(angle));
+      }
+      glEnd();
 
-  glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
-  for (size_t k = 0; k < Conf.Interactions.size(); ++k) {
-    size_t i = Conf.Interactions[k].i;
-    size_t j = Conf.Interactions[k].j;
-    vec2r sij = Conf.Particles[j].pos - Conf.Particles[i].pos;
-    sij.x -= floor(sij.x + 0.5);
-    sij.y -= floor(sij.y + 0.5);
-    vec2r posi = Conf.Cell.h * Conf.Particles[i].pos;
-    vec2r posj = posi + Conf.Cell.h * sij;
-    vec2r n = posj - posi;
-    n.normalize();
-    vec2r t(-n.y, n.x);
-    double w = Conf.Interactions[k].fn / fnMax * 0.5 * Conf.Rmean;
+      glColor4f(0.5f, 0.0f, 0.0f, 1.0f);
+      glLineWidth(2.0f);
+      glBegin(GL_LINE_LOOP);
+      for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+        glVertex2f(C->pos.x + C->R * cos(angle), C->pos.y + C->R * sin(angle));
+      }
+      glEnd();
 
-    glBegin(GL_POLYGON);
-    glVertex2f(posi.x + w * (t.x), posi.y + w * (t.y));
-    glVertex2f(posj.x + w * (t.x), posj.y + w * (t.y));
-    glVertex2f(posj.x + w * (-t.x), posj.y + w * (-t.y));
-    glVertex2f(posi.x + w * (-t.x), posi.y + w * (-t.y));
-    glEnd();
+    } else if (Conf.Obstacles[iObst]->getRegistrationName() == "Line") {
+      Line* L = static_cast<Line*>(Conf.Obstacles[iObst]);
+
+      glColor4f(0.5f, 0.0f, 0.0f, 0.1f);
+      glLineWidth(1.0f);
+      double w = Conf.Grid.lx * 0.5;
+      glBegin(GL_POLYGON);
+      glVertex2f(L->pos.x, L->pos.y);
+      glVertex2f(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
+      glVertex2f(L->pos.x + L->len * L->t.x - w * L->n.x, L->pos.y + L->len * L->t.y - w * L->n.y);
+      glVertex2f(L->pos.x - w * L->n.x, L->pos.y - w * L->n.y);
+      glEnd();
+
+      glColor4f(0.5f, 0.0f, 0.0f, 1.0f);
+      glLineWidth(2.0f);
+      glBegin(GL_LINES);
+      glVertex2f(L->pos.x, L->pos.y);
+      glVertex2f(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
+      glEnd();
+    }
   }
 }
-*/
 
 /// Robust and portable function to test if a file exists
 bool fileExists(const char* fileName) {
@@ -327,6 +361,7 @@ void try_to_readConf(int num, MPMbox& CF, int& OKNum) {
     OKNum = num;
     CF.clean();
     CF.read(file_name);
+    CF.postProcess(SmoothedData);
   } else
     std::cout << file_name << " does not exist" << std::endl;
 }
@@ -352,11 +387,11 @@ void buildMenu() {
   glutAddMenuEntry("None", 200);
   glutAddMenuEntry("Magnitude", 201);
   */
-  
+
   glutCreateMenu(menu);  // Main menu
-  //glutAddSubMenu("Particle Colors", submenu1);
-  //glutAddSubMenu("Force Colors", submenu2);
-  //glutAddSubMenu("Velocity Colors", submenu2);
+  // glutAddSubMenu("Particle Colors", submenu1);
+  // glutAddSubMenu("Force Colors", submenu2);
+  // glutAddSubMenu("Velocity Colors", submenu2);
   glutAddMenuEntry("Quit", 0);
 }
 

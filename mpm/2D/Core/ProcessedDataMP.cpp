@@ -1,3 +1,3 @@
 #include "ProcessedDataMP.hpp"
 
-ProcessedDataMP::ProcessedDataMP() : vel() {}
+ProcessedDataMP::ProcessedDataMP() : vel(), stress() { }

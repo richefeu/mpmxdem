@@ -225,7 +225,7 @@ void MPMbox::read(const char* name) {
       std::string modelName;
       for (size_t iMP = 0; iMP < nb; iMP++) {
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
-            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount;
+            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F;
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
@@ -337,13 +337,21 @@ void MPMbox::save(const char* name) {
   }
   */
 
+  // Obstacles
+  //file << "Obstacles " << Obstacles.size() << '\n';
+  for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
+    file << "Obstacle " << Obstacles[iObst]->getRegistrationName() << ' ';
+    Obstacles[iObst]->write(file);
+  }
+
+
   // Material points
   file << "MPs " << MP.size() << '\n';
   for (size_t iMP = 0; iMP < MP.size(); iMP++) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
-         << MP[iMP].splitCount << '\n';
+         << MP[iMP].splitCount << ' ' << MP[iMP].F << '\n';
   }
 }
 
@@ -687,7 +695,7 @@ void MPMbox::adaptativeRefinement() {
   }  // for
 }
 
-void MPMbox::smooth(std::vector<ProcessedDataMP>& Data) {
+void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   Data.clear();
   Data.resize(MP.size());
     
@@ -728,13 +736,25 @@ void MPMbox::smooth(std::vector<ProcessedDataMP>& Data) {
     I = &(Elem[MP[p].e].I[0]);
     for (int r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].vel += MP[p].N[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
+      nodes[I[r]].stress += MP[p].N[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
     }
   }
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     for (int r = 0; r < element::nbNodes; r++) {
       Data[p].vel += nodes[I[r]].vel * MP[p].N[r];
+      Data[p].stress += nodes[I[r]].stress * MP[p].N[r];
     }
+  }
+  
+  // corners from F (supposed to be already computed)
+  for (size_t p = 0; p < MP.size(); p++) {
+    double halfSizeMP = 0.5 * MP[p].size;
+
+    Data[p].corner[0] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, -halfSizeMP);
+    Data[p].corner[1] = MP[p].pos + MP[p].F * vec2r(halfSizeMP, -halfSizeMP);
+    Data[p].corner[2] = MP[p].pos + MP[p].F * vec2r(halfSizeMP, halfSizeMP);
+    Data[p].corner[3] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, halfSizeMP);
   }
   
 }

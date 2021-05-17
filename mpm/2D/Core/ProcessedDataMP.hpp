@@ -8,10 +8,9 @@
 
 struct ProcessedDataMP {
   vec2r vel;    // Smoothed velocity
-  //mat4 strain;  // Smoothed total  strain
-  //mat4 stress;  // Smoothed total stress
+  mat4 stress;  // Smoothed total stress
 
-  //vec2r corner[4];  // Four corners according to F (positions expressed in the global frame)
+  vec2r corner[4];  // Four corners according to F (positions expressed in the global frame)
 
   // Ctor
   ProcessedDataMP();

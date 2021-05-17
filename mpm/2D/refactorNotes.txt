@@ -12,7 +12,8 @@ X. revision des lois de forces (frictionalViscoElastic et frictionalNormalRestit
 X. revision ou suppression des commandes obsoletes 
 X. suppression des modèles constitutifs qui ne fonctionne pas
 
-O. faire un visualiseur pour remplacer paraview
+X. faire un visualiseur pour remplacer paraview
+
 
 
 

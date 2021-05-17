@@ -117,7 +117,7 @@ class MPMbox {
   void weightIncrement();
 
   // postprocessing functions
-  void smooth(std::vector<ProcessedDataMP>& MPPD);
+  void postProcess(std::vector<ProcessedDataMP>& MPPD);
 };
 
 #endif /* end of include guard: MPMBOX_HPP */

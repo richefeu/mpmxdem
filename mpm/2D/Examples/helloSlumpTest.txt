@@ -1,37 +1,42 @@
 oneStepType ModifiedLagrangian
 result_folder ./helloSlumpTest
-tolmass 1.e-6
+tolmass 1.e-5
 gravity 0.0  -9.81
-finalTime 2.0
-vtkPeriod 200
+finalTime 0.5
+confPeriod 1000
 proxPeriod 10
 dt 1e-6
 t 0.0
-parallelogramMP  1
 ShapeFunction BSpline
+splitting 1
+shearLimit 1.0
+splitCriterionValue 3.0
+MaxSplitNumber 3
 
 #     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
-model MohrCoulomb    MC         1.0e7     0.42      0.01            5e0        0.01
+model MohrCoulomb    MC         1.0e7     0.42      0.3            5e1        0.01
 
-#               lx   ly   spacing
-new_set_grid    0.4  0.2  0.02
+set_node_grid  W.H.lx.ly  0.4  0.3  0.02 0.02
 
-#            group   modelName     mass_density  x0     y0      x1     y1      size of boxes
-set_MP_grid  0       MC            2700.0        0.12   0.04    0.28   0.15    0.01
+#            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
+set_MP_grid  0       MC            3000.0        0.04   0.04    0.1    0.20    0.01
 
 BoundaryForceLaw frictionalViscoElastic 1
 
-#                group  x0     y0     x1     y1    driveMode
-Obstacle Line    1      0.38  0.04   0.02   0.04  freeze
+#                group  x0    y0     x1     y1    driveMode
+Obstacle Line    1      0.36  0.26   0.36   0.04  freeze
+Obstacle Line    1      0.36  0.04   0.04   0.04  freeze
+Obstacle Line    1      0.04  0.04   0.04   0.26  freeze
+
+Obstacle Circle  1      0.14 0.3 0.04 free 300  0 0 0  0 0 0
 
 #properties      parameter  groupMP   groupObst  value
 set              mu         0         1          0.2
-set              kn         0         1          1.0e7
-set              en2        0         1          1.0
-set              kt         0         1          1e7
-set              viscRate  0         1          8.9e1
+set              kn         0         1          1e6
+set              kt         0         1          1e6
+set              viscRate   0         1          0.98
 
-#set_K0_stress 0.42  2700.
+
 
 
 

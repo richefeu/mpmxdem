@@ -14,10 +14,10 @@ void frictionalNormalRestitution::computeForces(MPMbox & MPM, size_t o) {
   for (size_t nn = 0; nn < MPM.Obstacles[o]->Neighbors.size(); ++nn) {
     size_t pn = MPM.Obstacles[o]->Neighbors[nn].PointNumber;
     double dn;
-    int contact = MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
+    MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
 
     // if it returns -1 there is no contact, else it returns a positive number
-    if (contact >= 0) {  // Check if there is contact
+    if (dn < 0.0) { // Check if there is contact
       g1 = (size_t)(MPM.MP[pn].groupNb);
       g2 = MPM.Obstacles[o]->group;
       kn = MPM.dataTable.get(MPM.id_kn, g1, g2);
@@ -36,7 +36,7 @@ void frictionalNormalRestitution::computeForces(MPMbox & MPM, size_t o) {
         } else if (delta_dn < 0.0) {  // Loading
           MPM.Obstacles[o]->Neighbors[nn].fn += -kn * delta_dn;
         } else {
-          MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn;  // First time loading
+          MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn; // First time loading
         }
       }
 
@@ -56,8 +56,7 @@ void frictionalNormalRestitution::computeForces(MPMbox & MPM, size_t o) {
 
       // === Resultant force
       vec2r f = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
-      MPM.MP[pn].contactf.x = f.x * -1;  // just to show the contact forces in the vtk
-      MPM.MP[pn].contactf.y = f.y * -1;
+      MPM.MP[pn].contactf = -f;  // just to show the contact forces in the vtk
       MPM.MP[pn].f += f;
       MPM.Obstacles[o]->force -= f;
 

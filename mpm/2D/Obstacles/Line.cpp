@@ -4,6 +4,7 @@
 
 #include <factory.hpp>
 static Registrar<Obstacle, Line> registrar("Line");
+std::string Line::getRegistrationName() { return std::string("Line"); }
 
 void Line::read(std::istream& is) {
   vec2r end;
@@ -24,6 +25,10 @@ void Line::read(std::istream& is) {
   } else {
     std::cerr << "@Line::read, driveMode " << driveMode << " is not allowed!" << std::endl;
   }
+}
+
+void Line::write(std::ostream& os) {
+  os << group << ' ' << pos << ' ' << pos + t * len << ' ' << "velocity " << vel << '\n';
 }
 
 int Line::touch(MaterialPoint& MP, double& dn) {

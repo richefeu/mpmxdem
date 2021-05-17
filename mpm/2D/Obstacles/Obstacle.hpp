@@ -33,7 +33,9 @@ struct Obstacle {
 
   std::vector<Neighbor> Neighbors;
 
+  virtual std::string getRegistrationName() = 0;
   virtual void read(std::istream& is) = 0;
+  virtual void write(std::ostream& os) = 0;
   virtual void checkProximity(MPMbox& MPM) = 0;
   virtual int touch(MaterialPoint& MP, double& dn) = 0;
   virtual void getContactFrame(MaterialPoint& MP, vec2r& n, vec2r& t) = 0;

@@ -12,7 +12,7 @@ void set_MP_grid::read(std::istream& is) {
 
 void set_MP_grid::exec() {
   if (box->Grid.lx / size > 3.0 || box->Grid.ly / size > 3.0) {
-    std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio" << std::endl;
+    std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 3)" << std::endl;
     exit(0);
   }
 
@@ -37,9 +37,6 @@ void set_MP_grid::exec() {
   nbMPX = (int)nbMPX;
   nbMPY = (int)nbMPY;
 
-  // std::cout << "nbMPX: "<<nbMPX<< '\n';
-  // std::cout << "nbMPY: "<<nbMPY << '\n';
-
   for (int i = 0; i < nbMPY; i++) {
     for (int j = 0; j < nbMPX; j++) {
       P.pos.set(x0 + halfSizeMP + size * j, y0 + halfSizeMP + size * i);
@@ -51,7 +48,6 @@ void set_MP_grid::exec() {
 
   for (size_t p = 0; p < box->MP.size(); p++) {
     box->MP[p].updateCornersFromF();
-    // TODO: not using this initialElement
     double invL[2];
     invL[0] = 1.0f / box->Grid.lx;
     invL[1] = 1.0f / box->Grid.ly;
@@ -74,8 +70,8 @@ void set_MP_grid::exec() {
   }
 
   for (size_t p = 0; p < box->MP.size(); p++) {
-    if (box->MP[p].pos.x > box->Grid.Nx * box->Grid.lx or box->MP[p].pos.x < 0.0 or
-        box->MP[p].pos.y > box->Grid.Ny * box->Grid.ly or box->MP[p].pos.y < 0.0) {
+    if (box->MP[p].pos.x > box->Grid.Nx * box->Grid.lx || box->MP[p].pos.x < 0.0 ||
+        box->MP[p].pos.y > box->Grid.Ny * box->Grid.ly || box->MP[p].pos.y < 0.0) {
       std::cerr << "@set_MP_grid::exec, Check before simulation: Some MPs are not inside the grid" << std::endl;
       exit(0);
     }
