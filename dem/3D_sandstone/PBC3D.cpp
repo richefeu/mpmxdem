@@ -6,7 +6,7 @@
 
 #include "PBC3D.hpp"
 
-PBC3Dbox::PBC3Dbox(): Load(),Particles(1),Interactions(1),Cell(),Sig(){
+PBC3Dbox::PBC3Dbox(): Particles(1),Interactions(1),Load(),Cell(),Sig(){
   // Some default values (actually, most of them will be (re-)set after)
   t = 0.0;
   tmax = 5.0;
@@ -74,10 +74,14 @@ void PBC3Dbox::clearMemory() {
 
 /// @brief Save the current configuration
 /// @param[in] i File number. It will be named 'confx' where x is replaced by i
-void PBC3Dbox::saveConf(int i,const char * name) {
+void PBC3Dbox::saveConf(int i) {
   char fname[256];
-  sprintf(fname, "%s%d", name,i);
-  std::ofstream conf(fname);
+  sprintf(fname, "conf%d", i);
+  saveConf(fname);
+} 
+
+void PBC3Dbox::saveConf(const char * name) {
+  std::ofstream conf(name);
   conf << "PBC3D 06-05-2021\n"; // format: progName version-date
   conf << "t " << t << '\n';
   conf << "tmax " << tmax << '\n';
@@ -851,23 +855,20 @@ void PBC3Dbox::printScreen(double elapsedTime) {
 }
 
 /// @brief The main loop of time-integration
-void PBC3Dbox::integrate(const char * name) {
-std::cout<<"entering PBC3Dbox::integrate"<<std::endl;
+void PBC3Dbox::integrate() {
+
   // (re)-compute some constants in case they were not yet set
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   accelerations();
-std::cout<<"integ : accelerations ok"<<std::endl;
   dataOutput();
-std::cout<<"integ : dataOutput ok"<<std::endl;
 
   char fname[256];
-  sprintf(fname, "%s%d", name,iconf);
+  sprintf(fname, "conf%d", iconf);
   if (!fileTool::fileExists(fname)) {
-    saveConf(iconf,name);
+    saveConf(iconf);
   }
 
-std::cout<<"integ : SaveConf ok"<<std::endl;
   double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
   while (t < tmax) {
     velocityVerletStep();
@@ -2107,6 +2108,40 @@ void PBC3Dbox::runSilently() {
   }
 }
 
+
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
+  double dtc = sqrt(Vmin * density / kn);
+  dt = dtc * 0.1;
+  if (dt >= macro_dt) dt = macro_dt * 0.2;
+  dt_2 = 0.5 * dt;
+  dt2_2 = 0.5 * dt * dt;
+  
+  tmax = t + macro_dt;
+  interVerlet = 1000 * dt; // on peut faire une meilleur estimation
+  
+  mat9r dFmI = Finc;
+  dFmI.xx -= 1.0;
+  dFmI.yy -= 1.0;
+  dFmI.zz -= 1.0;  
+  mat9r vh = (1.0 / macro_dt) * (dFmI * Cell.h);
+  
+  Load.VelocityControl(vh);
+  updateNeighborList(dVerlet);
+
+  while (t < tmax) {
+    velocityVerletStep();
+
+    if (interVerletC >= interVerlet) {
+      updateNeighborList(dVerlet);
+      interVerletC = 0.0;
+    }
+
+    interVerletC += dt;
+    t += dt;
+  }
+}
+
+// This version is for Lagamine (fortran)
 void PBC3Dbox::transform(double dFmoinsI[3][3], double *I, int *nstep) {
   // const double dtcFactor = 0.04; // 0.04 = 1/25
 
