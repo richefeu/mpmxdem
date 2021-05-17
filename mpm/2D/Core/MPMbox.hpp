@@ -106,7 +106,8 @@ class MPMbox {
   void save(int num);
   void checkNumericalDissipation();
   void checkProximity();
-  void init(/*const char* name, const char* dconf*/);
+  void init();
+
   void MPinGridCheck();
   void cflCondition();
   void run();

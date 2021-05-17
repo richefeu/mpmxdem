@@ -7,8 +7,11 @@
 class MPMbox;
 struct MaterialPoint;
 
+
 struct ConstitutiveModel {
   std::string key;
+  //const char * fileName;
+
   virtual ~ConstitutiveModel();
   virtual std::string getRegistrationName() = 0;
   virtual void read(std::istream& is) = 0;

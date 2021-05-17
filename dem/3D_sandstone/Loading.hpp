@@ -21,7 +21,7 @@ struct Loading {
   // This function will be set to a lambda (c++11)
   // It can be used for 'smart' driving conditions like high dependent velocity or complexe loading
   // such as cyclic loading or loading for building a yield surface.
-  std::function<void(PBC3Dbox &box)> ServoFunction; ///< This lamda function is used for 'smart' driving conditions
+  std::function<void(PBC3Dbox &box)> ServoFunction=nullptr; ///< This lamda function is used for 'smart' driving conditions
 
   Loading();
 

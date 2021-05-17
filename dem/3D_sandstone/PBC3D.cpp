@@ -6,7 +6,7 @@
 
 #include "PBC3D.hpp"
 
-PBC3Dbox::PBC3Dbox() {
+PBC3Dbox::PBC3Dbox(): Load(),Particles(1),Interactions(1),Cell(),Sig(){
   // Some default values (actually, most of them will be (re-)set after)
   t = 0.0;
   tmax = 5.0;
@@ -38,7 +38,16 @@ PBC3Dbox::PBC3Dbox() {
   permamentGluer = 0;
   numericalDampingCoeff = 0.0;
   Kratio = 1.0;
+  nbBondsini=0;  ///< initial # of Bonds at start of Lagamine
+  porosityini=0; ///< initial porosity at start of Lagamine
+  tensfailure=0;
+  fricfailure=0;
+  dVerlet=1e-7; ///< Distance of Verlet
+  zetaMax=1;
+  enableSwitch=1;
 }
+
+PBC3Dbox::PBC3Dbox(const PBC3Dbox & box){}
 
 /// @brief Print a banner related with the current code
 void PBC3Dbox::showBanner() {
@@ -65,12 +74,11 @@ void PBC3Dbox::clearMemory() {
 
 /// @brief Save the current configuration
 /// @param[in] i File number. It will be named 'confx' where x is replaced by i
-void PBC3Dbox::saveConf(int i) {
+void PBC3Dbox::saveConf(int i,const char * name) {
   char fname[256];
-  sprintf(fname, "conf%d", i);
+  sprintf(fname, "%s%d", name,i);
   std::ofstream conf(fname);
-
-  conf << "PBC3D 30-01-2019\n"; // format: progName version-date
+  conf << "PBC3D 06-05-2021\n"; // format: progName version-date
   conf << "t " << t << '\n';
   conf << "tmax " << tmax << '\n';
   conf << "dt " << dt << '\n';
@@ -94,18 +102,28 @@ void PBC3Dbox::saveConf(int i) {
   conf << "drot0 " << drot0 << '\n';
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
+  conf << "permamentGluer " << permamentGluer <<'\n';
+  conf << "numericalDampingCoeff " << numericalDampingCoeff <<'\n';
+  conf << "Kratio " << Kratio << '\n';
   conf << "iconf " << iconf << '\n';
   conf << "h " << Cell.h << '\n';
   conf << "vh " << Cell.vh << '\n';
   conf << "ah " << Cell.ah << '\n';
   conf << "hmass " << Cell.mass << '\n';
+  conf << "hvelGrad " << Cell.velGrad << '\n';
+  conf << "hstrain " << Cell.strain << '\n';
+  conf << "Sig " << Sig << '\n';
   conf << "enableSwitch " << enableSwitch << '\n';
-  if (numericalDampingCoeff != 0)
-    conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
-  conf << "Kratio " << Kratio << '\n';
-  if (permamentGluer != 0)
-    conf << "permamentGluer " << permamentGluer << '\n';
   conf << "Load " << Load.StoredCommand << '\n';
+  conf << "interVerletC " << interVerletC << '\n';
+  conf << "interOutC " <<  interOutC << '\n';
+  conf << "interConfC " <<  interConfC << '\n';
+  conf << "nbBonds " << nbBonds << '\n';
+  conf << "nbActiveInteractions " << nbActiveInteractions << '\n';
+  conf << "nbBondsini " << nbBondsini  << '\n';
+  conf << "porosityini " << porosityini << '\n';
+  conf << "tensfailure " << tensfailure << '\n';
+  conf << "fricfailure " << fricfailure << '\n';
   conf << "Particles " << Particles.size() << '\n';
   for (size_t i = 0; i < Particles.size(); i++) {
     conf << Particles[i].pos << ' ' << Particles[i].vel << ' ' << Particles[i].acc << ' ' << Particles[i].Q << ' '
@@ -128,6 +146,8 @@ void PBC3Dbox::saveConf(int i) {
 /// @brief Load the configuration
 /// @param[in]    name     Name of the file
 void PBC3Dbox::loadConf(const char *name) {
+double trash;
+std::cout << "PBC3Dbox loading " << name << std::endl;
   std::ifstream conf(name);
   if (!conf.is_open()) {
     std::cerr << "@PBC3Dbox, Cannot read " << name << std::endl;
@@ -141,8 +161,8 @@ void PBC3Dbox::loadConf(const char *name) {
   }
   std::string date;
   conf >> date;
-  if (date != "30-01-2019") {
-    std::cerr << "@PBC3Dbox, The version-date should be 18-04-2018!" << std::endl;
+  if (date != "06-05-2021") {
+    std::cerr << "@PBC3Dbox, The version-date should be 06-05-2021!" << std::endl;
   }
 
   std::string token;
@@ -200,6 +220,12 @@ void PBC3Dbox::loadConf(const char *name) {
       conf >> powSurf;
     else if (token == "zetaMax")
       conf >> zetaMax;
+    else if (token == "permamentGluer")
+      conf >> permamentGluer;
+    else if (token == "numericalDampingCoeff")
+      conf >> numericalDampingCoeff;
+    else if (token == "Kratio")
+      conf >> Kratio;
     else if (token == "iconf")
       conf >> iconf;
     else if (token == "h")
@@ -210,14 +236,14 @@ void PBC3Dbox::loadConf(const char *name) {
       conf >> Cell.ah;
     else if (token == "hmass")
       conf >> Cell.mass;
+    else if (token == "hvelGrad")
+      conf >> Cell.velGrad;
+    else if (token == "hstrain")
+      conf >> Cell.strain;
+    else if (token == "Sig")
+      conf >> Sig;
     else if (token == "enableSwitch")
       conf >> enableSwitch;
-    else if (token == "numericalDampingCoeff")
-      conf >> numericalDampingCoeff;
-    else if (token == "Kratio")
-      conf >> Kratio;
-    else if (token == "permamentGluer")
-      conf >> permamentGluer;
     else if (token == "Load") {
       std::string command;
       conf >> command;
@@ -245,6 +271,10 @@ void PBC3Dbox::loadConf(const char *name) {
         mat9r vh;
         conf >> vh;
         Load.VelocityControl(vh);
+      } else if (command=="TransformationGradient"){
+          mat9r F;
+          conf >> F.xx >> F.xy >> F.xz >> F.yx >> F.yy >> F.yz >> F.zx >> F.zy >> F.zz;
+          Load.TransformationGradient(Cell.h,F,dt);
       } else if (command == "SimpleShearXY") {
         double pressure, gammaDot;
         conf >> pressure >> gammaDot;
@@ -258,10 +288,30 @@ void PBC3Dbox::loadConf(const char *name) {
         double pressure, velocity, LodeAngle;
         conf >> pressure >> velocity >> LodeAngle;
         Load.LodeAnglePathMix(pressure, velocity, LodeAngle);
+      } else if (command=="Fixe"){
+          Load.Fixe();
       } else {
         std::cerr << "Unknown command for loading: " << command << std::endl;
-      }
-    } else if (token == "Particles") {
+      } 
+    } else if (token == "interVerletC") 
+        conf >> trash;
+      else if (token == "interOutC")
+        conf >> trash;
+      else if (token == "interConfC") 
+        conf >> trash;
+      else if (token == "nbBonds")
+        conf >> trash;
+      else if (token == "nbActiveInteractions") 
+        conf >> trash;
+      else if (token == "nbBondsini") 
+        conf >> trash;
+      else if (token == "porosityini") 
+        conf >> trash;
+      else if (token == "tensfailure") 
+        conf >> trash;
+      else if (token == "fricfailure")
+        conf >> trash;
+      else if (token == "Particles") {
       size_t nb;
       conf >> nb;
       Particles.clear();
@@ -558,7 +608,7 @@ void PBC3Dbox::setSample() {
     GeoPack3D packing(radius - deltaR,                            // rmin
                       radius,                                     // rmax
                       200,                                        // no of trials
-                      0.0, cellSize, 0.0, cellSize, 0.0, cellSize // The periodic cell
+                      0.0, cellSize, 0.0, cellSize, 0.0, cellSize,cellSize-(2.0*ngw*radius),ngw*ngw*ngw // The periodic cell
     );
     packing.seedTime();
     // MORE PARAMETRIZATION HERE ........ TODO
@@ -801,19 +851,23 @@ void PBC3Dbox::printScreen(double elapsedTime) {
 }
 
 /// @brief The main loop of time-integration
-void PBC3Dbox::integrate() {
+void PBC3Dbox::integrate(const char * name) {
+std::cout<<"entering PBC3Dbox::integrate"<<std::endl;
   // (re)-compute some constants in case they were not yet set
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   accelerations();
+std::cout<<"integ : accelerations ok"<<std::endl;
   dataOutput();
+std::cout<<"integ : dataOutput ok"<<std::endl;
 
   char fname[256];
-  sprintf(fname, "conf%d", iconf);
+  sprintf(fname, "%s%d", name,iconf);
   if (!fileTool::fileExists(fname)) {
-    saveConf(iconf);
+    saveConf(iconf,name);
   }
 
+std::cout<<"integ : SaveConf ok"<<std::endl;
   double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
   while (t < tmax) {
     velocityVerletStep();
@@ -850,14 +904,19 @@ void PBC3Dbox::integrate() {
 
 /// @brief Save data in output files
 void PBC3Dbox::dataOutput() {
+std::cout<<"entering PBC3Dbox::dataOutput"<<std::endl;
+std::cout << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
   // Cell
   cellOut << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
+std::cout<<"dataOutput : cellOut used"<<std::endl;
 
   // Stress
   stressOut << t << ' ' << Sig << std::endl;
+std::cout<<"dataOutput : stressOut used"<<std::endl;
 
   // Strain
   strainOut << t << ' ' << Cell.strain << std::endl;
+std::cout<<"dataOutput : strainOut used"<<std::endl;
 
   // Resultant
   double Rmean, R0mean, fnMin, fnMean;

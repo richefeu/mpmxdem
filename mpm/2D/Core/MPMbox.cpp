@@ -363,21 +363,25 @@ void MPMbox::save(int num) {
   save(name);
 }
 
-void MPMbox::init(/*const char* name, const char* dconf*/) {
+
+void MPMbox::init() {
   // If the result folder does not exist, it is created
   fileTool::create_folder(result_folder);
   // PBC3Dbox  box=PBC3Dbox();
   // box.loadConf(dconf);
   for (size_t p = 0; p < MP.size(); p++) {
+    //MP[p].PBC.saveConf(p,"titi");
     MP[p].prev_pos = MP[p].pos;
-    // PBC.push_back(PBC3Dbox());
-    // PBC[p].loadConf(dconf);
-    // V0.reset(0);
-    // PBC[p].Load.VelocityControl(V0);
-    // PBC[p].enableSwitch = 1;
-    // PBC[p].interVerlet = dt / 4.0;
-    // PBC[p].interOut = 2 * dt;
-    // PBC[p].interConf = 2 * dt;
+
+  // PBC.push_back(PBC3Dbox()); 
+  // PBC[p].loadConf(dconf);
+  // V0.reset(0);
+  // PBC[p].Load.VelocityControl(V0);
+  // PBC[p].enableSwitch = 1;
+  // PBC[p].interVerlet =dt/4.0;
+  // PBC[p].interOut =2*dt;
+  // PBC[p].interConf =2*dt;
+
   }
 
   // copying input file to results folder
@@ -443,12 +447,16 @@ void MPMbox::run() {
 
   while (t < finalTime) {
 
+    std::cout << "final Time: "<<finalTime << '\n';
+    std::cout << "t: "<<t << '\n';
+
     // checking cfl (should be improved but works for now)
-    try {
+    /*try {
       cflCondition();
     } catch (char const* e) {
-      std::cerr << "Error in function cflCondition: " << e << std::endl;
-    }
+      std::cout << "Error testing cfl: " << e << std::endl;
+    }*/
+
 
     if (step % confPeriod == 0) {
       save(iconf);
@@ -475,6 +483,7 @@ void MPMbox::run() {
     t += dt;
     step++;
   }
+  std::cout << "MPMbox::run done" << '\n';
 }
 
 // This function deactivate the numerical dissipation if all MP-velocities are less than a prescribed value.

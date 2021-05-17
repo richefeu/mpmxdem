@@ -54,6 +54,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::resetDEM(Obstacles[o], MPM.gravity);
   }
+
   // ==== Compute interpolation values
   for (size_t p = 0; p < MPM.MP.size(); p++) {
     MPM.shapeFunction->computeInterpolationValues(MPM, p);
@@ -159,12 +160,14 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
         MPinvMass += invmass;
       }
     }
+
     // Numerical dissipation!
     if (MPM.activeNumericalDissipation == true && MPM.step > 500) {
       vec2r newForceMP = numericalDissipation(MP[p].vel, tempForceMP);
       MP[p].vel = dt * newForceMP * MPinvMass;
     }
   }
+
   // 3b) ==== Calculate updated momentum in nodes
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -176,7 +179,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // 3c) ==== Nodal velocities  (A)
-
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     if (nodes[liveNodeNum[n]].mass > MPM.tolmass) {
       nodes[liveNodeNum[n]].vel = nodes[liveNodeNum[n]].q / nodes[liveNodeNum[n]].mass;
