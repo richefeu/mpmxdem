@@ -24,9 +24,6 @@ endif # =============================================================
 # The list of source files
 SOURCES = PBC3D.cpp Particle.cpp Interaction.cpp Loading.cpp PeriodicCell.cpp
 
-#quat.cpp ColorTable.cpp 
-#vec3.cpp mat9.cpp
-
 # Each cpp file listed below corresponds to an object file
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
@@ -52,27 +49,6 @@ lib: $(SOURCES) $(HEADERS)
 # The application that runs a simulation
 run: run.cpp lib
 	$(CXX) $(CXXFLAGS) -c run.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-
-stressProcess: stressProcess.cpp mat9.cpp vec3.cpp
-	$(CXX) $(CXXFLAGS) -c stressProcess.cpp mat9.cpp vec3.cpp
-	$(CXX) $(CXXFLAGS) -o stressProcess stressProcess.o mat9.o vec3.o
-
-confInfo: confInfo.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c confInfo.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-	
-confOrientations: confOrientations.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c confOrientations.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-
-# The application that converts a conf to a list of position + radius
-convertListDisks: convertListDisks.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c convertListDisks.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
-
-conf2revini: conf2revini.cpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c conf2revini.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
 
 # The application that visualizes the conf files
