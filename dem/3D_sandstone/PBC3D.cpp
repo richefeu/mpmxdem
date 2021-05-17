@@ -47,7 +47,7 @@ PBC3Dbox::PBC3Dbox(): Particles(1),Interactions(1),Load(),Cell(),Sig(){
   enableSwitch=1;
 }
 
-PBC3Dbox::PBC3Dbox(const PBC3Dbox & box){}
+//PBC3Dbox::PBC3Dbox(const PBC3Dbox & box){}
 
 /// @brief Print a banner related with the current code
 void PBC3Dbox::showBanner() {

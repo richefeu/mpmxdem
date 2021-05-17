@@ -10,7 +10,6 @@ struct MaterialPoint;
 
 struct ConstitutiveModel {
   std::string key;
-  //const char * fileName;
 
   virtual ~ConstitutiveModel();
   virtual std::string getRegistrationName() = 0;
@@ -18,6 +17,7 @@ struct ConstitutiveModel {
   virtual void write(std::ostream& os) = 0;
   virtual void updateStrainAndStress(MPMbox& MPM, size_t p) = 0;
   virtual double getYoung();
+  virtual void init(MaterialPoint & MP);
 };
 
 #endif /* end of include guard: CONSTITUTIVEMODEL_HPP */

@@ -26,6 +26,7 @@ std::cout << "entering set_MP_grid::exec" << std::endl;
   double halfSizeMP = 0.5 * size;
 
   MaterialPoint P(groupNb, size, rho, CM);
+  CM->init(P);
   int counter = 0;
 
   // new loop 15/05/2018 (bug should still exist but its working better now)
@@ -48,8 +49,7 @@ std::cout << "entering set_MP_grid::exec" << std::endl;
   }
 
   for (size_t p = 0; p < box->MP.size(); p++) {
-
-    box->MP[p].updateCornersFromF();
+    box->MP[p].updateCornersFromF(); // utile ????
     /*
     if(CM->fileName!=nullptr){
       box->MP[p].PBC.loadConf(CM->fileName);
@@ -59,26 +59,6 @@ std::cout << "entering set_MP_grid::exec" << std::endl;
     }
    std::cout << "PBC3Dbox fully created" << std::endl;
    */
-    // TODO: not using this initialElement
-    double invL[2];
-    invL[0] = 1.0f / box->Grid.lx;
-    invL[1] = 1.0f / box->Grid.ly;
-
-    /*
-    box->MP[p].initialElement =
-        (int)(trunc(box->MP[p].pos.x * invL[0]) + trunc(box->MP[p].pos.y * invL[1]) * box->Grid.Nx);
-    */
-    
-    /*
-    box->MP[p].corner[0].x = box->MP[p].pos.x - halfSizeMP;
-    box->MP[p].corner[0].y = box->MP[p].pos.y - halfSizeMP;
-    box->MP[p].corner[1].x = box->MP[p].pos.x + halfSizeMP;
-    box->MP[p].corner[1].y = box->MP[p].pos.y - halfSizeMP;
-    box->MP[p].corner[2].x = box->MP[p].pos.x + halfSizeMP;
-    box->MP[p].corner[2].y = box->MP[p].pos.y + halfSizeMP;
-    box->MP[p].corner[3].x = box->MP[p].pos.x - halfSizeMP;
-    box->MP[p].corner[3].y = box->MP[p].pos.y + halfSizeMP;
-    */
   }
 
   for (size_t p = 0; p < box->MP.size(); p++) {

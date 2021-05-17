@@ -51,14 +51,13 @@ class MPMbox {
   std::vector<element> Elem;      // Quad-elements of the grid
   std::vector<MaterialPoint> MP;  // Material Points
 
-  std::vector<PBC3Dbox> PBC;  // DEM simulation containers
-
   std::vector<Obstacle*> Obstacles;  // List of rigid obstacles
   std::vector<Spy*> Spies;           // Spies for (post-)processing
 
   ShapeFunction* shapeFunction;                      // The shape functions
   OneStep* oneStep;                                  // Type of routine to be used
   std::map<std::string, ConstitutiveModel*> models;  // The models
+  //std::map<int, PBC3Dbox*> PBCs;                     // DEM simulation containers
 
   std::string result_folder;  // The folder into which the result files will be saved
   bool planeStrain;           // Plane strain assumption (plane stress if false, default)
