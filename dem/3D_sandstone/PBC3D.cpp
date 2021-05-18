@@ -47,8 +47,6 @@ PBC3Dbox::PBC3Dbox(): Particles(1),Interactions(1),Load(),Cell(),Sig(){
   enableSwitch=1;
 }
 
-//PBC3Dbox::PBC3Dbox(const PBC3Dbox & box){}
-
 /// @brief Print a banner related with the current code
 void PBC3Dbox::showBanner() {
   std::cout << std::endl;
@@ -151,7 +149,7 @@ void PBC3Dbox::saveConf(const char * name) {
 /// @param[in]    name     Name of the file
 void PBC3Dbox::loadConf(const char *name) {
 double trash;
-std::cout << "PBC3Dbox loading " << name << std::endl;
+//std::cout << "PBC3Dbox loading " << name << std::endl;
   std::ifstream conf(name);
   if (!conf.is_open()) {
     std::cerr << "@PBC3Dbox, Cannot read " << name << std::endl;
@@ -580,11 +578,13 @@ void PBC3Dbox::setSample() {
       break;
   }
   ans << (char)strategy << '\n';
+  
   if (strategy == '1') {
     double cellSize = 2.0 * ngw * radius;
     Cell.Define(cellSize, 0.0, 0.0, 0.0, cellSize, 0.0, 0.0, 0.0, cellSize);
     Vsolid = 0.0;
     double Vol;
+    Particles.clear();
     for (int iz = 0; iz < ngw; iz++) {
       for (int iy = 0; iy < ngw; iy++) {
         for (int ix = 0; ix < ngw; ix++) {
@@ -621,6 +621,7 @@ void PBC3Dbox::setSample() {
     Vsolid = 0.0;
     double Vol;
     mat9r hinv = Cell.h.get_inverse();
+    Particles.clear();
     for (size_t i = 0; i < packing.sample.size(); i++) {
       P.radius = packing.sample[i].r;
       Vol = (4.0 / 3.0) * M_PI * P.radius * P.radius * P.radius;
@@ -631,7 +632,6 @@ void PBC3Dbox::setSample() {
       // reduced positions
       vec3r s(packing.sample[i].x, packing.sample[i].y, packing.sample[i].z);
       P.pos = hinv * s;
-      // std::cout << P.pos << '\n';
       Particles.push_back(P);
     }
   }
@@ -905,19 +905,19 @@ void PBC3Dbox::integrate() {
 
 /// @brief Save data in output files
 void PBC3Dbox::dataOutput() {
-std::cout<<"entering PBC3Dbox::dataOutput"<<std::endl;
-std::cout << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
+//std::cout<<"entering PBC3Dbox::dataOutput"<<std::endl;
+//std::cout << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
   // Cell
   cellOut << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
-std::cout<<"dataOutput : cellOut used"<<std::endl;
+//std::cout<<"dataOutput : cellOut used"<<std::endl;
 
   // Stress
   stressOut << t << ' ' << Sig << std::endl;
-std::cout<<"dataOutput : stressOut used"<<std::endl;
+//std::cout<<"dataOutput : stressOut used"<<std::endl;
 
   // Strain
   strainOut << t << ' ' << Cell.strain << std::endl;
-std::cout<<"dataOutput : strainOut used"<<std::endl;
+//std::cout<<"dataOutput : strainOut used"<<std::endl;
 
   // Resultant
   double Rmean, R0mean, fnMin, fnMean;
@@ -1377,6 +1377,41 @@ void PBC3Dbox::computeForcesAndMoments() {
 
   } // Loop over interactions
 }
+
+
+// for MPMxDEM coupling
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
+  double dtc = sqrt(Vmin * density / kn);
+  dt = dtc * 0.1;
+  if (dt >= macro_dt) dt = macro_dt * 0.2;
+  dt_2 = 0.5 * dt;
+  dt2_2 = 0.5 * dt * dt;
+  
+  tmax = t + macro_dt;
+  interVerlet = 100 * dt; // on peut faire une meilleur estimation
+  
+  mat9r dFmI = Finc;
+  dFmI.xx -= 1.0;
+  dFmI.yy -= 1.0;
+  dFmI.zz -= 1.0;  
+  mat9r vh = (1.0 / macro_dt) * (dFmI * Cell.h);
+  
+  Load.VelocityControl(vh);
+  updateNeighborList(dVerlet);
+
+  while (t < tmax) {
+    velocityVerletStep();
+
+    if (interVerletC >= interVerlet) {
+      updateNeighborList(dVerlet);
+      interVerletC = 0.0;
+    }
+
+    interVerletC += dt;
+    t += dt;
+  }
+}
+
 
 // =======================================================================
 //             METHODS FOR COUPLING WITH LAGAMINE (FEMxDEM)
@@ -2093,39 +2128,6 @@ void PBC3Dbox::runSilently() {
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
 
-  updateNeighborList(dVerlet);
-
-  while (t < tmax) {
-    velocityVerletStep();
-
-    if (interVerletC >= interVerlet) {
-      updateNeighborList(dVerlet);
-      interVerletC = 0.0;
-    }
-
-    interVerletC += dt;
-    t += dt;
-  }
-}
-
-
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
-  double dtc = sqrt(Vmin * density / kn);
-  dt = dtc * 0.1;
-  if (dt >= macro_dt) dt = macro_dt * 0.2;
-  dt_2 = 0.5 * dt;
-  dt2_2 = 0.5 * dt * dt;
-  
-  tmax = t + macro_dt;
-  interVerlet = 1000 * dt; // on peut faire une meilleur estimation
-  
-  mat9r dFmI = Finc;
-  dFmI.xx -= 1.0;
-  dFmI.yy -= 1.0;
-  dFmI.zz -= 1.0;  
-  mat9r vh = (1.0 / macro_dt) * (dFmI * Cell.h);
-  
-  Load.VelocityControl(vh);
   updateNeighborList(dVerlet);
 
   while (t < tmax) {

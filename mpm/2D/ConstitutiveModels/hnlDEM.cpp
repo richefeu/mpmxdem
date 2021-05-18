@@ -19,6 +19,8 @@ void hnlDEM::write(std::ostream& os) { os << fileName << '\n'; }
 void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
+  
+  //std::cout << "init !!!!! " << fileName.c_str() << "\n";
 }
 
 void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
@@ -39,12 +41,13 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
     dstrain.yy += (vn.y * MPM.MP[p].gradN[r].y) * MPM.dt;
   }
   
-  //std::cout << "hnlDEM: dstrain computed" << std::endl;
   dstrain.yx = dstrain.xy;
   MPM.MP[p].strain += dstrain;
   
-  // velGrad needs to be already computed here
-  mat4 Finc2D = (MPM.dt * MPM.MP[p].velGrad) * MPM.MP[p].F;
+  mat4 prev_F_inv = MPM.MP[p].prev_F;
+  prev_F_inv.inverse();
+  mat4 Finc2D = prev_F_inv * MPM.MP[p].F;
+  
   mat9r Finc3D;
   Finc3D.xx = Finc2D.xx;
   Finc3D.xy = Finc2D.xy;
@@ -56,38 +59,13 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   sprintf(fname, "%s/conf_MP%zu", MPM.result_folder.c_str(), p);
   MPM.MP[p].PBC->saveConf(fname);
   
-  /*
-  MPM.MP[p].PBC.tmax += MPM.dt;
-  h.reset(0);
-  h.xx = MPM.MP[p].PBC.Cell.vh.xx;
-  h.xy = MPM.MP[p].PBC.Cell.vh.xy;
-  h.yx = MPM.MP[p].PBC.Cell.vh.yx;
-  h.yy = MPM.MP[p].PBC.Cell.vh.yy;
-  F.reset(0);
-  F.xx = MPM.MP[p].F.xx;
-  F.xy = MPM.MP[p].F.xy;
-  F.yx = MPM.MP[p].F.yx;
-  F.yy = MPM.MP[p].F.yy;
-  F.zz = 1;
-  std::cout << "hnlDEM: F h computed" << std::endl;
-  MPM.MP[p].PBC.Load.TransformationGradient(h, F, MPM.dt);
-  std::cout << "hnlDEM: DEM : Load.TransformationGradient ok " << std::endl;
-  //char fn[256];
-  // sprintf(fn, "%s_DEM", fileName);
-  std::cout << "hnlDEM: DEM : calling integrate " << std::endl;
-  // MPM.MP[p].PBC.saveConf(p, "toto");
-  // MPM.MP[p].PBC.integrate(fn);
-  std::cout << "hnlDEM: DEM : integrate ok " << std::endl;
-  */
-  
-  
   // Elastic stress
   // remember here that MPM is 2D and DEM is 3D
-  // A VERIFIER SIGNE !!!!
-  MPM.MP[p].stress.xx = MPM.MP[p].PBC->Sig.xx; 
-  MPM.MP[p].stress.xy = MPM.MP[p].PBC->Sig.xy;
-  MPM.MP[p].stress.yx = MPM.MP[p].PBC->Sig.yx;
-  MPM.MP[p].stress.yy = MPM.MP[p].PBC->Sig.yy;
+  // (Sign convention is different)
+  MPM.MP[p].stress.xx = -MPM.MP[p].PBC->Sig.xx; 
+  MPM.MP[p].stress.xy = -MPM.MP[p].PBC->Sig.xy;
+  MPM.MP[p].stress.yx = -MPM.MP[p].PBC->Sig.yx;
+  MPM.MP[p].stress.yy = -MPM.MP[p].PBC->Sig.yy;
 }
 
 double hnlDEM::getYoung() { return 0; }

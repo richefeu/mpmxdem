@@ -41,7 +41,7 @@ struct MaterialPoint {
   int splitCount;   // Generation number caused by successive to splits
 
   vec2r prev_pos;  // Position at the previous time step
-  //mat4 prev_F;     // Deformation gradient at the previous step
+  mat4 prev_F;     // Deformation gradient at the previous step
 
   bool plastic;    // checks if the point was plastified
   vec2r contactf;  // resultant force due to contacts only

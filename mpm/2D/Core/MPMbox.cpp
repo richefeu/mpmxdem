@@ -447,8 +447,8 @@ void MPMbox::run() {
 
   while (t < finalTime) {
 
-    std::cout << "final Time: "<<finalTime << '\n';
-    std::cout << "t: "<<t << '\n';
+    //std::cout << "final Time: "<<finalTime << '\n';
+    //std::cout << "t: "<<t << '\n';
 
     // checking cfl (should be improved but works for now)
     /*try {
@@ -609,6 +609,7 @@ void MPMbox::updateTransformationGradient() {
     }
 
     // original code
+    MP[p].prev_F = MP[p].F;
     MP[p].F = (mat4::unit() + dt * MP[p].velGrad) * MP[p].F;
   }
 }

@@ -28,6 +28,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
   vol0 = vol = size * size;
   mass = vol0 * density;
   F = mat4::unit();
+  prev_F = F;
   for (int i = 0; i < 16; i++) N[i] = 0.0;
 
   gradN[0].reset();

@@ -5,10 +5,10 @@ gravity 0.0  -9.81
 finalTime 0.5
 confPeriod 1000
 proxPeriod 10
-dt 1e-6
+dt 1e-5
 t 0.0
 ShapeFunction BSpline
-splitting 1
+splitting 0
 shearLimit 1.0
 splitCriterionValue 3.0
 MaxSplitNumber 3
@@ -28,7 +28,7 @@ Obstacle Line    1      0.36  0.26   0.36   0.04  freeze
 Obstacle Line    1      0.36  0.04   0.04   0.04  freeze
 Obstacle Line    1      0.04  0.04   0.04   0.26  freeze
 
-Obstacle Circle  1      0.14 0.3 0.04 free 300  0 0 0  0 0 0
+#Obstacle Circle  1      0.14 0.3 0.04 free 300  0 0 0  0 0 0
 
 #properties      parameter  groupMP   groupObst  value
 set              mu         0         1          0.2

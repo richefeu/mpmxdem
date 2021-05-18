@@ -83,7 +83,6 @@ class PBC3Dbox {
 
   // Ctor
   PBC3Dbox();
-  //PBC3Dbox(const PBC3Dbox& box);
 
   // Methods
   void showBanner();               ///< Displays a banner about the code
