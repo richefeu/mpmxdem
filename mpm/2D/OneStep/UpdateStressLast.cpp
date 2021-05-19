@@ -27,11 +27,11 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   // double &t = MPM.t;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
-  int& step = MPM.step;
+  //int& step = MPM.step;
   vec2r& gravity = MPM.gravity;
   // End of aliases =================================
 
-  if (step == 0) std::cout << "Running UpdateStressLast" << std::endl;
+  if (MPM.step == 0) std::cout << "Running UpdateStressLast" << std::endl;
   int* I;  // use as node index
 
   // ==== Discard previous grid
@@ -184,8 +184,8 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
 
   // ==== Execute the spies
   for (size_t s = 0; s < Spies.size(); ++s) {
-    if (step % (Spies[s]->nstep) == 0) Spies[s]->exec();
-    if (step % (Spies[s]->nrec) == 0) Spies[s]->record();
+    if (MPM.step % (Spies[s]->nstep) == 0) Spies[s]->exec();
+    if (MPM.step % (Spies[s]->nrec) == 0) Spies[s]->record();
   }
 
   return 0;

@@ -57,6 +57,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
     } break;
 
+    case 'c': {
+      MP_contour = 1 - MP_contour;
+    } break;
+
     case 'i': {
       printInfo();
     } break;
@@ -272,12 +276,15 @@ void drawMPs() {
       }
       glEnd();
 
-      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-      glBegin(GL_LINE_LOOP);
-      for (size_t r = 0; r < 4; r++) {
-        glVertex2f(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
+      if (MP_contour == 1) {
+        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+        glBegin(GL_LINE_LOOP);
+        for (size_t r = 0; r < 4; r++) {
+          glVertex2f(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
+        }
+        glEnd();
       }
-      glEnd();
+
     } else {
       setColor(i);
 
@@ -287,12 +294,14 @@ void drawMPs() {
       }
       glEnd();
 
-      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-      glBegin(GL_LINE_LOOP);
-      for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-        glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
+      if (MP_contour == 1) {
+        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+        glBegin(GL_LINE_LOOP);
+        for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+          glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
+        }
+        glEnd();
       }
-      glEnd();
     }
   }
 }
@@ -323,7 +332,7 @@ void drawObstacles() {
 
       glColor4f(0.5f, 0.0f, 0.0f, 0.1f);
       glLineWidth(1.0f);
-      double w = Conf.Grid.lx * 0.5;
+      double w = (Conf.Grid.lx + Conf.Grid.ly) * 0.5;
       glBegin(GL_POLYGON);
       glVertex2f(L->pos.x, L->pos.y);
       glVertex2f(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);

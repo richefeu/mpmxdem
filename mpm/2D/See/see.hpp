@@ -41,6 +41,7 @@ int show_grid = 1;
 int show_obstacles = 1;
 
 int MP_deformed_shape = 0;
+int MP_contour = 0;
 
 int color_option = 0;
 ColorTable colorTable;
