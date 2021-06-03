@@ -43,11 +43,13 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   
   dstrain.yx = dstrain.xy;
   MPM.MP[p].strain += dstrain;
+  MPM.MP[p].deltaStrain = dstrain;
   
   mat4 prev_F_inv = MPM.MP[p].prev_F;
   prev_F_inv.inverse();
   mat4 Finc2D = MPM.MP[p].F*prev_F_inv;
   
+  // remember here that MPM is 2D and DEM is 3D
   mat9r Finc3D;
   Finc3D.xx = Finc2D.xx;
   Finc3D.xy = Finc2D.xy;
@@ -60,7 +62,6 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].PBC->saveConf(fname);
   
   // Elastic stress
-  // remember here that MPM is 2D and DEM is 3D
   // (Sign convention is different)
   MPM.MP[p].stress.xx = -MPM.MP[p].PBC->Sig.xx; 
   MPM.MP[p].stress.xy = -MPM.MP[p].PBC->Sig.xy;

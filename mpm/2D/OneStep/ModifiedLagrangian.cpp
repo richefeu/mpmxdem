@@ -29,7 +29,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
-  int& step = MPM.step;
+  // int& step = MPM.step;
   // End of aliases ========================================
 
   int* I;  // use as node index
@@ -222,14 +222,14 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].updateCornersFromF();
   }
   */
-  
+
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
 
   // ==== Execute the spies
   for (size_t s = 0; s < Spies.size(); ++s) {
-    if (step % (Spies[s]->nstep) == 0) Spies[s]->exec();
-    if (step % (Spies[s]->nrec) == 0) Spies[s]->record();
+    if ((MPM.step % Spies[s]->nstep) == 0) Spies[s]->exec();
+    if ((MPM.step % Spies[s]->nrec) == 0) Spies[s]->record();
   }
 
   return 0;

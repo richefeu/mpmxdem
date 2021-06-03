@@ -476,13 +476,15 @@ void MPMbox::run() {
     // run onestep!
     int ret = oneStep->advanceOneStep(*this);
     if (ret == 1) break;  // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
-    for (size_t s = 0; s < Spies.size(); ++s) {
-      Spies[s]->end();  // normally there is nothing implemented
-    }
-
+    
     t += dt;
     step++;
   }
+  
+  for (size_t s = 0; s < Spies.size(); ++s) {
+    Spies[s]->end();  // there is often nothing implemented
+  }
+  
   std::cout << "MPMbox::run done" << '\n';
 }
 

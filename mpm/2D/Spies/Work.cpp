@@ -12,7 +12,7 @@ static Registrar<Spy, Work> registrar("Work");
 void Work::read(std::istream& is) {
   std::string Filename;
   is >> nrec >> Filename;
-  nstep = 1;
+  nstep = 1; // exec is called at each time step
 
   filenameSlices = box->result_folder + fileTool::separator() + fileTool::GetFileName(Filename) + "Slices." +
                    fileTool::GetFileExt(Filename);
@@ -92,6 +92,6 @@ void Work::end() {
   for (int i = 0; i < Range.getNumberOfSlices(); i++) {
     fileSlices << vmin + (i + 1) * bin << " " << -Wn[i] << " " << -Wt[i] << " " << Wint[i] << std::endl;
   }
-  fileSlices.close();
-  file.close();
+  //fileSlices.close();
+  //file.close();
 }
