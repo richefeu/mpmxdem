@@ -46,7 +46,7 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   
   mat4 prev_F_inv = MPM.MP[p].prev_F;
   prev_F_inv.inverse();
-  mat4 Finc2D = prev_F_inv * MPM.MP[p].F;
+  mat4 Finc2D = MPM.MP[p].F*prev_F_inv;
   
   mat9r Finc3D;
   Finc3D.xx = Finc2D.xx;

@@ -17,7 +17,7 @@ public:
 
 	// Constants
 	static mat4 unit() { return mat4(1, 0, 0, 1); }
-	static mat4 zero() { return mat4(1, 1, 1, 1); }
+	static mat4 zero() { return mat4(0, 0, 0, 0); }
 	static mat4 one() { return mat4(1, 1, 1, 1); }
 	
 	void reset() { xx = xy = yx = yy = 0; }
