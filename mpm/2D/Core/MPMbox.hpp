@@ -70,7 +70,9 @@ class MPMbox {
   int iconf;         // File number of the comming save
   int confPeriod;    // Number of steps between conf files
   int proxPeriod;    // Number of steps between proximity check (rebuild the neighbor list)
+  int DEMPeriod;    // Number of spatial steps for DEM sampling
   double dt;         // Time increment
+  double dt_init;    // Time increment
   double t;          // Current time
 
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
@@ -113,6 +115,7 @@ class MPMbox {
 
   // Functions called in OneStep
   void updateTransformationGradient();
+  void DEMfinalTime();
   void adaptativeRefinement();
   void weightIncrement();
 

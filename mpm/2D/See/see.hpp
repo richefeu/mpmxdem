@@ -6,7 +6,7 @@
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 #endif
 
 #include <cmath>
@@ -40,8 +40,8 @@ int show_MPs = 1;
 int show_grid = 1;
 int show_obstacles = 1;
 
-int MP_deformed_shape = 0;
-int MP_contour = 0;
+int MP_deformed_shape = 1;
+int MP_contour = 1;
 
 int color_option = 0;
 ColorTable colorTable;

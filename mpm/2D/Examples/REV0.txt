@@ -35,9 +35,9 @@ hstrain -0.186818 0 0 0 -0.000153686 0 0 0 -0.0839036
 Sig 100 2.80192 3.3836 2.80192 100 -11.9864 3.3836 -11.9864 100
 enableSwitch 1
 Load IsostaticCompression 100
-interVerletC 9e-06
-interOutC 9.7e-05
-interConfC 0.010001
+interVerletC 0
+interOutC 0
+interConfC 0
 nbBonds 0
 nbActiveInteractions 241
 nbBondsini 0

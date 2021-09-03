@@ -109,7 +109,8 @@ class PBC3Dbox {
   void RemoveBonds(double percentRemove, int StrategyId);  ///< ....
 
   void transform(mat9r& Finc, double macro_dt);  ///< for MPMxDEM double-scale simulation
-
+  void transform(mat9r& Finc, double macro_dt, const char * name);  ///< for MPMxDEM double-scale simulation
+  void nulvelo(); ///< stop fulctuations
   // Methods specifically written for Lagamine (FEMxDEM coupling).
   // They are compatible with fortran.
   void initLagamine(double Q[]);  ///< Kind of serialization solution to get the initial configuration from Lagamine

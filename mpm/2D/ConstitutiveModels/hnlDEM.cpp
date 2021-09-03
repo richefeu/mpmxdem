@@ -19,6 +19,7 @@ void hnlDEM::write(std::ostream& os) { os << fileName << '\n'; }
 void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
+  MP.ismicro=true;
   
   //std::cout << "init !!!!! " << fileName.c_str() << "\n";
 }
@@ -29,7 +30,9 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Get the total strain increment from node velocities
   vec2r vn;
   mat4 dstrain;
-  
+  char fnamea[256];
+  int col_i;
+  int row_i;
   for (int r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {
       vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
@@ -57,10 +60,13 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.yy = Finc2D.yy;
   Finc3D.zz = 1.0;  
   MPM.MP[p].PBC->transform(Finc3D, MPM.dt);
-  char fname[256];
-  sprintf(fname, "%s/conf_MP%zu", MPM.result_folder.c_str(), p);
-  MPM.MP[p].PBC->saveConf(fname);
-  
+  col_i=p%MPM.Grid.Nx;
+  row_i=floor(p/MPM.Grid.Nx);
+  if (MPM.step % MPM.confPeriod == 0  && col_i%MPM.DEMPeriod ==0 && row_i%MPM.DEMPeriod ==0) {
+    sprintf(fnamea, "%s/DEM_MP%zu_t%i", MPM.result_folder.c_str(), p,MPM.iconf);
+    MPM.MP[p].PBC->saveConf(fnamea);
+    MPM.MP[p].PBC->iconf++;
+  }
   // Elastic stress
   // (Sign convention is different)
   MPM.MP[p].stress.xx = -MPM.MP[p].PBC->Sig.xx; 

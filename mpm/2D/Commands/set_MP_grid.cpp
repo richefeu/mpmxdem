@@ -11,7 +11,7 @@ void set_MP_grid::read(std::istream& is) {
 }
 
 void set_MP_grid::exec() {
-  if (box->Grid.lx / size > 3.0 || box->Grid.ly / size > 3.0) {
+  if (box->Grid.lx / size < 3.0 || box->Grid.ly / size < 3.0) {
     std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 3)" << std::endl;
     exit(0);
   }
@@ -24,8 +24,6 @@ void set_MP_grid::exec() {
 
   double halfSizeMP = 0.5 * size;
 
-  MaterialPoint P(groupNb, size, rho, CM);
-  CM->init(P);
   int counter = 0;
 
   // new loop 15/05/2018 (bug should still exist but its working better now)
@@ -37,9 +35,11 @@ void set_MP_grid::exec() {
   nbMPY += 0.5;
   nbMPX = (int)nbMPX;
   nbMPY = (int)nbMPY;
-
+ std::cerr << "@set_MP_grid::exec, nbMPX " << nbMPX << "nbMPY" << nbMPY << std::endl;
   for (int i = 0; i < nbMPY; i++) {
     for (int j = 0; j < nbMPX; j++) {
+      MaterialPoint P(groupNb, size, rho, CM);
+      CM->init(P);
       P.pos.set(x0 + halfSizeMP + size * j, y0 + halfSizeMP + size * i);
       P.nb = counter;
       counter++;

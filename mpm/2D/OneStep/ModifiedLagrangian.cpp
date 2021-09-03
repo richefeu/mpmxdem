@@ -189,7 +189,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // 3d) ====Deformation gradient (C)
   MPM.updateTransformationGradient();
-
+   
+  MPM.DEMfinalTime();
   // 4) ==== Update strain and stress
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].constitutiveModel->updateStrainAndStress(MPM, p);

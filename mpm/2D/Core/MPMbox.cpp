@@ -14,7 +14,7 @@ MPMbox::MPMbox() {
   oneStep = nullptr;
   planeStrain = false;
   activeNumericalDissipation = false;
-
+  DEMPeriod=5;
   Grid.Nx = 20;
   Grid.Ny = 20;
   tolmass = 1.0e-6;
@@ -107,6 +107,8 @@ void MPMbox::read(const char* name) {
       file >> confPeriod;
     } else if (token == "proxPeriod") {
       file >> proxPeriod;
+    } else if (token == "DEMPeriod") {
+      file >> DEMPeriod;
     } else if (token == "dt") {
       file >> dt;
     } else if (token == "t") {
@@ -267,6 +269,7 @@ void MPMbox::read(const char* name) {
     oneStep = Factory<OneStep>::Instance()->Create(defaultOneStep);
     std::cout << "No OneStep type defined, automatically set to 'ModifiedLagrangian'." << std::endl;
   }
+ dt_init=dt;
 }
 
 void MPMbox::save(const char* name) {
@@ -614,6 +617,20 @@ void MPMbox::updateTransformationGradient() {
     MP[p].prev_F = MP[p].F;
     MP[p].F = (mat4::unit() + dt * MP[p].velGrad) * MP[p].F;
   }
+}
+
+
+void MPMbox::DEMfinalTime(){
+ dt=dt_init;
+ float dtmax=0.0;
+ for (size_t p = 0; p < MP.size(); p++) {
+   if (MP[p].ismicro){
+      dtmax=1e-3*MP[p].PBC->Rmin/
+     (std::max({abs(MP[p].velGrad.xx),abs(MP[p].velGrad.yx),abs(MP[p].velGrad.xy),abs(MP[p].velGrad.yy)})*MP[p].PBC->Cell.h.maxi());
+     dt= (dtmax<=dt) ? dtmax : dt; 
+   }
+  }
+  std::cout << "final dem time " << dt << std::endl;
 }
 
 void MPMbox::adaptativeRefinement() {

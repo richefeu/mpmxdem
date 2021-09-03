@@ -80,6 +80,8 @@ void MPMbox::updateTransformationGradient() {
   }
 }
 \end{verbatim}
+A comprendre comme le paragraphe 4.11.4 de \cite{BonWoo-2008}.
+
 Le code DEM contient la fonction
 \begin{verbatim}
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
@@ -110,6 +112,9 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
 \end{verbatim} 
 Cette fonction prend en entrée {\texttt Finc} qu'il faut comprendre comme $\boldsymbol I+\Delta t \boldsymbol l$.
 C'est à dire l'incrément au sens de la composition, pas de l'addition dans le code DEM, on est en grandes déformations.
+
+La variable {\texttt PBC3Dbox::Load.v} est alors affectée à la valeur $\boldsymbol l$ et toutes les compoasantes de {\texttt PBC3Dbox::Load.Drive} 
+sont affectées à {\texttt VelocityDriven}.
 \item
 Le point 13 est donc remplacé par un appel à la fonction 
 \begin{verbatim} 
@@ -134,6 +139,8 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
 }
 \end{verbatim}
 \end{itemize}
+\section{Retour sur l'algo DEM et la variable {\texttt PBC3Dbox::Cell.h}}
+On considère ici le cas ou les composantes de {\texttt PBC3Dbox::Load.Drive} sont affectées à {\texttt VelocityDriven}.
 \bibliographystyle{alpha}
 \bibliography{strain}
 \end{document}
