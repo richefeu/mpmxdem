@@ -80,30 +80,60 @@ void Loading::BiaxialCompressionYPlaneStrainZ(double pressure, double velocity) 
 void Loading::BiaxialCompressionZPlaneStrainX(double pressure, double velocity) {
   sprintf(StoredCommand, "BiaxialCompressionZPlaneStrainX %g %g", pressure, velocity);
 
+  Drive.yy = ForceDriven;     // Pressure applied along y
+  Drive.xx = VelocityDriven;  // Velocity imposed
   Drive.zz = VelocityDriven;  // Plane Strain condition
-  Drive.xx = ForceDriven;     // Pressure applied along y
-  Drive.yy = VelocityDriven;  // Velocity imposed
 
   Drive.xy = Drive.yx = VelocityDriven;
   Drive.xz = Drive.zx = VelocityDriven;
   Drive.yz = Drive.zy = VelocityDriven;
 
+  Sig.xx = 0.0;
   Sig.zz = 0.0;
-  Sig.xx = pressure;
-  Sig.yy = 0.0;
+  Sig.yy = pressure;
   Sig.xy = Sig.yx = 0.0;
   Sig.xz = Sig.yz = 0.0;
   Sig.yz = Sig.zy = 0.0;
 
-  v.zz = 0.0;
-  v.xx = 0.0;  // free in fact
-  v.yy = -velocity;
+  v.xx = 0.0;
+  v.yy = 0.0;  // free in fact
+  v.zz = -velocity;
   v.xy = v.yx = 0.0;
   v.xz = v.zx = 0.0;
   v.yz = v.zy = 0.0;
 
   ServoFunction = nullptr;
 }
+
+void Loading::BiaxialCompressionXPlaneStrainY(double pressure, double velocity) {
+  sprintf(StoredCommand, "BiaxialCompressionZPlaneStrainX %g %g", pressure, velocity);
+
+  Drive.zz = ForceDriven;     // Pressure applied along z
+  Drive.xx = VelocityDriven;  // Velocity imposed
+  Drive.yy = VelocityDriven;  // Plane Strain condition
+
+  Drive.xy = Drive.yx = VelocityDriven;
+  Drive.xz = Drive.zx = VelocityDriven;
+  Drive.yz = Drive.zy = VelocityDriven;
+
+  Sig.xx = 0.0;
+  Sig.yy = 0.0;
+  Sig.zz = pressure;
+  Sig.xy = Sig.yx = 0.0;
+  Sig.xz = Sig.yz = 0.0;
+  Sig.yz = Sig.zy = 0.0;
+
+  v.zz = 0.0;
+  v.yy = 0.0;  // free in fact
+  v.xx = -velocity;
+  v.xy = v.yx = 0.0;
+  v.xz = v.zx = 0.0;
+  v.yz = v.zy = 0.0;
+
+  ServoFunction = nullptr;
+}
+
+
 
 void Loading::IsostaticCompression(double pressure) {
   sprintf(StoredCommand, "IsostaticCompression %g", pressure);
@@ -158,6 +188,14 @@ void Loading::VelocityControl(mat9r& V) {
   Drive.reset(VelocityDriven);
   Sig.reset();
   v = V;
+  ServoFunction = nullptr;
+}
+void Loading::StrainControl(mat9r &F){
+  sprintf(StoredCommand, "VelocityControl %g %g %g   %g %g %g   %g %g %g", F.xx, F.xy, F.xz, F.yx, F.yy, F.yz, F.zx,
+          F.zy, F.zz);
+  Drive.reset(VelocityDriven);
+  Sig.reset();
+  f = F;
   ServoFunction = nullptr;
 }
 

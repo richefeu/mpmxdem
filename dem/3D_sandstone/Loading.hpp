@@ -15,6 +15,7 @@ struct Loading {
   mat9b Drive; ///< Driving mode. Can be ForceDriven or VelocityDriven
   mat9r Sig;   ///< Imposed external stress
   mat9r v;     ///< Imposed velocities
+  mat9r f;     ///< Imposed strain
 
   char StoredCommand[256];
 
@@ -29,9 +30,11 @@ struct Loading {
   void TriaxialCompressionZ(double pressure, double velocity);
   void BiaxialCompressionYPlaneStrainZ(double pressure, double velocity);
   void BiaxialCompressionZPlaneStrainX(double pressure, double velocity);
+  void BiaxialCompressionXPlaneStrainY(double pressure, double velocity);
   void IsostaticCompression(double pressure);
   void SimpleShearXY(double pressure, double gammaDot);
   void VelocityControl(mat9r &V);
+  void StrainControl(mat9r &F);
   void TransformationGradient(mat9r &h, mat9r &F, double duration);
   void LodeAnglePath(double pressure, double velocity, double LodeAngle);
   void LodeAnglePathMix(double pressure, double velocity, double LodeAngle);

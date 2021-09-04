@@ -38,7 +38,7 @@ void set_node_grid::read(std::istream& is) {
   } else {
     std::cerr << "@set_node_grid, inputChoice: '" << inputChoice << "' is not known\n";
   }
-  
+ std::cerr << "@set_node_grid::exec" << "nbElemX=" << nbElemX <<  "nbElemY=" << nbElemY  << std::endl;
 }
 
 void set_node_grid::exec() {

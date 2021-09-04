@@ -259,6 +259,7 @@ void setColor(int i) {
 }
 
 void drawMPs() {
+  std::cout << "enterring draw MPs";
   glLineWidth(1.0f);
 
   for (size_t i = 0; i < Conf.MP.size(); ++i) {
@@ -418,7 +419,6 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Current Configuration: ";
   try_to_readConf(confNum, Conf, confNum);
-
   // ==== Init GLUT and create window
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
@@ -442,6 +442,18 @@ int main(int argc, char* argv[]) {
   glEnable(GL_BLEND);
   glBlendEquation(GL_FUNC_ADD);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  std::cout << "definig color options ";
+  color_option=2;
+      double pmax = -1e20;
+      double pmin = 1e20;
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        if (p > pmax) pmax = p;
+        if (p < pmin) pmin = p;
+      }
+      colorTable.setMinMax(pmin, pmax);
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
 
   // ==== Enter GLUT event processing cycle
   fit_view();

@@ -109,8 +109,10 @@ class PBC3Dbox {
   void RemoveBonds(double percentRemove, int StrategyId);  ///< A kind of global damage
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
-  // Methods specificalle written for MPMxDEM coupling
-  void transform(mat9r& Finc, double macro_dt);  ///< for MPMxDEM double-scale step
+
+  void transform(mat9r& Finc, double macro_dt);  ///< for MPMxDEM double-scale simulation
+  void transform(mat9r& Finc, double macro_dt, const char * name);  ///< for MPMxDEM double-scale simulation
+  void nulvelo(); ///< stop fulctuations
 
   // Methods specifically written for Lagamine (FEMxDEM coupling).
   // They are compatible with fortran (it's the reason why all parameters are pointers).

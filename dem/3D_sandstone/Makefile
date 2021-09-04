@@ -39,7 +39,7 @@ HEADERS = $(SOURCES:%.cpp=%.hpp)
 
 .PHONY: all lib clean
 
-all: run see
+all: run see stop # mpstest
 
 clean:
 	rm -f *.o libPBC3D.a *.gch run see
@@ -58,3 +58,12 @@ see: see.cpp see.hpp graphGL.hpp $(HEADERS) $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -c see.cpp -Wno-deprecated $(GLFLAGS)
 	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS) $(GLLINK)
 
+# The application that stops fluctuations
+stop: stop.cpp lib
+	$(CXX) $(CXXFLAGS) -c stop.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
+
+
+mpstest : mpstest.cpp lib 
+	$(CXX) $(CXXFLAGS) -c mpstest.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)

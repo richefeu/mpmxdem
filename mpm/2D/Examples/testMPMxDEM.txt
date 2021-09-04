@@ -1,8 +1,8 @@
 oneStepType ModifiedLagrangian
-result_folder ./testMPMxDEM
+result_folder ./testMPMxDEMmc
 tolmass 1.e-5
 gravity 0.0  -9.81
-finalTime 0.5
+finalTime 1
 confPeriod 100
 proxPeriod 10
 dt 1e-5
@@ -17,10 +17,10 @@ MaxSplitNumber 3
 model MohrCoulomb    MC         1.0e7     0.42      0.3            5e1        0.01
 model hnlDEM         DE         REV0.txt
 
-set_node_grid  W.H.lx.ly  0.4  0.3  0.02 0.02
+set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
 
 #            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
-set_MP_grid  0       DE            3000.0        0.06   0.04    0.1    0.1     0.01
+set_MP_grid  0       MC            30.0        0.06   0.04    0.1    0.1     0.003
 
 BoundaryForceLaw frictionalViscoElastic 1
 

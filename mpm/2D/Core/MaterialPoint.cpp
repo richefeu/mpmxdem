@@ -23,8 +23,10 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       prev_pos(),
       plastic(false),
       contactf(),
+      ismicro(false),
       constitutiveModel(CM),
-      PBC(nullptr) {
+      PBC(nullptr)
+      {
   vol0 = vol = size * size;
   mass = vol0 * density;
   F = mat4::unit();

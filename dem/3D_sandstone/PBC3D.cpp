@@ -264,6 +264,10 @@ void PBC3Dbox::loadConf(const char* name) {
         double pressure, velocity;
         conf >> pressure >> velocity;
         Load.BiaxialCompressionZPlaneStrainX(pressure, velocity);
+      } else if (command == "BiaxialCompressionXPlaneStrainY") {
+        double pressure, velocity;
+        conf >> pressure >> velocity;
+        Load.BiaxialCompressionXPlaneStrainY(pressure, velocity);
       } else if (command == "IsostaticCompression") {
         double pressure;
         conf >> pressure;
@@ -272,10 +276,14 @@ void PBC3Dbox::loadConf(const char* name) {
         mat9r vh;
         conf >> vh;
         Load.VelocityControl(vh);
-      } else if (command == "TransformationGradient") {
-        mat9r F;
-        conf >> F.xx >> F.xy >> F.xz >> F.yx >> F.yy >> F.yz >> F.zx >> F.zy >> F.zz;
-        Load.TransformationGradient(Cell.h, F, dt);
+      } else if (command == "StrainControl") {
+        mat9r fh;
+        conf >> fh;
+        Load.StrainControl(fh);
+      } else if (command=="TransformationGradient"){
+          mat9r F;
+          conf >> F.xx >> F.xy >> F.xz >> F.yx >> F.yy >> F.yz >> F.zx >> F.zy >> F.zz;
+          Load.TransformationGradient(Cell.h,F,dt);
       } else if (command == "SimpleShearXY") {
         double pressure, gammaDot;
         conf >> pressure >> gammaDot;
@@ -560,7 +568,9 @@ void PBC3Dbox::setSample() {
   std::cout << "Range of radii (Delta R): ";
   std::cin >> deltaR;
   ans << deltaR << '\n';
-  dVerlet = 0.95 * (radius - deltaR);
+
+  dVerlet = 2.5 * radius;
+  
 
   density = 2700.0;
   std::cout << "Mass density of the particles: ";
@@ -748,6 +758,15 @@ void PBC3Dbox::setSample() {
   std::cout << "interConf: " << interConf << '\n';
   std::cout << "enableSwitch: " << enableSwitch << '\n';
   return;
+}
+
+void PBC3Dbox::nulvelo(){
+  for (size_t i = 0; i < Particles.size(); i++) {
+    Particles[i].vel=vec3r::zero();
+    Particles[i].acc=vec3r::zero();
+    Particles[i].vrot=vec3r::zero();
+    Particles[i].arot=vec3r::zero();
+  }
 }
 
 /// @brief Computes a single step with the velocity-Verlet algorithm
@@ -1358,17 +1377,17 @@ void PBC3Dbox::computeForcesAndMoments() {
 
 // for MPMxDEM coupling
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
-  double dtc = sqrt(Vmin * density / kn); // critical time step
-  dt = dtc * 0.1; // time step is set to a tenth of the critical  
-  if (dt >= 0.2 * macro_dt) dt = 0.2 * macro_dt; // At least 5 increments must be done
-  
-  // the following are precomputed variables used in 'velocityVerletStep'
+
+  double dtc = sqrt(Vmin * density / kn);
+  dt = dtc * 0.05;
+  if (dt >= 0.2*macro_dt) dt = macro_dt * 0.2;
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
-
-  tmax = t + macro_dt;
-  interVerlet = 100 * dt;  // on peut faire une meilleur estimation
-
+  t=0; 
+  tmax = macro_dt;
+  interVerlet = 10*dt; // on peut faire une meilleur estimation
+  interVerletC = 10*dt; // on peut faire une meilleur estimation
+  
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
   dFmI.yy -= 1.0;
@@ -1392,6 +1411,58 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
     t += dt;
   }
 }
+
+
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char * name) {
+  char fname[256]; 
+  double dtc = sqrt(Vmin * density / kn);
+  dt = dtc * 0.005;
+  if (dt >= macro_dt) dt = macro_dt * 0.2;
+  dt_2 = 0.5 * dt;
+  dt2_2 = 0.5 * dt * dt;
+  tmax = t + macro_dt;
+  interVerlet = dt; // on peut faire une meilleur estimation
+  
+  mat9r dFmI = Finc;
+  dFmI.xx -= 1.0;
+  dFmI.yy -= 1.0;
+  dFmI.zz -= 1.0;  
+  mat9r vh = (1.0 / macro_dt) * (dFmI * Cell.h);
+  
+  Load.VelocityControl(vh);
+  accelerations();
+  dataOutput();
+  sprintf(fname,"%s%d",name,iconf);
+  saveConf(fname);
+  
+  double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
+  while (t < tmax) {
+    velocityVerletStep();
+    if (interConfC >= interConf) {
+      double currentTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
+      printScreen(currentTime - previousTime);
+      previousTime = currentTime;
+      sprintf(fname,"%s%d",name,iconf);
+      saveConf(fname);
+      interConfC = 0.0;
+      iconf++;
+    }
+
+    if (interVerletC >= interVerlet) {
+      updateNeighborList(dVerlet);
+      interVerletC = 0.0;
+    }
+    if (interOutC >= interOut) {
+      dataOutput();
+      interOutC = 0.0;
+    }
+    interConfC += dt;
+    interOutC += dt;
+    interVerletC += dt;
+    t += dt;
+  }
+}
+
 
 // =======================================================================
 //             METHODS FOR COUPLING WITH LAGAMINE (FEMxDEM)

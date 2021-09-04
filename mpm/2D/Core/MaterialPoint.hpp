@@ -45,7 +45,7 @@ struct MaterialPoint {
 
   bool plastic;    // checks if the point was plastified
   vec2r contactf;  // resultant force due to contacts only
-
+  bool ismicro;
   ConstitutiveModel* constitutiveModel;  // Pointer to the constitutive model
   PBC3Dbox* PBC; // Pointer to a periodic 3D-DEM system (in case of 'homogeneised numerical law')
   

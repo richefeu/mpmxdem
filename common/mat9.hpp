@@ -246,6 +246,10 @@ public:
 	T trace() const {
 		return (xx + yy + zz);
 	}
+ 
+    T maxi() const { 
+      return std::max({abs(xx),abs(xy),abs(xz),abs(yx),abs(yy),abs(yz),abs(zx),abs(zy),abs(zz)});
+    }
 
 	void transpose () {
 		std::swap(xy, yx);
@@ -434,6 +438,7 @@ public:
 	}
 
 };
+
 
 typedef mat9<double>       mat9r;
 typedef mat9<float>        mat9f;
