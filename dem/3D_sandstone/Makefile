@@ -8,7 +8,8 @@ CXX = clang++
 # The list of flags passed to the compiler
 CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
 # Link flags for OpenGL and glut
-GLLINK = -framework OpenGL -framework GLUT
+GLFLAGS = `pkg-config --cflags glut`
+GLLINK = `pkg-config --libs glut` -framework OpenGL
 
 else # ==============================================================
 
@@ -17,7 +18,8 @@ CXX = g++
 # The list of flags passed to the compiler
 CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
 # Link flags for OpenGL and glut
-GLLINK = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXmu -lXext -lX11 -lXi
+GLFLAGS = `pkg-config --cflags glut`
+GLLINK = `pkg-config --libs glut` -framework OpenGL
 
 endif # =============================================================
 
@@ -37,7 +39,7 @@ HEADERS = $(SOURCES:%.cpp=%.hpp)
 
 .PHONY: all lib clean
 
-all: run see stop mpstest
+all: run see stop # mpstest
 
 clean:
 	rm -f *.o libPBC3D.a *.gch run see
@@ -53,7 +55,7 @@ run: run.cpp lib
 
 # The application that visualizes the conf files
 see: see.cpp see.hpp graphGL.hpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c see.cpp -Wno-deprecated
+	$(CXX) $(CXXFLAGS) -c see.cpp -Wno-deprecated $(GLFLAGS)
 	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS) $(GLLINK)
 
 # The application that stops fluctuations

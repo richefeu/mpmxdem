@@ -7,15 +7,9 @@
 #include "Core/MaterialPoint.hpp"
 #include "Obstacles/Obstacle.hpp"
 
-#include "DataTable.hpp" // util ??
-
 class MPMbox;
 
 struct OneStep {
-  MPMbox* box;
-
-  virtual void plug(MPMbox* Box);
-
   virtual std::string getRegistrationName() = 0;
   virtual int advanceOneStep(MPMbox& MPM) = 0;
   void resetDEM(Obstacle* obst, vec2r gravity);

@@ -47,7 +47,7 @@ struct MaterialPoint {
   vec2r contactf;  // resultant force due to contacts only
   bool ismicro;
   ConstitutiveModel* constitutiveModel;  // Pointer to the constitutive model
-  PBC3Dbox* PBC;
+  PBC3Dbox* PBC; // Pointer to a periodic 3D-DEM system (in case of 'homogeneised numerical law')
   
   // Ctor
   MaterialPoint(int Group = 0, double Vol = 0.0, double Rho = 0.0, ConstitutiveModel* CM = nullptr);

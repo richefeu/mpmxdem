@@ -65,9 +65,9 @@ class PBC3Dbox {
   double fcoh;      ///< Cohesion force (strictly negative)
 
   // Other parameters
-  int iconf;           ///< Current configuration ID
-  int enableSwitch;    ///< If non-null, enable the switch of particles from one boundary to the opposite
-  //int permamentGluer;  ///< If 1, contacts are permanently transformed to glued-point
+  int iconf;         ///< Current configuration ID
+  int enableSwitch;  ///< If non-null, enable the switch of particles from one boundary to the opposite
+  // int permamentGluer;  ///< If 1, contacts are permanently transformed to glued-point
   double numericalDampingCoeff;
 
   // Ctor
@@ -86,8 +86,8 @@ class PBC3Dbox {
   void updateNeighborList(double dmax);  ///< Updates the neighbor-list
   void saveConf(int i);                  ///< Saves the current configuration in a file named confX, where X=i
   void loadConf(const char* name);       ///< Loads a configuration from a file
-  void loadShapes();
-  void clearMemory();  ///< Clears the Particles and Interactions.
+  void loadShapes();                     ///< Load the shape definitions
+  void clearMemory();                    ///< Clears the Particles and Interactions.
 
  private:
   // Counters for the simulation flow

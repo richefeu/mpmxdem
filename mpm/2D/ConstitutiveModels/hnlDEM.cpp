@@ -20,8 +20,6 @@ void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
   MP.ismicro=true;
-  
-  //std::cout << "init !!!!! " << fileName.c_str() << "\n";
 }
 
 void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
@@ -58,7 +56,7 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.xy = Finc2D.xy;
   Finc3D.yx = Finc2D.yx;
   Finc3D.yy = Finc2D.yy;
-  Finc3D.zz = 1.0;  
+  Finc3D.zz = 1.0; // assuming plane strain
   MPM.MP[p].PBC->transform(Finc3D, MPM.dt);
   col_i=p%MPM.Grid.Nx;
   row_i=floor(p/MPM.Grid.Nx);
