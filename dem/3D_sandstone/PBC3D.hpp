@@ -106,12 +106,14 @@ class PBC3Dbox {
   void computeSampleData();         ///< Computes a number of usefull data (Rmin, Rmax, Vsolid, etc.)
   void ActivateBonds(double epsiDist,
                      int state);  ///< Replace contacts by cemented bonds when dn is lower than epsiDist
-  void RemoveBonds(double percentRemove, int StrategyId);  ///< ....
+  void RemoveBonds(double percentRemove, int StrategyId);  ///< A kind of global damage
+  void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
-  void transform(mat9r& Finc, double macro_dt);  ///< for MPMxDEM double-scale simulation
+  // Methods specificalle written for MPMxDEM coupling
+  void transform(mat9r& Finc, double macro_dt);  ///< for MPMxDEM double-scale step
 
   // Methods specifically written for Lagamine (FEMxDEM coupling).
-  // They are compatible with fortran.
+  // They are compatible with fortran (it's the reason why all parameters are pointers).
   void initLagamine(double Q[]);  ///< Kind of serialization solution to get the initial configuration from Lagamine
   void initLagamineSandstone(double Q[]);  ///< Gets the initial configuration from Lagamine
   void transform(double dFmoinsI[3][3], double* I, int* nstep);

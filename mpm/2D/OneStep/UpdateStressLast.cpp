@@ -24,10 +24,8 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
   std::vector<Spy*>& Spies = MPM.Spies;
-  // double &t = MPM.t;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
-  //int& step = MPM.step;
   vec2r& gravity = MPM.gravity;
   // End of aliases =================================
 

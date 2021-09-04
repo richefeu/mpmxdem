@@ -44,8 +44,9 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
 
 void MaterialPoint::updateCornersFromF() {
   // TODO: This is wrong if it's to be used in move_MP.cpp
+  // -> faire une fonction updateCornersFromFincrement
+  
   double halfSizeMP = 0.5 * size;
-
   corner[0] = pos + F * vec2r(-halfSizeMP, -halfSizeMP);
   corner[1] = pos + F * vec2r(halfSizeMP, -halfSizeMP);
   corner[2] = pos + F * vec2r(halfSizeMP, halfSizeMP);

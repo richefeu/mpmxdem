@@ -25,11 +25,10 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<int>& liveNodeNum = MPM.liveNodeNum;
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
-  std::vector<Obstacle*>& Obstacles = MPM.Obstacles;  // List of rigid obstacles
+  std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
   std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
-  // int& step = MPM.step;
   // End of aliases ========================================
 
   int* I;  // use as node index
@@ -154,7 +153,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     double MPinvMass = 0;
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
-        invmass = 1.0 / nodes[I[r]].mass;
+        invmass = 1.0f / nodes[I[r]].mass;
         MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;
         tempForceMP += MP[p].N[r] * nodes[I[r]].qdot;
         MPinvMass += invmass;
@@ -209,7 +208,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     double invmass;
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > tolmass) {
-        invmass = 1.0 / nodes[I[r]].mass;
+        invmass = 1.0f / nodes[I[r]].mass;
         // MP[p].vel += dt * MP[p].N[r]*nodes[I[r]].qdot * invmass;
         MP[p].pos += dt * MP[p].N[r] * nodes[I[r]].q * invmass;
       }

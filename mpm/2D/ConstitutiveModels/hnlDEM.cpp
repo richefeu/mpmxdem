@@ -19,8 +19,6 @@ void hnlDEM::write(std::ostream& os) { os << fileName << '\n'; }
 void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
-  
-  //std::cout << "init !!!!! " << fileName.c_str() << "\n";
 }
 
 void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
@@ -55,7 +53,7 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.xy = Finc2D.xy;
   Finc3D.yx = Finc2D.yx;
   Finc3D.yy = Finc2D.yy;
-  Finc3D.zz = 1.0;  
+  Finc3D.zz = 1.0; // assuming plane strain
   MPM.MP[p].PBC->transform(Finc3D, MPM.dt);
   char fname[256];
   sprintf(fname, "%s/conf_MP%zu", MPM.result_folder.c_str(), p);

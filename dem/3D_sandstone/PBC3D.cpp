@@ -6,7 +6,7 @@
 
 #include "PBC3D.hpp"
 
-PBC3Dbox::PBC3Dbox(): Particles(1),Interactions(1),Load(),Cell(),Sig(){
+PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig() {
   // Some default values (actually, most of them will be (re-)set after)
   t = 0.0;
   tmax = 5.0;
@@ -38,13 +38,13 @@ PBC3Dbox::PBC3Dbox(): Particles(1),Interactions(1),Load(),Cell(),Sig(){
   permamentGluer = 0;
   numericalDampingCoeff = 0.0;
   Kratio = 1.0;
-  nbBondsini=0;  ///< initial # of Bonds at start of Lagamine
-  porosityini=0; ///< initial porosity at start of Lagamine
-  tensfailure=0;
-  fricfailure=0;
-  dVerlet=1e-7; ///< Distance of Verlet
-  zetaMax=1;
-  enableSwitch=1;
+  nbBondsini = 0;   ///< initial # of Bonds at start of Lagamine
+  porosityini = 0;  ///< initial porosity at start of Lagamine
+  tensfailure = 0;
+  fricfailure = 0;
+  dVerlet = 1e-7;  ///< Distance of Verlet
+  zetaMax = 1;
+  enableSwitch = 1;
 }
 
 /// @brief Print a banner related with the current code
@@ -76,11 +76,11 @@ void PBC3Dbox::saveConf(int i) {
   char fname[256];
   sprintf(fname, "conf%d", i);
   saveConf(fname);
-} 
+}
 
-void PBC3Dbox::saveConf(const char * name) {
+void PBC3Dbox::saveConf(const char* name) {
   std::ofstream conf(name);
-  conf << "PBC3D 06-05-2021\n"; // format: progName version-date
+  conf << "PBC3D 06-05-2021\n";  // format: progName version-date
   conf << "t " << t << '\n';
   conf << "tmax " << tmax << '\n';
   conf << "dt " << dt << '\n';
@@ -104,8 +104,8 @@ void PBC3Dbox::saveConf(const char * name) {
   conf << "drot0 " << drot0 << '\n';
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
-  conf << "permamentGluer " << permamentGluer <<'\n';
-  conf << "numericalDampingCoeff " << numericalDampingCoeff <<'\n';
+  conf << "permamentGluer " << permamentGluer << '\n';
+  conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
   conf << "iconf " << iconf << '\n';
   conf << "h " << Cell.h << '\n';
@@ -118,11 +118,11 @@ void PBC3Dbox::saveConf(const char * name) {
   conf << "enableSwitch " << enableSwitch << '\n';
   conf << "Load " << Load.StoredCommand << '\n';
   conf << "interVerletC " << interVerletC << '\n';
-  conf << "interOutC " <<  interOutC << '\n';
-  conf << "interConfC " <<  interConfC << '\n';
+  conf << "interOutC " << interOutC << '\n';
+  conf << "interConfC " << interConfC << '\n';
   conf << "nbBonds " << nbBonds << '\n';
   conf << "nbActiveInteractions " << nbActiveInteractions << '\n';
-  conf << "nbBondsini " << nbBondsini  << '\n';
+  conf << "nbBondsini " << nbBondsini << '\n';
   conf << "porosityini " << porosityini << '\n';
   conf << "tensfailure " << tensfailure << '\n';
   conf << "fricfailure " << fricfailure << '\n';
@@ -134,8 +134,7 @@ void PBC3Dbox::saveConf(const char * name) {
   }
   conf << "Interactions " << nbActiveInteractions << '\n';
   for (size_t i = 0; i < Interactions.size(); i++) {
-    if (Interactions[i].state == noContactState)
-      continue;
+    if (Interactions[i].state == noContactState) continue;
     conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
          << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
          << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
@@ -147,9 +146,9 @@ void PBC3Dbox::saveConf(const char * name) {
 
 /// @brief Load the configuration
 /// @param[in]    name     Name of the file
-void PBC3Dbox::loadConf(const char *name) {
-double trash;
-//std::cout << "PBC3Dbox loading " << name << std::endl;
+void PBC3Dbox::loadConf(const char* name) {
+  double trash;
+  // std::cout << "PBC3Dbox loading " << name << std::endl;
   std::ifstream conf(name);
   if (!conf.is_open()) {
     std::cerr << "@PBC3Dbox, Cannot read " << name << std::endl;
@@ -171,8 +170,8 @@ double trash;
   conf >> token;
   while (conf.good()) {
     if (token[0] == '/' || token[0] == '#' || token[0] == '!') {
-      getline(conf, token); // ignore the rest of the current line
-      conf >> token;        // next token
+      getline(conf, token);  // ignore the rest of the current line
+      conf >> token;         // next token
       continue;
     } else if (token == "t")
       conf >> t;
@@ -273,10 +272,10 @@ double trash;
         mat9r vh;
         conf >> vh;
         Load.VelocityControl(vh);
-      } else if (command=="TransformationGradient"){
-          mat9r F;
-          conf >> F.xx >> F.xy >> F.xz >> F.yx >> F.yy >> F.yz >> F.zx >> F.zy >> F.zz;
-          Load.TransformationGradient(Cell.h,F,dt);
+      } else if (command == "TransformationGradient") {
+        mat9r F;
+        conf >> F.xx >> F.xy >> F.xz >> F.yx >> F.yy >> F.yz >> F.zx >> F.zy >> F.zz;
+        Load.TransformationGradient(Cell.h, F, dt);
       } else if (command == "SimpleShearXY") {
         double pressure, gammaDot;
         conf >> pressure >> gammaDot;
@@ -290,30 +289,30 @@ double trash;
         double pressure, velocity, LodeAngle;
         conf >> pressure >> velocity >> LodeAngle;
         Load.LodeAnglePathMix(pressure, velocity, LodeAngle);
-      } else if (command=="Fixe"){
-          Load.Fixe();
+      } else if (command == "Fixe") {
+        Load.Fixe();
       } else {
         std::cerr << "Unknown command for loading: " << command << std::endl;
-      } 
-    } else if (token == "interVerletC") 
-        conf >> trash;
-      else if (token == "interOutC")
-        conf >> trash;
-      else if (token == "interConfC") 
-        conf >> trash;
-      else if (token == "nbBonds")
-        conf >> trash;
-      else if (token == "nbActiveInteractions") 
-        conf >> trash;
-      else if (token == "nbBondsini") 
-        conf >> trash;
-      else if (token == "porosityini") 
-        conf >> trash;
-      else if (token == "tensfailure") 
-        conf >> trash;
-      else if (token == "fricfailure")
-        conf >> trash;
-      else if (token == "Particles") {
+      }
+    } else if (token == "interVerletC")
+      conf >> trash;
+    else if (token == "interOutC")
+      conf >> trash;
+    else if (token == "interConfC")
+      conf >> trash;
+    else if (token == "nbBonds")
+      conf >> trash;
+    else if (token == "nbActiveInteractions")
+      conf >> trash;
+    else if (token == "nbBondsini")
+      conf >> trash;
+    else if (token == "porosityini")
+      conf >> trash;
+    else if (token == "tensfailure")
+      conf >> trash;
+    else if (token == "fricfailure")
+      conf >> trash;
+    else if (token == "Particles") {
       size_t nb;
       conf >> nb;
       Particles.clear();
@@ -381,7 +380,7 @@ double trash;
   }
 
   computeSampleData();
-  accelerations(); // a fake time-increment that will compute missing thinks
+  accelerations();  // a fake time-increment that will compute missing thinks
 }
 
 // ==========================================================================
@@ -407,24 +406,18 @@ void PBC3Dbox::computeSampleData() {
       Vsolid += V;
 
       Rmean += R;
-      if (R > Rmax)
-        Rmax = R;
-      if (R < Rmin)
-        Rmin = R;
+      if (R > Rmax) Rmax = R;
+      if (R < Rmin) Rmin = R;
 
       Vmean += V;
-      if (V > Vmax)
-        Vmax = V;
-      if (V < Vmin)
-        Vmin = V;
+      if (V > Vmax) Vmax = V;
+      if (V < Vmin) Vmin = V;
 
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       double SqrVel = norm2(Vel);
       VelMean += SqrVel;
-      if (SqrVel > VelMax)
-        VelMax = SqrVel;
-      if (SqrVel < VelMin)
-        VelMin = SqrVel;
+      if (SqrVel > VelMax) VelMax = SqrVel;
+      if (SqrVel < VelMin) VelMin = SqrVel;
     }
     Rmean /= Particles.size();
     Vmean /= Particles.size();
@@ -440,20 +433,15 @@ void PBC3Dbox::computeSampleData() {
     nbActiveInteractions = 0;
     nbBonds = 0;
     for (size_t k = 0; k < Interactions.size(); k++) {
-      if (Interactions[k].state == noContactState)
-        continue;
-      if (Interactions[k].state == bondedState)
-        nbBonds++;
+      if (Interactions[k].state == noContactState) continue;
+      if (Interactions[k].state == bondedState) nbBonds++;
       nbActiveInteractions++;
       double Fn = Interactions[k].fn;
       FnMean += Fn;
-      if (Fn > FnMax)
-        FnMax = Fn;
-      if (Fn < FnMin)
-        FnMin = Fn;
+      if (Fn > FnMax) FnMax = Fn;
+      if (Fn < FnMin) FnMin = Fn;
     }
-    if (nbActiveInteractions > 0)
-      FnMean /= (double)nbActiveInteractions;
+    if (nbActiveInteractions > 0) FnMean /= (double)nbActiveInteractions;
   }
 
   // weighting of stiffnesses
@@ -480,7 +468,7 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
     double sum = Particles[i].radius + Particles[j].radius + epsiDist;
     if (branchLen2 <= sum * sum) {
       // switch to a cemented/bonded link
-      Interactions[k].state = state; // bondedState;
+      Interactions[k].state = state;  // bondedState;
 
       double dn = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
       if (dn >= 0.0)
@@ -502,8 +490,8 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
       // Interactions[k].p0i = QiInv * Ci;
       // quat QjInv = Particles[j].Q.get_conjugated();
       // Interactions[k].p0j = QjInv * Cj;
-    } // endif
-  }   // end loop over interactions
+    }  // endif
+  }    // end loop over interactions
 
   // computeSampleData();
   // saveConf(999);
@@ -520,7 +508,7 @@ void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
   if (StrategyId == 0) {
     std::random_shuffle(indices.begin(), indices.end());
   } else if (StrategyId == 1) {
-    sort(indices.begin(), indices.end(), [&](const size_t &a, const size_t &b) {
+    sort(indices.begin(), indices.end(), [&](const size_t& a, const size_t& b) {
       double a_rmean = Particles[Interactions[a].i].radius + Particles[Interactions[a].j].radius;
       double b_rmean = Particles[Interactions[b].i].radius + Particles[Interactions[b].j].radius;
       return (a_rmean > b_rmean);
@@ -534,6 +522,15 @@ void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
     } else {
       Interactions[k].state = contactState;
     }
+  }
+}
+
+void PBC3Dbox::freeze() {
+  for (size_t i = 0; i < Particles.size(); i++) {
+    Particles[i].vel.reset();
+    Particles[i].vrot.reset();
+    Particles[i].acc.reset();
+    Particles[i].arot.reset();
   }
 }
 
@@ -553,7 +550,7 @@ void PBC3Dbox::setSample() {
   std::cout << "\nNumber of spheres on one side: ";
   std::cin >> ngw;
   ans << ngw << '\n';
-  double step = 1.0 / (2.0 * ngw); // in the range [0, 1]
+  double step = 1.0 / (2.0 * ngw);  // in the range [0, 1]
 
   double radius = 1e-3;
   std::cout << "Maximum (larger) radius: ";
@@ -564,7 +561,7 @@ void PBC3Dbox::setSample() {
   std::cin >> deltaR;
   ans << deltaR << '\n';
   dVerlet = 0.95 * (radius - deltaR);
-  
+
   density = 2700.0;
   std::cout << "Mass density of the particles: ";
   std::cin >> density;
@@ -574,11 +571,10 @@ void PBC3Dbox::setSample() {
   while (true) {
     std::cout << "Packing strategy:\n    (1) grid\n    (2) Poisson sampling\n> ";
     std::cin >> strategy;
-    if (strategy == '1' || strategy == '2')
-      break;
+    if (strategy == '1' || strategy == '2') break;
   }
   ans << (char)strategy << '\n';
-  
+
   if (strategy == '1') {
     double cellSize = 2.0 * ngw * radius;
     Cell.Define(cellSize, 0.0, 0.0, 0.0, cellSize, 0.0, 0.0, 0.0, cellSize);
@@ -609,10 +605,11 @@ void PBC3Dbox::setSample() {
     ans << cellSize << '\n';
     Cell.Define(cellSize, 0.0, 0.0, 0.0, cellSize, 0.0, 0.0, 0.0, cellSize);
 
-    GeoPack3D packing(radius - deltaR,                            // rmin
-                      radius,                                     // rmax
-                      200,                                        // no of trials
-                      0.0, cellSize, 0.0, cellSize, 0.0, cellSize,cellSize-(2.0*ngw*radius),ngw*ngw*ngw // The periodic cell
+    GeoPack3D packing(radius - deltaR,  // rmin
+                      radius,           // rmax
+                      200,              // no of trials
+                      0.0, cellSize, 0.0, cellSize, 0.0, cellSize, cellSize - (2.0 * ngw * radius),
+                      ngw * ngw * ngw  // The periodic cell
     );
     packing.seedTime();
     // MORE PARAMETRIZATION HERE ........ TODO
@@ -635,7 +632,7 @@ void PBC3Dbox::setSample() {
       Particles.push_back(P);
     }
   }
-  
+
   Cell.mass = 1.0;
   std::cout << "Mass of the periodic cell?  Set it as:" << std::endl;
   std::cout << "   (1) mean mass of a single particle" << std::endl;
@@ -645,8 +642,7 @@ void PBC3Dbox::setSample() {
   while (true) {
     std::cout << "choice: ";
     std::cin >> repMass;
-    if (repMass == '1' || repMass == '2' || repMass == '3')
-      break;
+    if (repMass == '1' || repMass == '2' || repMass == '3') break;
   }
   ans << (char)repMass << '\n';
   if (repMass == '1') {
@@ -662,7 +658,7 @@ void PBC3Dbox::setSample() {
   std::cout << "Norm of the randomly oriented velocities: ";
   std::cin >> vmax;
   ans << vmax << '\n';
-  double vmaxReduced = vmax / (2.0 * ngw * radius); // A TESTER !!!
+  double vmaxReduced = vmax / (2.0 * ngw * radius);  // A TESTER !!!
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.x = vmaxReduced * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5);
     Particles[i].vel.y = vmaxReduced * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5);
@@ -687,8 +683,7 @@ void PBC3Dbox::setSample() {
     std::cout << "Satisfied ? (y/n): ";
     std::cin >> rep;
     ans << (char)rep << '\n';
-    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y')
-      break;
+    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y') break;
   }
 
   double ktkn = 1.0;
@@ -720,8 +715,7 @@ void PBC3Dbox::setSample() {
     std::cout << "Satisfied? (y/n): ";
     std::cin >> rep;
     ans << (char)rep << '\n';
-    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y')
-      break;
+    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y') break;
   }
 
   dt_2 = 0.5 * dt;
@@ -758,8 +752,7 @@ void PBC3Dbox::setSample() {
 
 /// @brief Computes a single step with the velocity-Verlet algorithm
 void PBC3Dbox::velocityVerletStep() {
-  if (Load.ServoFunction != nullptr)
-    Load.ServoFunction(*this);
+  if (Load.ServoFunction != nullptr) Load.ServoFunction(*this);
 
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].pos += dt * Particles[i].vel + dt2_2 * Particles[i].acc;
@@ -768,10 +761,8 @@ void PBC3Dbox::velocityVerletStep() {
     // Periodicity in position (can be usefull in the sample preparation)
     if (enableSwitch > 0) {
       for (size_t c = 0; c < 3; c++) {
-        while (Particles[i].pos[c] < 0.0)
-          Particles[i].pos[c] += 1.0;
-        while (Particles[i].pos[c] > 1.0)
-          Particles[i].pos[c] -= 1.0;
+        while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
+        while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
       }
       // Remark: the reduced velocities do not need to be corrected
       //         since they are periodic
@@ -790,7 +781,7 @@ void PBC3Dbox::velocityVerletStep() {
     Particles[i].vrot += dt_2 * Particles[i].arot;
   }
 
-  for (size_t c = 0; c < 9; c++) { // loop over components
+  for (size_t c = 0; c < 9; c++) {  // loop over components
     if (Load.Drive[c] == ForceDriven) {
       Cell.h[c] += dt * Cell.vh[c] + dt2_2 * Cell.ah[c];
       Cell.vh[c] += dt_2 * Cell.ah[c];
@@ -815,8 +806,7 @@ void PBC3Dbox::velocityVerletStep() {
   }
 
   for (size_t c = 0; c < 9; c++) {
-    if (Load.Drive[c] == ForceDriven)
-      Cell.vh[c] += dt_2 * Cell.ah[c];
+    if (Load.Drive[c] == ForceDriven) Cell.vh[c] += dt_2 * Cell.ah[c];
   }
 
   Cell.update(dt);
@@ -905,20 +895,15 @@ void PBC3Dbox::integrate() {
 
 /// @brief Save data in output files
 void PBC3Dbox::dataOutput() {
-//std::cout<<"entering PBC3Dbox::dataOutput"<<std::endl;
-//std::cout << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
   // Cell
   cellOut << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
-//std::cout<<"dataOutput : cellOut used"<<std::endl;
-
+  
   // Stress
   stressOut << t << ' ' << Sig << std::endl;
-//std::cout<<"dataOutput : stressOut used"<<std::endl;
-
+  
   // Strain
   strainOut << t << ' ' << Cell.strain << std::endl;
-//std::cout<<"dataOutput : strainOut used"<<std::endl;
-
+  
   // Resultant
   double Rmean, R0mean, fnMin, fnMean;
   double Vcell = fabs(Cell.h.det());
@@ -944,8 +929,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
     for (size_t j = i + 1; j < Particles.size(); j++) {
 
       vec3r sij = Particles[j].pos - Particles[i].pos;
-      for (size_t c = 0; c < 3; c++)
-        sij[c] -= floor(sij[c] + 0.5);
+      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
       vec3r branch = Cell.h * sij;
 
       double sum = dmax + Particles[i].radius + Particles[j].radius;
@@ -961,15 +945,11 @@ void PBC3Dbox::updateNeighborList(double dmax) {
   // retrieve previous contacts or bonds
   size_t k, kold = 0;
   for (k = 0; k < Interactions.size(); ++k) {
-    while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i)
-      ++kold;
-    if (kold == Ibak.size())
-      break;
+    while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i) ++kold;
+    if (kold == Ibak.size()) break;
 
-    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j)
-      ++kold;
-    if (kold == Ibak.size())
-      break;
+    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j) ++kold;
+    if (kold == Ibak.size()) break;
 
     if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j) {
       Interactions[k] = Ibak[kold];
@@ -1049,7 +1029,7 @@ void PBC3Dbox::accelerations() {
 #endif
 
     Particles[i].acc = hinv * acc;
-    Particles[i].arot = Particles[i].moment / Particles[i].inertia; // It's ok for spheres
+    Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // It's ok for spheres
   }
 }
 
@@ -1092,21 +1072,21 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // Normal force (elastic + viscuous damping)
       double dn = len - (Particles[i].radius + Particles[j].radius) -
-                  Interactions[k].gap0;         // normal distance (a negative value is an overlap)
-      double vn = realVel * n;                  // normal relative (j/i) velocity
-      double fne = -kn * dn;                    // elastic normal force component
-      double fnv = -Interactions[k].dampn * vn; // viscuous normal force component
-      Interactions[k].fn = fne + fnv;           // normal force component
+                  Interactions[k].gap0;          // normal distance (a negative value is an overlap)
+      double vn = realVel * n;                   // normal relative (j/i) velocity
+      double fne = -kn * dn;                     // elastic normal force component
+      double fnv = -Interactions[k].dampn * vn;  // viscuous normal force component
+      Interactions[k].fn = fne + fnv;            // normal force component
 
       // Tangential force (elastic without viscuous damping)
-      vec3r ft_corr = Interactions[k].ft;                     // force that will be corrected
-      ft_corr -= cross(ft_corr, cross(Interactions[k].n, n)); // 1st correction
-      ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n); // 2nd correction
-      vec3r vt = realVel - (vn * n);               // relative velocity projected on the tangential plan
-      Interactions[k].ft = ft_corr - kt * vt * dt; // increment the tangential force
+      vec3r ft_corr = Interactions[k].ft;                      // force that will be corrected
+      ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));  // 1st correction
+      ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
+      vec3r vt = realVel - (vn * n);                // relative velocity projected on the tangential plan
+      Interactions[k].ft = ft_corr - kt * vt * dt;  // increment the tangential force
 
       // Torque (elastic withour viscuous damping)
-      Interactions[k].mom -= kr * (Particles[j].vrot - Particles[i].vrot) * dt; // elastic moment
+      Interactions[k].mom -= kr * (Particles[j].vrot - Particles[i].vrot) * dt;  // elastic moment
 
       // Rupture criterion
       double yieldFunc = pow(norm(Interactions[k].ft) / ft0, powSurf) + pow(norm(Interactions[k].mom) / mom0, powSurf) -
@@ -1120,7 +1100,7 @@ void PBC3Dbox::computeForcesAndMoments() {
           tensfailure++;
         } else {
           Interactions[k].state = contactState;
-          Interactions[k].ft.reset(); // PROVISOIR (TODO-> activer frottement)
+          Interactions[k].ft.reset();  // PROVISOIR (TODO-> activer frottement)
           Interactions[k].mom.reset();
           fricfailure++;
         }
@@ -1153,7 +1133,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       // Store the normal vector
       Interactions[k].n = n;
 
-    } // end if bonded interaction
+    }  // end if bonded interaction
     else if (Interactions[k].state == bondedStateDam) {
       // ===========================================================
       // ========= A BONDED ELASTIC-DAMAGEABLE INTERACTION =========
@@ -1173,18 +1153,17 @@ void PBC3Dbox::computeForcesAndMoments() {
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
-      double dn = len - (Particles[i].radius + Particles[j].radius); // a negative value is an overlap
+      double dn = len - (Particles[i].radius + Particles[j].radius);  // a negative value is an overlap
       double dn_bond = len - (Particles[i].radius + Particles[j].radius) - Interactions[k].gap0;
-      double vn = realVel * n; // normal relative (j/i) velocity
+      double vn = realVel * n;  // normal relative (j/i) velocity
       Interactions[k].fn_elas = 0.0;
-      if (dn < 0.0)
-        Interactions[k].fn_elas = -w_particle * kn * dn;                            // elastic normal contact-force
-      Interactions[k].fn_bond = -w_bond * (1.0 - Interactions[k].D) * kn * dn_bond; // elastic normal bond-force
-      double fnv = -Interactions[k].dampn * vn;                                     // viscuous normal force
+      if (dn < 0.0) Interactions[k].fn_elas = -w_particle * kn * dn;                 // elastic normal contact-force
+      Interactions[k].fn_bond = -w_bond * (1.0 - Interactions[k].D) * kn * dn_bond;  // elastic normal bond-force
+      double fnv = -Interactions[k].dampn * vn;                                      // viscuous normal force
       Interactions[k].fn = Interactions[k].fn_elas + Interactions[k].fn_bond + fnv;
 
       // Tangential force
-      vec3r vt = realVel - (vn * n); // relative velocity projected on the tangential plan
+      vec3r vt = realVel - (vn * n);  // relative velocity projected on the tangential plan
       vec3r deltat = vt * dt;
       Interactions[k].dt_bond += deltat;
       if (dn < 0.0) {
@@ -1217,11 +1196,11 @@ void PBC3Dbox::computeForcesAndMoments() {
       if (yieldFuncMax > 0.0) {
         Interactions[k].D = 1.0;
       } else if (yieldFunc0 > 0) {
-        double zeta1 = currentZeta; // set the previous zeta as the first bound
-        double zeta2 = zetaMax;     // set the max zeta as the second bound
+        double zeta1 = currentZeta;  // set the previous zeta as the first bound
+        double zeta2 = zetaMax;      // set the max zeta as the second bound
         double tol = 0.005 * yieldFunc0;
         double df = yieldFunc0;
-        double zetaTest; // the trial variable
+        double zetaTest;  // the trial variable
         for (int p = 0; p < 20; p++) {
           zetaTest = 0.5 * (zeta1 + zeta2);
           df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond);
@@ -1292,7 +1271,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       // ===========================================================
 
       double sum = Particles[i].radius + Particles[j].radius;
-      if (norm2(branch) <= sum * sum) { // it means that particles i and j are in contact
+      if (norm2(branch) <= sum * sum) {  // it means that particles i and j are in contact
         nbActiveInteractions++;
         Interactions[k].state = contactState;
 
@@ -1312,8 +1291,7 @@ void PBC3Dbox::computeForcesAndMoments() {
         double fne = -w_particle * kn * dn;
         double fnv = -Interactions[k].dampn * vn;
         Interactions[k].fn = fne + fnv;
-        if (Interactions[k].fn < 0.0)
-          Interactions[k].fn = 0.0; // Because viscuous damping can make fn negative
+        if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
         Interactions[k].fn_elas = Interactions[k].fn;
 
         // Tangential force (friction)
@@ -1323,8 +1301,8 @@ void PBC3Dbox::computeForcesAndMoments() {
         vec3r vt = realVel - (vn * n);
         vec3r deltat = vt * dt;
         Interactions[k].dt_fric += deltat;
-        Interactions[k].ft -= w_particle * kt * deltat;   // no viscuous damping since friction can dissipate
-        double threshold = fabs(mu * Interactions[k].fn); // Suppose that fn is elastic and without cohesion
+        Interactions[k].ft -= w_particle * kt * deltat;    // no viscuous damping since friction can dissipate
+        double threshold = fabs(mu * Interactions[k].fn);  // Suppose that fn is elastic and without cohesion
         double ft_square = Interactions[k].ft * Interactions[k].ft;
         if (ft_square > 0.0 && ft_square >= threshold * threshold)
           Interactions[k].ft = threshold * Interactions[k].ft * (1.0f / sqrt(ft_square));
@@ -1373,31 +1351,34 @@ void PBC3Dbox::computeForcesAndMoments() {
         Interactions[k].dt_fric.reset();
         Interactions[k].state = noContactState;
       }
-    } // ====== end if non-bonded interactions
+    }  // ====== end if non-bonded interactions
 
-  } // Loop over interactions
+  }  // Loop over interactions
 }
-
 
 // for MPMxDEM coupling
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
-  double dtc = sqrt(Vmin * density / kn);
-  dt = dtc * 0.1;
-  if (dt >= macro_dt) dt = macro_dt * 0.2;
+  double dtc = sqrt(Vmin * density / kn); // critical time step
+  dt = dtc * 0.1; // time step is set to a tenth of the critical  
+  if (dt >= 0.2 * macro_dt) dt = 0.2 * macro_dt; // At least 5 increments must be done
+  
+  // the following are precomputed variables used in 'velocityVerletStep'
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
-  
+
   tmax = t + macro_dt;
-  interVerlet = 100 * dt; // on peut faire une meilleur estimation
-  
+  interVerlet = 100 * dt;  // on peut faire une meilleur estimation
+
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
   dFmI.yy -= 1.0;
-  dFmI.zz -= 1.0;  
-  mat9r vh = (1.0 / macro_dt) * (dFmI * Cell.h);
-  
+  dFmI.zz -= 1.0;
+  // dFmI is 'Finc - I'
+  mat9r vh = (1.0f / macro_dt) * (dFmI * Cell.h);
+
   Load.VelocityControl(vh);
   updateNeighborList(dVerlet);
+  accelerations();
 
   while (t < tmax) {
     velocityVerletStep();
@@ -1411,7 +1392,6 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
     t += dt;
   }
 }
-
 
 // =======================================================================
 //             METHODS FOR COUPLING WITH LAGAMINE (FEMxDEM)
@@ -1438,8 +1418,7 @@ void PBC3Dbox::getOperatorKruyt(double L[6][6]) {
   const size_t yz = 5;
 
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState)
-      continue;
+    if (Interactions[k].state == noContactState) continue;
 
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
@@ -1526,8 +1505,7 @@ void PBC3Dbox::getOperatorKruyt2(double L[9][9]) {
   double nx, ny, nz, tx, ty, tz, wx, wy, wz;
 
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState)
-      continue;
+    if (Interactions[k].state == noContactState) continue;
 
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
@@ -1558,103 +1536,103 @@ void PBC3Dbox::getOperatorKruyt2(double L[9][9]) {
     wz = nx * ty - ny * tx;
 
     // xx
-    L[xx][xx] += kn_Vcell * nx * l.x * nx * l.x + kt_Vcell * tx * l.x * tx * l.x + kt_Vcell * wx * l.x * wx * l.x; // 1
-    L[xx][yy] += kn_Vcell * nx * l.x * ny * l.y + kt_Vcell * tx * l.x * ty * l.y + kt_Vcell * wx * l.x * wy * l.y; // 2
-    L[xx][zz] += kn_Vcell * nx * l.x * nz * l.z + kt_Vcell * tx * l.x * tz * l.z + kt_Vcell * wx * l.x * wz * l.z; // 3
-    L[xx][xy] += kn_Vcell * nx * l.x * nx * l.y + kt_Vcell * tx * l.x * tx * l.y + kt_Vcell * wx * l.x * wx * l.y; // 4
-    L[xx][xz] += kn_Vcell * nx * l.x * nx * l.z + kt_Vcell * tx * l.x * tx * l.z + kt_Vcell * wx * l.x * wx * l.z; // 5
-    L[xx][yz] += kn_Vcell * nx * l.x * ny * l.z + kt_Vcell * tx * l.x * ty * l.z + kt_Vcell * wx * l.x * wy * l.z; // 6
-    L[xx][yx] += kn_Vcell * nx * l.x * ny * l.x + kt_Vcell * tx * l.x * ty * l.x + kt_Vcell * wx * l.x * wy * l.x; // 7
-    L[xx][zx] += kn_Vcell * nx * l.x * nz * l.x + kt_Vcell * tx * l.x * tz * l.x + kt_Vcell * wx * l.x * wz * l.x; // 8
-    L[xx][zy] += kn_Vcell * nx * l.x * nz * l.y + kt_Vcell * tx * l.x * tz * l.y + kt_Vcell * wx * l.x * wz * l.y; // 9
+    L[xx][xx] += kn_Vcell * nx * l.x * nx * l.x + kt_Vcell * tx * l.x * tx * l.x + kt_Vcell * wx * l.x * wx * l.x;  // 1
+    L[xx][yy] += kn_Vcell * nx * l.x * ny * l.y + kt_Vcell * tx * l.x * ty * l.y + kt_Vcell * wx * l.x * wy * l.y;  // 2
+    L[xx][zz] += kn_Vcell * nx * l.x * nz * l.z + kt_Vcell * tx * l.x * tz * l.z + kt_Vcell * wx * l.x * wz * l.z;  // 3
+    L[xx][xy] += kn_Vcell * nx * l.x * nx * l.y + kt_Vcell * tx * l.x * tx * l.y + kt_Vcell * wx * l.x * wx * l.y;  // 4
+    L[xx][xz] += kn_Vcell * nx * l.x * nx * l.z + kt_Vcell * tx * l.x * tx * l.z + kt_Vcell * wx * l.x * wx * l.z;  // 5
+    L[xx][yz] += kn_Vcell * nx * l.x * ny * l.z + kt_Vcell * tx * l.x * ty * l.z + kt_Vcell * wx * l.x * wy * l.z;  // 6
+    L[xx][yx] += kn_Vcell * nx * l.x * ny * l.x + kt_Vcell * tx * l.x * ty * l.x + kt_Vcell * wx * l.x * wy * l.x;  // 7
+    L[xx][zx] += kn_Vcell * nx * l.x * nz * l.x + kt_Vcell * tx * l.x * tz * l.x + kt_Vcell * wx * l.x * wz * l.x;  // 8
+    L[xx][zy] += kn_Vcell * nx * l.x * nz * l.y + kt_Vcell * tx * l.x * tz * l.y + kt_Vcell * wx * l.x * wz * l.y;  // 9
 
     // yy
-    L[yy][xx] += kn_Vcell * ny * l.y * nx * l.x + kt_Vcell * ty * l.y * tx * l.x + kt_Vcell * wy * l.y * wx * l.x; // 1
-    L[yy][yy] += kn_Vcell * ny * l.y * ny * l.y + kt_Vcell * ty * l.y * ty * l.y + kt_Vcell * wy * l.y * wy * l.y; // 2
-    L[yy][zz] += kn_Vcell * ny * l.y * nz * l.z + kt_Vcell * ty * l.y * tz * l.z + kt_Vcell * wy * l.y * wz * l.z; // 3
-    L[yy][xy] += kn_Vcell * ny * l.y * nx * l.y + kt_Vcell * ty * l.y * tx * l.y + kt_Vcell * wy * l.y * wx * l.y; // 4
-    L[yy][xz] += kn_Vcell * ny * l.y * nx * l.z + kt_Vcell * ty * l.y * tx * l.z + kt_Vcell * wy * l.y * wx * l.z; // 5
-    L[yy][yz] += kn_Vcell * ny * l.y * ny * l.z + kt_Vcell * ty * l.y * ty * l.z + kt_Vcell * wy * l.y * wy * l.z; // 6
-    L[yy][yx] += kn_Vcell * ny * l.y * ny * l.x + kt_Vcell * ty * l.y * ty * l.x + kt_Vcell * wy * l.y * wy * l.x; // 7
-    L[yy][zx] += kn_Vcell * ny * l.y * nz * l.x + kt_Vcell * ty * l.y * tz * l.x + kt_Vcell * wy * l.y * wz * l.x; // 8
-    L[yy][zy] += kn_Vcell * ny * l.y * nz * l.y + kt_Vcell * ty * l.y * tz * l.y + kt_Vcell * wy * l.y * wz * l.y; // 9
+    L[yy][xx] += kn_Vcell * ny * l.y * nx * l.x + kt_Vcell * ty * l.y * tx * l.x + kt_Vcell * wy * l.y * wx * l.x;  // 1
+    L[yy][yy] += kn_Vcell * ny * l.y * ny * l.y + kt_Vcell * ty * l.y * ty * l.y + kt_Vcell * wy * l.y * wy * l.y;  // 2
+    L[yy][zz] += kn_Vcell * ny * l.y * nz * l.z + kt_Vcell * ty * l.y * tz * l.z + kt_Vcell * wy * l.y * wz * l.z;  // 3
+    L[yy][xy] += kn_Vcell * ny * l.y * nx * l.y + kt_Vcell * ty * l.y * tx * l.y + kt_Vcell * wy * l.y * wx * l.y;  // 4
+    L[yy][xz] += kn_Vcell * ny * l.y * nx * l.z + kt_Vcell * ty * l.y * tx * l.z + kt_Vcell * wy * l.y * wx * l.z;  // 5
+    L[yy][yz] += kn_Vcell * ny * l.y * ny * l.z + kt_Vcell * ty * l.y * ty * l.z + kt_Vcell * wy * l.y * wy * l.z;  // 6
+    L[yy][yx] += kn_Vcell * ny * l.y * ny * l.x + kt_Vcell * ty * l.y * ty * l.x + kt_Vcell * wy * l.y * wy * l.x;  // 7
+    L[yy][zx] += kn_Vcell * ny * l.y * nz * l.x + kt_Vcell * ty * l.y * tz * l.x + kt_Vcell * wy * l.y * wz * l.x;  // 8
+    L[yy][zy] += kn_Vcell * ny * l.y * nz * l.y + kt_Vcell * ty * l.y * tz * l.y + kt_Vcell * wy * l.y * wz * l.y;  // 9
 
     // zz
-    L[zz][xx] += kn_Vcell * nz * l.z * nx * l.x + kt_Vcell * tz * l.z * tx * l.x + kt_Vcell * wz * l.z * wx * l.x; // 1
-    L[zz][yy] += kn_Vcell * nz * l.z * ny * l.y + kt_Vcell * tz * l.z * ty * l.y + kt_Vcell * wz * l.z * wy * l.y; // 2
-    L[zz][zz] += kn_Vcell * nz * l.z * nz * l.z + kt_Vcell * tz * l.z * tz * l.z + kt_Vcell * wz * l.z * wz * l.z; // 3
-    L[zz][xy] += kn_Vcell * nz * l.z * nx * l.y + kt_Vcell * tz * l.z * tx * l.y + kt_Vcell * wz * l.z * wx * l.y; // 4
-    L[zz][xz] += kn_Vcell * nz * l.z * nx * l.z + kt_Vcell * tz * l.z * tx * l.z + kt_Vcell * wz * l.z * wx * l.z; // 5
-    L[zz][yz] += kn_Vcell * nz * l.z * ny * l.z + kt_Vcell * tz * l.z * ty * l.z + kt_Vcell * wz * l.z * wy * l.z; // 6
-    L[zz][yx] += kn_Vcell * nz * l.z * ny * l.x + kt_Vcell * tz * l.z * ty * l.x + kt_Vcell * wz * l.z * wy * l.x; // 7
-    L[zz][zx] += kn_Vcell * nz * l.z * nz * l.x + kt_Vcell * tz * l.z * tz * l.x + kt_Vcell * wz * l.z * wz * l.x; // 8
-    L[zz][zy] += kn_Vcell * nz * l.z * nz * l.y + kt_Vcell * tz * l.z * tz * l.y + kt_Vcell * wz * l.z * wz * l.y; // 9
+    L[zz][xx] += kn_Vcell * nz * l.z * nx * l.x + kt_Vcell * tz * l.z * tx * l.x + kt_Vcell * wz * l.z * wx * l.x;  // 1
+    L[zz][yy] += kn_Vcell * nz * l.z * ny * l.y + kt_Vcell * tz * l.z * ty * l.y + kt_Vcell * wz * l.z * wy * l.y;  // 2
+    L[zz][zz] += kn_Vcell * nz * l.z * nz * l.z + kt_Vcell * tz * l.z * tz * l.z + kt_Vcell * wz * l.z * wz * l.z;  // 3
+    L[zz][xy] += kn_Vcell * nz * l.z * nx * l.y + kt_Vcell * tz * l.z * tx * l.y + kt_Vcell * wz * l.z * wx * l.y;  // 4
+    L[zz][xz] += kn_Vcell * nz * l.z * nx * l.z + kt_Vcell * tz * l.z * tx * l.z + kt_Vcell * wz * l.z * wx * l.z;  // 5
+    L[zz][yz] += kn_Vcell * nz * l.z * ny * l.z + kt_Vcell * tz * l.z * ty * l.z + kt_Vcell * wz * l.z * wy * l.z;  // 6
+    L[zz][yx] += kn_Vcell * nz * l.z * ny * l.x + kt_Vcell * tz * l.z * ty * l.x + kt_Vcell * wz * l.z * wy * l.x;  // 7
+    L[zz][zx] += kn_Vcell * nz * l.z * nz * l.x + kt_Vcell * tz * l.z * tz * l.x + kt_Vcell * wz * l.z * wz * l.x;  // 8
+    L[zz][zy] += kn_Vcell * nz * l.z * nz * l.y + kt_Vcell * tz * l.z * tz * l.y + kt_Vcell * wz * l.z * wz * l.y;  // 9
 
     // xy
-    L[xy][xx] += kn_Vcell * nx * l.y * nx * l.x + kt_Vcell * tx * l.y * tx * l.x + kt_Vcell * wx * l.y * wx * l.x; // 1
-    L[xy][yy] += kn_Vcell * nx * l.y * ny * l.y + kt_Vcell * tx * l.y * ty * l.y + kt_Vcell * wx * l.y * wy * l.y; // 2
-    L[xy][zz] += kn_Vcell * nx * l.y * nz * l.z + kt_Vcell * tx * l.y * tz * l.z + kt_Vcell * wx * l.y * wz * l.z; // 3
-    L[xy][xy] += kn_Vcell * nx * l.y * nx * l.y + kt_Vcell * tx * l.y * tx * l.y + kt_Vcell * wx * l.y * wx * l.y; // 4
-    L[xy][xz] += kn_Vcell * nx * l.y * nx * l.z + kt_Vcell * tx * l.y * tx * l.z + kt_Vcell * wx * l.y * wx * l.z; // 5
-    L[xy][yz] += kn_Vcell * nx * l.y * ny * l.z + kt_Vcell * tx * l.y * ty * l.z + kt_Vcell * wx * l.y * wy * l.z; // 6
-    L[xy][yx] += kn_Vcell * nx * l.y * ny * l.x + kt_Vcell * tx * l.y * ty * l.x + kt_Vcell * wx * l.y * wy * l.x; // 7
-    L[xy][zx] += kn_Vcell * nx * l.y * nz * l.x + kt_Vcell * tx * l.y * tz * l.x + kt_Vcell * wx * l.y * wz * l.x; // 8
-    L[xy][zy] += kn_Vcell * nx * l.y * nz * l.y + kt_Vcell * tx * l.y * tz * l.y + kt_Vcell * wx * l.y * wz * l.y; // 9
+    L[xy][xx] += kn_Vcell * nx * l.y * nx * l.x + kt_Vcell * tx * l.y * tx * l.x + kt_Vcell * wx * l.y * wx * l.x;  // 1
+    L[xy][yy] += kn_Vcell * nx * l.y * ny * l.y + kt_Vcell * tx * l.y * ty * l.y + kt_Vcell * wx * l.y * wy * l.y;  // 2
+    L[xy][zz] += kn_Vcell * nx * l.y * nz * l.z + kt_Vcell * tx * l.y * tz * l.z + kt_Vcell * wx * l.y * wz * l.z;  // 3
+    L[xy][xy] += kn_Vcell * nx * l.y * nx * l.y + kt_Vcell * tx * l.y * tx * l.y + kt_Vcell * wx * l.y * wx * l.y;  // 4
+    L[xy][xz] += kn_Vcell * nx * l.y * nx * l.z + kt_Vcell * tx * l.y * tx * l.z + kt_Vcell * wx * l.y * wx * l.z;  // 5
+    L[xy][yz] += kn_Vcell * nx * l.y * ny * l.z + kt_Vcell * tx * l.y * ty * l.z + kt_Vcell * wx * l.y * wy * l.z;  // 6
+    L[xy][yx] += kn_Vcell * nx * l.y * ny * l.x + kt_Vcell * tx * l.y * ty * l.x + kt_Vcell * wx * l.y * wy * l.x;  // 7
+    L[xy][zx] += kn_Vcell * nx * l.y * nz * l.x + kt_Vcell * tx * l.y * tz * l.x + kt_Vcell * wx * l.y * wz * l.x;  // 8
+    L[xy][zy] += kn_Vcell * nx * l.y * nz * l.y + kt_Vcell * tx * l.y * tz * l.y + kt_Vcell * wx * l.y * wz * l.y;  // 9
 
     // xz
-    L[xz][xx] += kn_Vcell * nx * l.z * nx * l.x + kt_Vcell * tx * l.z * tx * l.x + kt_Vcell * wx * l.z * wx * l.x; // 1
-    L[xz][yy] += kn_Vcell * nx * l.z * ny * l.y + kt_Vcell * tx * l.z * ty * l.y + kt_Vcell * wx * l.z * wy * l.y; // 2
-    L[xz][zz] += kn_Vcell * nx * l.z * nz * l.z + kt_Vcell * tx * l.z * tz * l.z + kt_Vcell * wx * l.z * wz * l.z; // 3
-    L[xz][xy] += kn_Vcell * nx * l.z * nx * l.y + kt_Vcell * tx * l.z * tx * l.y + kt_Vcell * wx * l.z * wx * l.y; // 4
-    L[xz][xz] += kn_Vcell * nx * l.z * nx * l.z + kt_Vcell * tx * l.z * tx * l.z + kt_Vcell * wx * l.z * wx * l.z; // 5
-    L[xz][yz] += kn_Vcell * nx * l.z * ny * l.z + kt_Vcell * tx * l.z * ty * l.z + kt_Vcell * wx * l.z * wy * l.z; // 6
-    L[xz][yx] += kn_Vcell * nx * l.z * ny * l.x + kt_Vcell * tx * l.z * ty * l.x + kt_Vcell * wx * l.z * wy * l.x; // 7
-    L[xz][zx] += kn_Vcell * nx * l.z * nz * l.x + kt_Vcell * tx * l.z * tz * l.x + kt_Vcell * wx * l.z * wz * l.x; // 8
-    L[xz][zy] += kn_Vcell * nx * l.z * nz * l.y + kt_Vcell * tx * l.z * tz * l.y + kt_Vcell * wx * l.z * wz * l.y; // 9
+    L[xz][xx] += kn_Vcell * nx * l.z * nx * l.x + kt_Vcell * tx * l.z * tx * l.x + kt_Vcell * wx * l.z * wx * l.x;  // 1
+    L[xz][yy] += kn_Vcell * nx * l.z * ny * l.y + kt_Vcell * tx * l.z * ty * l.y + kt_Vcell * wx * l.z * wy * l.y;  // 2
+    L[xz][zz] += kn_Vcell * nx * l.z * nz * l.z + kt_Vcell * tx * l.z * tz * l.z + kt_Vcell * wx * l.z * wz * l.z;  // 3
+    L[xz][xy] += kn_Vcell * nx * l.z * nx * l.y + kt_Vcell * tx * l.z * tx * l.y + kt_Vcell * wx * l.z * wx * l.y;  // 4
+    L[xz][xz] += kn_Vcell * nx * l.z * nx * l.z + kt_Vcell * tx * l.z * tx * l.z + kt_Vcell * wx * l.z * wx * l.z;  // 5
+    L[xz][yz] += kn_Vcell * nx * l.z * ny * l.z + kt_Vcell * tx * l.z * ty * l.z + kt_Vcell * wx * l.z * wy * l.z;  // 6
+    L[xz][yx] += kn_Vcell * nx * l.z * ny * l.x + kt_Vcell * tx * l.z * ty * l.x + kt_Vcell * wx * l.z * wy * l.x;  // 7
+    L[xz][zx] += kn_Vcell * nx * l.z * nz * l.x + kt_Vcell * tx * l.z * tz * l.x + kt_Vcell * wx * l.z * wz * l.x;  // 8
+    L[xz][zy] += kn_Vcell * nx * l.z * nz * l.y + kt_Vcell * tx * l.z * tz * l.y + kt_Vcell * wx * l.z * wz * l.y;  // 9
 
     // yz
-    L[yz][xx] += kn_Vcell * ny * l.z * nx * l.x + kt_Vcell * ty * l.z * tx * l.x + kt_Vcell * wy * l.z * wx * l.x; // 1
-    L[yz][yy] += kn_Vcell * ny * l.z * ny * l.y + kt_Vcell * ty * l.z * ty * l.y + kt_Vcell * wy * l.z * wy * l.y; // 2
-    L[yz][zz] += kn_Vcell * ny * l.z * nz * l.z + kt_Vcell * ty * l.z * tz * l.z + kt_Vcell * wy * l.z * wz * l.z; // 3
-    L[yz][xy] += kn_Vcell * ny * l.z * nx * l.y + kt_Vcell * ty * l.z * tx * l.y + kt_Vcell * wy * l.z * wx * l.y; // 4
-    L[yz][xz] += kn_Vcell * ny * l.z * nx * l.z + kt_Vcell * ty * l.z * tx * l.z + kt_Vcell * wy * l.z * wx * l.z; // 5
-    L[yz][yz] += kn_Vcell * ny * l.z * ny * l.z + kt_Vcell * ty * l.z * ty * l.z + kt_Vcell * wy * l.z * wy * l.z; // 6
-    L[yz][yx] += kn_Vcell * ny * l.z * ny * l.x + kt_Vcell * ty * l.z * ty * l.x + kt_Vcell * wy * l.z * wy * l.x; // 7
-    L[yz][zx] += kn_Vcell * ny * l.z * nz * l.x + kt_Vcell * ty * l.z * tz * l.x + kt_Vcell * wy * l.z * wz * l.x; // 8
-    L[yz][zy] += kn_Vcell * ny * l.z * nz * l.y + kt_Vcell * ty * l.z * tz * l.y + kt_Vcell * wy * l.z * wz * l.y; // 9
+    L[yz][xx] += kn_Vcell * ny * l.z * nx * l.x + kt_Vcell * ty * l.z * tx * l.x + kt_Vcell * wy * l.z * wx * l.x;  // 1
+    L[yz][yy] += kn_Vcell * ny * l.z * ny * l.y + kt_Vcell * ty * l.z * ty * l.y + kt_Vcell * wy * l.z * wy * l.y;  // 2
+    L[yz][zz] += kn_Vcell * ny * l.z * nz * l.z + kt_Vcell * ty * l.z * tz * l.z + kt_Vcell * wy * l.z * wz * l.z;  // 3
+    L[yz][xy] += kn_Vcell * ny * l.z * nx * l.y + kt_Vcell * ty * l.z * tx * l.y + kt_Vcell * wy * l.z * wx * l.y;  // 4
+    L[yz][xz] += kn_Vcell * ny * l.z * nx * l.z + kt_Vcell * ty * l.z * tx * l.z + kt_Vcell * wy * l.z * wx * l.z;  // 5
+    L[yz][yz] += kn_Vcell * ny * l.z * ny * l.z + kt_Vcell * ty * l.z * ty * l.z + kt_Vcell * wy * l.z * wy * l.z;  // 6
+    L[yz][yx] += kn_Vcell * ny * l.z * ny * l.x + kt_Vcell * ty * l.z * ty * l.x + kt_Vcell * wy * l.z * wy * l.x;  // 7
+    L[yz][zx] += kn_Vcell * ny * l.z * nz * l.x + kt_Vcell * ty * l.z * tz * l.x + kt_Vcell * wy * l.z * wz * l.x;  // 8
+    L[yz][zy] += kn_Vcell * ny * l.z * nz * l.y + kt_Vcell * ty * l.z * tz * l.y + kt_Vcell * wy * l.z * wz * l.y;  // 9
 
     // yx
-    L[yx][xx] += kn_Vcell * ny * l.x * nx * l.x + kt_Vcell * ty * l.x * tx * l.x + kt_Vcell * wy * l.x * wx * l.x; // 1
-    L[yx][yy] += kn_Vcell * ny * l.x * ny * l.y + kt_Vcell * ty * l.x * ty * l.y + kt_Vcell * wy * l.x * wy * l.y; // 2
-    L[yx][zz] += kn_Vcell * ny * l.x * nz * l.z + kt_Vcell * ty * l.x * tz * l.z + kt_Vcell * wy * l.x * wz * l.z; // 3
-    L[yx][xy] += kn_Vcell * ny * l.x * nx * l.y + kt_Vcell * ty * l.x * tx * l.y + kt_Vcell * wy * l.x * wx * l.y; // 4
-    L[yx][xz] += kn_Vcell * ny * l.x * nx * l.z + kt_Vcell * ty * l.x * tx * l.z + kt_Vcell * wy * l.x * wx * l.z; // 5
-    L[yx][yz] += kn_Vcell * ny * l.x * ny * l.z + kt_Vcell * ty * l.x * ty * l.z + kt_Vcell * wy * l.x * wy * l.z; // 6
-    L[yx][yx] += kn_Vcell * ny * l.x * ny * l.x + kt_Vcell * ty * l.x * ty * l.x + kt_Vcell * wy * l.x * wy * l.x; // 7
-    L[yx][zx] += kn_Vcell * ny * l.x * nz * l.x + kt_Vcell * ty * l.x * tz * l.x + kt_Vcell * wy * l.x * wz * l.x; // 8
-    L[yx][zy] += kn_Vcell * ny * l.x * nz * l.y + kt_Vcell * ty * l.x * tz * l.y + kt_Vcell * wy * l.x * wz * l.y; // 9
+    L[yx][xx] += kn_Vcell * ny * l.x * nx * l.x + kt_Vcell * ty * l.x * tx * l.x + kt_Vcell * wy * l.x * wx * l.x;  // 1
+    L[yx][yy] += kn_Vcell * ny * l.x * ny * l.y + kt_Vcell * ty * l.x * ty * l.y + kt_Vcell * wy * l.x * wy * l.y;  // 2
+    L[yx][zz] += kn_Vcell * ny * l.x * nz * l.z + kt_Vcell * ty * l.x * tz * l.z + kt_Vcell * wy * l.x * wz * l.z;  // 3
+    L[yx][xy] += kn_Vcell * ny * l.x * nx * l.y + kt_Vcell * ty * l.x * tx * l.y + kt_Vcell * wy * l.x * wx * l.y;  // 4
+    L[yx][xz] += kn_Vcell * ny * l.x * nx * l.z + kt_Vcell * ty * l.x * tx * l.z + kt_Vcell * wy * l.x * wx * l.z;  // 5
+    L[yx][yz] += kn_Vcell * ny * l.x * ny * l.z + kt_Vcell * ty * l.x * ty * l.z + kt_Vcell * wy * l.x * wy * l.z;  // 6
+    L[yx][yx] += kn_Vcell * ny * l.x * ny * l.x + kt_Vcell * ty * l.x * ty * l.x + kt_Vcell * wy * l.x * wy * l.x;  // 7
+    L[yx][zx] += kn_Vcell * ny * l.x * nz * l.x + kt_Vcell * ty * l.x * tz * l.x + kt_Vcell * wy * l.x * wz * l.x;  // 8
+    L[yx][zy] += kn_Vcell * ny * l.x * nz * l.y + kt_Vcell * ty * l.x * tz * l.y + kt_Vcell * wy * l.x * wz * l.y;  // 9
 
     // zx
-    L[zx][xx] += kn_Vcell * nz * l.x * nx * l.x + kt_Vcell * tz * l.x * tx * l.x + kt_Vcell * wz * l.x * wx * l.x; // 1
-    L[zx][yy] += kn_Vcell * nz * l.x * ny * l.y + kt_Vcell * tz * l.x * ty * l.y + kt_Vcell * wz * l.x * wy * l.y; // 2
-    L[zx][zz] += kn_Vcell * nz * l.x * nz * l.z + kt_Vcell * tz * l.x * tz * l.z + kt_Vcell * wz * l.x * wz * l.z; // 3
-    L[zx][xy] += kn_Vcell * nz * l.x * nx * l.y + kt_Vcell * tz * l.x * tx * l.y + kt_Vcell * wz * l.x * wx * l.y; // 4
-    L[zx][xz] += kn_Vcell * nz * l.x * nx * l.z + kt_Vcell * tz * l.x * tx * l.z + kt_Vcell * wz * l.x * wx * l.z; // 5
-    L[zx][yz] += kn_Vcell * nz * l.x * ny * l.z + kt_Vcell * tz * l.x * ty * l.z + kt_Vcell * wz * l.x * wy * l.z; // 6
-    L[zx][yx] += kn_Vcell * nz * l.x * ny * l.x + kt_Vcell * tz * l.x * ty * l.x + kt_Vcell * wz * l.x * wy * l.x; // 7
-    L[zx][zx] += kn_Vcell * nz * l.x * nz * l.x + kt_Vcell * tz * l.x * tz * l.x + kt_Vcell * wz * l.x * wz * l.x; // 8
-    L[zx][zy] += kn_Vcell * nz * l.x * nz * l.y + kt_Vcell * tz * l.x * tz * l.y + kt_Vcell * wz * l.x * wz * l.y; // 9
+    L[zx][xx] += kn_Vcell * nz * l.x * nx * l.x + kt_Vcell * tz * l.x * tx * l.x + kt_Vcell * wz * l.x * wx * l.x;  // 1
+    L[zx][yy] += kn_Vcell * nz * l.x * ny * l.y + kt_Vcell * tz * l.x * ty * l.y + kt_Vcell * wz * l.x * wy * l.y;  // 2
+    L[zx][zz] += kn_Vcell * nz * l.x * nz * l.z + kt_Vcell * tz * l.x * tz * l.z + kt_Vcell * wz * l.x * wz * l.z;  // 3
+    L[zx][xy] += kn_Vcell * nz * l.x * nx * l.y + kt_Vcell * tz * l.x * tx * l.y + kt_Vcell * wz * l.x * wx * l.y;  // 4
+    L[zx][xz] += kn_Vcell * nz * l.x * nx * l.z + kt_Vcell * tz * l.x * tx * l.z + kt_Vcell * wz * l.x * wx * l.z;  // 5
+    L[zx][yz] += kn_Vcell * nz * l.x * ny * l.z + kt_Vcell * tz * l.x * ty * l.z + kt_Vcell * wz * l.x * wy * l.z;  // 6
+    L[zx][yx] += kn_Vcell * nz * l.x * ny * l.x + kt_Vcell * tz * l.x * ty * l.x + kt_Vcell * wz * l.x * wy * l.x;  // 7
+    L[zx][zx] += kn_Vcell * nz * l.x * nz * l.x + kt_Vcell * tz * l.x * tz * l.x + kt_Vcell * wz * l.x * wz * l.x;  // 8
+    L[zx][zy] += kn_Vcell * nz * l.x * nz * l.y + kt_Vcell * tz * l.x * tz * l.y + kt_Vcell * wz * l.x * wz * l.y;  // 9
 
     // zy
-    L[zy][xx] += kn_Vcell * nz * l.y * nx * l.x + kt_Vcell * tz * l.y * tx * l.x + kt_Vcell * wz * l.y * wx * l.x; // 1
-    L[zy][yy] += kn_Vcell * nz * l.y * ny * l.y + kt_Vcell * tz * l.y * ty * l.y + kt_Vcell * wz * l.y * wy * l.y; // 2
-    L[zy][zz] += kn_Vcell * nz * l.y * nz * l.z + kt_Vcell * tz * l.y * tz * l.z + kt_Vcell * wz * l.y * wz * l.z; // 3
-    L[zy][xy] += kn_Vcell * nz * l.y * nx * l.y + kt_Vcell * tz * l.y * tx * l.y + kt_Vcell * wz * l.y * wx * l.y; // 4
-    L[zy][xz] += kn_Vcell * nz * l.y * nx * l.z + kt_Vcell * tz * l.y * tx * l.z + kt_Vcell * wz * l.y * wx * l.z; // 5
-    L[zy][yz] += kn_Vcell * nz * l.y * ny * l.z + kt_Vcell * tz * l.y * ty * l.z + kt_Vcell * wz * l.y * wy * l.z; // 6
-    L[zy][yx] += kn_Vcell * nz * l.y * ny * l.x + kt_Vcell * tz * l.y * ty * l.x + kt_Vcell * wz * l.y * wy * l.x; // 7
-    L[zy][zx] += kn_Vcell * nz * l.y * nz * l.x + kt_Vcell * tz * l.y * tz * l.x + kt_Vcell * wz * l.y * wz * l.x; // 8
-    L[zy][zy] += kn_Vcell * nz * l.y * nz * l.y + kt_Vcell * tz * l.y * tz * l.y + kt_Vcell * wz * l.y * wz * l.y; // 9
+    L[zy][xx] += kn_Vcell * nz * l.y * nx * l.x + kt_Vcell * tz * l.y * tx * l.x + kt_Vcell * wz * l.y * wx * l.x;  // 1
+    L[zy][yy] += kn_Vcell * nz * l.y * ny * l.y + kt_Vcell * tz * l.y * ty * l.y + kt_Vcell * wz * l.y * wy * l.y;  // 2
+    L[zy][zz] += kn_Vcell * nz * l.y * nz * l.z + kt_Vcell * tz * l.y * tz * l.z + kt_Vcell * wz * l.y * wz * l.z;  // 3
+    L[zy][xy] += kn_Vcell * nz * l.y * nx * l.y + kt_Vcell * tz * l.y * tx * l.y + kt_Vcell * wz * l.y * wx * l.y;  // 4
+    L[zy][xz] += kn_Vcell * nz * l.y * nx * l.z + kt_Vcell * tz * l.y * tx * l.z + kt_Vcell * wz * l.y * wx * l.z;  // 5
+    L[zy][yz] += kn_Vcell * nz * l.y * ny * l.z + kt_Vcell * tz * l.y * ty * l.z + kt_Vcell * wz * l.y * wy * l.z;  // 6
+    L[zy][yx] += kn_Vcell * nz * l.y * ny * l.x + kt_Vcell * tz * l.y * ty * l.x + kt_Vcell * wz * l.y * wy * l.x;  // 7
+    L[zy][zx] += kn_Vcell * nz * l.y * nz * l.x + kt_Vcell * tz * l.y * tz * l.x + kt_Vcell * wz * l.y * wz * l.x;  // 8
+    L[zy][zy] += kn_Vcell * nz * l.y * nz * l.y + kt_Vcell * tz * l.y * tz * l.y + kt_Vcell * wz * l.y * wz * l.y;  // 9
   }
 }
 
@@ -1700,8 +1678,7 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
   double Lkt2 = 0.0;
 
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState)
-      continue;
+    if (Interactions[k].state == noContactState) continue;
 
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
@@ -1732,11 +1709,11 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
     wz = nx * ty - ny * tx;
 
     // Verification: sliding or not?
-    double threshold = fabs(mu * Interactions[k].fn); // Suppose that fn is elastic and without cohesion
+    double threshold = fabs(mu * Interactions[k].fn);  // Suppose that fn is elastic and without cohesion
     double ft_square = Interactions[k].ft * Interactions[k].ft;
     double tol = threshold * threshold - ft_square;
 
-    if (ft_square > 0.0 && sqrt(tol) <= 1e-15) { // sliding contact
+    if (ft_square > 0.0 && sqrt(tol) <= 1e-15) {  // sliding contact
 
       // xx
       Lxxxx = kn_Vcell * nx * l.x * nx * l.x + mu * kn_Vcell * tx * l.x * wx * l.x + kt_Vcell * wx * l.x * wx * l.x;
@@ -1842,110 +1819,110 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
       Lzyyx = kn_Vcell * nz * l.y * ny * l.x + mu * kn_Vcell * tz * l.y * wy * l.x + kt_Vcell * wz * l.y * wy * l.x;
       Lzyzx = kn_Vcell * nz * l.y * nz * l.x + mu * kn_Vcell * tz * l.y * wz * l.x + kt_Vcell * wz * l.y * wz * l.x;
       Lzyzy = kn_Vcell * nz * l.y * nz * l.y + mu * kn_Vcell * tz * l.y * wz * l.y + kt_Vcell * wz * l.y * wz * l.y;
-    } else { // no sliding contact
+    } else {  // no sliding contact
       // xx
-      Lxxxx = kn_Vcell * nx * l.x * nx * l.x + kt_Vcell * tx * l.x * tx * l.x + kt_Vcell * wx * l.x * wx * l.x; // 1
+      Lxxxx = kn_Vcell * nx * l.x * nx * l.x + kt_Vcell * tx * l.x * tx * l.x + kt_Vcell * wx * l.x * wx * l.x;  // 1
       Lknxxxx = kn_Vcell * nx * l.x * nx * l.x;
       Lktxxxx = kt_Vcell * wx * l.x * wx * l.x + kt_Vcell * tx * l.x * tx * l.x;
-      Lxxyy = kn_Vcell * nx * l.x * ny * l.y + kt_Vcell * tx * l.x * ty * l.y + kt_Vcell * wx * l.x * wy * l.y; // 2
+      Lxxyy = kn_Vcell * nx * l.x * ny * l.y + kt_Vcell * tx * l.x * ty * l.y + kt_Vcell * wx * l.x * wy * l.y;  // 2
       Lknxxyy = kn_Vcell * nx * l.x * ny * l.y;
       Lktxxyy = kt_Vcell * wx * l.x * wy * l.y + kt_Vcell * tx * l.x * ty * l.y;
 
-      Lxxzz = kn_Vcell * nx * l.x * nz * l.z + kt_Vcell * tx * l.x * tz * l.z + kt_Vcell * wx * l.x * wz * l.z; // 3
-      Lxxxy = kn_Vcell * nx * l.x * nx * l.y + kt_Vcell * tx * l.x * tx * l.y + kt_Vcell * wx * l.x * wx * l.y; // 4
-      Lxxxz = kn_Vcell * nx * l.x * nx * l.z + kt_Vcell * tx * l.x * tx * l.z + kt_Vcell * wx * l.x * wx * l.z; // 5
-      Lxxyz = kn_Vcell * nx * l.x * ny * l.z + kt_Vcell * tx * l.x * ty * l.z + kt_Vcell * wx * l.x * wy * l.z; // 6
-      Lxxyx = kn_Vcell * nx * l.x * ny * l.x + kt_Vcell * tx * l.x * ty * l.x + kt_Vcell * wx * l.x * wy * l.x; // 7
-      Lxxzx = kn_Vcell * nx * l.x * nz * l.x + kt_Vcell * tx * l.x * tz * l.x + kt_Vcell * wx * l.x * wz * l.x; // 8
-      Lxxzy = kn_Vcell * nx * l.x * nz * l.y + kt_Vcell * tx * l.x * tz * l.y + kt_Vcell * wx * l.x * wz * l.y; // 9
+      Lxxzz = kn_Vcell * nx * l.x * nz * l.z + kt_Vcell * tx * l.x * tz * l.z + kt_Vcell * wx * l.x * wz * l.z;  // 3
+      Lxxxy = kn_Vcell * nx * l.x * nx * l.y + kt_Vcell * tx * l.x * tx * l.y + kt_Vcell * wx * l.x * wx * l.y;  // 4
+      Lxxxz = kn_Vcell * nx * l.x * nx * l.z + kt_Vcell * tx * l.x * tx * l.z + kt_Vcell * wx * l.x * wx * l.z;  // 5
+      Lxxyz = kn_Vcell * nx * l.x * ny * l.z + kt_Vcell * tx * l.x * ty * l.z + kt_Vcell * wx * l.x * wy * l.z;  // 6
+      Lxxyx = kn_Vcell * nx * l.x * ny * l.x + kt_Vcell * tx * l.x * ty * l.x + kt_Vcell * wx * l.x * wy * l.x;  // 7
+      Lxxzx = kn_Vcell * nx * l.x * nz * l.x + kt_Vcell * tx * l.x * tz * l.x + kt_Vcell * wx * l.x * wz * l.x;  // 8
+      Lxxzy = kn_Vcell * nx * l.x * nz * l.y + kt_Vcell * tx * l.x * tz * l.y + kt_Vcell * wx * l.x * wz * l.y;  // 9
 
       // yy
-      Lyyxx = kn_Vcell * ny * l.y * nx * l.x + kt_Vcell * ty * l.y * tx * l.x + kt_Vcell * wy * l.y * wx * l.x; // 1
-      Lyyyy = kn_Vcell * ny * l.y * ny * l.y + kt_Vcell * ty * l.y * ty * l.y + kt_Vcell * wy * l.y * wy * l.y; // 2
-      Lyyzz = kn_Vcell * ny * l.y * nz * l.z + kt_Vcell * ty * l.y * tz * l.z + kt_Vcell * wy * l.y * wz * l.z; // 3
-      Lyyxy = kn_Vcell * ny * l.y * nx * l.y + kt_Vcell * ty * l.y * tx * l.y + kt_Vcell * wy * l.y * wx * l.y; // 4
-      Lyyxz = kn_Vcell * ny * l.y * nx * l.z + kt_Vcell * ty * l.y * tx * l.z + kt_Vcell * wy * l.y * wx * l.z; // 5
-      Lyyyz = kn_Vcell * ny * l.y * ny * l.z + kt_Vcell * ty * l.y * ty * l.z + kt_Vcell * wy * l.y * wy * l.z; // 6
-      Lyyyx = kn_Vcell * ny * l.y * ny * l.x + kt_Vcell * ty * l.y * ty * l.x + kt_Vcell * wy * l.y * wy * l.x; // 7
-      Lyyzx = kn_Vcell * ny * l.y * nz * l.x + kt_Vcell * ty * l.y * tz * l.x + kt_Vcell * wy * l.y * wz * l.x; // 8
-      Lyyzy = kn_Vcell * ny * l.y * nz * l.y + kt_Vcell * ty * l.y * tz * l.y + kt_Vcell * wy * l.y * wz * l.y; // 9
+      Lyyxx = kn_Vcell * ny * l.y * nx * l.x + kt_Vcell * ty * l.y * tx * l.x + kt_Vcell * wy * l.y * wx * l.x;  // 1
+      Lyyyy = kn_Vcell * ny * l.y * ny * l.y + kt_Vcell * ty * l.y * ty * l.y + kt_Vcell * wy * l.y * wy * l.y;  // 2
+      Lyyzz = kn_Vcell * ny * l.y * nz * l.z + kt_Vcell * ty * l.y * tz * l.z + kt_Vcell * wy * l.y * wz * l.z;  // 3
+      Lyyxy = kn_Vcell * ny * l.y * nx * l.y + kt_Vcell * ty * l.y * tx * l.y + kt_Vcell * wy * l.y * wx * l.y;  // 4
+      Lyyxz = kn_Vcell * ny * l.y * nx * l.z + kt_Vcell * ty * l.y * tx * l.z + kt_Vcell * wy * l.y * wx * l.z;  // 5
+      Lyyyz = kn_Vcell * ny * l.y * ny * l.z + kt_Vcell * ty * l.y * ty * l.z + kt_Vcell * wy * l.y * wy * l.z;  // 6
+      Lyyyx = kn_Vcell * ny * l.y * ny * l.x + kt_Vcell * ty * l.y * ty * l.x + kt_Vcell * wy * l.y * wy * l.x;  // 7
+      Lyyzx = kn_Vcell * ny * l.y * nz * l.x + kt_Vcell * ty * l.y * tz * l.x + kt_Vcell * wy * l.y * wz * l.x;  // 8
+      Lyyzy = kn_Vcell * ny * l.y * nz * l.y + kt_Vcell * ty * l.y * tz * l.y + kt_Vcell * wy * l.y * wz * l.y;  // 9
 
       // zz
-      Lzzxx = kn_Vcell * nz * l.z * nx * l.x + kt_Vcell * tz * l.z * tx * l.x + kt_Vcell * wz * l.z * wx * l.x; // 1
-      Lzzyy = kn_Vcell * nz * l.z * ny * l.y + kt_Vcell * tz * l.z * ty * l.y + kt_Vcell * wz * l.z * wy * l.y; // 2
-      Lzzzz = kn_Vcell * nz * l.z * nz * l.z + kt_Vcell * tz * l.z * tz * l.z + kt_Vcell * wz * l.z * wz * l.z; // 3
-      Lzzxy = kn_Vcell * nz * l.z * nx * l.y + kt_Vcell * tz * l.z * tx * l.y + kt_Vcell * wz * l.z * wx * l.y; // 4
-      Lzzxz = kn_Vcell * nz * l.z * nx * l.z + kt_Vcell * tz * l.z * tx * l.z + kt_Vcell * wz * l.z * wx * l.z; // 5
-      Lzzyz = kn_Vcell * nz * l.z * ny * l.z + kt_Vcell * tz * l.z * ty * l.z + kt_Vcell * wz * l.z * wy * l.z; // 6
-      Lzzyx = kn_Vcell * nz * l.z * ny * l.x + kt_Vcell * tz * l.z * ty * l.x + kt_Vcell * wz * l.z * wy * l.x; // 7
-      Lzzzx = kn_Vcell * nz * l.z * nz * l.x + kt_Vcell * tz * l.z * tz * l.x + kt_Vcell * wz * l.z * wz * l.x; // 8
-      Lzzzy = kn_Vcell * nz * l.z * nz * l.y + kt_Vcell * tz * l.z * tz * l.y + kt_Vcell * wz * l.z * wz * l.y; // 9
+      Lzzxx = kn_Vcell * nz * l.z * nx * l.x + kt_Vcell * tz * l.z * tx * l.x + kt_Vcell * wz * l.z * wx * l.x;  // 1
+      Lzzyy = kn_Vcell * nz * l.z * ny * l.y + kt_Vcell * tz * l.z * ty * l.y + kt_Vcell * wz * l.z * wy * l.y;  // 2
+      Lzzzz = kn_Vcell * nz * l.z * nz * l.z + kt_Vcell * tz * l.z * tz * l.z + kt_Vcell * wz * l.z * wz * l.z;  // 3
+      Lzzxy = kn_Vcell * nz * l.z * nx * l.y + kt_Vcell * tz * l.z * tx * l.y + kt_Vcell * wz * l.z * wx * l.y;  // 4
+      Lzzxz = kn_Vcell * nz * l.z * nx * l.z + kt_Vcell * tz * l.z * tx * l.z + kt_Vcell * wz * l.z * wx * l.z;  // 5
+      Lzzyz = kn_Vcell * nz * l.z * ny * l.z + kt_Vcell * tz * l.z * ty * l.z + kt_Vcell * wz * l.z * wy * l.z;  // 6
+      Lzzyx = kn_Vcell * nz * l.z * ny * l.x + kt_Vcell * tz * l.z * ty * l.x + kt_Vcell * wz * l.z * wy * l.x;  // 7
+      Lzzzx = kn_Vcell * nz * l.z * nz * l.x + kt_Vcell * tz * l.z * tz * l.x + kt_Vcell * wz * l.z * wz * l.x;  // 8
+      Lzzzy = kn_Vcell * nz * l.z * nz * l.y + kt_Vcell * tz * l.z * tz * l.y + kt_Vcell * wz * l.z * wz * l.y;  // 9
 
       // xy
-      Lxyxx = kn_Vcell * nx * l.y * nx * l.x + kt_Vcell * tx * l.y * tx * l.x + kt_Vcell * wx * l.y * wx * l.x; // 1
-      Lxyyy = kn_Vcell * nx * l.y * ny * l.y + kt_Vcell * tx * l.y * ty * l.y + kt_Vcell * wx * l.y * wy * l.y; // 2
-      Lxyzz = kn_Vcell * nx * l.y * nz * l.z + kt_Vcell * tx * l.y * tz * l.z + kt_Vcell * wx * l.y * wz * l.z; // 3
-      Lxyxy = kn_Vcell * nx * l.y * nx * l.y + kt_Vcell * tx * l.y * tx * l.y + kt_Vcell * wx * l.y * wx * l.y; // 4
-      Lxyxz = kn_Vcell * nx * l.y * nx * l.z + kt_Vcell * tx * l.y * tx * l.z + kt_Vcell * wx * l.y * wx * l.z; // 5
-      Lxyyz = kn_Vcell * nx * l.y * ny * l.z + kt_Vcell * tx * l.y * ty * l.z + kt_Vcell * wx * l.y * wy * l.z; // 6
-      Lxyyx = kn_Vcell * nx * l.y * ny * l.x + kt_Vcell * tx * l.y * ty * l.x + kt_Vcell * wx * l.y * wy * l.x; // 7
-      Lxyzx = kn_Vcell * nx * l.y * nz * l.x + kt_Vcell * tx * l.y * tz * l.x + kt_Vcell * wx * l.y * wz * l.x; // 8
-      Lxyzy = kn_Vcell * nx * l.y * nz * l.y + kt_Vcell * tx * l.y * tz * l.y + kt_Vcell * wx * l.y * wz * l.y; // 9
+      Lxyxx = kn_Vcell * nx * l.y * nx * l.x + kt_Vcell * tx * l.y * tx * l.x + kt_Vcell * wx * l.y * wx * l.x;  // 1
+      Lxyyy = kn_Vcell * nx * l.y * ny * l.y + kt_Vcell * tx * l.y * ty * l.y + kt_Vcell * wx * l.y * wy * l.y;  // 2
+      Lxyzz = kn_Vcell * nx * l.y * nz * l.z + kt_Vcell * tx * l.y * tz * l.z + kt_Vcell * wx * l.y * wz * l.z;  // 3
+      Lxyxy = kn_Vcell * nx * l.y * nx * l.y + kt_Vcell * tx * l.y * tx * l.y + kt_Vcell * wx * l.y * wx * l.y;  // 4
+      Lxyxz = kn_Vcell * nx * l.y * nx * l.z + kt_Vcell * tx * l.y * tx * l.z + kt_Vcell * wx * l.y * wx * l.z;  // 5
+      Lxyyz = kn_Vcell * nx * l.y * ny * l.z + kt_Vcell * tx * l.y * ty * l.z + kt_Vcell * wx * l.y * wy * l.z;  // 6
+      Lxyyx = kn_Vcell * nx * l.y * ny * l.x + kt_Vcell * tx * l.y * ty * l.x + kt_Vcell * wx * l.y * wy * l.x;  // 7
+      Lxyzx = kn_Vcell * nx * l.y * nz * l.x + kt_Vcell * tx * l.y * tz * l.x + kt_Vcell * wx * l.y * wz * l.x;  // 8
+      Lxyzy = kn_Vcell * nx * l.y * nz * l.y + kt_Vcell * tx * l.y * tz * l.y + kt_Vcell * wx * l.y * wz * l.y;  // 9
 
       // xz
-      Lxzxx = kn_Vcell * nx * l.z * nx * l.x + kt_Vcell * tx * l.z * tx * l.x + kt_Vcell * wx * l.z * wx * l.x; // 1
-      Lxzyy = kn_Vcell * nx * l.z * ny * l.y + kt_Vcell * tx * l.z * ty * l.y + kt_Vcell * wx * l.z * wy * l.y; // 2
-      Lxzzz = kn_Vcell * nx * l.z * nz * l.z + kt_Vcell * tx * l.z * tz * l.z + kt_Vcell * wx * l.z * wz * l.z; // 3
-      Lxzxy = kn_Vcell * nx * l.z * nx * l.y + kt_Vcell * tx * l.z * tx * l.y + kt_Vcell * wx * l.z * wx * l.y; // 4
-      Lxzxz = kn_Vcell * nx * l.z * nx * l.z + kt_Vcell * tx * l.z * tx * l.z + kt_Vcell * wx * l.z * wx * l.z; // 5
-      Lxzyz = kn_Vcell * nx * l.z * ny * l.z + kt_Vcell * tx * l.z * ty * l.z + kt_Vcell * wx * l.z * wy * l.z; // 6
-      Lxzyx = kn_Vcell * nx * l.z * ny * l.x + kt_Vcell * tx * l.z * ty * l.x + kt_Vcell * wx * l.z * wy * l.x; // 7
-      Lxzzx = kn_Vcell * nx * l.z * nz * l.x + kt_Vcell * tx * l.z * tz * l.x + kt_Vcell * wx * l.z * wz * l.x; // 8
-      Lxzzy = kn_Vcell * nx * l.z * nz * l.y + kt_Vcell * tx * l.z * tz * l.y + kt_Vcell * wx * l.z * wz * l.y; // 9
+      Lxzxx = kn_Vcell * nx * l.z * nx * l.x + kt_Vcell * tx * l.z * tx * l.x + kt_Vcell * wx * l.z * wx * l.x;  // 1
+      Lxzyy = kn_Vcell * nx * l.z * ny * l.y + kt_Vcell * tx * l.z * ty * l.y + kt_Vcell * wx * l.z * wy * l.y;  // 2
+      Lxzzz = kn_Vcell * nx * l.z * nz * l.z + kt_Vcell * tx * l.z * tz * l.z + kt_Vcell * wx * l.z * wz * l.z;  // 3
+      Lxzxy = kn_Vcell * nx * l.z * nx * l.y + kt_Vcell * tx * l.z * tx * l.y + kt_Vcell * wx * l.z * wx * l.y;  // 4
+      Lxzxz = kn_Vcell * nx * l.z * nx * l.z + kt_Vcell * tx * l.z * tx * l.z + kt_Vcell * wx * l.z * wx * l.z;  // 5
+      Lxzyz = kn_Vcell * nx * l.z * ny * l.z + kt_Vcell * tx * l.z * ty * l.z + kt_Vcell * wx * l.z * wy * l.z;  // 6
+      Lxzyx = kn_Vcell * nx * l.z * ny * l.x + kt_Vcell * tx * l.z * ty * l.x + kt_Vcell * wx * l.z * wy * l.x;  // 7
+      Lxzzx = kn_Vcell * nx * l.z * nz * l.x + kt_Vcell * tx * l.z * tz * l.x + kt_Vcell * wx * l.z * wz * l.x;  // 8
+      Lxzzy = kn_Vcell * nx * l.z * nz * l.y + kt_Vcell * tx * l.z * tz * l.y + kt_Vcell * wx * l.z * wz * l.y;  // 9
 
       // yz
-      Lyzxx = kn_Vcell * ny * l.z * nx * l.x + kt_Vcell * ty * l.z * tx * l.x + kt_Vcell * wy * l.z * wx * l.x; // 1
-      Lyzyy = kn_Vcell * ny * l.z * ny * l.y + kt_Vcell * ty * l.z * ty * l.y + kt_Vcell * wy * l.z * wy * l.y; // 2
-      Lyzzz = kn_Vcell * ny * l.z * nz * l.z + kt_Vcell * ty * l.z * tz * l.z + kt_Vcell * wy * l.z * wz * l.z; // 3
-      Lyzxy = kn_Vcell * ny * l.z * nx * l.y + kt_Vcell * ty * l.z * tx * l.y + kt_Vcell * wy * l.z * wx * l.y; // 4
-      Lyzxz = kn_Vcell * ny * l.z * nx * l.z + kt_Vcell * ty * l.z * tx * l.z + kt_Vcell * wy * l.z * wx * l.z; // 5
-      Lyzyz = kn_Vcell * ny * l.z * ny * l.z + kt_Vcell * ty * l.z * ty * l.z + kt_Vcell * wy * l.z * wy * l.z; // 6
-      Lyzyx = kn_Vcell * ny * l.z * ny * l.x + kt_Vcell * ty * l.z * ty * l.x + kt_Vcell * wy * l.z * wy * l.x; // 7
-      Lyzzx = kn_Vcell * ny * l.z * nz * l.x + kt_Vcell * ty * l.z * tz * l.x + kt_Vcell * wy * l.z * wz * l.x; // 8
-      Lyzzy = kn_Vcell * ny * l.z * nz * l.y + kt_Vcell * ty * l.z * tz * l.y + kt_Vcell * wy * l.z * wz * l.y; // 9
+      Lyzxx = kn_Vcell * ny * l.z * nx * l.x + kt_Vcell * ty * l.z * tx * l.x + kt_Vcell * wy * l.z * wx * l.x;  // 1
+      Lyzyy = kn_Vcell * ny * l.z * ny * l.y + kt_Vcell * ty * l.z * ty * l.y + kt_Vcell * wy * l.z * wy * l.y;  // 2
+      Lyzzz = kn_Vcell * ny * l.z * nz * l.z + kt_Vcell * ty * l.z * tz * l.z + kt_Vcell * wy * l.z * wz * l.z;  // 3
+      Lyzxy = kn_Vcell * ny * l.z * nx * l.y + kt_Vcell * ty * l.z * tx * l.y + kt_Vcell * wy * l.z * wx * l.y;  // 4
+      Lyzxz = kn_Vcell * ny * l.z * nx * l.z + kt_Vcell * ty * l.z * tx * l.z + kt_Vcell * wy * l.z * wx * l.z;  // 5
+      Lyzyz = kn_Vcell * ny * l.z * ny * l.z + kt_Vcell * ty * l.z * ty * l.z + kt_Vcell * wy * l.z * wy * l.z;  // 6
+      Lyzyx = kn_Vcell * ny * l.z * ny * l.x + kt_Vcell * ty * l.z * ty * l.x + kt_Vcell * wy * l.z * wy * l.x;  // 7
+      Lyzzx = kn_Vcell * ny * l.z * nz * l.x + kt_Vcell * ty * l.z * tz * l.x + kt_Vcell * wy * l.z * wz * l.x;  // 8
+      Lyzzy = kn_Vcell * ny * l.z * nz * l.y + kt_Vcell * ty * l.z * tz * l.y + kt_Vcell * wy * l.z * wz * l.y;  // 9
 
       // yx
-      Lyxxx = kn_Vcell * ny * l.x * nx * l.x + kt_Vcell * ty * l.x * tx * l.x + kt_Vcell * wy * l.x * wx * l.x; // 1
-      Lyxyy = kn_Vcell * ny * l.x * ny * l.y + kt_Vcell * ty * l.x * ty * l.y + kt_Vcell * wy * l.x * wy * l.y; // 2
-      Lyxzz = kn_Vcell * ny * l.x * nz * l.z + kt_Vcell * ty * l.x * tz * l.z + kt_Vcell * wy * l.x * wz * l.z; // 3
-      Lyxxy = kn_Vcell * ny * l.x * nx * l.y + kt_Vcell * ty * l.x * tx * l.y + kt_Vcell * wy * l.x * wx * l.y; // 4
-      Lyxxz = kn_Vcell * ny * l.x * nx * l.z + kt_Vcell * ty * l.x * tx * l.z + kt_Vcell * wy * l.x * wx * l.z; // 5
-      Lyxyz = kn_Vcell * ny * l.x * ny * l.z + kt_Vcell * ty * l.x * ty * l.z + kt_Vcell * wy * l.x * wy * l.z; // 6
-      Lyxyx = kn_Vcell * ny * l.x * ny * l.x + kt_Vcell * ty * l.x * ty * l.x + kt_Vcell * wy * l.x * wy * l.x; // 7
-      Lyxzx = kn_Vcell * ny * l.x * nz * l.x + kt_Vcell * ty * l.x * tz * l.x + kt_Vcell * wy * l.x * wz * l.x; // 8
-      Lyxzy = kn_Vcell * ny * l.x * nz * l.y + kt_Vcell * ty * l.x * tz * l.y + kt_Vcell * wy * l.x * wz * l.y; // 9
+      Lyxxx = kn_Vcell * ny * l.x * nx * l.x + kt_Vcell * ty * l.x * tx * l.x + kt_Vcell * wy * l.x * wx * l.x;  // 1
+      Lyxyy = kn_Vcell * ny * l.x * ny * l.y + kt_Vcell * ty * l.x * ty * l.y + kt_Vcell * wy * l.x * wy * l.y;  // 2
+      Lyxzz = kn_Vcell * ny * l.x * nz * l.z + kt_Vcell * ty * l.x * tz * l.z + kt_Vcell * wy * l.x * wz * l.z;  // 3
+      Lyxxy = kn_Vcell * ny * l.x * nx * l.y + kt_Vcell * ty * l.x * tx * l.y + kt_Vcell * wy * l.x * wx * l.y;  // 4
+      Lyxxz = kn_Vcell * ny * l.x * nx * l.z + kt_Vcell * ty * l.x * tx * l.z + kt_Vcell * wy * l.x * wx * l.z;  // 5
+      Lyxyz = kn_Vcell * ny * l.x * ny * l.z + kt_Vcell * ty * l.x * ty * l.z + kt_Vcell * wy * l.x * wy * l.z;  // 6
+      Lyxyx = kn_Vcell * ny * l.x * ny * l.x + kt_Vcell * ty * l.x * ty * l.x + kt_Vcell * wy * l.x * wy * l.x;  // 7
+      Lyxzx = kn_Vcell * ny * l.x * nz * l.x + kt_Vcell * ty * l.x * tz * l.x + kt_Vcell * wy * l.x * wz * l.x;  // 8
+      Lyxzy = kn_Vcell * ny * l.x * nz * l.y + kt_Vcell * ty * l.x * tz * l.y + kt_Vcell * wy * l.x * wz * l.y;  // 9
 
       // zx
-      Lzxxx = kn_Vcell * nz * l.x * nx * l.x + kt_Vcell * tz * l.x * tx * l.x + kt_Vcell * wz * l.x * wx * l.x; // 1
-      Lzxyy = kn_Vcell * nz * l.x * ny * l.y + kt_Vcell * tz * l.x * ty * l.y + kt_Vcell * wz * l.x * wy * l.y; // 2
-      Lzxzz = kn_Vcell * nz * l.x * nz * l.z + kt_Vcell * tz * l.x * tz * l.z + kt_Vcell * wz * l.x * wz * l.z; // 3
-      Lzxxy = kn_Vcell * nz * l.x * nx * l.y + kt_Vcell * tz * l.x * tx * l.y + kt_Vcell * wz * l.x * wx * l.y; // 4
-      Lzxxz = kn_Vcell * nz * l.x * nx * l.z + kt_Vcell * tz * l.x * tx * l.z + kt_Vcell * wz * l.x * wx * l.z; // 5
-      Lzxyz = kn_Vcell * nz * l.x * ny * l.z + kt_Vcell * tz * l.x * ty * l.z + kt_Vcell * wz * l.x * wy * l.z; // 6
-      Lzxyx = kn_Vcell * nz * l.x * ny * l.x + kt_Vcell * tz * l.x * ty * l.x + kt_Vcell * wz * l.x * wy * l.x; // 7
-      Lzxzx = kn_Vcell * nz * l.x * nz * l.x + kt_Vcell * tz * l.x * tz * l.x + kt_Vcell * wz * l.x * wz * l.x; // 8
-      Lzxzy = kn_Vcell * nz * l.x * nz * l.y + kt_Vcell * tz * l.x * tz * l.y + kt_Vcell * wz * l.x * wz * l.y; // 9
+      Lzxxx = kn_Vcell * nz * l.x * nx * l.x + kt_Vcell * tz * l.x * tx * l.x + kt_Vcell * wz * l.x * wx * l.x;  // 1
+      Lzxyy = kn_Vcell * nz * l.x * ny * l.y + kt_Vcell * tz * l.x * ty * l.y + kt_Vcell * wz * l.x * wy * l.y;  // 2
+      Lzxzz = kn_Vcell * nz * l.x * nz * l.z + kt_Vcell * tz * l.x * tz * l.z + kt_Vcell * wz * l.x * wz * l.z;  // 3
+      Lzxxy = kn_Vcell * nz * l.x * nx * l.y + kt_Vcell * tz * l.x * tx * l.y + kt_Vcell * wz * l.x * wx * l.y;  // 4
+      Lzxxz = kn_Vcell * nz * l.x * nx * l.z + kt_Vcell * tz * l.x * tx * l.z + kt_Vcell * wz * l.x * wx * l.z;  // 5
+      Lzxyz = kn_Vcell * nz * l.x * ny * l.z + kt_Vcell * tz * l.x * ty * l.z + kt_Vcell * wz * l.x * wy * l.z;  // 6
+      Lzxyx = kn_Vcell * nz * l.x * ny * l.x + kt_Vcell * tz * l.x * ty * l.x + kt_Vcell * wz * l.x * wy * l.x;  // 7
+      Lzxzx = kn_Vcell * nz * l.x * nz * l.x + kt_Vcell * tz * l.x * tz * l.x + kt_Vcell * wz * l.x * wz * l.x;  // 8
+      Lzxzy = kn_Vcell * nz * l.x * nz * l.y + kt_Vcell * tz * l.x * tz * l.y + kt_Vcell * wz * l.x * wz * l.y;  // 9
 
       // zy
-      Lzyxx = kn_Vcell * nz * l.y * nx * l.x + kt_Vcell * tz * l.y * tx * l.x + kt_Vcell * wz * l.y * wx * l.x; // 1
-      Lzyyy = kn_Vcell * nz * l.y * ny * l.y + kt_Vcell * tz * l.y * ty * l.y + kt_Vcell * wz * l.y * wy * l.y; // 2
-      Lzyzz = kn_Vcell * nz * l.y * nz * l.z + kt_Vcell * tz * l.y * tz * l.z + kt_Vcell * wz * l.y * wz * l.z; // 3
-      Lzyxy = kn_Vcell * nz * l.y * nx * l.y + kt_Vcell * tz * l.y * tx * l.y + kt_Vcell * wz * l.y * wx * l.y; // 4
-      Lzyxz = kn_Vcell * nz * l.y * nx * l.z + kt_Vcell * tz * l.y * tx * l.z + kt_Vcell * wz * l.y * wx * l.z; // 5
-      Lzyyz = kn_Vcell * nz * l.y * ny * l.z + kt_Vcell * tz * l.y * ty * l.z + kt_Vcell * wz * l.y * wy * l.z; // 6
-      Lzyyx = kn_Vcell * nz * l.y * ny * l.x + kt_Vcell * tz * l.y * ty * l.x + kt_Vcell * wz * l.y * wy * l.x; // 7
-      Lzyzx = kn_Vcell * nz * l.y * nz * l.x + kt_Vcell * tz * l.y * tz * l.x + kt_Vcell * wz * l.y * wz * l.x; // 8
-      Lzyzy = kn_Vcell * nz * l.y * nz * l.y + kt_Vcell * tz * l.y * tz * l.y + kt_Vcell * wz * l.y * wz * l.y; // 9
+      Lzyxx = kn_Vcell * nz * l.y * nx * l.x + kt_Vcell * tz * l.y * tx * l.x + kt_Vcell * wz * l.y * wx * l.x;  // 1
+      Lzyyy = kn_Vcell * nz * l.y * ny * l.y + kt_Vcell * tz * l.y * ty * l.y + kt_Vcell * wz * l.y * wy * l.y;  // 2
+      Lzyzz = kn_Vcell * nz * l.y * nz * l.z + kt_Vcell * tz * l.y * tz * l.z + kt_Vcell * wz * l.y * wz * l.z;  // 3
+      Lzyxy = kn_Vcell * nz * l.y * nx * l.y + kt_Vcell * tz * l.y * tx * l.y + kt_Vcell * wz * l.y * wx * l.y;  // 4
+      Lzyxz = kn_Vcell * nz * l.y * nx * l.z + kt_Vcell * tz * l.y * tx * l.z + kt_Vcell * wz * l.y * wx * l.z;  // 5
+      Lzyyz = kn_Vcell * nz * l.y * ny * l.z + kt_Vcell * tz * l.y * ty * l.z + kt_Vcell * wz * l.y * wy * l.z;  // 6
+      Lzyyx = kn_Vcell * nz * l.y * ny * l.x + kt_Vcell * tz * l.y * ty * l.x + kt_Vcell * wz * l.y * wy * l.x;  // 7
+      Lzyzx = kn_Vcell * nz * l.y * nz * l.x + kt_Vcell * tz * l.y * tz * l.x + kt_Vcell * wz * l.y * wz * l.x;  // 8
+      Lzyzy = kn_Vcell * nz * l.y * nz * l.y + kt_Vcell * tz * l.y * tz * l.y + kt_Vcell * wz * l.y * wz * l.y;  // 9
     }
 
     // xx
@@ -2064,7 +2041,7 @@ void PBC3Dbox::initLagamine(double Q[]) {
     P.Q.v.y = Q[offset++];
     P.Q.v.z = Q[offset++];
     P.radius = Q[offset++];
-    P.mass = (4.0 / 3.0) * M_PI * P.radius * P.radius * P.radius * density; // Remember 'density' has to be set
+    P.mass = (4.0 / 3.0) * M_PI * P.radius * P.radius * P.radius * density;  // Remember 'density' has to be set
     // before calling this function
     P.inertia = (2.0 / 5.0) * P.mass * P.radius * P.radius;
     Particles.push_back(P);
@@ -2080,14 +2057,14 @@ void PBC3Dbox::initLagamine(double Q[]) {
   Cell.h.zx = Q[offset++];
   Cell.h.zy = Q[offset++];
   Cell.h.zz = Q[offset++];
-  Cell.mass = 1.0; // Actually not used because the velocity (vh) is imposed
+  Cell.mass = 1.0;  // Actually not used because the velocity (vh) is imposed
 
   // Contact list
   nbActiveInteractions = (size_t)Q[offset++];
   Interactions.clear();
   Interaction I;
   for (size_t i = 0; i < nbActiveInteractions; i++) {
-    I.i = Q[offset++] - 1; // Remenber that Fortran first index is 1
+    I.i = Q[offset++] - 1;  // Remenber that Fortran first index is 1
     I.j = Q[offset++] - 1;
     I.gap0 = Q[offset++];
     I.n.x = Q[offset++];
@@ -2144,11 +2121,11 @@ void PBC3Dbox::runSilently() {
 }
 
 // This version is for Lagamine (fortran)
-void PBC3Dbox::transform(double dFmoinsI[3][3], double *I, int *nstep) {
+void PBC3Dbox::transform(double dFmoinsI[3][3], double* I, int* nstep) {
   // const double dtcFactor = 0.04; // 0.04 = 1/25
 
   double dtc = sqrt(Vmin * density / kn);
-  dt = dtc * 0.1; // dtc * dtcFactor;
+  dt = dtc * 0.1;  // dtc * dtcFactor;
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
 
@@ -2156,8 +2133,7 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double *I, int *nstep) {
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       double tmp = fabs(dFmoinsI[i][j]);
-      if (tmp > max_dFmoinsI)
-        max_dFmoinsI = tmp;
+      if (tmp > max_dFmoinsI) max_dFmoinsI = tmp;
     }
   }
 
@@ -2166,7 +2142,7 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double *I, int *nstep) {
   // std::cout << "nstep " << *nstep << std::endl;
 
   tmax = *nstep * dt;
-  interVerlet = 1000 * dt; // TODO: compute it
+  interVerlet = 1000 * dt;  // TODO: compute it
 
   double fact = 1.0 / (dt * (*nstep));
 
@@ -2215,7 +2191,7 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double *I, int *nstep) {
 /// The strain is held while all components of the stress does not vary within
 /// a given tolerance (tol) during a number of consecutive times (nstepConv).
 /// If the number of steps reaches nstepMax, the computation is stopped anyway.
-void PBC3Dbox::hold(double *tol, int *nstepConv, int *nstepMax) {
+void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax) {
   mat9r previousSig = Sig;
 
   mat9r vh;
@@ -2239,29 +2215,22 @@ void PBC3Dbox::hold(double *tol, int *nstepConv, int *nstepMax) {
   while (nstep < *nstepMax) {
     velocityVerletStep();
 
-    if ((Sig.xx - previousSig.xx) < *tol // normalized by the confinement pressure
+    if ((Sig.xx - previousSig.xx) < *tol  // normalized by the confinement pressure
         && (Sig.xy - previousSig.xy) < *tol && (Sig.xz - previousSig.xz) < *tol && (Sig.yy - previousSig.yy) < *tol &&
         (Sig.yz - previousSig.yz) < *tol && (Sig.zz - previousSig.zz) < *tol) {
       nstepOK++;
     } else {
       nstepOK = 0;
-    } // nstepOK has to be consecutive!
+    }  // nstepOK has to be consecutive!
 
-    if (nstepOK >= *nstepConv)
-      break;
+    if (nstepOK >= *nstepConv) break;
 
-    if (nstepOK >= *nstepConv)
-      break;
-    if (nstep == *nstepMax - 1)
-      std::cout << "******************************" << std::endl;
-    if (nstep == *nstepMax - 1)
-      std::cout << "nstepOK " << nstepOK << std::endl;
-    if (nstep == *nstepMax - 1)
-      std::cout << "error " << Sig.xx - previousSig.xx << std::endl;
-    if (nstep == *nstepMax - 1)
-      std::cout << "nstep " << nstep << std::endl;
-    if (nstep == *nstepMax - 1)
-      std::cout << "tol " << *tol << std::endl;
+    if (nstepOK >= *nstepConv) break;
+    if (nstep == *nstepMax - 1) std::cout << "******************************" << std::endl;
+    if (nstep == *nstepMax - 1) std::cout << "nstepOK " << nstepOK << std::endl;
+    if (nstep == *nstepMax - 1) std::cout << "error " << Sig.xx - previousSig.xx << std::endl;
+    if (nstep == *nstepMax - 1) std::cout << "nstep " << nstep << std::endl;
+    if (nstep == *nstepMax - 1) std::cout << "tol " << *tol << std::endl;
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
@@ -2274,8 +2243,7 @@ void PBC3Dbox::hold(double *tol, int *nstepConv, int *nstepMax) {
 
     // std::cout << "dt " << dt << std::endl;
   }
-  if (nstep > 10000)
-    std::cout << "large nstep " << nstep << std::endl;
+  if (nstep > 10000) std::cout << "large nstep " << nstep << std::endl;
   /*
   std::cout << "nstep " << nstep << std::endl;
   std::cout << "nstepconv " << *nstepConv << std::endl;
@@ -2291,8 +2259,8 @@ void PBC3Dbox::hold(double *tol, int *nstepConv, int *nstepMax) {
 }
 
 /// @brief A function that call the function 'transform' and then the function 'hold'
-void PBC3Dbox::transform_and_hold(double dFmoinsI[3][3], double *I, double *tol, int *nstepConv, int *nstepMax,
-                                  int *nstep) {
+void PBC3Dbox::transform_and_hold(double dFmoinsI[3][3], double* I, double* tol, int* nstepConv, int* nstepMax,
+                                  int* nstep) {
   transform(dFmoinsI, I, nstep);
   hold(tol, nstepConv, nstepMax);
 }
@@ -2300,7 +2268,7 @@ void PBC3Dbox::transform_and_hold(double dFmoinsI[3][3], double *I, double *tol,
 /// @brief get the data back from PBC3D to Lagamine
 void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   size_t offset = 0;
-  Q[offset++] = 0; // 0 for 3D (this was used in 2D to say wether the in plane strain condition was used)
+  Q[offset++] = 0;  // 0 for 3D (this was used in 2D to say wether the in plane strain condition was used)
 
   // Particles
   Q[offset++] = Particles.size();
@@ -2331,17 +2299,14 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   nbActiveInteractions = 0;
   nbBonds = 0;
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState)
-      continue;
-    if (Interactions[k].state == bondedState)
-      nbBonds++;
+    if (Interactions[k].state == noContactState) continue;
+    if (Interactions[k].state == bondedState) nbBonds++;
     nbActiveInteractions++;
   }
   Q[offset++] = nbActiveInteractions;
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState)
-      continue;
-    Q[offset++] = Interactions[k].i + 1; // Fortran index starts with 1
+    if (Interactions[k].state == noContactState) continue;
+    Q[offset++] = Interactions[k].i + 1;  // Fortran index starts with 1
     Q[offset++] = Interactions[k].j + 1;
     Q[offset++] = Interactions[k].gap0;
 
@@ -2369,16 +2334,14 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   // state variables: this is added to send back some state variables to Lagamine
   double Vcell = fabs(Cell.h.det());
   // update initial values if equal to -1 (specified in the REVini file, ugly but works...)
-  if (nbBondsini == -1)
-    nbBondsini = nbBonds;
+  if (nbBondsini == -1) nbBondsini = nbBonds;
   Q[offset++] = nbBondsini;
-  if (porosityini == -1)
-    porosityini = (Vcell - Vsolid) / Vcell;
+  if (porosityini == -1) porosityini = (Vcell - Vsolid) / Vcell;
   Q[offset++] = porosityini;
 
   Q[offset++] = nbBonds;
   Q[offset++] = (Vcell - Vsolid) / Vcell;
-  Q[offset++] = nbActiveInteractions / Particles.size(); // to plot the evolution of coordination number
+  Q[offset++] = nbActiveInteractions / Particles.size();  // to plot the evolution of coordination number
   double Rmean, R0mean, fnMin, fnMean;
   staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
 
@@ -2403,23 +2366,20 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
 /// @param[out]  R0mean   Same as Rmean but with only the body holding more than 2 contacts
 /// @param[out]  fnMin    Minimum nonzero normal force
 /// @param[out]  fnMean   Mean nonzero normal force
-void PBC3Dbox::staticQualityData(double *Rmean, double *R0mean, double *fnMin, double *fnMean) const {
+void PBC3Dbox::staticQualityData(double* Rmean, double* R0mean, double* fnMin, double* fnMean) const {
   *Rmean = *R0mean = *fnMin = *fnMean = 0.0;
 
   size_t Nc = Interactions.size();
   size_t Np = Particles.size();
 
-  if (Nc == 0 || Np == 0)
-    return;
+  if (Nc == 0 || Np == 0) return;
 
   std::vector<vec3r> R(Particles.size());
-  for (size_t i = 0; i < R.size(); i++)
-    R[i].reset();
+  for (size_t i = 0; i < R.size(); i++) R[i].reset();
 
   std::vector<int> z(Np, 0);
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState)
-      continue;
+    if (Interactions[k].state == noContactState) continue;
     z[Interactions[k].i] += 1;
     z[Interactions[k].j] += 1;
   }
@@ -2427,23 +2387,19 @@ void PBC3Dbox::staticQualityData(double *Rmean, double *R0mean, double *fnMin, d
   *fnMin = 1e12;
   size_t Nc0 = 0;
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState)
-      continue;
-    if (z[Interactions[k].i] < 3 || z[Interactions[k].j] < 3)
-      continue;
+    if (Interactions[k].state == noContactState) continue;
+    if (z[Interactions[k].i] < 3 || z[Interactions[k].j] < 3) continue;
 
     Nc0++;
     *fnMean += Interactions[k].fn;
-    if (Interactions[k].fn > 0.0 && Interactions[k].fn < *fnMin)
-      *fnMin = Interactions[k].fn;
+    if (Interactions[k].fn > 0.0 && Interactions[k].fn < *fnMin) *fnMin = Interactions[k].fn;
 
     vec3r f = Interactions[k].fn * Interactions[k].n + Interactions[k].ft;
     R[Interactions[k].i] += f;
     R[Interactions[k].j] -= f;
   }
 
-  if (Nc0 > 0)
-    *fnMean /= (double)Nc0;
+  if (Nc0 > 0) *fnMean /= (double)Nc0;
 
   size_t Np0 = 0;
   for (size_t i = 0; i < R.size(); i++) {
@@ -2455,6 +2411,5 @@ void PBC3Dbox::staticQualityData(double *Rmean, double *R0mean, double *fnMin, d
     }
   }
   *Rmean /= (double)Np;
-  if (Np0 > 0)
-    *R0mean /= (double)Np0;
+  if (Np0 > 0) *R0mean /= (double)Np0;
 }
