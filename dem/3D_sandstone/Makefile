@@ -18,8 +18,10 @@ CXX = g++
 # The list of flags passed to the compiler
 CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
 # Link flags for OpenGL and glut
-GLFLAGS = `pkg-config --cflags glut`
-GLLINK = `pkg-config --libs glut` -framework OpenGL
+#LDFLAGS = -lGL -lGLU -lglut
+GLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread
+#GLFLAGS = `pkg-config --cflags glut`
+#GLLINK = `pkg-config --libs glut` -framework OpenGL
 
 endif # =============================================================
 
@@ -45,25 +47,25 @@ clean:
 	rm -f *.o libPBC3D.a *.gch run see
 
 lib: $(SOURCES) $(HEADERS) 
-	$(CXX) $(CXXFLAGS) -c $(SOURCES)
+	$(CXX) $(CXXFLAGS) -c $(SOURCES) $(GLINK) 
 	ar rvs libPBC3D.a $(OBJECTS)
 
 # The application that runs a simulation
 run: run.cpp lib
-	$(CXX) $(CXXFLAGS) -c run.cpp
+	$(CXX) $(CXXFLAGS) -c run.cpp 
 	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
 
 # The application that visualizes the conf files
 see: see.cpp see.hpp graphGL.hpp $(HEADERS) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -c see.cpp -Wno-deprecated $(GLFLAGS)
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS) $(GLLINK)
+	$(CXX) $(CXXFLAGS)  -c see.cpp -Wno-deprecated $(GLFLAGS)
+	$(CXX) $(CXXFLAGS)  -o $@ $@.o $(OBJECTS)  $(GLINK) 
 
 # The application that stops fluctuations
 stop: stop.cpp lib
-	$(CXX) $(CXXFLAGS) -c stop.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
+	$(CXX) $(CXXFLAGS)  -c stop.cpp
+	$(CXX) $(CXXFLAGS)  -o $@ $@.o $(OBJECTS)
 
 
 mpstest : mpstest.cpp lib 
-	$(CXX) $(CXXFLAGS) -c mpstest.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $@.o $(OBJECTS)
+	$(CXX) $(CXXFLAGS)  -c mpstest.cpp
+	$(CXX) $(CXXFLAGS)  -o $@ $@.o $(OBJECTS)
