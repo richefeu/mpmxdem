@@ -19,7 +19,7 @@ void hnlDEM::write(std::ostream& os) { os << fileName << '\n'; }
 void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
-  MP.ismicro=true;
+  MP.ismicro = true;
 }
 
 void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
@@ -66,7 +66,7 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
     MPM.MP[p].PBC->iconf++;
   }
   // Elastic stress
-  // (Sign convention is different)
+  // (Sign convention is opposed)
   MPM.MP[p].stress.xx = -MPM.MP[p].PBC->Sig.xx; 
   MPM.MP[p].stress.xy = -MPM.MP[p].PBC->Sig.xy;
   MPM.MP[p].stress.yx = -MPM.MP[p].PBC->Sig.yx;

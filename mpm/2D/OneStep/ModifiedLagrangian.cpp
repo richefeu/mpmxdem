@@ -186,7 +186,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // 3d) ====Deformation gradient (C)
+  // 3d) ==== Deformation gradient (C)
   MPM.updateTransformationGradient();
    
   MPM.DEMfinalTime();

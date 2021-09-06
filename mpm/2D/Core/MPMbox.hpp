@@ -18,10 +18,12 @@
 
 #include <stdlib.h>
 
+// The linked DEM for HNL
+#include "PBC3D.hpp"
+
 // Headers in common
 #include "DataTable.hpp"
 #include "Mth.hpp"
-#include "PBC3D.hpp"
 #include "factory.hpp"
 #include "fileTool.hpp"
 #include "mat4.hpp"
@@ -57,7 +59,6 @@ class MPMbox {
   ShapeFunction* shapeFunction;                      // The shape functions
   OneStep* oneStep;                                  // Type of routine to be used
   std::map<std::string, ConstitutiveModel*> models;  // The models
-  //std::map<int, PBC3Dbox*> PBCs;                     // DEM simulation containers
 
   std::string result_folder;  // The folder into which the result files will be saved
   bool planeStrain;           // Plane strain assumption (plane stress if false, default)

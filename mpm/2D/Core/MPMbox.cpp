@@ -14,7 +14,7 @@ MPMbox::MPMbox() {
   oneStep = nullptr;
   planeStrain = false;
   activeNumericalDissipation = false;
-  DEMPeriod=5;
+  DEMPeriod = 5;
   Grid.Nx = 20;
   Grid.Ny = 20;
   tolmass = 1.0e-6;
@@ -269,7 +269,7 @@ void MPMbox::read(const char* name) {
     oneStep = Factory<OneStep>::Instance()->Create(defaultOneStep);
     std::cout << "No OneStep type defined, automatically set to 'ModifiedLagrangian'." << std::endl;
   }
- dt_init=dt;
+  dt_init = dt;
 }
 
 void MPMbox::save(const char* name) {
@@ -341,12 +341,11 @@ void MPMbox::save(const char* name) {
   */
 
   // Obstacles
-  //file << "Obstacles " << Obstacles.size() << '\n';
+  // file << "Obstacles " << Obstacles.size() << '\n';
   for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
     file << "Obstacle " << Obstacles[iObst]->getRegistrationName() << ' ';
     Obstacles[iObst]->write(file);
   }
-
 
   // Material points
   file << "MPs " << MP.size() << '\n';
@@ -366,25 +365,23 @@ void MPMbox::save(int num) {
   save(name);
 }
 
-
 void MPMbox::init() {
   // If the result folder does not exist, it is created
   fileTool::create_folder(result_folder);
   // PBC3Dbox  box=PBC3Dbox();
   // box.loadConf(dconf);
   for (size_t p = 0; p < MP.size(); p++) {
-    //MP[p].PBC.saveConf(p,"titi");
+    // MP[p].PBC.saveConf(p,"titi");
     MP[p].prev_pos = MP[p].pos;
 
-  // PBC.push_back(PBC3Dbox()); 
-  // PBC[p].loadConf(dconf);
-  // V0.reset(0);
-  // PBC[p].Load.VelocityControl(V0);
-  // PBC[p].enableSwitch = 1;
-  // PBC[p].interVerlet =dt/4.0;
-  // PBC[p].interOut =2*dt;
-  // PBC[p].interConf =2*dt;
-
+    // PBC.push_back(PBC3Dbox());
+    // PBC[p].loadConf(dconf);
+    // V0.reset(0);
+    // PBC[p].Load.VelocityControl(V0);
+    // PBC[p].enableSwitch = 1;
+    // PBC[p].interVerlet =dt/4.0;
+    // PBC[p].interOut =2*dt;
+    // PBC[p].interConf =2*dt;
   }
 
   // copying input file to results folder
@@ -450,8 +447,8 @@ void MPMbox::run() {
 
   while (t < finalTime) {
 
-    //std::cout << "final Time: "<<finalTime << '\n';
-    //std::cout << "t: "<<t << '\n';
+    // std::cout << "final Time: "<<finalTime << '\n';
+    // std::cout << "t: "<<t << '\n';
 
     // checking cfl (should be improved but works for now)
     /*try {
@@ -459,7 +456,6 @@ void MPMbox::run() {
     } catch (char const* e) {
       std::cout << "Error testing cfl: " << e << std::endl;
     }*/
-
 
     if (step % confPeriod == 0) {
       save(iconf);
@@ -479,19 +475,19 @@ void MPMbox::run() {
     // run onestep!
     int ret = oneStep->advanceOneStep(*this);
     if (ret == 1) break;  // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
-    
+
     t += dt;
     step++;
   }
-  
+
   for (size_t s = 0; s < Spies.size(); ++s) {
     Spies[s]->end();  // there is often nothing implemented
   }
-  
+
   std::cout << "MPMbox::run done" << '\n';
 }
 
-// This function deactivate the numerical dissipation if all MP-velocities are less than a prescribed value.
+// This function deactivates the numerical dissipation if all MP-velocities are less than a prescribed value.
 void MPMbox::checkNumericalDissipation() {
   // we check the velocity of MPs and if its less than a limit we set activeNumericalDissipation to false
   for (size_t p = 0; p < MP.size(); p++) {
@@ -619,18 +615,18 @@ void MPMbox::updateTransformationGradient() {
   }
 }
 
-
-void MPMbox::DEMfinalTime(){
- dt=dt_init;
- float dtmax=0.0;
- for (size_t p = 0; p < MP.size(); p++) {
-   if (MP[p].ismicro){
-      dtmax=1e-3*MP[p].PBC->Rmin/
-     (std::max({abs(MP[p].velGrad.xx),abs(MP[p].velGrad.yx),abs(MP[p].velGrad.xy),abs(MP[p].velGrad.yy)})*MP[p].PBC->Cell.h.maxi());
-     dt= (dtmax<=dt) ? dtmax : dt; 
-   }
+void MPMbox::DEMfinalTime() {
+  dt = dt_init;
+  float dtmax = 0.0;
+  for (size_t p = 0; p < MP.size(); p++) {
+    if (MP[p].ismicro) {
+      dtmax = 1e-3 * MP[p].PBC->Rmin /
+              (std::max({abs(MP[p].velGrad.xx), abs(MP[p].velGrad.yx), abs(MP[p].velGrad.xy), abs(MP[p].velGrad.yy)}) *
+               MP[p].PBC->Cell.h.maxi());
+      dt = (dtmax <= dt) ? dtmax : dt;
+    }
   }
-  std::cout << "final dem time " << dt << std::endl;
+  std::cout << "final DEM time-step " << dt << std::endl;
 }
 
 void MPMbox::adaptativeRefinement() {
@@ -727,13 +723,13 @@ void MPMbox::adaptativeRefinement() {
 void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   Data.clear();
   Data.resize(MP.size());
-    
+
   // Preparation for smoothed data
   int* I;
   for (size_t p = 0; p < MP.size(); p++) {
     shapeFunction->computeInterpolationValues(*this, p);
   }
-  
+
   // Update Vector of node indices
   std::set<int> sortedLive;
   for (size_t p = 0; p < MP.size(); p++) {
@@ -751,7 +747,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     nodes[liveNodeNum[n]].vel.reset();
     nodes[liveNodeNum[n]].stress.reset();
   }
-  
+
   // Nodal mass
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -759,7 +755,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
     }
   }
-  
+
   // smoothed velocities
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -775,7 +771,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       Data[p].stress += nodes[I[r]].stress * MP[p].N[r];
     }
   }
-  
+
   // corners from F (supposed to be already computed)
   for (size_t p = 0; p < MP.size(); p++) {
     double halfSizeMP = 0.5 * MP[p].size;
@@ -785,10 +781,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     Data[p].corner[2] = MP[p].pos + MP[p].F * vec2r(halfSizeMP, halfSizeMP);
     Data[p].corner[3] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, halfSizeMP);
   }
-  
 }
-
-
 
 /*
 // =======================
