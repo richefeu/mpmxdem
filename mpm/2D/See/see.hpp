@@ -2,6 +2,8 @@
 #define SEE_CONF_HPP
 
 #include <GL/freeglut.h>
+#include <GL/glut.h>
+#include <GL/freeglut_std.h>
 
 /*
 #ifdef __APPLE__

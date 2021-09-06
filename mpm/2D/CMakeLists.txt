@@ -3,8 +3,8 @@ project(MPMbox)
 
 
 find_package(OpenGL REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLUT REQUIRED glut)
+find_package(GLUT REQUIRED)
+#pkg_check_modules(GLUT REQUIRED glut)
 
 # Remark:
 # Before being able to compile, the file 'libPBC3D.a' needs to be already compiled
@@ -33,8 +33,8 @@ add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries (mpmbox  ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
 
 add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
-target_include_directories(see PUBLIC ${GLUT_INCLUDE_DIRS})
-target_link_libraries (see PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a ${OPENGL_LIBRARIES}   ${GLUT_LINK_LIBRARIES})
+target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
+target_link_libraries (see PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a ${OPENGL_LIBRARIES}   ${GLUT_LIBRARIES})
 
 add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries (cut ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
