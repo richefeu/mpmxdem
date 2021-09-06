@@ -19,7 +19,7 @@ CXX = g++
 CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
 # Link flags for OpenGL and glut
 #LDFLAGS = -lGL -lGLU -lglut
-GLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread
+GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread
 #GLFLAGS = `pkg-config --cflags glut`
 #GLLINK = `pkg-config --libs glut` -framework OpenGL
 
@@ -47,7 +47,7 @@ clean:
 	rm -f *.o libPBC3D.a *.gch run see
 
 lib: $(SOURCES) $(HEADERS) 
-	$(CXX) $(CXXFLAGS) -c $(SOURCES) $(GLINK) 
+	$(CXX) $(CXXFLAGS) -c $(SOURCES) #$(GLINK) 
 	ar rvs libPBC3D.a $(OBJECTS)
 
 # The application that runs a simulation
@@ -58,7 +58,7 @@ run: run.cpp lib
 # The application that visualizes the conf files
 see: see.cpp see.hpp graphGL.hpp $(HEADERS) $(OBJECTS)
 	$(CXX) $(CXXFLAGS)  -c see.cpp -Wno-deprecated $(GLFLAGS)
-	$(CXX) $(CXXFLAGS)  -o $@ $@.o $(OBJECTS)  $(GLINK) 
+	$(CXX) $(CXXFLAGS)  -o $@ $@.o $(OBJECTS) $(GLLINK) 
 
 # The application that stops fluctuations
 stop: stop.cpp lib
