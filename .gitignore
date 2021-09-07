@@ -1,6 +1,7 @@
 dem/*/*.o
 dem/*/run
 dem/*/see
+dem/*/stop
 dem/*/lookShape
 dem/*/libPBC3D.a
 dem/*/*/conf*
