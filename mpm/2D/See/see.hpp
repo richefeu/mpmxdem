@@ -1,17 +1,14 @@
 #ifndef SEE_CONF_HPP
 #define SEE_CONF_HPP
 
-#include <GL/freeglut.h>
-//#include <GL/glut.h>
-//#include <GL/freeglut_std.h>
-
-/*
 #ifdef __APPLE__
-#include <GLUT/glut.h>
+#include <GL/freeglut.h>
 #else
 #include <GL/freeglut.h>
+#include <GL/glut.h>
+#include <GL/freeglut_std.h>
 #endif
-*/
+
 
 #include <cmath>
 #include <cstdio>

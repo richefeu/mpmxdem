@@ -1,13 +1,13 @@
 #include <string>
 
-#include "set_node_grid.hpp"
 #include "Core/MPMbox.hpp"
+#include "set_node_grid.hpp"
 
 #include "factory.hpp"
 static Registrar<Command, set_node_grid> registrar("set_node_grid");
 
 void set_node_grid::read(std::istream& is) {
-  
+
   //   +---+---+---+
   //   |   |   |   |
   //   +---+---+---+
@@ -36,14 +36,14 @@ void set_node_grid::read(std::istream& is) {
     lx = W / (double)nbElemX;
     ly = H / (double)nbElemY;
   } else {
-    std::cerr << "@set_node_grid, inputChoice: '" << inputChoice << "' is not known\n";
+    std::cerr << "@set_node_grid::read(), inputChoice: '" << inputChoice << "' is not known\n";
   }
- std::cerr << "@set_node_grid::exec" << "nbElemX=" << nbElemX <<  "nbElemY=" << nbElemY  << std::endl;
+  // std::cerr << "@set_node_grid::exec, " << "nbElemX=" << nbElemX <<  "nbElemY=" << nbElemY  << std::endl;
 }
 
 void set_node_grid::exec() {
   if (box->shapeFunction == nullptr) {
-    std::cerr << "@set_node_grid::exec, ShapeFunction has to be set BEFORE set_node_grid." << std::endl;
+    std::cerr << "@set_node_grid::exec(), ShapeFunction has to be set BEFORE set_node_grid." << std::endl;
     exit(0);
   }
 
