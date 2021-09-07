@@ -8,7 +8,7 @@ find_package(GLUT REQUIRED)
 
 # Remark:
 # Before being able to compile, the file 'libPBC3D.a' needs to be already compiled
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR}) 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../common ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone ${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS}) 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
 
 
@@ -33,7 +33,7 @@ add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries (mpmbox  ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
 
 add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
-target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
+target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIRs} ${GLUT_INCLUDE_DIRS})
 target_link_libraries (see PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a ${OPENGL_LIBRARIES}   ${GLUT_LIBRARIES})
 
 add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
