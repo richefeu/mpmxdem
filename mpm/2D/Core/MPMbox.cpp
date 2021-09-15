@@ -471,7 +471,7 @@ void MPMbox::run() {
 
     // numerical dissipation
     // step > 100 is to give the material some time to settle
-    if (activeNumericalDissipation == true) {
+    if (activeNumericalDissipation == true && step > 5) {
       checkNumericalDissipation(minVd,EndNd);
     }
 
