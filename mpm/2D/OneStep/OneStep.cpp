@@ -51,3 +51,18 @@ vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP) {
 
   return forceMP;
 }
+vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double cundall) {
+  double cundallSigned = 0.0;
+  double product = forceMP * velMP;
+  if (product >= 0.0)
+    cundallSigned = 0.5;
+  else
+    cundallSigned = -0.5;
+
+  // the value shouldnt be too high cuz it will freeze the material and
+  // when its released the waves will reappear
+  vec2r deltaF = -cundallSigned * forceMP;
+  forceMP += deltaF;
+
+  return forceMP;
+}

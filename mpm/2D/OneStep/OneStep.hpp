@@ -16,6 +16,7 @@ struct OneStep {
   void moveDEM1(Obstacle* obst, double dt, bool activeNumericalDissipation);
   void moveDEM2(Obstacle* obst, double dt);
   vec2r numericalDissipation(vec2r velMP, vec2r forceMP);
+  vec2r numericalDissipation(vec2r velMP, vec2r forceMP, double cundall);
 
   virtual ~OneStep();  // Dtor
 };

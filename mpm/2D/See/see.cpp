@@ -31,15 +31,17 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '1': {
       color_option = 1;
-      double vmax = 0.0;
+      double vmax = 0;
+      double vmin = 1e20;
       for (size_t i = 0; i < Conf.MP.size(); i++) {
         double vel = norm(SmoothedData[i].vel);
         if (vel > vmax) vmax = vel;
+        if (vel < vmax) vmin = vel;
       }
       colorTable.setMinMax(0.0, vmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
-      std::cout << "MP colored by velocity magnitude (vmax = " << vmax << ")\n";
+      std::cout << "MP colored by velocity magnitude (vmin = " << vmin << ", vmax = " << vmax << ")\n";
     } break;
 
     case '2': {
@@ -410,12 +412,12 @@ void buildMenu() {
 // =====================================================================
 
 int main(int argc, char* argv[]) {
+  
+  unsigned char Key;
 
-  if (argc == 1) {
-    confNum = 0;
-  } else if (argc == 2) {
-    confNum = atoi(argv[1]);
-  }
+  confNum      = (argc > 1) ? atoi(argv[1]) : 0;
+  Key          = (argc > 2) ? *argv[2] : '2';
+  //color_option=atoi(Key);
 
   std::cout << "Current Configuration: ";
   try_to_readConf(confNum, Conf, confNum);
@@ -444,8 +446,7 @@ int main(int argc, char* argv[]) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   std::cout << "definig color options ";
   
-  color_option = 2;
-  keyboard('2', 0, 0);
+  keyboard(Key, 0, 0);
   
   // ==== Enter GLUT event processing cycle
   fit_view();

@@ -762,11 +762,13 @@ void PBC3Dbox::setSample() {
 
 void PBC3Dbox::nulvelo(){
   for (size_t i = 0; i < Particles.size(); i++) {
-    Particles[i].vel=vec3r::zero();
-    Particles[i].acc=vec3r::zero();
-    Particles[i].vrot=vec3r::zero();
-    Particles[i].arot=vec3r::zero();
+    Particles[i].vel.reset();
+    Particles[i].acc.reset();
+    Particles[i].vrot.reset();
+    Particles[i].arot.reset();
   }
+  Cell.vh.reset();
+  Cell.ah.reset();
 }
 
 /// @brief Computes a single step with the velocity-Verlet algorithm
@@ -1377,9 +1379,10 @@ void PBC3Dbox::computeForcesAndMoments() {
 
 // for MPMxDEM coupling
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
-
+  computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
   dt = dtc * 0.05;
+  double dti=dt;
   if (dt >= 0.2*macro_dt) dt = macro_dt * 0.2;
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
@@ -1400,6 +1403,10 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
   accelerations();
 
   while (t < tmax) {
+    computeSampleData();
+    //dt=0.8*std::min(dti,dVerlet/VelMax);
+    //interVerlet=dt;
+    //printf("DEM time step %1.2e",dt);
     velocityVerletStep();
 
     if (interVerletC >= interVerlet) {

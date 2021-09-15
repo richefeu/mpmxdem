@@ -75,6 +75,8 @@ class MPMbox {
   double dt;         // Time increment
   double dt_init;    // Time increment
   double t;          // Current time
+  double deltime;    // time to delete an obstacle
+  int delnumber;     // osbsacle number to be deleted 
 
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
@@ -89,11 +91,15 @@ class MPMbox {
   int MaxSplitNumber;          // The maximum number of splits
 
   double NumericalDissipation;      // value of alpha for pfc dissipation. the closer to 0, the more it dissipates
+  double minVd;                     // value of velocity norm beyond which dissipation is desactivated
+  double EndNd;                     // time ending numerical dissipation
   bool activeNumericalDissipation;  // Flag for activating the numerical dissipation
 
   std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step
                                  // It holds only the number of nodes concerned by the proximity of MP
-
+   
+  mat9r VG3D;                    // intermediate variable for MPM macro time step
+   
   size_t number_MP;  // used to check proximity if # of MP has changed
                      // (some "unknown" points could enter the obstacle and suddenly be detected
                      // once they are way inside)
@@ -106,7 +112,7 @@ class MPMbox {
   void read(const char* name);
   void save(const char* name);
   void save(int num);
-  void checkNumericalDissipation();
+  void checkNumericalDissipation(double minVd,double EndNd);
   void checkProximity();
   void init();
 

@@ -25,8 +25,6 @@ void set_MP_polygon::exec() {
     std::cerr << "@set_MP_polygon::exec, model " << modelName << " not found" << std::endl;
   }
   ConstitutiveModel* CM = itCM->second;
-
-  MaterialPoint P(groupNb, size, rho, CM);
   // finding max and min in each direction
   double maxx(vertices[0].x), minx(vertices[0].x), maxy(vertices[0].y), miny(vertices[0].y);
   for (size_t i = 0; i < vertices.size(); i++) {
@@ -42,6 +40,8 @@ void set_MP_polygon::exec() {
   for (double y = miny + halfSizeMP; y <= maxy - halfSizeMP; y += size) {
     for (double x = minx + halfSizeMP; x <= maxx - halfSizeMP; x += size) {
       vec2r point(x, y);
+      MaterialPoint P(groupNb, size, rho, CM);
+      CM->init(P);
       if (isInside(vertices, nbVertices, point)) {
         P.pos.set(x, y);
         box->MP.push_back(P);

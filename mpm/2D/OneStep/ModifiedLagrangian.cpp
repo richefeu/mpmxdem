@@ -161,8 +161,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
 
     // Numerical dissipation!
-    if (MPM.activeNumericalDissipation == true && MPM.step > 500) {
-      vec2r newForceMP = numericalDissipation(MP[p].vel, tempForceMP);
+    if (MPM.activeNumericalDissipation == true) {
+      vec2r newForceMP = numericalDissipation(MP[p].vel, tempForceMP,MPM.NumericalDissipation);
       MP[p].vel = dt * newForceMP * MPinvMass;
     }
   }

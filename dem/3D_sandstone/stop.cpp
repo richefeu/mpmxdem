@@ -14,7 +14,7 @@ int main(int argc, char const *argv[]) {
   box.initOutputFiles();
 
   // box.saveConf(99);exit(0);
-  box.updateNeighborList(box.dVerlet);
+  //box.updateNeighborList(box.dVerlet);
   // std::cout << "box.Interactions.size() = " << box.Interactions.size() << '\n';
 
   box.showBanner();

@@ -40,8 +40,7 @@ int main(int argc, char* argv[]) {
             << SmoothedData[i].stress.xy << " "
             << SmoothedData[i].stress.yx << " "
             << SmoothedData[i].vel.x << " "
-            << SmoothedData[i].vel.y << " "
-            << std::endl;
+            << SmoothedData[i].vel.y << std::endl;
        }
     }
     file.close();
@@ -58,8 +57,7 @@ int main(int argc, char* argv[]) {
             << SmoothedData[i].stress.xy << " "
             << SmoothedData[i].stress.yx << " "
             << SmoothedData[i].vel.x << " "
-            << SmoothedData[i].vel.y << " "
-            << std::endl;
+            << SmoothedData[i].vel.y << std::endl;
      }
   }
   file.close();

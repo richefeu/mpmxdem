@@ -8,6 +8,7 @@
 #include <ShapeFunctions/ShapeFunction.hpp>
 #include <Spies/Spy.hpp>
 #include <VtkOutputs/VtkOutput.hpp>
+#include <list>
 
 MPMbox::MPMbox() {
   shapeFunction = nullptr;
@@ -124,7 +125,7 @@ void MPMbox::read(const char* name) {
     } else if (token == "MaxSplitNumber") {
       file >> MaxSplitNumber;
     } else if (token == "NumericalDissipation") {
-      file >> NumericalDissipation;
+      file >> NumericalDissipation >> minVd >> EndNd;
       activeNumericalDissipation = true;
     } else if (token == "set") {
       std::string param;
@@ -173,7 +174,9 @@ void MPMbox::read(const char* name) {
         std::cerr << "Obstacle " << obsName << " is unknown!" << std::endl;
       }
     }
-
+    else if (token == "DelObst"){
+      file >> delnumber >> deltime; 
+    }
     else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
       std::string boundaryName;
@@ -468,8 +471,8 @@ void MPMbox::run() {
 
     // numerical dissipation
     // step > 100 is to give the material some time to settle
-    if (activeNumericalDissipation == true && step > 500) {
-      checkNumericalDissipation();
+    if (activeNumericalDissipation == true) {
+      checkNumericalDissipation(minVd,EndNd);
     }
 
     // run onestep!
@@ -488,10 +491,10 @@ void MPMbox::run() {
 }
 
 // This function deactivates the numerical dissipation if all MP-velocities are less than a prescribed value.
-void MPMbox::checkNumericalDissipation() {
+void MPMbox::checkNumericalDissipation(double vmin,double EndNd) {
   // we check the velocity of MPs and if its less than a limit we set activeNumericalDissipation to false
   for (size_t p = 0; p < MP.size(); p++) {
-    if (norm(MP[p].vel) > 5e-3) {
+    if (norm(MP[p].vel) > vmin && t< EndNd) {
       return;
     }
   }
@@ -620,12 +623,25 @@ void MPMbox::DEMfinalTime() {
   float dtmax = 0.0;
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].ismicro) {
-      dtmax = 1e-3 * MP[p].PBC->Rmin /
-              (std::max({abs(MP[p].velGrad.xx), abs(MP[p].velGrad.yx), abs(MP[p].velGrad.xy), abs(MP[p].velGrad.yy)}) *
-               MP[p].PBC->Cell.h.maxi());
+       VG3D.reset();
+       VG3D.xx = MP[p].velGrad.xx;
+       VG3D.xy = MP[p].velGrad.xy;
+       VG3D.yx = MP[p].velGrad.yx;
+       VG3D.yy = MP[p].velGrad.yy;
+       VG3D.zz = 1.0; // assuming plane strain
+       VG3D=VG3D*MP[p].PBC->Cell.h;
+      dtmax = 1e-3 * MP[p].PBC->Rmin /(VG3D.maxi());
       dt = (dtmax <= dt) ? dtmax : dt;
     }
   }
+  if (deltime>t && deltime < t+dt){
+      for (size_t i = 0; i < Obstacles.size(); i++) {
+        if (Obstacles[i]->group==delnumber){
+          delete (Obstacles[i]); 
+          Obstacles.erase(Obstacles.begin()+i);
+        }
+     }
+   }
   std::cout << "final DEM time-step " << dt << std::endl;
 }
 
