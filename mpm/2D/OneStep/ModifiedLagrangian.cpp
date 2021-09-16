@@ -150,20 +150,21 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
     double invmass;
     vec2r tempForceMP;
-    double MPinvMass = 0;
+    tempForceMP.reset();
+    //double MPinvMass = 0;
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
         MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;
-        tempForceMP += MP[p].N[r] * nodes[I[r]].qdot;
-        MPinvMass += invmass;
+        tempForceMP += MP[p].N[r] * nodes[I[r]].qdot*invmass;
+        //MPinvMass += invmass;
       }
     }
 
     // Numerical dissipation!
     if (MPM.activeNumericalDissipation == true) {
       vec2r newForceMP = numericalDissipation(MP[p].vel, tempForceMP,MPM.NumericalDissipation);
-      MP[p].vel = dt * newForceMP * MPinvMass;
+      MP[p].vel = dt * newForceMP;
     }
   }
 

@@ -1389,7 +1389,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
   t=0; 
   tmax = macro_dt;
   interVerlet = 10*dt; // on peut faire une meilleur estimation
-  interVerletC = 10*dt; // on peut faire une meilleur estimation
+  interVerletC = 0; // on peut faire une meilleur estimation
   
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
@@ -1428,7 +1428,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char * name) {
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   tmax = t + macro_dt;
-  interVerlet = dt; // on peut faire une meilleur estimation
+  interVerlet = 10*dt; // on peut faire une meilleur estimation
   
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
