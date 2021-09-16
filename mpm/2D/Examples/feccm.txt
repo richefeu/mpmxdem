@@ -1,0 +1,52 @@
+oneStepType ModifiedLagrangian
+result_folder ./feccm
+# Mass tolerance
+tolmass 1.e-6
+# Gravity    gx   gy
+gravity      0.0  -9.81
+finalTime 10
+model MohrCoulomb      M0          1e4    0.4         0.2            0.005      0.0
+# Period of storing (in number of steps)
+confPeriod 10
+proxPeriod 5
+# Time increment
+dt 1e-3
+# Current time
+t 0.0
+# shape function can be Linear or GIMP (not yet implemented)
+ShapeFunction BSpline
+NumericalDissipation 0.001 1e-8 0.5 
+splitting 0
+shearLimit 1.0
+# Materials
+#     modelID          modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
+
+model MohrCoulomb      M0          1e4    0.4         0.2            0.005      0.00
+
+#              lengthX   lengthY   spacing
+set_node_grid  W.H.lx.ly  0.2  0.4  0.02 0.02
+#            		setObject# 	modelName       mass_density(kg/m3)    x0    y0   	 x1   	y1   	 size of boxes
+set_MP_grid         0           M0            500.0                   0.06   0.1    0.14    0.22     0.004
+
+
+BoundaryForceLaw frictionalViscoElastic 1
+BoundaryForceLaw frictionalViscoElastic 2
+
+#                group  x0    y0     x1     y1    driveMode
+Obstacle Line    1      0.14  0.3   0.14   0.1  freeze
+Obstacle Line    2      0.14  0.1   0.06   0.1  freeze
+Obstacle Line    1      0.06  0.1   0.06   0.3  freeze
+
+#Obstacle Circle  1      0.14 0.3 0.04 free 300  0 0 0  0 0 0
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0
+set              kn         0         1          1e5
+set              kt         0         1          1e5
+set              viscRate   0         1          10
+set              mu         0         2          0.5
+set              kn         0         2          1e5
+set              kt         0         2          1e5
+set              viscRate   0         2          10
+
+
