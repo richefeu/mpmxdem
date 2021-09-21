@@ -12,7 +12,7 @@ void try_to_readConf(int num, MPMbox& CF) {
   std::cout << "Read " << file_name << std::endl;
   CF.clean();
   CF.read(file_name);
-  CF.postProcess(SmoothedData);
+  CF.CutProcess(SmoothedData);
 }
 
 
@@ -33,14 +33,19 @@ int main(int argc, char* argv[]) {
     file << "# MP.x MP.y sigma_xx sigma_yy sigma_xy sigma_yx v_x v_y" << std::endl;
     for (size_t i = 0; i < Conf.MP.size(); i++) {
       if(SmoothedData[i].corner[0].x<=xcut && SmoothedData[i].corner[2].x>=xcut){
-       file << 0.5*(SmoothedData[i].corner[0].x+SmoothedData[i].corner[2].x) << " " 
-            << 0.5*(SmoothedData[i].corner[0].y+SmoothedData[i].corner[2].y) << " "
+       file << SmoothedData[i].pos.x     << " "
+            << SmoothedData[i].pos.y     << " "
             << SmoothedData[i].stress.xx << " "
             << SmoothedData[i].stress.yy << " "
             << SmoothedData[i].stress.xy << " "
             << SmoothedData[i].stress.yx << " "
-            << SmoothedData[i].vel.x << " "
-            << SmoothedData[i].vel.y << std::endl;
+            << SmoothedData[i].vel.x     << " "
+            << SmoothedData[i].vel.y     << " "
+            << SmoothedData[i].strain.xx << " "
+            << SmoothedData[i].strain.yy << " "
+            << SmoothedData[i].strain.xy << " "
+            << SmoothedData[i].strain.yx << " "
+            << SmoothedData[i].rho       << std::endl;
        }
     }
     file.close();

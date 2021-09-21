@@ -51,13 +51,14 @@ vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP) {
 
   return forceMP;
 }
-vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double cundall) {
+/*vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double cundall) {
   double factor;
   double factorMinus = 1.0 - cundall;
   double factorPlus = 1.0 + cundall;
   factor = (forceMP.x * velMP.x > 0.0) ? factorMinus : factorPlus;
   forceMP.x *= factor;
   factor = (forceMP.y * velMP.y > 0.0) ? factorMinus : factorPlus;
+  std::cout << "cundall factor" << factor << std::endl;
   forceMP.y *= factor;
   return forceMP;
-}
+}*/

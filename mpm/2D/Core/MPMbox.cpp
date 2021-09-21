@@ -20,6 +20,7 @@ MPMbox::MPMbox() {
   Grid.Ny = 20;
   tolmass = 1.0e-6;
   gravity.set(0.0, -9.81);
+  ViscousDissipation=0;  
 
   iconf = 0;
   confPeriod = 5000;
@@ -127,6 +128,8 @@ void MPMbox::read(const char* name) {
     } else if (token == "NumericalDissipation") {
       file >> NumericalDissipation >> minVd >> EndNd;
       activeNumericalDissipation = true;
+    } else if (token == "ViscousDissipation") {
+       file >> ViscousDissipation;  
     } else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
@@ -798,6 +801,71 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     Data[p].corner[3] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, halfSizeMP);
   }
 }
+void MPMbox::CutProcess(std::vector<CutDataMP>& Data) {
+  Data.clear();
+  Data.resize(MP.size());
+
+  // Preparation for smoothed data
+  int* I;
+  for (size_t p = 0; p < MP.size(); p++) {
+    shapeFunction->computeInterpolationValues(*this, p);
+  }
+
+  // Update Vector of node indices
+  std::set<int> sortedLive;
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      sortedLive.insert(I[r]);
+    }
+  }
+  liveNodeNum.clear();
+  std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
+
+  // Reset nodal mass
+  for (size_t n = 0; n < liveNodeNum.size(); n++) {
+    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].vel.reset();
+    nodes[liveNodeNum[n]].stress.reset();
+  }
+
+  // Nodal mass
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+    }
+  }
+
+  // smoothed velocities
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      nodes[I[r]].vel += MP[p].N[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
+      nodes[I[r]].stress += MP[p].N[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
+    }
+  }
+  for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    for (int r = 0; r < element::nbNodes; r++) {
+      Data[p].vel += nodes[I[r]].vel * MP[p].N[r];
+      Data[p].stress += nodes[I[r]].stress * MP[p].N[r];
+    }
+    Data[p].pos=MP[p].pos;
+    Data[p].strain=MP[p].F;
+    Data[p].rho=MP[p].density;
+  }
+  for (size_t p = 0; p < MP.size(); p++) {
+    double halfSizeMP = 0.5 * MP[p].size;
+
+    Data[p].corner[0] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, -halfSizeMP);
+    Data[p].corner[1] = MP[p].pos + MP[p].F * vec2r(halfSizeMP, -halfSizeMP);
+    Data[p].corner[2] = MP[p].pos + MP[p].F * vec2r(halfSizeMP, halfSizeMP);
+    Data[p].corner[3] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, halfSizeMP);
+  }
+}
+
+
 
 /*
 // =======================

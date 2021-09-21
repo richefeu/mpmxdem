@@ -16,6 +16,7 @@ struct set_MP_grid : public Command {
   double x1;
   double y1;
   double size;
+  double etaDamping;
 };
 
 #endif /* end of include guard: SET_MP_GRID_HPP */

@@ -9,6 +9,7 @@
 struct hnlDEM : public ConstitutiveModel {
   hnlDEM();
   std::string fileName;  // file name of the initial configuration
+  double etaDamping;
   // Different MP can use the same initial conf,
   // but each MP holds its own simulation
 

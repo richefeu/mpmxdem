@@ -5,6 +5,7 @@
 
 struct set_BC_column : public Command {
   void read(std::istream& is);
+
   void exec();
 
  private:

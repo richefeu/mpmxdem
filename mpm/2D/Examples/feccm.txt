@@ -15,7 +15,7 @@ dt 1e-3
 t 0.0
 # shape function can be Linear or GIMP (not yet implemented)
 ShapeFunction BSpline
-NumericalDissipation 0.001 1e-8 0.5 
+NumericalDissipation 0.4 1e-8 10 
 splitting 0
 shearLimit 1.0
 # Materials

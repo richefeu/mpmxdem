@@ -12,9 +12,9 @@ std::string hnlDEM::getRegistrationName() { return std::string("hnlDEM"); }
 hnlDEM::hnlDEM() {}
 
 void hnlDEM::read(std::istream& is) {
-  is >> fileName;
+  is >> fileName >> etaDamping;
 }
-void hnlDEM::write(std::ostream& os) { os << fileName << '\n'; }
+void hnlDEM::write(std::ostream& os) { os << fileName << ' ' << etaDamping << '\n'; }
 
 void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
@@ -24,7 +24,6 @@ void hnlDEM::init(MaterialPoint & MP) {
 
 void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
-
   // Get the total strain increment from node velocities
   vec2r vn;
   mat4 dstrain;
@@ -67,10 +66,10 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   }
   // Elastic stress
   // (Sign convention is opposed)
-  MPM.MP[p].stress.xx = -MPM.MP[p].PBC->Sig.xx; 
-  MPM.MP[p].stress.xy = -MPM.MP[p].PBC->Sig.xy;
-  MPM.MP[p].stress.yx = -MPM.MP[p].PBC->Sig.yx;
-  MPM.MP[p].stress.yy = -MPM.MP[p].PBC->Sig.yy;
+  MPM.MP[p].stress.xx = -MPM.MP[p].PBC->Sig.xx+etaDamping*MPM.MP[p].velGrad.xx; 
+  MPM.MP[p].stress.xy = -MPM.MP[p].PBC->Sig.xy+0.5*etaDamping*(MPM.MP[p].velGrad.xy+MPM.MP[p].velGrad.yx);
+  MPM.MP[p].stress.yx = -MPM.MP[p].PBC->Sig.yx+0.5*etaDamping*(MPM.MP[p].velGrad.xy+MPM.MP[p].velGrad.yx);
+  MPM.MP[p].stress.yy = -MPM.MP[p].PBC->Sig.yy+etaDamping*MPM.MP[p].velGrad.yy;
 }
 
 double hnlDEM::getYoung() { return 0; }

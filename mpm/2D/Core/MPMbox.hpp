@@ -91,6 +91,7 @@ class MPMbox {
   int MaxSplitNumber;          // The maximum number of splits
 
   double NumericalDissipation;      // value of alpha for pfc dissipation. the closer to 0, the more it dissipates
+  double ViscousDissipation;        // drag-like dissipation 0 means no dissipation
   double minVd;                     // value of velocity norm beyond which dissipation is desactivated
   double EndNd;                     // time ending numerical dissipation
   bool activeNumericalDissipation;  // Flag for activating the numerical dissipation
@@ -128,6 +129,7 @@ class MPMbox {
 
   // postprocessing functions
   void postProcess(std::vector<ProcessedDataMP>& MPPD);
+  void CutProcess(std::vector<CutDataMP>& Data);
 };
 
 #endif /* end of include guard: MPMBOX_HPP */
