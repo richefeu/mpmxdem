@@ -28,12 +28,11 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
   std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
-  double& tolmass = MPM.tolmass;
   // End of aliases ========================================
 
   int* I;  // use as node index
 
-  // ==== Discard previous grid
+  // 1. ==== Discard previous grid
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     nodes[liveNodeNum[n]].mass = 0.0;
     nodes[liveNodeNum[n]].q.reset();
@@ -54,7 +53,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     OneStep::resetDEM(Obstacles[o], MPM.gravity);
   }
 
-  // ==== Compute interpolation values
+  // [ALGO.POINT.2] ==== Compute interpolation values
   for (size_t p = 0; p < MPM.MP.size(); p++) {
     MPM.shapeFunction->computeInterpolationValues(MPM, p);
   }
@@ -75,33 +74,33 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     OneStep::moveDEM1(Obstacles[o], dt, MPM.activeNumericalDissipation);
   }
 
-  // 0) ==== Getting material point mass (something we were not doing before)
+  // ==== Getting material point mass (something we were not doing before)
+  // FIXME: SERT A RIEN ????
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].mass = MP[p].density * MP[p].vol;
   }
 
-  // 1) ==== Initialize grid state (mass and momentum)
+  // [ALGO.POINT.3] ==== Initialize grid state (mass and momentum)
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
     for (int r = 0; r < element::nbNodes; r++) {
       // Nodal mass
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
-      // Nodal momentum
-      // nodes[I[r]].q += MP[p].N[r] * MP[p].mass * MP[p].vel;  //he uses it but apparently its not necessary since we
-      // then replace it with the vel from the MP
 
-      // Blocked DOFs (at nodes)
+      // Blocked DOFs (at nodes) -> UTILE ????? (on pense que non)
+      /*
       if (nodes[I[r]].xfixed) {
         nodes[I[r]].q.x = 0.0;
       }
       if (nodes[I[r]].yfixed) {
         nodes[I[r]].q.y = 0.0;
       }
+      */
     }
   }
 
-  // 2) ==== Compute internal and external forces
+  // [ALGO.POINT.5] ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
@@ -113,11 +112,11 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
+  // Updating free boundary conditions
   // FIXME: This assummes that every obstacle has a boundaryType associated
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
-  // Updating free boundary conditions
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM2(Obstacles[o], dt);
   }
@@ -129,44 +128,42 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // 3) ==== Compute rate of momentum and update nodes
+  // [ALGO.POINT.6] ==== Compute rate of momentum and update nodes
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     // sum of boundary and volume forces:
     nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].fb + nodes[liveNodeNum[n]].f;
-    if (!(nodes[liveNodeNum[n]].xfixed))
-      nodes[liveNodeNum[n]].q.x += nodes[liveNodeNum[n]].qdot.x * dt;
-    else
+    
+    if (nodes[liveNodeNum[n]].xfixed) {
       nodes[liveNodeNum[n]].qdot.x = 0.0;
-    if (!(nodes[liveNodeNum[n]].yfixed))
-      nodes[liveNodeNum[n]].q.y += nodes[liveNodeNum[n]].qdot.y * dt;
-    else
+    }
+    if (nodes[liveNodeNum[n]].yfixed) {
       nodes[liveNodeNum[n]].qdot.y = 0.0;
-    // nodes[liveNodeNum[n]].q += nodes[liveNodeNum[n]].qdot*dt;
+    }
   }
 
-  // 3a) ==== Calculate velocity in MP (to then update q). sort of smoothing?
+  // [ALGO.POINT.7] ==== Calculate velocity in MP (to then update q). sort of smoothing?
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
     double invmass;
-    vec2r tempForceMP;
-    tempForceMP.reset();
-    //double MPinvMass = 0;
+    //vec2r tempForceMP;
+    //tempForceMP.reset();
+    // double MPinvMass = 0;
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
         MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;
-        tempForceMP += MP[p].N[r] * nodes[I[r]].qdot*invmass;
-        //MPinvMass += invmass;
+        //tempForceMP += MP[p].N[r] * nodes[I[r]].qdot * invmass;
+        // MPinvMass += invmass;
       }
     }
     // Numerical dissipation!
     if (MPM.activeNumericalDissipation) {
-       MP[p].vel*=1.0/(1+MPM.NumericalDissipation);
+      MP[p].vel *= 1.0f / (1.0 + MPM.NumericalDissipation);
     }
   }
 
-  // 3b) ==== Calculate updated momentum in nodes
+  // [ALGO.POINT.9 and 10] ==== Calculate updated momentum in nodes
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
@@ -176,7 +173,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // 3c) ==== Nodal velocities  (A)
+  // ==== Nodal velocities 
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     if (nodes[liveNodeNum[n]].mass > MPM.tolmass) {
       nodes[liveNodeNum[n]].vel = nodes[liveNodeNum[n]].q / nodes[liveNodeNum[n]].mass;
@@ -185,42 +182,27 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // 3d) ==== Deformation gradient (C)
+  // [ALGO.POINT.11 to 12] ==== Deformation gradient
   MPM.updateTransformationGradient();
-   
+
+  // ==== Update strain and stress
   MPM.DEMfinalTime();
-  // 4) ==== Update strain and stress
+#pragma omp parallel for default(shared)
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
   }
 
-  // 4a) ====Update Volume and density
+  // [ALGO.POINT.13] ==== Update positions
+  for (size_t p = 0; p < MP.size(); p++) {
+    MP[p].pos += dt * MP[p].vel;
+  }  
+  
+  // [ALGO.POINT.14] ==== Update Volume and density
   for (size_t p = 0; p < MP.size(); p++) {
     double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy;
     MP[p].vol *= (1.0 + volumetricdStrain);
     MP[p].density /= (1.0 + volumetricdStrain);
   }
-
-  // 5) ==== Update positions
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    MP[p].prev_pos = MP[p].pos;
-    double invmass;
-    for (int r = 0; r < element::nbNodes; r++) {
-      if (nodes[I[r]].mass > tolmass) {
-        invmass = 1.0f / nodes[I[r]].mass;
-        // MP[p].vel += dt * MP[p].N[r]*nodes[I[r]].qdot * invmass;
-        MP[p].pos += dt * MP[p].N[r] * nodes[I[r]].q * invmass;
-      }
-    }
-  }
-
-  // ==== Update the corner positions of the MPs
-  /*
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].updateCornersFromF();
-  }
-  */
 
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
