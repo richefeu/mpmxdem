@@ -20,6 +20,7 @@ void mySigHandler(int sig) {
 }
 
 int main(int argc, char** argv) {
+
   time_t rawtime;
   time(&rawtime);
   printf("The current local time is: %s", ctime(&rawtime));
@@ -43,6 +44,5 @@ int main(int argc, char** argv) {
   //printf("run finished");
 
   SimuChrono.stop();
-
   return 0;
 }

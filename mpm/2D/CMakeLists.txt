@@ -17,6 +17,7 @@ else()
 
 endif()
 
+
 # Remark:
 # Before being able to compile, the file 'libPBC3D.a' needs to be already compiled
 set(PLUGGED_DEM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
@@ -43,16 +44,17 @@ Spies/*.cpp
 
 add_library(core_obj OBJECT ${core_object_files})
 add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
-target_link_libraries (mpmbox ${PLUGGED_DEM_LIBRARY})
+
+target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY})
 
 
 add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
+target_link_libraries(see PUBLIC ${PLUGGED_DEM_LIBRARY} PUBLIC ${GLUT_LIBRARIES} PUBLIC ${GLUT_LINK_LIBRARIES})
 target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIRS})
-target_link_libraries (see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 
 
 add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
-target_link_libraries (cut ${PLUGGED_DEM_LIBRARY})
+target_link_libraries(cut PUBLIC ${PLUGGED_DEM_LIBRARY})
 
 
 ADD_DEFINITIONS(

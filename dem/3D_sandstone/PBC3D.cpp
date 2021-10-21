@@ -268,6 +268,10 @@ void PBC3Dbox::loadConf(const char* name) {
         double pressure, velocity;
         conf >> pressure >> velocity;
         Load.BiaxialCompressionXPlaneStrainY(pressure, velocity);
+      } else if (command == "BiaxialCompressionY") {
+        double pxz, py;
+        conf >> pxz >> py;
+        Load.BiaxialCompressionY(pxz, py);
       } else if (command == "IsostaticCompression") {
         double pressure;
         conf >> pressure;
@@ -288,6 +292,10 @@ void PBC3Dbox::loadConf(const char* name) {
         double pressure, gammaDot;
         conf >> pressure >> gammaDot;
         Load.SimpleShearXY(pressure, gammaDot);
+       } else if (command == "ShearTestXY") {
+        double pressure, gammaDot;
+        conf >> pressure >> gammaDot;
+        Load.ShearTestXY(pressure, gammaDot);
       } else if (command == "LodeAnglePath") {
         double pressure, sigRate, LodeAngle;
         conf >> pressure >> sigRate >> LodeAngle;

@@ -31,8 +31,10 @@ struct Loading {
   void BiaxialCompressionYPlaneStrainZ(double pressure, double velocity);
   void BiaxialCompressionZPlaneStrainX(double pressure, double velocity);
   void BiaxialCompressionXPlaneStrainY(double pressure, double velocity);
+  void BiaxialCompressionY(double px, double py);
   void IsostaticCompression(double pressure);
   void SimpleShearXY(double pressure, double gammaDot);
+  void ShearTestXY(double pressure, double gammaDot);
   void VelocityControl(mat9r &V);
   void StrainControl(mat9r &F);
   void TransformationGradient(mat9r &h, mat9r &F, double duration);

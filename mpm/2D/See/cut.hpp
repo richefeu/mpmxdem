@@ -7,7 +7,7 @@
 #include "Core/MaterialPoint.hpp"
 
 MPMbox Conf;
-std::vector<CutDataMP> SmoothedData;
+std::vector<ProcessedDataMP> SmoothedData;
 std::string result_folder;
 std::ofstream file;
 

@@ -106,26 +106,26 @@ void Loading::BiaxialCompressionZPlaneStrainX(double pressure, double velocity) 
 }
 
 void Loading::BiaxialCompressionXPlaneStrainY(double pressure, double velocity) {
-  sprintf(StoredCommand, "BiaxialCompressionZPlaneStrainX %g %g", pressure, velocity);
+  sprintf(StoredCommand, "BiaxialCompressionXPlaneStrainY %g %g", pressure, velocity);
 
-  Drive.zz = ForceDriven;     // Pressure applied along z
+  Drive.yy = ForceDriven;     // Pressure applied along y
   Drive.xx = VelocityDriven;  // Velocity imposed
-  Drive.yy = VelocityDriven;  // Plane Strain condition
+  Drive.zz = VelocityDriven;  // Plane Strain condition
 
   Drive.xy = Drive.yx = VelocityDriven;
   Drive.xz = Drive.zx = VelocityDriven;
   Drive.yz = Drive.zy = VelocityDriven;
 
   Sig.xx = 0.0;
-  Sig.yy = 0.0;
-  Sig.zz = pressure;
+  Sig.yy = pressure;
+  Sig.zz =  0.0;
   Sig.xy = Sig.yx = 0.0;
   Sig.xz = Sig.yz = 0.0;
   Sig.yz = Sig.zy = 0.0;
 
   v.zz = 0.0;
   v.yy = 0.0;  // free in fact
-  v.xx = -velocity;
+  v.xx = velocity;
   v.xy = v.yx = 0.0;
   v.xz = v.zx = 0.0;
   v.yz = v.zy = 0.0;
@@ -144,6 +144,27 @@ void Loading::IsostaticCompression(double pressure) {
   Drive.yz = Drive.zy = VelocityDriven;
 
   Sig.xx = Sig.yy = Sig.zz = pressure;
+  Sig.xy = Sig.yx = 0.0;
+  Sig.xz = Sig.yz = 0.0;
+  Sig.yz = Sig.zy = 0.0;
+
+  v.xx = v.yy = v.zz = 0.0;  // free in fact
+  v.xy = v.yx = 0.0;
+  v.xz = v.zx = 0.0;
+  v.yz = v.zy = 0.0;
+
+  ServoFunction = nullptr;
+}
+void Loading::BiaxialCompressionY(double pxz, double py) {
+  sprintf(StoredCommand, "IsostaticCompression %g %g", pxz, py);
+
+  Drive.xx = Drive.yy =  Drive.zz = ForceDriven;
+  Drive.xy = Drive.yx =VelocityDriven;
+  Drive.xz = Drive.zx = VelocityDriven;
+  Drive.yz = Drive.zy = VelocityDriven;
+
+  Sig.xx = Sig.zz = pxz;
+  Sig.yy = py;
   Sig.xy = Sig.yx = 0.0;
   Sig.xz = Sig.yz = 0.0;
   Sig.yz = Sig.zy = 0.0;
@@ -175,6 +196,30 @@ void Loading::SimpleShearXY(double pressure, double gammaDot) {
   v.yy = 0.0;  // free in fact
   v.xx = v.zz = 0.0;
   v.yx = 0.0;
+  v.xz = v.zx = 0.0;
+  v.yz = v.zy = 0.0;
+  v.xy = 0.0;  // will be driven by the servoFunction
+
+  ServoFunction = [gammaDot](PBC3Dbox& box) -> void { box.Load.v.xy = gammaDot * box.Cell.h.yy; };
+}
+
+void Loading::ShearTestXY(double pressure, double gammaDot) {
+  sprintf(StoredCommand, "SimpleShearXY %g %g", pressure, gammaDot);
+
+  Drive.xx = Drive.yy = Drive.yx = ForceDriven;
+  Drive.zz = VelocityDriven;
+  Drive.xy = VelocityDriven;
+  Drive.xz = Drive.zx = VelocityDriven;
+  Drive.yz = Drive.zy = VelocityDriven;
+
+  Sig.yy = pressure;
+  Sig.xx = Sig.zz = 0.0;
+  Sig.xy = Sig.yx = 0.0;
+  Sig.xz = Sig.yz = 0.0;
+  Sig.yz = Sig.zy = 0.0;
+
+  v.xx = v.yy = v.yx = 0.0;  // free in fact
+  v.zz = 0.0;
   v.xz = v.zx = 0.0;
   v.yz = v.zy = 0.0;
   v.xy = 0.0;  // will be driven by the servoFunction

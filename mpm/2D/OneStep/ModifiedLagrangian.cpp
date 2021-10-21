@@ -190,10 +190,11 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
    
   MPM.DEMfinalTime();
   // 4) ==== Update strain and stress
+
+
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
   }
-
   // 4a) ====Update Volume and density
   for (size_t p = 0; p < MP.size(); p++) {
     double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy;

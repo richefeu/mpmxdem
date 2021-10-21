@@ -58,6 +58,34 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.Rebuild();
       std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
     } break;
+    case '3': {
+      color_option = 3;
+      double rhomax = 0;
+      double rhomin = 1e20;
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        double rho=SmoothedData[i].rho;
+        if (rho > rhomax) rhomax = rho;
+        if (rho < rhomin) rhomin = rho;
+      }
+      colorTable.setMinMax(rhomin, rhomax);
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
+      std::cout << "MP colored by pressure (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
+    } break;
+   case '4': {
+      color_option = 4;
+      double pmax = -1e20;
+      double pmin = 1e20;
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        double p = SmoothedData[i].stress.yy;
+        if (p > pmax) pmax = p;
+        if (p < pmin) pmin = p;
+      }
+      colorTable.setMinMax(pmin, pmax);
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
+      std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
+    } break;
 
     case 'c': {
       MP_contour = 1 - MP_contour;
@@ -250,6 +278,19 @@ void setColor(int i) {
     case 2: {
       colorRGBA col;
       double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+      colorTable.getRGB(p, &col);
+      glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, 1.0f);
+    } break;
+
+    case 3: {
+      colorRGBA col;
+      double rho = SmoothedData[i].rho;
+      colorTable.getRGB(rho, &col);
+      glColor3f(col.r / 255.0, col.g / 255.0, col.b / 255.0);
+    } break;
+    case 4: {
+      colorRGBA col;
+      double p = SmoothedData[i].stress.yy;
       colorTable.getRGB(p, &col);
       glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, 1.0f);
     } break;

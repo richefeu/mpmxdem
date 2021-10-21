@@ -26,8 +26,6 @@ void add_MP_ShallowPath::exec() {
   }
   ConstitutiveModel* CM = itCM->second;
 
-  MaterialPoint P(groupNb, size, rho, CM);
-
   // loop over the path points
   for (size_t i = 0; i < pathPoints.size() - 1; i++) {
     // vector from beginning to end is named vecA
@@ -38,6 +36,7 @@ void add_MP_ShallowPath::exec() {
     for (double x = pathPoints[i].x + halfSizeMP; x <= maxx - halfSizeMP; x += size) {
       double ypos = lineEquation(pathPoints[i], pathPoints[i + 1], x);
       for (double y = ypos + halfSizeMP; y <= ypos + height - halfSizeMP; y += size) {
+        MaterialPoint P(groupNb, size, rho, CM);
         P.pos.x = x;
         P.pos.y = y;
         box->MP.push_back(P);

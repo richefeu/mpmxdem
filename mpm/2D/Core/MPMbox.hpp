@@ -12,9 +12,7 @@
 #include <string>
 #include <vector>
 
-#if defined(_OPENMP)
 #include <omp.h>
-#endif
 
 #include <stdlib.h>
 
@@ -129,7 +127,6 @@ class MPMbox {
 
   // postprocessing functions
   void postProcess(std::vector<ProcessedDataMP>& MPPD);
-  void CutProcess(std::vector<CutDataMP>& Data);
 };
 
 #endif /* end of include guard: MPMBOX_HPP */
