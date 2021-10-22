@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
-project(MPMbox)
+project(MPMbox LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+
+find_package(OpenMP REQUIRED)
 
 find_package(OpenGL REQUIRED)
 
@@ -49,18 +58,10 @@ target_link_libraries(mpmbox ${PLUGGED_DEM_LIBRARY})
 
 
 add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
-target_link_libraries(see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+target_link_libraries (see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} OpenMP::OpenMP_CXX)
 target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIRS})
 
 
 add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries(cut PUBLIC ${PLUGGED_DEM_LIBRARY})
 
-
-ADD_DEFINITIONS(
--O3
--std=c++11
--Wno-deprecated-declarations
--Wall
--Wextra
-)
