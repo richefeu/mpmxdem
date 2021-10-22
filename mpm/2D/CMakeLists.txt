@@ -35,9 +35,11 @@ set(COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
 message(NOTICE "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
 message(NOTICE "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
 message(NOTICE "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})
+message(NOTICE "OpenMP_FLAGS= "  ${OpenMP_CXX_FLAGS} )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${COMMON_INCLUDE_DIR} ${PLUGGED_DEM_INCLUDE_DIR}) 
 link_directories(${PLUGGED_DEM_INCLUDE_DIR})
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 file( GLOB core_object_files ${CMAKE_CURRENT_SOURCE_DIR}
 BoundaryForceLaw/*.cpp
@@ -53,15 +55,14 @@ Spies/*.cpp
 
 add_library(core_obj OBJECT ${core_object_files})
 add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
+target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY} OpenMP::OpenMP_CXX)
 
-target_link_libraries(mpmbox ${PLUGGED_DEM_LIBRARY})
 
 
 add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
-target_link_libraries (see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} OpenMP::OpenMP_CXX)
+target_link_libraries (see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIRS})
 
 
 add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries(cut PUBLIC ${PLUGGED_DEM_LIBRARY})
-
