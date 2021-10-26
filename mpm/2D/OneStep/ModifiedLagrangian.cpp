@@ -87,6 +87,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     for (int r = 0; r < element::nbNodes; r++) {
       // Nodal mass
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+      nodes[I[r]].q += MP[p].N[r] *MP[p].vel*MP[p].mass;
 
       // Blocked DOFs (at nodes) -> UTILE ????? (on pense que non)
       /*
@@ -152,7 +153,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
-        MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;
+        MP[p].vel += MP[p].N[r]*dt* nodes[I[r]].qdot * invmass;
         //tempForceMP += MP[p].N[r] * nodes[I[r]].qdot * invmass;
         // MPinvMass += invmass;
       }
@@ -163,24 +164,21 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // [ALGO.POINT.9 and 10] ==== Calculate updated momentum in nodes
+  
+  // [ALGO.POINT.9 and 10] ==== Calculate updated velocity in nodes to compute deformation
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-
+    double invmass;
     for (int r = 0; r < element::nbNodes; r++) {
-      // Nodal momentum
-      nodes[I[r]].q += MP[p].N[r] * MP[p].mass * MP[p].vel;
-    }
-  }
-
-  // ==== Nodal velocities 
-  for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    if (nodes[liveNodeNum[n]].mass > MPM.tolmass) {
-      nodes[liveNodeNum[n]].vel = nodes[liveNodeNum[n]].q / nodes[liveNodeNum[n]].mass;
-    } else {
-      nodes[liveNodeNum[n]].vel.reset();
-    }
-  }
+       if (nodes[I[r]].mass > MPM.tolmass) {
+         invmass = 1.0f / nodes[I[r]].mass;
+         nodes[I[r]].vel += invmass*MP[p].N[r] * MP[p].vel*MP[p].mass;
+       }
+       else{
+      nodes[I[r]].vel.reset();
+      }
+   }
+ }
 
   // [ALGO.POINT.11 to 12] ==== Deformation gradient
   MPM.updateTransformationGradient();
@@ -192,14 +190,21 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
   }
 
-  // [ALGO.POINT.13] ==== Update positions
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].pos += dt * MP[p].vel;
-  }  
-  
+   // [ALGO.POINT.13] ==== Update positions avec le q provisoire
+   for (size_t p = 0; p < MP.size(); p++) {
+    I = &(Elem[MP[p].e].I[0]);
+    double invmass;
+    for (int r = 0; r < element::nbNodes; r++) {
+      if(nodes[I[r]].mass > MPM.tolmass){
+      invmass = 1.0f / nodes[I[r]].mass;
+      MP[p].pos +=MP[p].N[r]*dt*(nodes[I[r]].q+MPM.dt* nodes[I[r]].qdot)* invmass;
+      }
+    }
+  }
+ 
   // [ALGO.POINT.14] ==== Update Volume and density
   for (size_t p = 0; p < MP.size(); p++) {
-    double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy;
+    double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy+MP[p].deltaStrain.det();
     MP[p].vol *= (1.0 + volumetricdStrain);
     MP[p].density /= (1.0 + volumetricdStrain);
   }
