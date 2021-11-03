@@ -29,7 +29,7 @@ void MohrCoulomb::read(std::istream& is) {
 }
 
 void MohrCoulomb::write(std::ostream& os) {
-  os << Young << ' ' << Poisson << ' ' << FrictionAngle << ' ' << Cohesion << ' ' << DilatancyAngle << '\n';
+  os << Young << ' ' << Poisson << ' ' << FrictionAngle << ' ' << Cohesion << ' ' << DilatancyAngle <<'\n';
 }
 
 double MohrCoulomb::getYoung() { return Young; }

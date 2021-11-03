@@ -93,6 +93,10 @@ class MPMbox {
   double minVd;                     // value of velocity norm beyond which dissipation is desactivated
   double EndNd;                     // time ending numerical dissipation
   bool activeNumericalDissipation;  // Flag for activating the numerical dissipation
+  double FLIP;                      // barycenter coef for using PIC as damping
+  bool activePIC;                   // damping with PIC flag
+  double timePIC;                   // end of damping PIC
+
 
   std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step
                                  // It holds only the number of nodes concerned by the proximity of MP
@@ -122,6 +126,7 @@ class MPMbox {
   // Functions called in OneStep
   void updateTransformationGradient();
   void DEMfinalTime();
+  void DeleteObject();
   void adaptativeRefinement();
   void weightIncrement();
 

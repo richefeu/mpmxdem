@@ -73,7 +73,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
 
   // ==== Move the rigid obstacles according to their mode of driving
   for (size_t o = 0; o < Obstacles.size(); ++o) {
-    OneStep::moveDEM1(Obstacles[o], dt, MPM.activeNumericalDissipation);
+    OneStep::moveDEM1(Obstacles[o], dt);
   }
 
   // ==== Initialize grid state (mass and momentum)

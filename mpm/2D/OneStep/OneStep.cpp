@@ -10,17 +10,15 @@ void OneStep::resetDEM(Obstacle* obst, vec2r gravity) {
   obst->arot = 0.0;
 }
 
-void OneStep::moveDEM1(Obstacle* obst, double dt, bool activeNumericalDissipation) {
+void OneStep::moveDEM1(Obstacle* obst, double dt) {
   // ==== Move the rigid obstacles according to their mode of driving  
   if (obst->isFree) {
-    if (activeNumericalDissipation == false) {
       double dt_2 = 0.5 * dt;
       double dt2_2 = dt_2 * dt;
       obst->pos += obst->vel * dt + obst->acc * dt2_2;
       obst->vel += obst->acc * dt_2;
       obst->rot += obst->vrot * dt + obst->arot * dt2_2;
       obst->vrot += obst->arot * dt_2;
-    }
   } else {  // velocity is imposed (rotations are supposed blocked)
     obst->pos += obst->vel * dt;
   }
@@ -36,20 +34,12 @@ void OneStep::moveDEM2(Obstacle* obst, double dt) {
   }
 }
 
-vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP) {
-  double halfSigned = 0.0;
-  double product = forceMP * velMP;
-  if (product >= 0.0)
-    halfSigned = 0.5;
-  else
-    halfSigned = -0.5;
-
-  // the value shouldnt be too high cuz it will freeze the material and
-  // when its released the waves will reappear
-  vec2r deltaF = -halfSigned * forceMP;
-  forceMP += deltaF;
-
-  return forceMP;
+vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP,double viscous_coefficient) {
+//Al-Kafaji PhD eq 4.131
+  vec2r  vecSigned;
+  vecSigned.x = (forceMP.x * velMP.x > 0.0) ? 1-viscous_coefficient : 1+viscous_coefficient;
+  vecSigned.y = (forceMP.y * velMP.y > 0.0) ? 1-viscous_coefficient : 1+viscous_coefficient;
+  return vecSigned;
 }
 /*vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double cundall) {
   double factor;

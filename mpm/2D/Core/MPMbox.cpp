@@ -21,6 +21,9 @@ MPMbox::MPMbox() {
   tolmass = 1.0e-6;
   gravity.set(0.0, -9.81);
   ViscousDissipation=0;  
+  FLIP=1;
+  activePIC=false;
+  timePIC=0.0;
 
   iconf = 0;
   confPeriod = 5000;
@@ -130,6 +133,9 @@ void MPMbox::read(const char* name) {
       activeNumericalDissipation = true;
     } else if (token == "ViscousDissipation") {
        file >> ViscousDissipation;  
+    } else if (token == "PICDissipation") {
+       file >> FLIP >>timePIC;
+       activePIC=true;  
     } else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
@@ -296,6 +302,7 @@ void MPMbox::save(const char* name) {
   file << "t " << t << '\n';
   file << "splitting " << splitting << '\n';
   file << "ShapeFunction " << shapeFunction->getRegistrationName() << '\n';
+  file << "PICDissipation " << FLIP << " " << timePIC << '\n';
 
   std::map<std::string, ConstitutiveModel*>::iterator itModel;
   for (itModel = models.begin(); itModel != models.end(); ++itModel) {
@@ -474,8 +481,14 @@ void MPMbox::run() {
 
     // numerical dissipation
     // step > 100 is to give the material some time to settle
-    if (activeNumericalDissipation == true && step > 5) {
+    if (activeNumericalDissipation == true && step > 100) {
       checkNumericalDissipation(minVd,EndNd);
+    }
+    if (activePIC==true){
+      activePIC = timePIC>t;
+      if (activePIC==false){
+        printf("end of PIC damping at time %f", t);
+      }
     }
 
     // run onestep!
@@ -607,17 +620,12 @@ void MPMbox::updateTransformationGradient() {
   int* I;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    MP[p].velGrad.reset();
     for (int r = 0; r < element::nbNodes; r++) {
       MP[p].velGrad.xx += (MP[p].gradN[r].x * nodes[I[r]].vel.x);
       MP[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
       MP[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
       MP[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
     }
-
-    // original code
-    MP[p].prev_F = MP[p].F;
-    MP[p].F = (mat4::unit() + dt * MP[p].velGrad) * MP[p].F;
   }
 }
 
@@ -637,7 +645,15 @@ void MPMbox::DEMfinalTime() {
       dt = (dtmax <= dt) ? dtmax : dt;
     }
   }
-  if (deltime>t && deltime < t+dt){
+  std::cout << "final DEM time-step " << dt << std::endl;
+  // original code
+  for (size_t p = 0; p < MP.size(); p++) {
+    MP[p].prev_F = MP[p].F;
+    MP[p].F = (mat4::unit() + dt * MP[p].velGrad) * MP[p].F;
+  }
+}
+void MPMbox::DeleteObject(){
+  if (deltime>=t && deltime <= t+dt){
       for (size_t i = 0; i < Obstacles.size(); i++) {
         if (Obstacles[i]->group==delnumber){
           delete (Obstacles[i]); 
@@ -645,9 +661,7 @@ void MPMbox::DEMfinalTime() {
         }
      }
    }
-  std::cout << "final DEM time-step " << dt << std::endl;
 }
-
 void MPMbox::adaptativeRefinement() {
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].splitCount > MaxSplitNumber) continue;
