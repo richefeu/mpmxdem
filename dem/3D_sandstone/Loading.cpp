@@ -156,7 +156,7 @@ void Loading::IsostaticCompression(double pressure) {
   ServoFunction = nullptr;
 }
 void Loading::BiaxialCompressionY(double pxz, double py) {
-  sprintf(StoredCommand, "IsostaticCompression %g %g", pxz, py);
+  sprintf(StoredCommand, "BiaxialCompressionY %g %g", pxz, py);
 
   Drive.xx = Drive.yy =  Drive.zz = ForceDriven;
   Drive.xy = Drive.yx =VelocityDriven;

@@ -31,14 +31,9 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   int col_i;
   int row_i;
   for (int r = 0; r < element::nbNodes; r++) {
-    if (MPM.nodes[I[r]].mass > MPM.tolmass) {
-      vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
-    } else
-      continue;
-
-    dstrain.xx += (vn.x * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.xy += 0.5 * (vn.x * MPM.MP[p].gradN[r].y + vn.y * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.yy += (vn.y * MPM.MP[p].gradN[r].y) * MPM.dt;
+    dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
+    dstrain.xy += 0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
+    dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;
   }
   
   dstrain.yx = dstrain.xy;

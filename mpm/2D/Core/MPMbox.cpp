@@ -650,6 +650,7 @@ void MPMbox::DEMfinalTime() {
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_F = MP[p].F;
     MP[p].F = (mat4::unit() + dt * MP[p].velGrad) * MP[p].F;
+    //MP[p].F = MP[p].F + dt * MP[p].velGrad; 
   }
 }
 void MPMbox::DeleteObject(){
