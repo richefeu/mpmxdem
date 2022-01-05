@@ -1118,8 +1118,9 @@ void PBC3Dbox::computeForcesAndMoments() {
       Interactions[k].mom -= kr * (Particles[j].vrot - Particles[i].vrot) * dt;  // elastic moment
 
       // Rupture criterion
-      double yieldFunc = pow(norm(Interactions[k].ft) / ft0, powSurf) + pow(norm(Interactions[k].mom) / mom0, powSurf) -
-                         Interactions[k].fn / fn0 - 1.0;
+      double yieldFunc;
+      if (mom0>0){yieldFunc= pow(norm(Interactions[k].ft) / ft0, powSurf) + pow(norm(Interactions[k].mom) / mom0, powSurf) -Interactions[k].fn / fn0 - 1.0;}
+      else{yieldFunc= pow(norm(Interactions[k].ft) / ft0, powSurf) -Interactions[k].fn / fn0 - 1.0;}
       if (yieldFunc > 0.0) {
         if (Interactions[k].fn < 0.0) {
           Interactions[k].state = noContactState;
@@ -1389,14 +1390,14 @@ void PBC3Dbox::computeForcesAndMoments() {
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
-  dt = dtc * 0.05;
+  dt = dtc * 0.2;
   double dti=dt;
   if (dt >= 0.2*macro_dt) dt = macro_dt * 0.2;
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   t=0; 
   tmax = macro_dt;
-  interVerlet = 10*dt; // on peut faire une meilleur estimation
+  interVerlet = 5*dt; // on peut faire une meilleur estimation
   interVerletC = 0; // on peut faire une meilleur estimation
   
   mat9r dFmI = Finc;

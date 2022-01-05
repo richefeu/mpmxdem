@@ -63,6 +63,9 @@ class MPMbox {
   grid Grid;                  // The fixed grid
   double tolmass;             // Tolerance for the mass of a MaterialPoint
   vec2r gravity;              // The gravity acceleration vector
+  vec2r gravity_max;         // ramp gravity acceleration vector
+  vec2r gravity_incr;        // increment gravity acceleration vector
+  bool ramp;                 // ramp boolean
 
   double finalTime;  // Time in seconds at which the simulation ends
   int step;          // The current step

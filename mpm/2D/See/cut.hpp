@@ -10,6 +10,7 @@ MPMbox Conf;
 std::vector<ProcessedDataMP> SmoothedData;
 std::string result_folder;
 std::ofstream file;
+std::ofstream file_micro;
 
 
 int confNum;

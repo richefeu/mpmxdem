@@ -19,7 +19,10 @@ MPMbox::MPMbox() {
   Grid.Nx = 20;
   Grid.Ny = 20;
   tolmass = 1.0e-6;
-  gravity.set(0.0, -9.81);
+  gravity_max.set(0.0, -9.81);
+  gravity.set(0.0, 0.0);
+  gravity_incr.set(0.0, 0.0);
+  ramp=false;
   ViscousDissipation=0;  
   FLIP=1;
   activePIC=false;
@@ -105,7 +108,7 @@ void MPMbox::read(const char* name) {
     } else if (token == "tolmass") {
       file >> tolmass;
     } else if (token == "gravity") {
-      file >> gravity;
+      file >> gravity_max;
     } else if (token == "finalTime") {
       file >> finalTime;
     } else if (token == "confPeriod") {
@@ -136,6 +139,9 @@ void MPMbox::read(const char* name) {
     } else if (token == "PICDissipation") {
        file >> FLIP >>timePIC;
        activePIC=true;  
+    } else if (token == "ramp") {
+       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y ;
+       ramp=true;  
     } else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
@@ -285,16 +291,24 @@ void MPMbox::read(const char* name) {
 }
 
 void MPMbox::save(const char* name) {
+  char name_micro[256];
+  sprintf(name_micro,"%s_micro",name);
+  //std::cout << name_micro << std::endl;
   std::ofstream file(name);
+  std::ofstream file_micro(name_micro);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
+  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax Vsolid Vcell h_xx h_xy h_yx h_yy" << std::endl;
   if (planeStrain == true) {
     file << "planeStrain\n";
   }
   file << "oneStepType " << oneStep->getRegistrationName() << '\n';
   file << "result_folder .\n";
   file << "tolmass " << tolmass << '\n';
-  file << "gravity " << gravity << '\n';
+  file << "gravity " << gravity_max << '\n';
+  if (ramp) {
+  file << "ramp " << gravity.x << " " << gravity.y << " " <<gravity_incr.x << " " << gravity_incr.y << '\n';
+  }
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
   file << "confPeriod " << confPeriod << '\n';
@@ -367,6 +381,26 @@ void MPMbox::save(const char* name) {
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
          << MP[iMP].splitCount << ' ' << MP[iMP].F << '\n';
+           if (MP[iMP].ismicro){
+            MP[iMP].PBC->computeSampleData();
+            file_micro << MP[iMP].pos.x                     << " "
+                       << MP[iMP].pos.y                     << " "
+                       << MP[iMP].PBC->nbActiveInteractions << " "
+                       << MP[iMP].PBC->nbBonds              << " "
+                       << MP[iMP].PBC->tensfailure          << " "
+                       << MP[iMP].PBC->fricfailure          << " "
+                       << MP[iMP].PBC->Rmean                << " "
+                       << MP[iMP].PBC->Vmean                << " "
+                       << MP[iMP].PBC->VelMean              << " "
+                       << MP[iMP].PBC->VelMin               << " "
+                       << MP[iMP].PBC->VelMax               << " "
+                       << MP[iMP].PBC->Vsolid               << " "
+                       << fabs(MP[iMP].PBC->Cell.h.det())   << " "
+                       << MP[iMP].PBC->Cell.h.xx            << " "
+                       << MP[iMP].PBC->Cell.h.xy            << " "
+                       << MP[iMP].PBC->Cell.h.yx            << " "
+                       << MP[iMP].PBC->Cell.h.yy            << std::endl;
+       }
   }
 }
 
@@ -455,20 +489,31 @@ void MPMbox::init() {
 void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
-
+  if(!ramp){gravity.set(gravity_max.x,gravity_max.y);}
+   //std::cout << "ramp "<< ramp << '\n';
   step = 0;
 
   while (t < finalTime) {
-
+  if (ramp){
+  if (fabs(gravity.x) < fabs(gravity_max.x))
+     {gravity.x+=gravity_incr.x;}
+  if (fabs(gravity.y) < fabs(gravity_max.y))
+     {gravity.y+=gravity_incr.y;}
+  if((fabs(gravity.x) >= fabs(gravity_max.x)) && (fabs(gravity.y) >=fabs(gravity_max.y)))
+    { gravity.set(gravity_max.x,gravity_max.y); 
+      ramp=false;}
+   }
+   //std::cout << "g.x "<< gravity.x <<" g.y " << gravity.y << '\n';
+   //std::cout << "ramp "<< ramp << '\n';
     // std::cout << "final Time: "<<finalTime << '\n';
     // std::cout << "t: "<<t << '\n';
 
     // checking cfl (should be improved but works for now)
-    /*try {
+    //try {
       cflCondition();
-    } catch (char const* e) {
-      std::cout << "Error testing cfl: " << e << std::endl;
-    }*/
+    //} catch (char const* e) {
+    //  std::cout << "Error testing cfl: " << e << std::endl;
+    //}
 
     if (step % confPeriod == 0) {
       save(iconf);
@@ -578,15 +623,23 @@ void MPMbox::cflCondition() {
       if (dataTable.get(id_kn, *it, *it2) > knMax) knMax = dataTable.get(id_kn, *it, *it2);
     }
   }
-
-  // First condition (MPM) (book vincent)
-  double crit_dt1 = 1.0 / sqrt(YoungMax / rhoMin) * (Grid.lx * Grid.ly / (Grid.lx + Grid.ly));
-
+ 
   // Second condition (due to the DEM boundaries)
   double crit_dt2 = Mth::pi * sqrt(massMin / knMax);
+  double crit_dt1;
+  double crit_dt3;
+  if (YoungMax>=0){
+    // First condition (MPM) (book vincent)
+    crit_dt1 = 1.0 / sqrt(YoungMax / rhoMin) * (Grid.lx * Grid.ly / (Grid.lx + Grid.ly));
 
-  // Third condition (time step uintah user guide)
-  double crit_dt3 = Grid.lx / (sqrt(YoungMax / rhoMin) + velMax);
+    // Third condition (time step uintah user guide)
+    crit_dt3 = Grid.lx / (sqrt(YoungMax / rhoMin) + velMax);
+  }
+  else{
+
+    crit_dt1 = 0.5*Grid.lx / (Grid.lx+velMax);
+    crit_dt3=crit_dt1;
+  }
 
   // Choosing critical dt as the smallest
   double criticalDt;
@@ -605,6 +658,7 @@ void MPMbox::cflCondition() {
   if (dt > criticalDt / 9) {
     std::cout << "\n@MPMbox::cflCondition, timestep seems too large!\n";
     dt = criticalDt / 11.0;
+    dt_init=dt;
     std::cout << "--> Adjusting to: " << dt << std::endl;
     std::cout << "dt_crit/dt (MPM): " << crit_dt1 / dt << "\ndt_crit/dt  (DEM): " << crit_dt2 / dt
               << "\ndt_crit/dt  (MPM2): " << crit_dt3 / dt << "\nCurrent dt: " << dt << '\n';

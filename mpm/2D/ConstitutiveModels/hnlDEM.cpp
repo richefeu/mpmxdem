@@ -16,6 +16,8 @@ void hnlDEM::read(std::istream& is) {
 }
 void hnlDEM::write(std::ostream& os) { os << fileName << ' ' << etaDamping << '\n'; }
 
+double hnlDEM::getYoung() {return -1;}
+
 void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
@@ -67,4 +69,3 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].stress.yy = -MPM.MP[p].PBC->Sig.yy+etaDamping*MPM.MP[p].velGrad.yy;
 }
 
-double hnlDEM::getYoung() { return 0; }
