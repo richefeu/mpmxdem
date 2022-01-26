@@ -686,6 +686,7 @@ void MPMbox::updateTransformationGradient() {
 void MPMbox::DEMfinalTime() {
   dt = dt_init;
   float dtmax = 0.0;
+  int micnb=0;
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].ismicro) {
        VG3D.reset();
@@ -697,9 +698,12 @@ void MPMbox::DEMfinalTime() {
        VG3D=VG3D*MP[p].PBC->Cell.h;
       dtmax = 1e-3 * MP[p].PBC->Rmin /(VG3D.maxi());
       dt = (dtmax <= dt) ? dtmax : dt;
+      micnb+=1;
     }
   }
-  std::cout << "final DEM time-step " << dt << std::endl;
+  if(micnb>0){
+     std::cout << "final DEM time-step " << dt << std::endl;
+  }
   // original code
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_F = MP[p].F;
@@ -857,6 +861,10 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     for (int r = 0; r < element::nbNodes; r++) {
       Data[p].vel += nodes[I[r]].vel * MP[p].N[r];
       Data[p].stress += nodes[I[r]].stress * MP[p].N[r];
+      Data[p].velGrad.xx += (MP[p].gradN[r].x * nodes[I[r]].vel.x);
+      Data[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
+      Data[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
+      Data[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
     }
     Data[p].pos=MP[p].pos;
     Data[p].strain=MP[p].F;

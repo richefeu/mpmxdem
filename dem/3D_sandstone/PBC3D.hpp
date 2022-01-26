@@ -106,6 +106,7 @@ class PBC3Dbox {
   void computeSampleData();         ///< Computes a number of usefull data (Rmin, Rmax, Vsolid, etc.)
   void ActivateBonds(double epsiDist,
                      int state);  ///< Replace contacts by cemented bonds when dn is lower than epsiDist
+  void mpmBonds(double Dist); ///< loads Activate Bonds from MPM
   void RemoveBonds(double percentRemove, int StrategyId);  ///< A kind of global damage
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 

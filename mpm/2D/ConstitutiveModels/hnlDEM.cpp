@@ -12,9 +12,9 @@ std::string hnlDEM::getRegistrationName() { return std::string("hnlDEM"); }
 hnlDEM::hnlDEM() {}
 
 void hnlDEM::read(std::istream& is) {
-  is >> fileName >> etaDamping;
+  is >> fileName >> etaDamping >> timeBonds >> distBonds;
 }
-void hnlDEM::write(std::ostream& os) { os << fileName << ' ' << etaDamping << '\n'; }
+void hnlDEM::write(std::ostream& os) { os << fileName << ' ' << etaDamping << ' ' <<  timeBonds << ' ' << distBonds <<'\n'; }
 
 double hnlDEM::getYoung() {return -1;}
 
@@ -56,6 +56,9 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].PBC->transform(Finc3D, MPM.dt);
   col_i=p%MPM.Grid.Nx;
   row_i=floor(p/MPM.Grid.Nx);
+  if( MPM.t >=timeBonds-MPM.dt && MPM.t <=timeBonds+MPM.dt){
+  MPM.MP[p].PBC->mpmBonds(distBonds);
+  }
   if (MPM.step % MPM.confPeriod == 0  && col_i%MPM.DEMPeriod ==0 && row_i%MPM.DEMPeriod ==0) {
     sprintf(fnamea, "%s/DEM_MP%zu_t%i", MPM.result_folder.c_str(), p,MPM.iconf);
     MPM.MP[p].PBC->saveConf(fnamea);

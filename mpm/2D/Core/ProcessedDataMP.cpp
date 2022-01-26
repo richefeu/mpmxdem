@@ -1,3 +1,3 @@
 #include "ProcessedDataMP.hpp"
 
-ProcessedDataMP::ProcessedDataMP() : pos(),vel(), strain(), stress(), rho() { }
+ProcessedDataMP::ProcessedDataMP() : pos(),vel(), strain(), stress(), velGrad(), rho() { }

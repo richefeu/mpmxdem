@@ -1428,6 +1428,10 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
   }
 }
 
+void PBC3Dbox::mpmBonds(double Dist){
+ActivateBonds(Dist,bondedState);
+nulvelo();
+}
 
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char * name) {
   char fname[256]; 
