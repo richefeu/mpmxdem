@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
             << SmoothedData[i].strain.xy   << " "
             << SmoothedData[i].strain.yx   << " "
             << SmoothedData[i].rho         << " "
-            << std::max(norm(d1),norm(d1)) << " "
+            << std::max(norm(d1),norm(d2)) << " "
             << SmoothedData[i].velGrad.xx  << " "
             << SmoothedData[i].velGrad.yy  << " "
             << SmoothedData[i].velGrad.xy  << " "
