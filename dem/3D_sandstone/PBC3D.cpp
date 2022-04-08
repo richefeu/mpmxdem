@@ -1430,6 +1430,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
 
 void PBC3Dbox::mpmBonds(double Dist){
 ActivateBonds(Dist,bondedState);
+numericalDampingCoeff=0;
 nulvelo();
 }
 
