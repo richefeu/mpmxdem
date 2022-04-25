@@ -18,8 +18,8 @@ PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig() {
   interConfC = 0.0;
   interConf = 0.25;
   density = 2700.0;
-  kn = 1e4;
-  kt = kn;
+  kn = 0.0;
+  kt = 0.0;
   kr = 0.0;
   dampRate = 0.95;
   mu = 0.8;
@@ -205,19 +205,31 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> mur;
     else if (token == "fcoh")
       conf >> fcoh;
-    else if (token == "fn0")
+    else if (token == "fn0") {
       conf >> fn0;
-    else if (token == "ft0")
+      if (kn == 0.0) std::cout << "ATTENTION ! kn = 0, (à definir avant fn0)\n";
+      dn0 = fn0 / kn;  // suppose that kn has been defined before
+    } else if (token == "ft0") {
       conf >> ft0;
-    else if (token == "mom0")
+      if (kn == 0.0) std::cout << "ATTENTION ! kt = 0, (à definir avant ft0)\n";
+      dt0 = ft0 / kt;  // suppose that kt has been defined before
+    } else if (token == "mom0") {
       conf >> mom0;
-    else if (token == "dn0")
+      if (kn == 0.0) std::cout << "ATTENTION ! kr = 0, (à definir avant mom0)\n";
+      drot0 = mom0 / kr;  // suppose that kr has been defined before
+    } else if (token == "dn0") {
       conf >> dn0;
-    else if (token == "dt0")
+      if (kn == 0.0) std::cout << "ATTENTION ! kn = 0, (à definir avant dn0)\n";
+      fn0 = kn * dn0;  // suppose that kn has been defined before
+    } else if (token == "dt0") {
       conf >> dt0;
-    else if (token == "drot0")
+      if (kn == 0.0) std::cout << "ATTENTION ! kt = 0, (à definir avant dt0)\n";
+      ft0 = kt * dt0;  // suppose that kt has been defined before
+    } else if (token == "drot0") {
       conf >> drot0;
-    else if (token == "powSurf")
+      if (kn == 0.0) std::cout << "ATTENTION ! kr = 0, (à definir avant drot0)\n";
+      mom0 = kr * drot0;  // suppose that kr has been defined before
+    } else if (token == "powSurf")
       conf >> powSurf;
     else if (token == "zetaMax")
       conf >> zetaMax;
@@ -284,15 +296,15 @@ void PBC3Dbox::loadConf(const char* name) {
         mat9r fh;
         conf >> fh;
         Load.StrainControl(fh);
-      } else if (command=="TransformationGradient"){
-          mat9r F;
-          conf >> F.xx >> F.xy >> F.xz >> F.yx >> F.yy >> F.yz >> F.zx >> F.zy >> F.zz;
-          Load.TransformationGradient(Cell.h,F,dt);
+      } else if (command == "TransformationGradient") {
+        mat9r F;
+        conf >> F.xx >> F.xy >> F.xz >> F.yx >> F.yy >> F.yz >> F.zx >> F.zy >> F.zz;
+        Load.TransformationGradient(Cell.h, F, dt);
       } else if (command == "SimpleShearXY") {
         double pressure, gammaDot;
         conf >> pressure >> gammaDot;
         Load.SimpleShearXY(pressure, gammaDot);
-       } else if (command == "ShearTestXY") {
+      } else if (command == "ShearTestXY") {
         double pressure, gammaDot;
         conf >> pressure >> gammaDot;
         Load.ShearTestXY(pressure, gammaDot);
@@ -484,7 +496,7 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
     double sum = Particles[i].radius + Particles[j].radius + epsiDist;
     if (branchLen2 <= sum * sum) {
       // switch to a cemented/bonded link
-      Interactions[k].state = state;  // bondedState;
+      Interactions[k].state = state;
 
       double dn = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
       if (dn >= 0.0)
@@ -495,23 +507,8 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
       // compute the contact-point positions (relative to each particle)
       Interactions[k].n = branch;
       Interactions[k].n.normalize();
-
-      // vec3r Ci =  (Particles[i].radius + 0.5 * dn) * Interactions[k].n;
-      // vec3r Cj = -(Particles[j].radius + 0.5 * dn) * Interactions[k].n;
-
-      // an eventual accumulation of elastic tangential-displacement is cancelled
-      // Interactions[k].ft.reset();
-
-      // quat QiInv = Particles[i].Q.get_conjugated();
-      // Interactions[k].p0i = QiInv * Ci;
-      // quat QjInv = Particles[j].Q.get_conjugated();
-      // Interactions[k].p0j = QjInv * Cj;
     }  // endif
   }    // end loop over interactions
-
-  // computeSampleData();
-  // saveConf(999);
-  // exit(0);
 }
 
 void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
@@ -578,7 +575,6 @@ void PBC3Dbox::setSample() {
   ans << deltaR << '\n';
 
   dVerlet = 2.5 * radius;
-  
 
   density = 2700.0;
   std::cout << "Mass density of the particles: ";
@@ -768,7 +764,7 @@ void PBC3Dbox::setSample() {
   return;
 }
 
-void PBC3Dbox::nulvelo(){
+void PBC3Dbox::nulvelo() {
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.reset();
     Particles[i].acc.reset();
@@ -926,13 +922,13 @@ void PBC3Dbox::integrate() {
 void PBC3Dbox::dataOutput() {
   // Cell
   cellOut << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
-  
+
   // Stress
   stressOut << t << ' ' << Sig << std::endl;
-  
+
   // Strain
   strainOut << t << ' ' << Cell.strain << std::endl;
-  
+
   // Resultant
   double Rmean, R0mean, fnMin, fnMean;
   double Vcell = fabs(Cell.h.det());
@@ -994,7 +990,7 @@ void PBC3Dbox::accelerations() {
     Particles[i].force.reset();
     Particles[i].moment.reset();
   }
-  Sig.reset(); // reset internal stress
+  Sig.reset();  // reset internal stress
 
   nbActiveInteractions = 0;
   nbBonds = 0;
@@ -1119,8 +1115,12 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // Rupture criterion
       double yieldFunc;
-      if (mom0>0){yieldFunc= pow(norm(Interactions[k].ft) / ft0, powSurf) + pow(norm(Interactions[k].mom) / mom0, powSurf) -Interactions[k].fn / fn0 - 1.0;}
-      else{yieldFunc= pow(norm(Interactions[k].ft) / ft0, powSurf) -Interactions[k].fn / fn0 - 1.0;}
+      if (mom0 > 0) {
+        yieldFunc = pow(norm(Interactions[k].ft) / ft0, powSurf) + pow(norm(Interactions[k].mom) / mom0, powSurf) -
+                    Interactions[k].fn / fn0 - 1.0;
+      } else {
+        yieldFunc = pow(norm(Interactions[k].ft) / ft0, powSurf) - Interactions[k].fn / fn0 - 1.0;
+      }
       if (yieldFunc > 0.0) {
         if (Interactions[k].fn < 0.0) {
           Interactions[k].state = noContactState;
@@ -1391,15 +1391,15 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
   dt = dtc * 0.2;
-  double dti=dt;
-  if (dt >= 0.2*macro_dt) dt = macro_dt * 0.2;
+  //double dti = dt;
+  if (dt >= 0.2 * macro_dt) dt = macro_dt * 0.2;
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
-  t=0; 
+  t = 0;
   tmax = macro_dt;
-  interVerlet = 5*dt; // on peut faire une meilleur estimation
-  interVerletC = 0; // on peut faire une meilleur estimation
-  
+  interVerlet = 5 * dt;  // on peut faire une meilleur estimation
+  interVerletC = 0;      // on peut faire une meilleur estimation
+
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
   dFmI.yy -= 1.0;
@@ -1413,9 +1413,9 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
 
   while (t < tmax) {
     computeSampleData();
-    //dt=0.8*std::min(dti,dVerlet/VelMax);
-    //interVerlet=dt;
-    //printf("DEM time step %1.2e",dt);
+    // dt=0.8*std::min(dti,dVerlet/VelMax);
+    // interVerlet=dt;
+    // printf("DEM time step %1.2e",dt);
     velocityVerletStep();
 
     if (interVerletC >= interVerlet) {
@@ -1428,34 +1428,34 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
   }
 }
 
-void PBC3Dbox::mpmBonds(double Dist){
-ActivateBonds(Dist,bondedState);
-numericalDampingCoeff=0;
-nulvelo();
+void PBC3Dbox::mpmBonds(double Dist) {
+  ActivateBonds(Dist, bondedState);
+  numericalDampingCoeff = 0;
+  nulvelo();
 }
 
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char * name) {
-  char fname[256]; 
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char* name) {
+  char fname[256];
   double dtc = sqrt(Vmin * density / kn);
   dt = dtc * 0.005;
   if (dt >= macro_dt) dt = macro_dt * 0.2;
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   tmax = t + macro_dt;
-  interVerlet = 10*dt; // on peut faire une meilleur estimation
-  
+  interVerlet = 10 * dt;  // on peut faire une meilleur estimation
+
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
   dFmI.yy -= 1.0;
-  dFmI.zz -= 1.0;  
+  dFmI.zz -= 1.0;
   mat9r vh = (1.0 / macro_dt) * (dFmI * Cell.h);
-  
+
   Load.VelocityControl(vh);
   accelerations();
   dataOutput();
-  sprintf(fname,"%s%d",name,iconf);
+  sprintf(fname, "%s%d", name, iconf);
   saveConf(fname);
-  
+
   double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
   while (t < tmax) {
     velocityVerletStep();
@@ -1463,7 +1463,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char * name) {
       double currentTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
       printScreen(currentTime - previousTime);
       previousTime = currentTime;
-      sprintf(fname,"%s%d",name,iconf);
+      sprintf(fname, "%s%d", name, iconf);
       saveConf(fname);
       interConfC = 0.0;
       iconf++;
@@ -1483,7 +1483,6 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char * name) {
     t += dt;
   }
 }
-
 
 // =======================================================================
 //             METHODS FOR COUPLING WITH LAGAMINE (FEMxDEM)
