@@ -65,6 +65,7 @@ class PBC3Dbox {
   double fcoh;      ///< Cohesion force (strictly negative)
   double zetaMax;   ///< Can be seen as "dn_rupture / dn_dammage_starts"
   double Kratio;    ///< Ratio of particle stiffness over bond stiffness
+  bool nodam;      /// < unables damage in the damageable yield function
 
   // Solid cohesion
   double fn0;      ///< Maximum normal force
@@ -93,7 +94,7 @@ class PBC3Dbox {
                                    ///< (iteratively make a time increment and check for updates or saving)
   void accelerations();            ///< Computes accelerations (both for particles and the periodic-cell)
   void computeForcesAndMoments();  ///< Computes forces and moments (and cell-stress)
-  double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);
+  double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm, bool nodam);
   ///< Used for interaction of type 'bondedStateDam'
 
   void printScreen(double elapsedTime);  ///< Prints usefull data on screen during computation

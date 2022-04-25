@@ -44,6 +44,7 @@ PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig() {
   fricfailure = 0;
   dVerlet = 1e-7;  ///< Distance of Verlet
   zetaMax = 1;
+  nodam=false;
   enableSwitch = 1;
 }
 
@@ -105,6 +106,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
   conf << "permamentGluer " << permamentGluer << '\n';
+  if (nodam){conf << "nodamage " << '\n';}
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
   conf << "iconf " << iconf << '\n';
@@ -366,6 +368,8 @@ void PBC3Dbox::loadConf(const char* name) {
       double epsiDist;
       conf >> epsiDist;
       ActivateBonds(epsiDist, bondedState);
+    }else if (token == "nodamage") {
+      nodam=true;
     } else if (token == "ActivateDamageableBonds") {
       double epsiDist;
       conf >> epsiDist;
@@ -1058,9 +1062,15 @@ void PBC3Dbox::accelerations() {
   }
 }
 
-double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm) {
-  double yieldFunc =
-      Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) + pow(DrotNorm / (zeta * drot0), powSurf) - 1.0;
+double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm, bool nodam) {
+      if (nodam) {zeta=1;}
+  double yieldFunc;
+        if (drot0>0){
+        yieldFunc=Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) + pow(DrotNorm / (zeta * drot0), powSurf) - 1.0;
+       }
+      else{
+        yieldFunc=Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf)- 1.0;
+       }
   return yieldFunc;
 }
 
@@ -1219,8 +1229,8 @@ void PBC3Dbox::computeForcesAndMoments() {
       double norm_dt_bond = norm(Interactions[k].dt_bond);
       double norm_drot_bond = norm(Interactions[k].drot_bond);
       double currentZeta = Interactions[k].D * (zetaMax - 1.0) + 1.0;
-      double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond);
-      double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond);
+      double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond,nodam);
+      double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond,nodam);
 
       /// UPDATE THE DAMAGE PARAMETER
       if (yieldFuncMax > 0.0) {
@@ -1233,7 +1243,7 @@ void PBC3Dbox::computeForcesAndMoments() {
         double zetaTest;  // the trial variable
         for (int p = 0; p < 20; p++) {
           zetaTest = 0.5 * (zeta1 + zeta2);
-          df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond);
+          df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond,nodam);
           if (df < 0.0)
             zeta2 = zetaTest;
           else if (df > 0.0)
@@ -1427,6 +1437,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
     t += dt;
   }
 }
+
 
 void PBC3Dbox::mpmBonds(double Dist) {
   ActivateBonds(Dist, bondedState);
