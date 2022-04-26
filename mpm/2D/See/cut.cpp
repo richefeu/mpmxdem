@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < Conf.MP.size(); i++) {
       if(SmoothedData[i].corner[0].x<=xcut && SmoothedData[i].corner[2].x>=xcut){
        d1=SmoothedData[i].corner[0]-SmoothedData[i].corner[2];
-       d2=SmoothedData[i].corner[1]-SmoothedData[i].corner[4];
+       d2=SmoothedData[i].corner[1]-SmoothedData[i].corner[3];
        file << SmoothedData[i].pos.x       << " "
             << SmoothedData[i].pos.y       << " "
             << SmoothedData[i].stress.xx   << " "
