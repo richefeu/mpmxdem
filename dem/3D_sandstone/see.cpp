@@ -995,7 +995,6 @@ GLColorRGBA colorParticleVelocityMagnitude(int i) {
   colorRGBA RGBA;
   double vel = norm(box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel);
   ParticleColorTable.getRGB(vel, &RGBA);
-  // ParticleColorTable.getRGB(box.Particles[i].radius, &RGBA);
   return GLColorRGBA(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
 }
 

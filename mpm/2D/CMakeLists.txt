@@ -2,25 +2,29 @@ cmake_minimum_required(VERSION 3.16)
 project(MPMbox LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_EXTENSIONS OFF)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
-find_package(OpenMP REQUIRED)
+# ========= OpenMP
+find_package(OpenMP)
 
+# ========= OpenGL
 find_package(OpenGL REQUIRED)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
+  set(CMAKE_CXX_COMPILER "g++-11") # do not use AppleClang
 
   # here, we do not uses find_package(glut) so that the version installed by apple is NOT used
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(GLUT REQUIRED glut)
   set(GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIRS})
   set(GLUT_LIBRARIES "-L${GLUT_LIBDIR} -lglut")
-  message(NOTICE "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
-  message(NOTICE "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
+  message(STATUS "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
+  message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
   
 else()
 
@@ -34,10 +38,10 @@ endif()
 set(PLUGGED_DEM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
 set(PLUGGED_DEM_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
 set(COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
-message(NOTICE "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
-message(NOTICE "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
-message(NOTICE "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})
-message(NOTICE "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS} )
+message(STATUS "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
+message(STATUS "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
+message(STATUS "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})
+#message(STATUS "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS} )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${COMMON_INCLUDE_DIR} ${PLUGGED_DEM_INCLUDE_DIR}) 
 link_directories(${PLUGGED_DEM_INCLUDE_DIR})
 
@@ -56,7 +60,11 @@ Spies/*.cpp
 
 add_library(core_obj OBJECT ${core_object_files})
 add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
-target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY} OpenMP::OpenMP_CXX)
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY} OpenMP::OpenMP_CXX)
+else()
+	target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY})
+endif()
 
 add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries (see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})

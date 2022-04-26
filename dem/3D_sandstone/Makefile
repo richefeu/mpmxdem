@@ -4,7 +4,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin) # ==========================================
 
 # The compiler to be used
-CXX = clang++
+CXX = g++-11
 # The list of flags passed to the compiler
 CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
 # Link flags for OpenGL and glut
