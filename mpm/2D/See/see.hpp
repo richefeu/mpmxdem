@@ -74,6 +74,7 @@ void buildMenu();
 void printHelp();
 void fit_view();
 bool fileExists(const char *fileName);
-void try_to_readConf(int num, MPMbox &CF, int &OKNum);
+bool try_to_readConf(int num, MPMbox &CF, int &OKNum);
+int screenshot(const char* filename);
 
 #endif /* end of include guard: SEE_CONF_HPP */

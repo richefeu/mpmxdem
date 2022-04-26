@@ -1,16 +1,15 @@
 #ifndef SEE_HPP
 #define SEE_HPP
 
-
 #if __APPLE__
-#   include <OpenGL/gl.h>
-#   include <OpenGL/glu.h>
-#   include <GLUT/glut.h>
+#include <GLUT/glut.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
 #else
-#   include <GL/gl.h>
-#   include <GL/glu.h>
-#   include <GL/glut.h>
-#   include <GL/freeglut.h>
+#include <GL/freeglut.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
 #endif
 
 /*
@@ -63,7 +62,7 @@ float wh_ratio = (float)width / (float)height;
 
 // Miscellaneous global variables
 enum MouseMode { NOTHING, ROTATION, ZOOM, PAN } mouse_mode = NOTHING;
-int display_mode = 0; // sample or slice rotation
+int display_mode = 0;  // sample or slice rotation
 int mouse_start[2];
 float view_angle;
 float znear;
@@ -81,7 +80,7 @@ double slice_width;
 
 ColorTable ParticleColorTable;
 ColorTable ForceColorTable;
-ColorTable DamCol; 
+ColorTable DamCol;
 
 // Data for drawing spheres
 #define X .525731112119133606
@@ -101,14 +100,14 @@ struct GLColorRGBA {
 
 // Drawing functions
 void drawsphere(int ndiv, float radius);
-void drawtri(GLfloat *a, GLfloat *b, GLfloat *c, int div, float r);
-void normalize(GLfloat *a);
+void drawtri(GLfloat* a, GLfloat* b, GLfloat* c, int div, float r);
+void normalize(GLfloat* a);
 
 void clear_background();
 void drawPeriodicCell();
 void drawSlice();
-void drawArrow(vec3r &orig, vec3r &arrow);
-void drawTube(vec3r &orig, vec3r &arrow, double diam);
+void drawArrow(vec3r& orig, vec3r& arrow);
+void drawTube(vec3r& orig, vec3r& arrow, double diam);
 void drawForces();
 void drawVelocities();
 void drawParticles();
@@ -139,14 +138,15 @@ void menu(int num);
 // Helper functions
 void buildMenu();
 void printHelp();
-void quat2GLMatrix(quat &q, GLfloat *pMatrix);
-vec3r rotatePoint(vec3r const &p, vec3r const &center, vec3r const &axis, double theta);
+void quat2GLMatrix(quat& q, GLfloat* pMatrix);
+vec3r rotatePoint(vec3r const& p, vec3r const& center, vec3r const& axis, double theta);
 void adjust_clipping_plans();
 void fit_view();
-bool fileExists(const char *fileName);
-void try_to_readConf(int num);
+bool fileExists(const char* fileName);
+bool try_to_readConf(int num);
+int screenshot(const char* filename);
 void export_sample();
-void add_ghost_pos(int i, double mn, double mx, std::vector<vec3r> &lst);
-bool inSlice(vec3r &pos);
+void add_ghost_pos(int i, double mn, double mx, std::vector<vec3r>& lst);
+bool inSlice(vec3r& pos);
 
 #endif /* end of include guard: SEE_HPP */
