@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 # ========= OpenMP
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 
 # ========= OpenGL
 find_package(OpenGL REQUIRED)
@@ -41,11 +41,11 @@ set(COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
 message(STATUS "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
 message(STATUS "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
 message(STATUS "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})
-#message(STATUS "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS} )
+message(STATUS "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS} )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${COMMON_INCLUDE_DIR} ${PLUGGED_DEM_INCLUDE_DIR}) 
 link_directories(${PLUGGED_DEM_INCLUDE_DIR})
 
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 file(GLOB core_object_files ${CMAKE_CURRENT_SOURCE_DIR}
 BoundaryForceLaw/*.cpp

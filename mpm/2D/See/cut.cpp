@@ -33,8 +33,9 @@ int main(int argc, char* argv[]) {
     file << "# MP.x MP.y sigma_xx sigma_yy sigma_xy sigma_yx v_x v_y Fxx Fyy Fxy Fyx rho diam velGrad_xx VelGrad_yy VelGrad_xy VelGrad_yx" << std::endl;
     for (size_t i = 0; i < Conf.MP.size(); i++) {
       if(SmoothedData[i].corner[0].x<=xcut && SmoothedData[i].corner[2].x>=xcut){
-       d1=SmoothedData[i].corner[0]-SmoothedData[i].corner[2];
-       d2=SmoothedData[i].corner[1]-SmoothedData[i].corner[3];
+       d1=SmoothedData[i].corner[0]-SmoothedData[i].corner[3];
+       d2=SmoothedData[i].corner[0]-SmoothedData[i].corner[1];
+       aniso=std::min(norm(d1),norm(d2))/std::max(norm(d1),norm(d2));
        file << SmoothedData[i].pos.x       << " "
             << SmoothedData[i].pos.y       << " "
             << SmoothedData[i].stress.xx   << " "
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
             << SmoothedData[i].strain.xy   << " "
             << SmoothedData[i].strain.yx   << " "
             << SmoothedData[i].rho         << " "
-            << std::max(norm(d1),norm(d2)) << " "
+            << aniso                       << " "
             << SmoothedData[i].velGrad.xx  << " "
             << SmoothedData[i].velGrad.yy  << " "
             << SmoothedData[i].velGrad.xy  << " "
