@@ -467,6 +467,7 @@ void PBC3Dbox::computeSampleData() {
     for (size_t k = 0; k < Interactions.size(); k++) {
       if (Interactions[k].state == noContactState) continue;
       if (Interactions[k].state == bondedState) nbBonds++;
+      if (Interactions[k].state == bondedStateDam) nbBonds++;
       nbActiveInteractions++;
       double Fn = Interactions[k].fn;
       FnMean += Fn;
@@ -2403,6 +2404,7 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   for (size_t k = 0; k < Interactions.size(); k++) {
     if (Interactions[k].state == noContactState) continue;
     if (Interactions[k].state == bondedState) nbBonds++;
+    if (Interactions[k].state == bondedStateDam) nbBonds++;
     nbActiveInteractions++;
   }
   Q[offset++] = nbActiveInteractions;
