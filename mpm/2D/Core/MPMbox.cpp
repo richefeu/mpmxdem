@@ -23,6 +23,7 @@ MPMbox::MPMbox() {
   gravity.set(0.0, 0.0);
   gravity_incr.set(0.0, 0.0);
   ramp=false;
+  demstable=false;
   ViscousDissipation=0;  
   FLIP=1;
   activePIC=false;
@@ -139,6 +140,8 @@ void MPMbox::read(const char* name) {
     } else if (token == "PICDissipation") {
        file >> FLIP >>timePIC;
        activePIC=true;  
+    }else if (token== "demstable"){
+      demstable=true;
     } else if (token == "ramp") {
        file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y ;
        ramp=true;  
@@ -245,7 +248,7 @@ void MPMbox::read(const char* name) {
       std::string modelName;
       for (size_t iMP = 0; iMP < nb; iMP++) {
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
-            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F;
+            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F >> P.sigma3;
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
@@ -298,7 +301,7 @@ void MPMbox::save(const char* name) {
   std::ofstream file_micro(name_micro);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
-  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax Vsolid Vcell h_xx h_xy h_yx h_yy" << std::endl;
+  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy" << std::endl;
   if (planeStrain == true) {
     file << "planeStrain\n";
   }
@@ -308,6 +311,9 @@ void MPMbox::save(const char* name) {
   file << "gravity " << gravity_max << '\n';
   if (ramp) {
   file << "ramp " << gravity.x << " " << gravity.y << " " <<gravity_incr.x << " " << gravity_incr.y << '\n';
+  }
+  if (demstable){
+  file << "demstable " << '\n';
   }
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
@@ -380,7 +386,7 @@ void MPMbox::save(const char* name) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
-         << MP[iMP].splitCount << ' ' << MP[iMP].F << '\n';
+         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].sigma3 <<'\n';
            if (MP[iMP].ismicro){
             MP[iMP].PBC->computeSampleData();
             file_micro << MP[iMP].pos.x                     << " "
@@ -394,6 +400,7 @@ void MPMbox::save(const char* name) {
                        << MP[iMP].PBC->VelMean              << " "
                        << MP[iMP].PBC->VelMin               << " "
                        << MP[iMP].PBC->VelMax               << " "
+                       << MP[iMP].PBC->VelVar               << " "
                        << MP[iMP].PBC->Vsolid               << " "
                        << fabs(MP[iMP].PBC->Cell.h.det())   << " "
                        << MP[iMP].PBC->Cell.h.xx            << " "
@@ -835,7 +842,8 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
 
   // Reset nodal mass
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].mass  = 0.0;
+    nodes[liveNodeNum[n]].sigma3= 0.0;
     nodes[liveNodeNum[n]].vel.reset();
     nodes[liveNodeNum[n]].stress.reset();
   }
@@ -845,6 +853,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     I = &(Elem[MP[p].e].I[0]);
     for (int r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+      nodes[I[r]].sigma3 += MP[p].N[r] * MP[p].sigma3;
     }
   }
 
@@ -865,6 +874,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       Data[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
       Data[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
       Data[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
+      Data[p].sigma3     +=  MP[p].N[r] * nodes[I[r]].sigma3;
     }
     Data[p].pos=MP[p].pos;
     Data[p].strain=MP[p].F;

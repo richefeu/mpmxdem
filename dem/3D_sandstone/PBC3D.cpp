@@ -429,7 +429,9 @@ void PBC3Dbox::computeSampleData() {
   if (!Particles.empty()) {
     Rmin = Rmax = Particles[0].radius;
     Rmean = 0.0;
-    VelMin = VelMax = VelMean = 0.0;
+    VelMin = VelMax = VelMean = VelVar = 0.0;
+    vec3r VectVelMean;
+    VectVelMean.reset();
     Vsolid = 0.0;
     Vmin = Vmax = Vmean = (4.0 / 3.0) * M_PI * Rmin * Rmin * Rmin;
     for (size_t i = 0; i < Particles.size(); i++) {
@@ -446,6 +448,7 @@ void PBC3Dbox::computeSampleData() {
       if (V < Vmin) Vmin = V;
 
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+      VectVelMean+= Vel;
       double SqrVel = norm2(Vel);
       VelMean += SqrVel;
       if (SqrVel > VelMax) VelMax = SqrVel;
@@ -453,9 +456,16 @@ void PBC3Dbox::computeSampleData() {
     }
     Rmean /= Particles.size();
     Vmean /= Particles.size();
+    VectVelMean /= Particles.size();
     VelMean = sqrt(VelMean) / Particles.size();
     VelMin = sqrt(VelMin);
     VelMax = sqrt(VelMax);
+    for (size_t i = 0; i < Particles.size(); i++) {
+      vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+      VelVar+=norm2(Vel-VectVelMean);
+    }
+    VelVar /= Particles.size();
+
   }
 
   // Interaction related data
@@ -939,7 +949,7 @@ void PBC3Dbox::dataOutput() {
   double Vcell = fabs(Cell.h.det());
   staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
   resultantOut << t << ' ' << Rmean << ' ' << R0mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
-               << tensfailure << ' ' << fricfailure << ' ' << Vcell << std::endl;
+               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMean << ' ' << VelMin << ' ' << VelMean << ' ' << VelVar << std::endl;
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
@@ -1398,7 +1408,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 }
 
 // for MPMxDEM coupling
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, bool stab) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
   dt = dtc * 0.2;
@@ -1436,6 +1446,29 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt) {
 
     interVerletC += dt;
     t += dt;
+  }
+  if (stab){
+    vh.reset();
+    Load.VelocityControl(vh);
+    updateNeighborList(dVerlet);
+    accelerations();
+
+    while (t < 3*tmax) {
+      computeSampleData();
+      // dt=0.8*std::min(dti,dVerlet/VelMax);
+      // interVerlet=dt;
+      // printf("DEM time step %1.2e",dt);
+      velocityVerletStep();
+
+      if (interVerletC >= interVerlet) {
+        updateNeighborList(dVerlet);
+        interVerletC = 0.0;
+      }
+
+      interVerletC += dt;
+      t += dt;
+     }
+
   }
 }
 

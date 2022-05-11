@@ -11,6 +11,7 @@ struct ProcessedDataMP {
   vec2r vel;    // Smoothed velocity
   mat4 strain;  // strain
   mat4 stress;  // Smoothed total stress
+  double sigma3; // third principal stress
   mat4 velGrad; // Smothed velocity gradient
   double rho; // density
 

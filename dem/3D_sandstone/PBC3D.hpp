@@ -112,7 +112,7 @@ class PBC3Dbox {
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
 
-  void transform(mat9r& Finc, double macro_dt);  ///< for MPMxDEM double-scale simulation
+  void transform(mat9r& Finc, double macro_dt, bool stab);  ///< for MPMxDEM double-scale simulation
   void transform(mat9r& Finc, double macro_dt, const char * name);  ///< for MPMxDEM double-scale simulation
   void nulvelo(); ///< stop fulctuations
 
@@ -176,6 +176,7 @@ class PBC3Dbox {
   double VelMin;   ///< Minimum velocity magnitude of the particles
   double VelMax;   ///< Maximum velocity magnitude of the particles
   double VelMean;  ///< Mean velocity magnitude of the particles
+  double VelVar;   ///< Variance of velocity
 };
 
 #endif /* end of include guard: PBC3D_SANDSTONE_HPP */

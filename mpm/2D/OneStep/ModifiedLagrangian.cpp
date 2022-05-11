@@ -35,7 +35,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // 1. ==== Discard previous grid
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].mass  = 0.0;
+    nodes[liveNodeNum[n]].sigma3= 0.0;
     nodes[liveNodeNum[n]].q.reset();
     nodes[liveNodeNum[n]].qdot.reset();
     nodes[liveNodeNum[n]].f.reset();
@@ -88,6 +89,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     for (int r = 0; r < element::nbNodes; r++) {
       // Nodal mass
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+      nodes[I[r]].sigma3 += MP[p].N[r] * MP[p].sigma3;
       nodes[I[r]].q += MP[p].N[r] * MP[p].vel * MP[p].mass;
 
       if (nodes[I[r]].xfixed) {
