@@ -1408,7 +1408,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 }
 
 // for MPMxDEM coupling
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, bool stab) {
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, bool stab, double dstab) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
   dt = dtc * 0.2;
@@ -1453,7 +1453,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, bool stab) {
     updateNeighborList(dVerlet);
     accelerations();
 
-    while (t < 3*tmax) {
+    while (t < (dstab+1)*tmax) {
       computeSampleData();
       // dt=0.8*std::min(dti,dVerlet/VelMax);
       // interVerlet=dt;

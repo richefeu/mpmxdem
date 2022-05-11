@@ -53,7 +53,7 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.yx = Finc2D.yx;
   Finc3D.yy = Finc2D.yy;
   Finc3D.zz = 1.0; // assuming plane strain
-  MPM.MP[p].PBC->transform(Finc3D, MPM.dt,MPM.demstable);
+  MPM.MP[p].PBC->transform(Finc3D, MPM.dt,MPM.demstable,MPM.stablelength);
   col_i=p%MPM.Grid.Nx;
   row_i=floor(p/MPM.Grid.Nx);
   if( MPM.t >=timeBonds-MPM.dt && MPM.t <=timeBonds+MPM.dt){

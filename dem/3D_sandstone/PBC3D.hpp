@@ -112,7 +112,7 @@ class PBC3Dbox {
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
 
-  void transform(mat9r& Finc, double macro_dt, bool stab);  ///< for MPMxDEM double-scale simulation
+  void transform(mat9r& Finc, double macro_dt, bool stab, double dstab);  ///< for MPMxDEM double-scale simulation
   void transform(mat9r& Finc, double macro_dt, const char * name);  ///< for MPMxDEM double-scale simulation
   void nulvelo(); ///< stop fulctuations
 
