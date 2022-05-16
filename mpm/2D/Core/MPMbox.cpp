@@ -321,7 +321,7 @@ void MPMbox::save(const char* name) {
   file << "demstable " << stablelength <<'\n';
   }
   if (dispacc){
-  file << "accelaration" << '\n';
+  file << "acceleration" << '\n';
   }
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
@@ -503,6 +503,7 @@ void MPMbox::init() {
 
 void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
+  char name[256];
   MPinGridCheck();
   if(!ramp){gravity.set(gravity_max.x,gravity_max.y);}
    //std::cout << "ramp "<< ramp << '\n';
@@ -532,12 +533,14 @@ void MPMbox::run() {
 
     if (step % confPeriod == 0) {
       save(iconf);
-      if (dispacc){
-        save(iconf+1);
-      }
       iconf++;
+    } 
+    if (dispacc){
+      if (step % confPeriod == 1) {
+         sprintf(name, "%s/acc%d.txt", result_folder.c_str(), iconf);
+         save(name);
+      }
     }
-
     if (step % proxPeriod == 0 || MP.size() != number_MP) {  // second condition is needed because of the splitting
       checkProximity();
     }

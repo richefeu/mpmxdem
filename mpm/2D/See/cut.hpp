@@ -14,6 +14,7 @@ std::ofstream file_micro;
 
 
 int confNum;
+std::string typstr; 
 double xcut;
 double aniso;
 vec2r d1,d2;
