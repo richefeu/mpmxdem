@@ -26,6 +26,7 @@ MPMbox::MPMbox() {
   demstable=false;
   stablelength=0.0;
   ViscousDissipation=0;  
+  dispacc=false;
   FLIP=1;
   activePIC=false;
   timePIC=0.0;
@@ -144,6 +145,8 @@ void MPMbox::read(const char* name) {
     }else if (token== "demstable"){
       file >> stablelength;
       demstable=true;
+    }else if (token= "acceleration"){
+       dispacc=true;
     } else if (token == "ramp") {
        file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y ;
        ramp=true;  
@@ -316,6 +319,9 @@ void MPMbox::save(const char* name) {
   }
   if (demstable){
   file << "demstable " << stablelength <<'\n';
+  }
+  if (dispacc){
+  file << "accelaration" << '\n';
   }
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
@@ -526,6 +532,9 @@ void MPMbox::run() {
 
     if (step % confPeriod == 0) {
       save(iconf);
+      if (dispacc){
+        save(iconf+1);
+      }
       iconf++;
     }
 
