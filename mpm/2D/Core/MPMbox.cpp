@@ -145,7 +145,7 @@ void MPMbox::read(const char* name) {
     }else if (token== "demstable"){
       file >> stablelength;
       demstable=true;
-    }else if (token= "acceleration"){
+    }else if (token=="acceleration"){
        dispacc=true;
     } else if (token == "ramp") {
        file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y ;

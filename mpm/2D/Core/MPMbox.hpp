@@ -102,7 +102,7 @@ class MPMbox {
   bool activePIC;                   // damping with PIC flag
   double timePIC;                   // end of damping PIC
   bool demstable;                   // activates dem rest
-  bool dipsacc;                     // activates doubles saves
+  bool dispacc;                     // activates doubles saves
   double stablelength;              // length of stab 
 
 
