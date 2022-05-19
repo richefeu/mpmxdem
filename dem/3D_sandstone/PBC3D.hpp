@@ -32,6 +32,7 @@ class PBC3Dbox {
   Loading Load;                 ///< The Loading
   PeriodicCell Cell;            ///< The periodic cell
   mat9r Sig;                    ///< Internal stress
+  mat9r SigAvg;                 ///< Averaged Internal stress
   size_t nbActiveInteractions;  ///< Number of active contacts, ie all interactions without the "noContactState"
   ///< It can be different from Interactions.size()!
 
@@ -112,7 +113,7 @@ class PBC3Dbox {
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
 
-  void transform(mat9r& Finc, double macro_dt, bool stab, double dstab);  ///< for MPMxDEM double-scale simulation
+  void transform(mat9r& Finc, double macro_dt, double nstep , double lengthAverage);  ///< for MPMxDEM double-scale simulation
   void transform(mat9r& Finc, double macro_dt, const char * name);  ///< for MPMxDEM double-scale simulation
   void nulvelo(); ///< stop fulctuations
 

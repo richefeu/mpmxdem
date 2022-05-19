@@ -18,6 +18,7 @@ struct hnlDEM : public ConstitutiveModel {
   virtual std::string getRegistrationName();
   void updateStrainAndStress(MPMbox& MPM, size_t p);
   double getYoung();
+  double getPoisson();
   void read(std::istream& is);
   void write(std::ostream& os);
   void init(MaterialPoint & MP);

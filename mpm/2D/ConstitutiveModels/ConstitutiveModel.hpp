@@ -17,6 +17,7 @@ struct ConstitutiveModel {
   virtual void write(std::ostream& os) = 0;
   virtual void updateStrainAndStress(MPMbox& MPM, size_t p) = 0;
   virtual double getYoung();
+  virtual double getPoisson();
   virtual void init(MaterialPoint & MP);
 };
 

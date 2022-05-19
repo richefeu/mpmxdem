@@ -6,7 +6,7 @@
 
 #include "PBC3D.hpp"
 
-PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig() {
+PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig(), SigAvg() {
   // Some default values (actually, most of them will be (re-)set after)
   t = 0.0;
   tmax = 5.0;
@@ -1408,12 +1408,14 @@ void PBC3Dbox::computeForcesAndMoments() {
 }
 
 // for MPMxDEM coupling
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, bool stab, double dstab) {
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double lengthAverage ) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
+  double beginavg=macro_dt*(1-lengthAverage);
   dt = dtc * 0.2;
+  //double navg=floor(macro_dt*lengthAverage/dt);
   //double dti = dt;
-  if (dt >= 0.2 * macro_dt) dt = macro_dt * 0.2;
+  if (dt >= (1/nstep) * macro_dt) dt = macro_dt * (1/nstep);
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   t = 0;
@@ -1431,14 +1433,15 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, bool stab, double dstab) 
   Load.VelocityControl(vh);
   updateNeighborList(dVerlet);
   accelerations();
-
+  SigAvg.reset();
+  int navg=0;
   while (t < tmax) {
     computeSampleData();
     // dt=0.8*std::min(dti,dVerlet/VelMax);
     // interVerlet=dt;
-    // printf("DEM time step %1.2e",dt);
+    //printf("@@ PBC3D transform DEM time step %1.2e",dt);
     velocityVerletStep();
-
+    if(t>=beginavg-dt){SigAvg+=Sig; navg+=1;}
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
@@ -1447,29 +1450,30 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, bool stab, double dstab) 
     interVerletC += dt;
     t += dt;
   }
-  if (stab){
-    vh.reset();
-    Load.VelocityControl(vh);
-    updateNeighborList(dVerlet);
-    accelerations();
+  SigAvg/=navg;
+//  if (stab){
+//    vh.reset();
+//    Load.VelocityControl(vh);
+//    updateNeighborList(dVerlet);
+//    accelerations();
 
-    while (t < (dstab+1)*tmax) {
-      computeSampleData();
+//    while (t < (dstab+1)*tmax) {
+//      computeSampleData();
       // dt=0.8*std::min(dti,dVerlet/VelMax);
       // interVerlet=dt;
       // printf("DEM time step %1.2e",dt);
-      velocityVerletStep();
+//      velocityVerletStep();
 
-      if (interVerletC >= interVerlet) {
-        updateNeighborList(dVerlet);
-        interVerletC = 0.0;
-      }
+//      if (interVerletC >= interVerlet) {
+//        updateNeighborList(dVerlet);
+//        interVerletC = 0.0;
+//      }
 
-      interVerletC += dt;
-      t += dt;
-     }
+//      interVerletC += dt;
+//      t += dt;
+//     }
 
-  }
+//  }
 }
 
 

@@ -23,8 +23,8 @@ MPMbox::MPMbox() {
   gravity.set(0.0, 0.0);
   gravity_incr.set(0.0, 0.0);
   ramp=false;
-  demstable=false;
-  stablelength=0.0;
+  DEMstep=5;
+  lengthAverage=0;
   ViscousDissipation=0;  
   dispacc=false;
   FLIP=1;
@@ -142,9 +142,8 @@ void MPMbox::read(const char* name) {
     } else if (token == "PICDissipation") {
        file >> FLIP >>timePIC;
        activePIC=true;  
-    }else if (token== "demstable"){
-      file >> stablelength;
-      demstable=true;
+    }else if (token== "demavg"){
+      file >> DEMstep >> lengthAverage;
     }else if (token=="acceleration"){
        dispacc=true;
     } else if (token == "ramp") {
@@ -317,9 +316,7 @@ void MPMbox::save(const char* name) {
   if (ramp) {
   file << "ramp " << gravity.x << " " << gravity.y << " " <<gravity_incr.x << " " << gravity_incr.y << '\n';
   }
-  if (demstable){
-  file << "demstable " << stablelength <<'\n';
-  }
+  file <<  "demavg " <<DEMstep << lengthAverage << '\n';
   if (dispacc){
   file << "acceleration" << '\n';
   }
@@ -613,21 +610,26 @@ void MPMbox::cflCondition() {
   double inf = 1000000;
   double negInf = -1000000;
   double YoungMax = negInf;
+  double PoissonMax = negInf;
   double rhoMin = inf;
+  double rayMin=inf;
   double knMax = negInf;
   double massMin = inf;
+  double eps=1e-6;
   // FIXME: Mass is recalculated. this changes every timestep (for now we'll only check at the beginning)
   double velMax = negInf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;
   for (size_t p = 0; p < MP.size(); ++p) {
     if (MP[p].constitutiveModel->getYoung() > YoungMax) YoungMax = MP[p].constitutiveModel->getYoung();
+    if (MP[p].constitutiveModel->getPoisson() > PoissonMax) PoissonMax = MP[p].constitutiveModel->getPoisson();
     if (MP[p].density < rhoMin) rhoMin = MP[p].density;
     if (MP[p].mass < massMin) massMin = MP[p].mass;
     if (norm(MP[p].vel) > velMax) velMax = norm(MP[p].vel);
+    if (0.5*sqrt(MP[p].vol0) < rayMin) rayMin=0.5*sqrt(MP[p].vol0);
     groupsMP.insert((size_t)(MP[p].groupNb));
   }
-
+  double Kmax=YoungMax/(1-2*PoissonMax);
   if (Obstacles.size() > 0) {
     for (size_t o = 0; o < Obstacles.size(); ++o) {
       groupsObs.insert(Obstacles[o]->group);
@@ -649,16 +651,11 @@ void MPMbox::cflCondition() {
   double crit_dt2 = Mth::pi * sqrt(massMin / knMax);
   double crit_dt1;
   double crit_dt3;
-  if (YoungMax>=0){
-    // First condition (MPM) (book vincent)
-    crit_dt1 = 1.0 / sqrt(YoungMax / rhoMin) * (Grid.lx * Grid.ly / (Grid.lx + Grid.ly));
-
-    // Third condition (time step uintah user guide)
-    crit_dt3 = Grid.lx / (sqrt(YoungMax / rhoMin) + velMax);
+  crit_dt1 = rayMin / (eps + velMax);
+  if (YoungMax>=0 && PoissonMax>=0){
+    crit_dt3 = rayMin/ sqrt(Kmax / rhoMin);
   }
   else{
-
-    crit_dt1 = 0.5*Grid.lx / (Grid.lx+velMax);
     crit_dt3=crit_dt1;
   }
 

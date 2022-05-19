@@ -34,6 +34,8 @@ void MohrCoulomb::write(std::ostream& os) {
 
 double MohrCoulomb::getYoung() { return Young; }
 
+double MohrCoulomb::getPoisson() { return Poisson; }
+
 void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Get pointer to the first of the nodes
   int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
