@@ -316,7 +316,7 @@ void MPMbox::save(const char* name) {
   if (ramp) {
   file << "ramp " << gravity.x << " " << gravity.y << " " <<gravity_incr.x << " " << gravity_incr.y << '\n';
   }
-  file <<  "demavg " <<DEMstep << lengthAverage << '\n';
+  file <<  "demavg " <<DEMstep << " " << lengthAverage << '\n';
   if (dispacc){
   file << "acceleration" << '\n';
   }
