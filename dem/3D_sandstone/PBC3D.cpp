@@ -430,8 +430,11 @@ void PBC3Dbox::computeSampleData() {
     Rmin = Rmax = Particles[0].radius;
     Rmean = 0.0;
     VelMin = VelMax = VelMean = VelVar = 0.0;
+    AccMin = AccMax = AccMean = AccVar = 0.0;
     vec3r VectVelMean;
+    vec3r VectAccMean;
     VectVelMean.reset();
+    VectAccMean.reset();
     Vsolid = 0.0;
     Vmin = Vmax = Vmean = (4.0 / 3.0) * M_PI * Rmin * Rmin * Rmin;
     for (size_t i = 0; i < Particles.size(); i++) {
@@ -448,24 +451,36 @@ void PBC3Dbox::computeSampleData() {
       if (V < Vmin) Vmin = V;
 
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+      vec3r Acc = Cell.h * Particles[i].acc;
       VectVelMean+= Vel;
+      VectAccMean+= Acc;
       double SqrVel = norm2(Vel);
+      double SqrAcc = norm2(Acc);
       VelMean += SqrVel;
+      AccMean += SqrAcc;
       if (SqrVel > VelMax) VelMax = SqrVel;
       if (SqrVel < VelMin) VelMin = SqrVel;
+      if (SqrAcc > AccMax) AccMax = SqrAcc;
+      if (SqrAcc < AccMin) AccMin = SqrAcc;
     }
     Rmean /= Particles.size();
     Vmean /= Particles.size();
     VectVelMean /= Particles.size();
+    VectAccMean /= Particles.size();
     VelMean = sqrt(VelMean) / Particles.size();
     VelMin = sqrt(VelMin);
     VelMax = sqrt(VelMax);
+    AccMean = sqrt(AccMean) / Particles.size();
+    AccMin = sqrt(AccMin);
+    AccMax = sqrt(AccMax);
     for (size_t i = 0; i < Particles.size(); i++) {
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+      vec3r Acc =  Cell.h * Particles[i].acc;
       VelVar+=norm2(Vel-VectVelMean);
+      AccVar+=norm2(Acc-VectVelMean);
     }
     VelVar /= Particles.size();
-
+    AccVar /= Particles.size();
   }
 
   // Interaction related data
@@ -1411,6 +1426,10 @@ void PBC3Dbox::computeForcesAndMoments() {
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double lengthAverage ) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
+  //double dtc = std::min(sqrt(Vmin * density / kn),(-VelMax+sqrt(VelMax*VelMax+2*AccMax*Rmin))/(AccMax));
+  //double dtc = std::min(sqrt(Vmin * density / kn),epsiDist/VelMax);
+  printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
+  printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
   double beginavg=macro_dt*(1-lengthAverage);
   dt = dtc * 0.2;
   //double navg=floor(macro_dt*lengthAverage/dt);

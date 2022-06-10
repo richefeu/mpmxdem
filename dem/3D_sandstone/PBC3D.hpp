@@ -178,6 +178,12 @@ class PBC3Dbox {
   double VelMax;   ///< Maximum velocity magnitude of the particles
   double VelMean;  ///< Mean velocity magnitude of the particles
   double VelVar;   ///< Variance of velocity
+  // Particles accelerations 
+  double  AccMin;   ///< Minimum acceleration magnitude of the particles
+  double  AccMax;   ///< Maximum acceleration magnitude of the particles
+  double  AccMean;  ///< Mean acceleration magnitude of the particles
+  double  AccVar;   ///< Variance of acceleration
+
 };
 
 #endif /* end of include guard: PBC3D_SANDSTONE_HPP */

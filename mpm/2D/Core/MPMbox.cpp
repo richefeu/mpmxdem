@@ -648,7 +648,7 @@ void MPMbox::cflCondition() {
   }
  
   // Second condition (due to the DEM boundaries)
-  double crit_dt2 = Mth::pi * sqrt(massMin / knMax);
+  double crit_dt2 = sqrt(massMin / knMax);
   double crit_dt1;
   double crit_dt3;
   crit_dt1 = rayMin / (eps + velMax);
@@ -673,9 +673,9 @@ void MPMbox::cflCondition() {
               << "\ndt_crit/dt  (MPM2): " << crit_dt3 / dt << "\nCurrent dt: " << dt << '\n';
   }
 
-  if (dt > criticalDt / 9) {
+  if (dt > criticalDt / 2) {
     std::cout << "\n@MPMbox::cflCondition, timestep seems too large!\n";
-    dt = criticalDt / 11.0;
+    dt = criticalDt / 2;
     dt_init=dt;
     std::cout << "--> Adjusting to: " << dt << std::endl;
     std::cout << "dt_crit/dt (MPM): " << crit_dt1 / dt << "\ndt_crit/dt  (DEM): " << crit_dt2 / dt
