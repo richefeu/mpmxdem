@@ -19,7 +19,7 @@ CXX = g++
 CXXFLAGS = -O3 -Wall -std=c++17 -I ../../common -I /usr/include -I ../../boost_1_79_0
 # Link flags for OpenGL and glut
 #LDFLAGS = -lGL -lGLU -lglut
-GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread
+GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread -L ../../boost_1_79_0/stage/lib
 #GLFLAGS = `pkg-config --cflags glut`
 #GLLINK = `pkg-config --libs glut` -framework OpenGL
 
