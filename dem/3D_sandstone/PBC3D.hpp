@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+#include "boost/math/statistics/linear_regression.hpp"
+
 #include "Interaction.hpp"
 #include "Loading.hpp"
 #include "Particle.hpp"

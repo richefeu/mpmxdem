@@ -1428,8 +1428,8 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double len
   double dtc = sqrt(Vmin * density / kn);
   //double dtc = std::min(sqrt(Vmin * density / kn),(-VelMax+sqrt(VelMax*VelMax+2*AccMax*Rmin))/(AccMax));
   //double dtc = std::min(sqrt(Vmin * density / kn),epsiDist/VelMax);
-  printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
-  printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
+  //printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
+  //printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
   double beginavg=macro_dt*(1-lengthAverage);
   dt = dtc * 0.2;
   //double navg=floor(macro_dt*lengthAverage/dt);
@@ -1453,14 +1453,36 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double len
   updateNeighborList(dVerlet);
   accelerations();
   SigAvg.reset();
-  int navg=0;
+  std::vector<double> sxx;
+  std::vector<double> sxy;
+  std::vector<double> sxz;
+  std::vector<double> syx;
+  std::vector<double> syy;
+  std::vector<double> syz;
+  std::vector<double> szx;
+  std::vector<double> szy;
+  std::vector<double> szz;
+  std::vector<double> tvec;
+  //int navg=0;
   while (t < tmax) {
     computeSampleData();
     // dt=0.8*std::min(dti,dVerlet/VelMax);
     // interVerlet=dt;
     //printf("@@ PBC3D transform DEM time step %1.2e",dt);
     velocityVerletStep();
-    if(t>=beginavg-dt){SigAvg+=Sig; navg+=1;}
+    if(t>=beginavg-dt){
+     //SigAvg+=Sig; navg+=1;
+     tvec.push_back(t);
+     sxx.push_back(Sig.xx);
+     sxy.push_back(Sig.xy);
+     sxz.push_back(Sig.xz);
+     syx.push_back(Sig.yx);
+     syy.push_back(Sig.yy);
+     syz.push_back(Sig.yz);
+     szx.push_back(Sig.zx);
+     szy.push_back(Sig.zy);
+     szz.push_back(Sig.zz);
+     }
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
@@ -1469,7 +1491,28 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double len
     interVerletC += dt;
     t += dt;
   }
-  SigAvg/=navg;
+  auto [origxx,slopexx]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxx);
+  SigAvg.xx=origxx+(t-dt)*slopexx;
+  auto [origxy,slopexy]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxy);
+  SigAvg.xy=origxy+(t-dt)*slopexy;
+  auto [origxz,slopexz]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxz);
+  SigAvg.xz=origxz+(t-dt)*slopexz;
+  auto [origyx,slopeyx]=boost::math::statistics::simple_ordinary_least_squares(tvec,syx);
+  SigAvg.yx=origyx+(t-dt)*slopeyx;
+  auto [origyy,slopeyy]=boost::math::statistics::simple_ordinary_least_squares(tvec,syy);
+  SigAvg.yy=origyy+(t-dt)*slopeyy;
+  auto [origyz,slopeyz]=boost::math::statistics::simple_ordinary_least_squares(tvec,syz);
+  SigAvg.yz=origyz+(t-dt)*slopeyz;
+  auto [origzx,slopezx]=boost::math::statistics::simple_ordinary_least_squares(tvec,szx);
+  SigAvg.zx=origzx+(t-dt)*slopezx;
+  auto [origzy,slopezy]=boost::math::statistics::simple_ordinary_least_squares(tvec,szy);
+  SigAvg.zy=origzy+(t-dt)*slopezy;
+  auto [origzz,slopezz]=boost::math::statistics::simple_ordinary_least_squares(tvec,szz);
+  SigAvg.zz=origzz+(t-dt)*slopezz;
+  //printf("@@ PBC3D transform DEM navg %d\n",navg);
+  //printf("@@ PBC3D transform DEM navg %d\n",navg);
+  //printf("@@ PBC3D transform DEM nstep*la %1.2e\n",nstep*lengthAverage);
+  //SigAvg/=navg;
 //  if (stab){
 //    vh.reset();
 //    Load.VelocityControl(vh);
