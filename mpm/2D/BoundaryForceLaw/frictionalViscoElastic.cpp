@@ -19,7 +19,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
     double dn;
     gap=0.5*sqrt(MPM.MP[pn].vol0)*VerletCoef;
     MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
-    if (dn < 0){
+    if (dn < gap){
       g1 = (size_t)(MPM.MP[pn].groupNb);
       g2 = MPM.Obstacles[o]->group;
       kn = MPM.dataTable.get(MPM.id_kn, g1, g2);
@@ -34,17 +34,17 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
       // remark: not really correct because the Obstable rotation is not accounted for.
       // This can be corrected by approximating that the MP position IS the contact position (see lever below)
       double normalVel = velRelative * N;
+      double delta_dt = (velRelative * T) * MPM.dt;
+      MPM.Obstacles[o]->Neighbors[nn].ft += -kt * delta_dt;
+      // === Friction force
+      double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
+      if (MPM.Obstacles[o]->Neighbors[nn].ft > threshold) MPM.Obstacles[o]->Neighbors[nn].ft = threshold;
+      if (MPM.Obstacles[o]->Neighbors[nn].ft < -threshold) MPM.Obstacles[o]->Neighbors[nn].ft = -threshold;
       double visc = viscRate * 2.0 * sqrt(MPM.MP[pn].mass * kn);
-      if (dn < gap) {  // Check if there is contact
+      if (dn < 0) {  // Check if there is contact
         MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn - visc * normalVel;
         MPM.Obstacles[o]->Neighbors[nn].dn = dn;
-        // === Friction force
         vec2r lever = MPM.MP[pn].pos - MPM.Obstacles[o]->pos;      
-        double delta_dt = (velRelative * T) * MPM.dt;
-        MPM.Obstacles[o]->Neighbors[nn].ft += -kt * delta_dt;
-        double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
-        if (MPM.Obstacles[o]->Neighbors[nn].ft > threshold) MPM.Obstacles[o]->Neighbors[nn].ft = threshold;
-        if (MPM.Obstacles[o]->Neighbors[nn].ft < -threshold) MPM.Obstacles[o]->Neighbors[nn].ft = -threshold;
         // === Resultant force
         vec2r f = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
         MPM.MP[pn].contactf = -f;  // useful for display
@@ -55,12 +55,10 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
       }else{
         MPM.Obstacles[o]->Neighbors[nn].fn = -visc * normalVel;
         MPM.Obstacles[o]->Neighbors[nn].dn = 0.0;
-        MPM.Obstacles[o]->Neighbors[nn].dt = 0.0;
-        MPM.Obstacles[o]->Neighbors[nn].ft = 0.0;
         vec2r f = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
         MPM.MP[pn].f += f;
         MPM.Obstacles[o]->force -= f;
-        MPM.MP[pn].contactf.reset();
+        MPM.MP[pn].contactf=-f;
       }
       // === Resultant force
     } else {
