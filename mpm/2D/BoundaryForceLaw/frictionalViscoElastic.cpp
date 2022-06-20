@@ -19,7 +19,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
     double dn;
     gap=0.5*sqrt(MPM.MP[pn].vol0)*VerletCoef;
     MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
-    if (dn < gap){
+    if (dn < 0){
       g1 = (size_t)(MPM.MP[pn].groupNb);
       g2 = MPM.Obstacles[o]->group;
       kn = MPM.dataTable.get(MPM.id_kn, g1, g2);
@@ -35,7 +35,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
       // This can be corrected by approximating that the MP position IS the contact position (see lever below)
       double normalVel = velRelative * N;
       double visc = viscRate * 2.0 * sqrt(MPM.MP[pn].mass * kn);
-      if (dn < 0.0) {  // Check if there is contact
+      if (dn < gap) {  // Check if there is contact
         MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn - visc * normalVel;
         MPM.Obstacles[o]->Neighbors[nn].dn = dn;
         // === Friction force
