@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-#include "boost/math/statistics/linear_regression.hpp"
+//#include "boost/math/statistics/linear_regression.hpp"
 
 #include "Interaction.hpp"
 #include "Loading.hpp"
@@ -20,6 +20,7 @@
 #include "PeriodicCell.hpp"
 #include "fileTool.hpp"
 #include "geoPack3D.hpp"
+#include "linreg.hpp"
 
 // This is useful to make fortran-like outputs
 #define __FORMATED(P, W, V) std::fixed << std::setprecision(P) << std::setw(W) << std::left << (V)
