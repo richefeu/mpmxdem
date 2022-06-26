@@ -23,7 +23,10 @@ MPMbox::MPMbox() {
   gravity.set(0.0, 0.0);
   gravity_incr.set(0.0, 0.0);
   ramp=false;
+  DEMstep=5;
+  lengthAverage=0;
   ViscousDissipation=0;  
+  dispacc=false;
   FLIP=1;
   activePIC=false;
   timePIC=0.0;
@@ -139,6 +142,10 @@ void MPMbox::read(const char* name) {
     } else if (token == "PICDissipation") {
        file >> FLIP >>timePIC;
        activePIC=true;  
+    }else if (token== "demavg"){
+      file >> DEMstep >> lengthAverage;
+    }else if (token=="acceleration"){
+       dispacc=true;
     } else if (token == "ramp") {
        file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y ;
        ramp=true;  
@@ -245,7 +252,7 @@ void MPMbox::read(const char* name) {
       std::string modelName;
       for (size_t iMP = 0; iMP < nb; iMP++) {
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
-            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F;
+            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F >> P.sigma3;
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
@@ -298,7 +305,7 @@ void MPMbox::save(const char* name) {
   std::ofstream file_micro(name_micro);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
-  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax Vsolid Vcell h_xx h_xy h_yx h_yy" << std::endl;
+  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy" << std::endl;
   if (planeStrain == true) {
     file << "planeStrain\n";
   }
@@ -308,6 +315,10 @@ void MPMbox::save(const char* name) {
   file << "gravity " << gravity_max << '\n';
   if (ramp) {
   file << "ramp " << gravity.x << " " << gravity.y << " " <<gravity_incr.x << " " << gravity_incr.y << '\n';
+  }
+  file <<  "demavg " <<DEMstep << " " << lengthAverage << '\n';
+  if (dispacc){
+  file << "acceleration" << '\n';
   }
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
@@ -380,7 +391,7 @@ void MPMbox::save(const char* name) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
-         << MP[iMP].splitCount << ' ' << MP[iMP].F << '\n';
+         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].sigma3 <<'\n';
            if (MP[iMP].ismicro){
             MP[iMP].PBC->computeSampleData();
             file_micro << MP[iMP].pos.x                     << " "
@@ -394,6 +405,7 @@ void MPMbox::save(const char* name) {
                        << MP[iMP].PBC->VelMean              << " "
                        << MP[iMP].PBC->VelMin               << " "
                        << MP[iMP].PBC->VelMax               << " "
+                       << MP[iMP].PBC->VelVar               << " "
                        << MP[iMP].PBC->Vsolid               << " "
                        << fabs(MP[iMP].PBC->Cell.h.det())   << " "
                        << MP[iMP].PBC->Cell.h.xx            << " "
@@ -488,6 +500,7 @@ void MPMbox::init() {
 
 void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
+  char name[256];
   MPinGridCheck();
   if(!ramp){gravity.set(gravity_max.x,gravity_max.y);}
    //std::cout << "ramp "<< ramp << '\n';
@@ -518,8 +531,13 @@ void MPMbox::run() {
     if (step % confPeriod == 0) {
       save(iconf);
       iconf++;
+    } 
+    if (dispacc){
+      if (step % confPeriod == 1) {
+         sprintf(name, "%s/acc%d.txt", result_folder.c_str(), iconf);
+         save(name);
+      }
     }
-
     if (step % proxPeriod == 0 || MP.size() != number_MP) {  // second condition is needed because of the splitting
       checkProximity();
     }
@@ -592,21 +610,26 @@ void MPMbox::cflCondition() {
   double inf = 1000000;
   double negInf = -1000000;
   double YoungMax = negInf;
+  double PoissonMax = negInf;
   double rhoMin = inf;
+  double rayMin=inf;
   double knMax = negInf;
   double massMin = inf;
+  double eps=1e-6;
   // FIXME: Mass is recalculated. this changes every timestep (for now we'll only check at the beginning)
   double velMax = negInf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;
   for (size_t p = 0; p < MP.size(); ++p) {
     if (MP[p].constitutiveModel->getYoung() > YoungMax) YoungMax = MP[p].constitutiveModel->getYoung();
+    if (MP[p].constitutiveModel->getPoisson() > PoissonMax) PoissonMax = MP[p].constitutiveModel->getPoisson();
     if (MP[p].density < rhoMin) rhoMin = MP[p].density;
     if (MP[p].mass < massMin) massMin = MP[p].mass;
     if (norm(MP[p].vel) > velMax) velMax = norm(MP[p].vel);
+    if (0.5*sqrt(MP[p].vol0) < rayMin) rayMin=0.5*sqrt(MP[p].vol0);
     groupsMP.insert((size_t)(MP[p].groupNb));
   }
-
+  double Kmax=YoungMax/(1-2*PoissonMax);
   if (Obstacles.size() > 0) {
     for (size_t o = 0; o < Obstacles.size(); ++o) {
       groupsObs.insert(Obstacles[o]->group);
@@ -625,19 +648,14 @@ void MPMbox::cflCondition() {
   }
  
   // Second condition (due to the DEM boundaries)
-  double crit_dt2 = Mth::pi * sqrt(massMin / knMax);
+  double crit_dt2 = sqrt(massMin / knMax);
   double crit_dt1;
   double crit_dt3;
-  if (YoungMax>=0){
-    // First condition (MPM) (book vincent)
-    crit_dt1 = 1.0 / sqrt(YoungMax / rhoMin) * (Grid.lx * Grid.ly / (Grid.lx + Grid.ly));
-
-    // Third condition (time step uintah user guide)
-    crit_dt3 = Grid.lx / (sqrt(YoungMax / rhoMin) + velMax);
+  crit_dt1 = rayMin / (eps + velMax);
+  if (YoungMax>=0 && PoissonMax>=0){
+    crit_dt3 = rayMin/ sqrt(Kmax / rhoMin);
   }
   else{
-
-    crit_dt1 = 0.5*Grid.lx / (Grid.lx+velMax);
     crit_dt3=crit_dt1;
   }
 
@@ -655,9 +673,9 @@ void MPMbox::cflCondition() {
               << "\ndt_crit/dt  (MPM2): " << crit_dt3 / dt << "\nCurrent dt: " << dt << '\n';
   }
 
-  if (dt > criticalDt / 9) {
+  if (dt > criticalDt / 2) {
     std::cout << "\n@MPMbox::cflCondition, timestep seems too large!\n";
-    dt = criticalDt / 11.0;
+    dt = criticalDt / 2;
     dt_init=dt;
     std::cout << "--> Adjusting to: " << dt << std::endl;
     std::cout << "dt_crit/dt (MPM): " << crit_dt1 / dt << "\ndt_crit/dt  (DEM): " << crit_dt2 / dt
@@ -835,7 +853,8 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
 
   // Reset nodal mass
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].mass  = 0.0;
+    nodes[liveNodeNum[n]].sigma3= 0.0;
     nodes[liveNodeNum[n]].vel.reset();
     nodes[liveNodeNum[n]].stress.reset();
   }
@@ -845,6 +864,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     I = &(Elem[MP[p].e].I[0]);
     for (int r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+      nodes[I[r]].sigma3 += MP[p].N[r] * MP[p].sigma3;
     }
   }
 
@@ -865,6 +885,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       Data[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
       Data[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
       Data[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
+      Data[p].sigma3     +=  MP[p].N[r] * nodes[I[r]].sigma3;
     }
     Data[p].pos=MP[p].pos;
     Data[p].strain=MP[p].F;

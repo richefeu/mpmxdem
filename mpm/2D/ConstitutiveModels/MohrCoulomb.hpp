@@ -22,6 +22,7 @@ struct MohrCoulomb : public ConstitutiveModel {
   void read(std::istream& is);
   void write(std::ostream& os);
   double getYoung();
+  double getPoisson();
   void updateStrainAndStress(MPMbox& MPM, size_t p);
 };
 

@@ -17,6 +17,7 @@ void hnlDEM::read(std::istream& is) {
 void hnlDEM::write(std::ostream& os) { os << fileName << ' ' << etaDamping << ' ' <<  timeBonds << ' ' << distBonds <<'\n'; }
 
 double hnlDEM::getYoung() {return -1;}
+double hnlDEM::getPoisson() {return -1;}
 
 void hnlDEM::init(MaterialPoint & MP) {
   MP.PBC = new PBC3Dbox;
@@ -53,7 +54,7 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.yx = Finc2D.yx;
   Finc3D.yy = Finc2D.yy;
   Finc3D.zz = 1.0; // assuming plane strain
-  MPM.MP[p].PBC->transform(Finc3D, MPM.dt);
+  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.DEMstep, MPM.lengthAverage);
   col_i=p%MPM.Grid.Nx;
   row_i=floor(p/MPM.Grid.Nx);
   if( MPM.t >=timeBonds-MPM.dt && MPM.t <=timeBonds+MPM.dt){
@@ -66,9 +67,10 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   }
   // Elastic stress
   // (Sign convention is opposed)
-  MPM.MP[p].stress.xx = -MPM.MP[p].PBC->Sig.xx+etaDamping*MPM.MP[p].velGrad.xx; 
-  MPM.MP[p].stress.xy = -MPM.MP[p].PBC->Sig.xy+0.5*etaDamping*(MPM.MP[p].velGrad.xy+MPM.MP[p].velGrad.yx);
-  MPM.MP[p].stress.yx = -MPM.MP[p].PBC->Sig.yx+0.5*etaDamping*(MPM.MP[p].velGrad.xy+MPM.MP[p].velGrad.yx);
-  MPM.MP[p].stress.yy = -MPM.MP[p].PBC->Sig.yy+etaDamping*MPM.MP[p].velGrad.yy;
+  MPM.MP[p].stress.xx = -MPM.MP[p].PBC->SigAvg.xx+etaDamping*MPM.MP[p].velGrad.xx; 
+  MPM.MP[p].stress.xy = -MPM.MP[p].PBC->SigAvg.xy+0.5*etaDamping*(MPM.MP[p].velGrad.xy+MPM.MP[p].velGrad.yx);
+  MPM.MP[p].stress.yx = -MPM.MP[p].PBC->SigAvg.yx+0.5*etaDamping*(MPM.MP[p].velGrad.xy+MPM.MP[p].velGrad.yx);
+  MPM.MP[p].stress.yy = -MPM.MP[p].PBC->SigAvg.yy+etaDamping*MPM.MP[p].velGrad.yy;
+  MPM.MP[p].sigma3=-MPM.MP[p].PBC->SigAvg.zz;
 }
 

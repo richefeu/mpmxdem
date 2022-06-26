@@ -16,6 +16,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       plasticStrain(),
       deltaStrain(),
       stress(),
+      sigma3(0.0),
       e(0),
       F(),
       velGrad(),

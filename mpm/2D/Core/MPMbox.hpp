@@ -101,6 +101,9 @@ class MPMbox {
   double FLIP;                      // barycenter coef for using PIC as damping
   bool activePIC;                   // damping with PIC flag
   double timePIC;                   // end of damping PIC
+  bool dispacc;                     // activates doubles saves
+  int DEMstep;                      // minimal number of DEM time steps
+  double  lengthAverage;            // proportion of DEM aveaging
 
 
   std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step

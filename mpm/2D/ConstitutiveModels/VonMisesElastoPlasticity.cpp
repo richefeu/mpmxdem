@@ -114,3 +114,7 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
     }
   }
 }
+double VonMisesElastoPlasticity::getYoung() { return Young; }
+
+double VonMisesElastoPlasticity::getPoisson() { return Poisson; }
+

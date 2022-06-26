@@ -1,12 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 project(MPMbox LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
+
+# ========= OpenMP
+find_package(OpenMP REQUIRED)
+
 # ========= OpenGL
 find_package(OpenGL REQUIRED)
 
@@ -37,15 +42,19 @@ endif()
 # Before being able to compile, the file 'libPBC3D.a' needs to be already compiled
 set(PLUGGED_DEM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
 set(PLUGGED_DEM_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
-set(COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
+#set(LINK_BOOST_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/../../boost_1_79_0/stage/lib)
+set(COMMON_INCLUDE_DIR ~/toofus)
+#set(BOOST_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../boost_1_79_0)
 message(STATUS "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
 message(STATUS "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
+message(STATUS "LINK_BOOST_LIBRARY = " ${LINK_BOOST_LIBRARY})
 message(STATUS "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})
-message(STATUS "OpenMP_CXX_FOUND = "  ${OpenMP_CXX_FOUND})
+message(STATUS "BOOST_INCLUDE_DIR = " ${BOOST_INCLUDE_DIR})
+message(STATUS "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS} )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${COMMON_INCLUDE_DIR} ${PLUGGED_DEM_INCLUDE_DIR}) 
-link_directories(${PLUGGED_DEM_INCLUDE_DIR})
+link_directories(${PLUGGED_DEM_INCLUDE_DIR} ${LINK_BOOST_LIBRARY}) 
 
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 file(GLOB core_object_files ${CMAKE_CURRENT_SOURCE_DIR}
 BoundaryForceLaw/*.cpp

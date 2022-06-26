@@ -11,8 +11,8 @@ void set_MP_grid::read(std::istream& is) {
 }
 
 void set_MP_grid::exec() {
-  if (box->Grid.lx / size < 3.0 || box->Grid.ly / size < 3.0) {
-    std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 3)" << std::endl;
+  if (box->Grid.lx / size < 2.0 || box->Grid.ly / size < 2.0) {
+    std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 2)" << std::endl;
     exit(0);
   }
 

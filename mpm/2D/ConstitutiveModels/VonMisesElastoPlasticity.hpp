@@ -13,6 +13,8 @@ struct VonMisesElastoPlasticity : public ConstitutiveModel {
   void read(std::istream& is);
   void write(std::ostream& os);
   void updateStrainAndStress(MPMbox& MPM, size_t p);
+  double getYoung();
+  double getPoisson();
 };
 
 #endif /* end of include guard: VONMISESELASTOPLASTICITY_HPP */

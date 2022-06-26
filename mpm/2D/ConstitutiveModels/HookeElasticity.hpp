@@ -13,6 +13,7 @@ struct HookeElasticity : public ConstitutiveModel {
   void write(std::ostream& os);
   void updateStrainAndStress(MPMbox& MPM, size_t p);
   double getYoung();
+  double getPoisson();
 };
 
 #endif /* end of include guard: HOOKEELASTICITY_HPP */

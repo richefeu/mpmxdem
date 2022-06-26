@@ -54,3 +54,5 @@ void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 }
 
 double HookeElasticity::getYoung() { return Young; }
+
+double HookeElasticity::getPoisson() { return Poisson; }

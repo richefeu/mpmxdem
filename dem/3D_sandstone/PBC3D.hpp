@@ -12,12 +12,15 @@
 #include <utility>
 #include <vector>
 
+//#include "boost/math/statistics/linear_regression.hpp"
+
 #include "Interaction.hpp"
 #include "Loading.hpp"
 #include "Particle.hpp"
 #include "PeriodicCell.hpp"
 #include "fileTool.hpp"
 #include "geoPack3D.hpp"
+#include "linreg.hpp"
 
 // This is useful to make fortran-like outputs
 #define __FORMATED(P, W, V) std::fixed << std::setprecision(P) << std::setw(W) << std::left << (V)
@@ -32,6 +35,7 @@ class PBC3Dbox {
   Loading Load;                 ///< The Loading
   PeriodicCell Cell;            ///< The periodic cell
   mat9r Sig;                    ///< Internal stress
+  mat9r SigAvg;                 ///< Averaged Internal stress
   size_t nbActiveInteractions;  ///< Number of active contacts, ie all interactions without the "noContactState"
   ///< It can be different from Interactions.size()!
 
@@ -112,7 +116,7 @@ class PBC3Dbox {
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
 
-  void transform(mat9r& Finc, double macro_dt);  ///< for MPMxDEM double-scale simulation
+  void transform(mat9r& Finc, double macro_dt, double nstep , double lengthAverage);  ///< for MPMxDEM double-scale simulation
   void transform(mat9r& Finc, double macro_dt, const char * name);  ///< for MPMxDEM double-scale simulation
   void nulvelo(); ///< stop fulctuations
 
@@ -178,6 +182,13 @@ class PBC3Dbox {
   double VelMin;   ///< Minimum velocity magnitude of the particles
   double VelMax;   ///< Maximum velocity magnitude of the particles
   double VelMean;  ///< Mean velocity magnitude of the particles
+  double VelVar;   ///< Variance of velocity
+  // Particles accelerations 
+  double  AccMin;   ///< Minimum acceleration magnitude of the particles
+  double  AccMax;   ///< Maximum acceleration magnitude of the particles
+  double  AccMean;  ///< Mean acceleration magnitude of the particles
+  double  AccVar;   ///< Variance of acceleration
+
 };
 
 #endif /* end of include guard: PBC3D_SANDSTONE_HPP */
