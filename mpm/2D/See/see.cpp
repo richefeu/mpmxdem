@@ -27,6 +27,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '0': {
       color_option = 0;
+      precomputeColors();
     } break;
 
     case '1': {
@@ -41,6 +42,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.setMinMax(0.0, vmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
+      precomputeColors();
       std::cout << "MP colored by velocity magnitude (vmin = " << vmin << ", vmax = " << vmax << ")\n";
     } break;
 
@@ -56,6 +58,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.setMinMax(pmin, pmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
+      precomputeColors();
       std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
     } break;
     case '3': {
@@ -70,7 +73,8 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.setMinMax(rhomin, rhomax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
-      std::cout << "MP colored by pressure (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
+      precomputeColors();
+      std::cout << "MP colored by density (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
     } break;
     case '4': {
       color_option = 4;
@@ -84,6 +88,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.setMinMax(pmin, pmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
+      precomputeColors();
       std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
     } break;
 
@@ -97,6 +102,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case 'g': {
       show_grid = 1 - show_grid;
+    } break;
+    
+    case 'h':{
+      printHelp();
     } break;
 
     case 'q': {
@@ -277,8 +286,60 @@ void drawGrid() {
   }
 }
 
-void setColor(int i) {
+void precomputeColors() {
+  precompColors.clear();
+  precompColors.resize(SmoothedData.size());
+  
   switch (color_option) {
+
+    case 0: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+         precompColors[i].set(204, 204, 230, 255);
+      } 
+    } break;
+
+    case 1: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double vel = norm(SmoothedData[i].vel);
+        colorTable.getRGB(vel, &precompColors[i]);
+      }      
+    } break;
+
+    case 2: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        colorTable.getRGB(p, &precompColors[i]);
+      }
+    } break;
+
+    case 3: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double rho = SmoothedData[i].rho;
+        colorTable.getRGB(rho, &precompColors[i]);
+      }
+    } break;
+    
+    case 4: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double p = SmoothedData[i].stress.yy;
+        colorTable.getRGB(p, &precompColors[i]);
+      }
+    } break;
+
+    default: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+         precompColors[i].set(204, 204, 230, 255);
+      } 
+    } break;
+  }
+}
+
+void setColor(int i) {
+  glColor3f(precompColors[i].r/255., precompColors[i].g/255., precompColors[i].b/255.);
+  
+  /*
+  switch (color_option) {
+
 
     case 0: {
       glColor4f(0.8f, 0.8f, 0.9f, 1.0f);
@@ -315,6 +376,7 @@ void setColor(int i) {
       glColor4f(0.8f, 0.8f, 0.9f, 1.0f);
     } break;
   }
+  */
 }
 
 void drawMPs() {
@@ -431,6 +493,7 @@ bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
     CF.clean();
     CF.read(file_name);
     CF.postProcess(SmoothedData);
+    precomputeColors();
   } else {
     std::cout << file_name << " does not exist" << std::endl;
     return false;

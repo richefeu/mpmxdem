@@ -1,3 +1,7 @@
+# For the compilation, toofus is required. 
+# It can be installed with the following command: 
+#    cd ~ && rm -rf toofus && git clone https://github.com/richefeu/toofus.git && cd -
+
 
 UNAME_S := $(shell uname -s)
 #vpath %.hpp ../../common/
@@ -6,7 +10,7 @@ ifeq ($(UNAME_S),Darwin) # ==========================================
 # The compiler to be used
 CXX = g++-11
 # The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
+CXXFLAGS = -O3 -Wall -std=c++11 -I ~/toofus
 # Link flags for OpenGL and glut
 GLFLAGS = `pkg-config --cflags glut`
 GLLINK = `pkg-config --libs glut` -framework OpenGL
@@ -16,7 +20,7 @@ else # ==============================================================
 # The compiler to be used
 CXX = g++
 # The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++11 -I ../../common
+CXXFLAGS = -O3 -Wall -std=c++11 -I ~/toofus
 # Link flags for OpenGL and glut
 #LDFLAGS = -lGL -lGLU -lglut
 GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread

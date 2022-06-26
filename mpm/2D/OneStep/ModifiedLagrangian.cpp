@@ -28,7 +28,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
   std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
-  //  double dt_p = dt;
 
   // End of aliases ========================================
   int* I;  // use as node index

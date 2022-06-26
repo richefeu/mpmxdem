@@ -154,6 +154,8 @@ class PBC3Dbox {
   //
   double w_bond;
   double w_particle;
+  
+  int objectiveFriction;
 
  public:
   // Sample

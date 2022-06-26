@@ -29,6 +29,7 @@ struct AABB {
 
 MPMbox Conf;
 std::vector<ProcessedDataMP> SmoothedData;
+std::vector<colorRGBA> precompColors;
 int confNum = 1;
 
 AABB worldBox;
@@ -70,6 +71,7 @@ void reshape(int x, int y);
 void menu(int num);
 
 // Helper functions
+void precomputeColors();
 void buildMenu();
 void printHelp();
 void fit_view();

@@ -769,7 +769,7 @@ void drawParticles() {
 
   GLColorRGBA color;
   glEnable(GL_LIGHTING);
-  for (uint i = 0; i < box.Particles.size(); ++i) {
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
     color = colorParticle(i);
     glColor4f(color.r, color.g, color.b, color.a);
     vec3r pos = box.Cell.h * box.Particles[i].pos;
@@ -791,7 +791,7 @@ void drawGhosts() {
   double mn = ghost_width;
   double mx = 1.0 - ghost_width;
   GLColorRGBA color;
-  for (uint i = 0; i < box.Particles.size(); ++i) {
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
     add_ghost_pos(i, mn, mx, lst_pos);
     for (size_t ig = 0; ig < lst_pos.size(); ig++) {
       color = colorParticle(i);
@@ -857,7 +857,7 @@ void drawVelocities() {
   double velMax = 0.0;
   double velSqr;
   vec3r Vel;
-  for (uint i = 0; i < box.Particles.size(); ++i) {
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
     Vel = box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel;  // affine + fluctuation
     velSqr = norm2(Vel);
     if (velSqr > velMax) velMax = velSqr;
@@ -871,7 +871,7 @@ void drawVelocities() {
   glEnable(GL_LIGHTING);
   glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
   GLColorRGBA color;
-  for (uint i = 0; i < box.Particles.size(); ++i) {
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
     vec3r pos = box.Cell.h * box.Particles[i].pos;
     if (!inSlice(pos)) continue;
 
