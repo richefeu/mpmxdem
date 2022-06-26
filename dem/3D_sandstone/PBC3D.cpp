@@ -460,8 +460,8 @@ void PBC3Dbox::computeSampleData() {
 
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
-      VectVelMean+= Vel;
-      VectAccMean+= Acc;
+      VectVelMean += Vel;
+      VectAccMean += Acc;
       double SqrVel = norm2(Vel);
       double SqrAcc = norm2(Acc);
       VelMean += SqrVel;
@@ -483,9 +483,9 @@ void PBC3Dbox::computeSampleData() {
     AccMax = sqrt(AccMax);
     for (size_t i = 0; i < Particles.size(); i++) {
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
-      vec3r Acc =  Cell.h * Particles[i].acc;
-      VelVar+=norm2(Vel-VectVelMean);
-      AccVar+=norm2(Acc-VectVelMean);
+      vec3r Acc = Cell.h * Particles[i].acc;
+      VelVar += norm2(Vel - VectVelMean);
+      AccVar += norm2(Acc - VectVelMean);
     }
     VelVar /= Particles.size();
     AccVar /= Particles.size();
@@ -975,7 +975,8 @@ void PBC3Dbox::dataOutput() {
   double Vcell = fabs(Cell.h.det());
   staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
   resultantOut << t << ' ' << Rmean << ' ' << R0mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
-               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMean << ' ' << VelMin << ' ' << VelMean << ' ' << VelVar << std::endl;
+               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMean << ' ' << VelMin << ' ' << VelMean
+               << ' ' << VelVar << std::endl;
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
@@ -1437,26 +1438,23 @@ void PBC3Dbox::computeForcesAndMoments() {
   }  // Loop over interactions
 }
 
-
 // =======================================================================
 //             METHODS FOR MPMxDEM COUPLING
 // =======================================================================
 
-
-// for MPMxDEM coupling
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double lengthAverage ) {
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double lengthAverage) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
-  //double dtc = std::min(sqrt(Vmin * density / kn),(-VelMax+sqrt(VelMax*VelMax+2*AccMax*Rmin))/(AccMax));
-  //double dtc = std::min(sqrt(Vmin * density / kn),epsiDist/VelMax);
-  //printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
-  //printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
-  double beginavg=macro_dt*(1-lengthAverage);
+  // double dtc = std::min(sqrt(Vmin * density / kn),(-VelMax+sqrt(VelMax*VelMax+2*AccMax*Rmin))/(AccMax));
+  // double dtc = std::min(sqrt(Vmin * density / kn),epsiDist/VelMax);
+  // printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
+  // printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
+  double beginavg = macro_dt * (1.0 - lengthAverage);
   dt = dtc * 0.2;
 
-  //double navg=floor(macro_dt*lengthAverage/dt);
-  //double dti = dt;
-  if (dt >= (1/nstep) * macro_dt) dt = macro_dt * (1/nstep);
+  // double navg=floor(macro_dt*lengthAverage/dt);
+  // double dti = dt;
+  if (dt >= macro_dt / nstep) dt = macro_dt / nstep;
 
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
@@ -1486,26 +1484,26 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double len
   std::vector<double> szy;
   std::vector<double> szz;
   std::vector<double> tvec;
-  //int navg=0;
+  // int navg=0;
   while (t < tmax) {
     computeSampleData();
     // dt=0.8*std::min(dti,dVerlet/VelMax);
     // interVerlet=dt;
-    //printf("@@ PBC3D transform DEM time step %1.2e",dt);
+    // printf("@@ PBC3D transform DEM time step %1.2e",dt);
     velocityVerletStep();
-    if(t>=beginavg-dt){
-     //SigAvg+=Sig; navg+=1;
-     tvec.push_back(t);
-     sxx.push_back(Sig.xx);
-     sxy.push_back(Sig.xy);
-     sxz.push_back(Sig.xz);
-     syx.push_back(Sig.yx);
-     syy.push_back(Sig.yy);
-     syz.push_back(Sig.yz);
-     szx.push_back(Sig.zx);
-     szy.push_back(Sig.zy);
-     szz.push_back(Sig.zz);
-     }
+    if (t >= beginavg - dt) {
+      // SigAvg+=Sig; navg+=1;
+      tvec.push_back(t);
+      sxx.push_back(Sig.xx);
+      sxy.push_back(Sig.xy);
+      sxz.push_back(Sig.xz);
+      syx.push_back(Sig.yx);
+      syy.push_back(Sig.yy);
+      syz.push_back(Sig.yz);
+      szx.push_back(Sig.zx);
+      szy.push_back(Sig.zy);
+      szz.push_back(Sig.zz);
+    }
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
@@ -1515,71 +1513,54 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double len
     t += dt;
   }
 
-  //auto [origxx,slopexx]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxx);
-  double orig, slope, err, errtot = 0.0;
-  ::linreg(tvec,sxx, orig, slope, err);
-  SigAvg.xx = orig + (t - dt) * slope;
-  errtot += err;
-  //auto [origxy,slopexy]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxy);
-  ::linreg(tvec,sxy, orig, slope, err);
-  SigAvg.xy = orig + (t - dt) * slope;
-  errtot += err;
-  //auto [origxz,slopexz]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxz);
-  ::linreg(tvec,sxz, orig, slope, err);
-  SigAvg.xz = orig + (t - dt) * slope;
-  errtot += err;
-  //auto [origyx,slopeyx]=boost::math::statistics::simple_ordinary_least_squares(tvec,syx);
-  ::linreg(tvec,syx, orig, slope, err);
-  SigAvg.yx = orig + (t - dt) * slope;
-  errtot += err;
-  //auto [origyy,slopeyy]=boost::math::statistics::simple_ordinary_least_squares(tvec,syy);
-  ::linreg(tvec,syy, orig, slope, err);
-  SigAvg.yy = orig + (t - dt) * slope;
-  errtot += err;
-  ///auto [origyz,slopeyz]=boost::math::statistics::simple_ordinary_least_squares(tvec,syz);
-  ::linreg(tvec,syz, orig, slope, err);
-  SigAvg.yz = orig + (t - dt) * slope;
-  errtot += err;
-  //auto [origzx,slopezx]=boost::math::statistics::simple_ordinary_least_squares(tvec,szx);
-  ::linreg(tvec,szx, orig, slope, err);
-  SigAvg.zx = orig + (t - dt) * slope;
-  errtot += err;
-  //auto [origzy,slopezy]=boost::math::statistics::simple_ordinary_least_squares(tvec,szy);
-  ::linreg(tvec,szy, orig, slope, err);
-  SigAvg.zy = orig + (t - dt) * slope;
-  errtot += err;
-  //auto [origzz,slopezz]=boost::math::statistics::simple_ordinary_least_squares(tvec,szz);
-  ::linreg(tvec,szz, orig, slope, err);
-  SigAvg.zz = orig + (t - dt) * slope;
-  errtot += err;
+  linreg *linearRegression = linreg::get();
+  double tlast = t-dt;
+  linearRegression->run(tvec, sxx);
+  SigAvg.xx = linearRegression->orig + tlast * linearRegression->slope; 
+  linearRegression->run(tvec, sxy);
+  SigAvg.xy = linearRegression->orig + tlast * linearRegression->slope;
+  linearRegression->run(tvec, sxz);
+  SigAvg.xz = linearRegression->orig + tlast * linearRegression->slope;
+  linearRegression->run(tvec, syx);
+  SigAvg.yx = linearRegression->orig + tlast * linearRegression->slope;
+  linearRegression->run(tvec, syy);
+  SigAvg.yy = linearRegression->orig + tlast * linearRegression->slope;
+  linearRegression->run(tvec, syz);
+  SigAvg.yz = linearRegression->orig + tlast * linearRegression->slope;
+  linearRegression->run(tvec, szx);
+  SigAvg.zx = linearRegression->orig + tlast * linearRegression->slope;
+  linearRegression->run(tvec, szy);
+  SigAvg.zy = linearRegression->orig + tlast * linearRegression->slope;
+  linearRegression->run(tvec, szz);
+  SigAvg.zz = linearRegression->orig + tlast * linearRegression->slope;
   
-  //printf("@@ PBC3D transform DEM navg %d\n",navg);
-  //printf("@@ PBC3D transform DEM navg %d\n",navg);
-  //printf("@@ PBC3D transform DEM nstep*la %1.2e\n",nstep*lengthAverage);
-  //SigAvg/=navg;
-//  if (stab){
-//    vh.reset();
-//    Load.VelocityControl(vh);
-//    updateNeighborList(dVerlet);
-//    accelerations();
+  // printf("@@ PBC3D transform DEM navg %d\n",navg);
+  // printf("@@ PBC3D transform DEM navg %d\n",navg);
+  // printf("@@ PBC3D transform DEM nstep*la %1.2e\n",nstep*lengthAverage);
+  // SigAvg/=navg;
+  //  if (stab){
+  //    vh.reset();
+  //    Load.VelocityControl(vh);
+  //    updateNeighborList(dVerlet);
+  //    accelerations();
 
-//    while (t < (dstab+1)*tmax) {
-//      computeSampleData();
-      // dt=0.8*std::min(dti,dVerlet/VelMax);
-      // interVerlet=dt;
-      // printf("DEM time step %1.2e",dt);
-//      velocityVerletStep();
+  //    while (t < (dstab+1)*tmax) {
+  //      computeSampleData();
+  // dt=0.8*std::min(dti,dVerlet/VelMax);
+  // interVerlet=dt;
+  // printf("DEM time step %1.2e",dt);
+  //      velocityVerletStep();
 
-//      if (interVerletC >= interVerlet) {
-//        updateNeighborList(dVerlet);
-//        interVerletC = 0.0;
-//      }
+  //      if (interVerletC >= interVerlet) {
+  //        updateNeighborList(dVerlet);
+  //        interVerletC = 0.0;
+  //      }
 
-//      interVerletC += dt;
-//      t += dt;
-//     }
+  //      interVerletC += dt;
+  //      t += dt;
+  //     }
 
-//  }
+  //  }
 }
 
 void PBC3Dbox::mpmBonds(double Dist) {
