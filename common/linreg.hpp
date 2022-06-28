@@ -11,9 +11,9 @@ class linreg {
 	/// @return Returns a, b so that the line ax+b is the linear regression of data x and y.
 	///         r is the coefficient of correlation.
     public : 
-    double slope;
-    double orig;
-    double corr;
+    double slope=0;
+    double orig=0;
+    double corr=0;
    
 	void run(std::vector<double> &x, std::vector<double> &y)
 	{
