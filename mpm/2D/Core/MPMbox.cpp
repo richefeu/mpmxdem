@@ -30,6 +30,7 @@ MPMbox::MPMbox() {
   FLIP=1;
   activePIC=false;
   timePIC=0.0;
+  boundary_layer=0.0;
 
   iconf = 0;
   confPeriod = 5000;
@@ -149,6 +150,8 @@ void MPMbox::read(const char* name) {
     } else if (token == "ramp") {
        file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y ;
        ramp=true;  
+    } else if (token == "verletCoef") {
+       file >> boundary_layer;
     } else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
@@ -316,6 +319,7 @@ void MPMbox::save(const char* name) {
   if (ramp) {
   file << "ramp " << gravity.x << " " << gravity.y << " " <<gravity_incr.x << " " << gravity_incr.y << '\n';
   }
+  file << "verletCoef " << boundary_layer << '\n';
   file <<  "demavg " <<DEMstep << " " << lengthAverage << '\n';
   if (dispacc){
   file << "acceleration" << '\n';

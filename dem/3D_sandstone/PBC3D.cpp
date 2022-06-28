@@ -1513,7 +1513,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double leng
     t += dt;
   }
 
-  linreg *linearRegression = linreg::get();
+  linreg *linearRegression;
   double tlast = t-dt;
   linearRegression->run(tvec, sxx);
   SigAvg.xx = linearRegression->orig + tlast * linearRegression->slope; 
