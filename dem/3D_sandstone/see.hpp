@@ -42,6 +42,7 @@ int show_cell = 1;
 int show_ghosts = 0;
 int show_slice = 0;
 int show_forces = 0;
+int show_bond_damage = 1;
 
 GLfloat alpha_particles = 1.0f;
 GLfloat alpha_ghosts = 0.3f;
@@ -109,6 +110,7 @@ void drawSlice();
 void drawArrow(vec3r& orig, vec3r& arrow);
 void drawTube(vec3r& orig, vec3r& arrow, double diam);
 void drawForces();
+void drawBondDamage();
 void drawVelocities();
 void drawParticles();
 void drawGhosts();

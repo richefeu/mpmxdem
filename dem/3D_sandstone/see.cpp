@@ -42,6 +42,7 @@ void printHelp() {
   cout << "a         (TODO) switch ON/OFF the fluctuating velocities" << endl;
   cout << "b         switch ON/OFF the background color" << endl;
   cout << "c         switch ON/OFF the periodic cell" << endl;
+  cout << "d         switch ON/OFF bond damage" << endl;
   cout << "e E       decrease/increase particles' alpha (transparence)" << endl;
   cout << "f         switch ON/OFF the forces" << endl;
   cout << "g         switch ON/OFF the ghost particles" << endl;
@@ -67,6 +68,10 @@ void keyboard(unsigned char Key, int x, int y) {
 
     case 'c':
       show_cell = 1 - show_cell;
+      break;
+
+    case 'd':
+      show_bond_damage = 1 - show_bond_damage;
       break;
 
     case 'e':
@@ -138,6 +143,7 @@ void keyboard(unsigned char Key, int x, int y) {
       std::cout << "image saved in 'oneshot.tga'\n";
       screenshot("oneshot.tga");
     } break;
+
     case 'Z': {
       // be carreful there's no way to stop this loop
       // if the process if too long
@@ -476,6 +482,7 @@ void display() {
   if (show_cell) drawPeriodicCell();
   if (show_velocities) drawVelocities();
   if (show_forces) drawForces();
+  if (show_bond_damage) drawBondDamage();
   if (show_particles) drawParticles();
   if (show_ghosts) drawGhosts();
 
@@ -841,6 +848,42 @@ void drawForces() {
       glColor4f(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
     } else
       glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
+    drawTube(orig, branch, scal * diam);
+    if (norm2(dec) > 0.0) {
+      vec3r da(box.Cell.h.xx * dec.x, box.Cell.h.yx * dec.x, box.Cell.h.zx * dec.x);
+      vec3r db(box.Cell.h.xy * dec.y, box.Cell.h.yy * dec.y, box.Cell.h.zy * dec.y);
+      vec3r dc(box.Cell.h.xz * dec.x, box.Cell.h.yz * dec.z, box.Cell.h.zz * dec.z);
+      orig += da + db + dc;
+      drawTube(orig, branch, scal * diam);
+    }
+  }
+}
+
+void drawBondDamage() {
+  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
+
+  // Scaling
+  double scal = 0.001;//radiusMax;
+
+  glEnable(GL_LIGHTING);
+  // GLColorRGBA color;
+  size_t i, j;
+  double diam;
+  for (size_t k = 0; k < box.Interactions.size(); k++) {
+    i = box.Interactions[k].i;
+    j = box.Interactions[k].j;
+
+    vec3r orig = box.Cell.h * box.Particles[i].pos;
+    if (!inSlice(orig)) continue;
+
+    diam = 1.0 - box.Interactions[k].D;
+
+    vec3r sij = box.Particles[j].pos - box.Particles[i].pos;
+    vec3r dec(floor(sij.x + 0.5), floor(sij.y + 0.5), floor(sij.z + 0.5));
+    sij -= dec;
+    vec3r branch = box.Cell.h * sij;
+
+    glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
     drawTube(orig, branch, scal * diam);
     if (norm2(dec) > 0.0) {
       vec3r da(box.Cell.h.xx * dec.x, box.Cell.h.yx * dec.x, box.Cell.h.zx * dec.x);
