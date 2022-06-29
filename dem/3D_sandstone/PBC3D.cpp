@@ -1513,26 +1513,27 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double leng
     t += dt;
   }
 
-  linreg linearRegression;
+  linreg* Regr = linreg::get();
   double tlast = t-dt;
-  linearRegression.run(tvec, sxx);
-  SigAvg.xx = linearRegression.orig + tlast * linearRegression.slope; 
-  linearRegression.run(tvec, sxy);
-  SigAvg.xy = linearRegression.orig + tlast * linearRegression.slope;
-  linearRegression.run(tvec, sxz);
-  SigAvg.xz = linearRegression.orig + tlast * linearRegression.slope;
-  linearRegression.run(tvec, syx);
-  SigAvg.yx = linearRegression.orig + tlast * linearRegression.slope;
-  linearRegression.run(tvec, syy);
-  SigAvg.yy = linearRegression.orig + tlast * linearRegression.slope;
-  linearRegression.run(tvec, syz);
-  SigAvg.yz = linearRegression.orig + tlast * linearRegression.slope;
-  linearRegression.run(tvec, szx);
-  SigAvg.zx = linearRegression.orig + tlast * linearRegression.slope;
-  linearRegression.run(tvec, szy);
-  SigAvg.zy = linearRegression.orig + tlast * linearRegression.slope;
-  linearRegression.run(tvec, szz);
-  SigAvg.zz = linearRegression.orig + tlast * linearRegression.slope;
+  Regr->run(tvec, sxx);
+  SigAvg.xx = Regr->orig + tlast * Regr->slope; 
+  Regr->run(tvec, sxy);
+  SigAvg.xy = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, sxz);
+  SigAvg.xz = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, syx);
+  SigAvg.yx = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, syy);
+  SigAvg.yy = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, syz);
+  SigAvg.yz = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, szx);
+  SigAvg.zx = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, szy);
+  SigAvg.zy = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, szz);
+  SigAvg.zz = Regr->orig + tlast * Regr->slope;
+
   
   // printf("@@ PBC3D transform DEM navg %d\n",navg);
   // printf("@@ PBC3D transform DEM navg %d\n",navg);
