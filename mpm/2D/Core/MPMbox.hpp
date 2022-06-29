@@ -68,6 +68,7 @@ class MPMbox {
   vec2r gravity_max;         // ramp gravity acceleration vector
   vec2r gravity_incr;        // increment gravity acceleration vector
   bool ramp;                 // ramp boolean
+  double boundary_layer;     // enlarge the contact zone
 
   double finalTime;  // Time in seconds at which the simulation ends
   int step;          // The current step
