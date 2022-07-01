@@ -1,16 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(MPMbox LANGUAGES CXX)
 
-
 set(CMAKE_CXX_STANDARD 17)
-#set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-
-# ========= OpenMP
-find_package(OpenMP REQUIRED)
 
 # ========= OpenGL
 find_package(OpenGL REQUIRED)
@@ -49,8 +44,6 @@ message(STATUS "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})
 message(STATUS "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS} )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${COMMON_INCLUDE_DIR} ${PLUGGED_DEM_INCLUDE_DIR}) 
 link_directories(${PLUGGED_DEM_INCLUDE_DIR}) 
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 file(GLOB core_object_files ${CMAKE_CURRENT_SOURCE_DIR}
 BoundaryForceLaw/*.cpp
