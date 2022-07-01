@@ -17,7 +17,7 @@ void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   // Get the total strain increment from node velocities
   vec2r vn;
-  mat4 dstrain;
+  mat4r dstrain;
 
   for (int r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {

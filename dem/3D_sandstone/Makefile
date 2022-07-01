@@ -20,7 +20,7 @@ else # ==============================================================
 # The compiler to be used
 CXX = g++
 # The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++17 -I ../../common -I /usr/include
+CXXFLAGS = -O3 -Wall -std=c++17 -I ~/toofus -I /usr/include
 # Link flags for OpenGL and glut
 #LDFLAGS = -lGL -lGLU -lglut
 GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread

@@ -718,7 +718,7 @@ void MPMbox::DEMfinalTime() {
        VG3D.yy = MP[p].velGrad.yy;
        VG3D.zz = 1.0; // assuming plane strain
        VG3D=VG3D*MP[p].PBC->Cell.h;
-      dtmax = 1e-3 * MP[p].PBC->Rmin /(VG3D.maxi());
+      dtmax = 1e-3 * MP[p].PBC->Rmin/(VG3D.normSup());
       dt = (dtmax <= dt) ? dtmax : dt;
       micnb+=1;
     }
@@ -729,7 +729,7 @@ void MPMbox::DEMfinalTime() {
   // original code
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_F = MP[p].F;
-    MP[p].F = (mat4::unit() + dt * MP[p].velGrad) * MP[p].F;
+    MP[p].F = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
     //MP[p].F = MP[p].F + dt * MP[p].velGrad; 
   }
 }

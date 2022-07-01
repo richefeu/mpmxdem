@@ -9,10 +9,10 @@
 struct ProcessedDataMP {
   vec2r pos;    // position
   vec2r vel;    // Smoothed velocity
-  mat4 strain;  // strain
-  mat4 stress;  // Smoothed total stress
+  mat4r strain;  // strain
+  mat4r stress;  // Smoothed total stress
   double sigma3; // third principal stress
-  mat4 velGrad; // Smothed velocity gradient
+  mat4r velGrad; // Smothed velocity gradient
   double rho; // density
 
   vec2r corner[4];  // Four corners according to F (positions expressed in the global frame)

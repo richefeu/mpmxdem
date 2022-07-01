@@ -42,7 +42,7 @@ endif()
 # Before being able to compile, the file 'libPBC3D.a' needs to be already compiled
 set(PLUGGED_DEM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
 set(PLUGGED_DEM_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
-set(COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../common)
+set(COMMON_INCLUDE_DIR ~/toofus)
 message(STATUS "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
 message(STATUS "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
 message(STATUS "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})

@@ -42,7 +42,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   // Compute a strain increment (during dt) from the node-velocities
   vec2r vn;
-  mat4 dstrain;
+  mat4r dstrain;
   for (int r = 0; r < element::nbNodes; r++) {
     dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy += 0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
@@ -75,7 +75,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   double sum_1_3 = MPM.MP[p].stress.xx + MPM.MP[p].stress.yy;
   double yieldF = diff_3_1 + sum_1_3 * sinFrictionAngle - 2.0 * Cohesion * cosFrictionAngle;
 
-  mat4 deltaPlasticStrain;
+  mat4r deltaPlasticStrain;
   if (yieldF > 0.0) {
 
     if (MPM.MP[p].plastic == false) MPM.MP[p].plastic = true;
@@ -114,7 +114,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
         MPM.MP[p].plasticStrain += deltaPlasticStrain;  // FIXME: INCREMENTED AT EACH ITERATION?
 
         // Correcting state of stress
-        mat4 delta_sigma_corrector;
+        mat4r delta_sigma_corrector;
         delta_sigma_corrector.xx = De11 * deltaPlasticStrain.xx + De12 * deltaPlasticStrain.yy;
         delta_sigma_corrector.yy = De12 * deltaPlasticStrain.xx + De22 * deltaPlasticStrain.yy;
         delta_sigma_corrector.xy = De33 * deltaPlasticStrain.xy;

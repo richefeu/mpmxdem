@@ -29,7 +29,7 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
   // Get the total strain increment from node velocities
   vec2r vn;
-  mat4 dstrain;
+  mat4r dstrain;
   char fnamea[256];
   int col_i;
   int row_i;
@@ -43,9 +43,9 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].strain += dstrain;
   MPM.MP[p].deltaStrain = dstrain;
   
-  mat4 prev_F_inv = MPM.MP[p].prev_F;
+  mat4r prev_F_inv = MPM.MP[p].prev_F;
   prev_F_inv.inverse();
-  mat4 Finc2D = MPM.MP[p].F*prev_F_inv;
+  mat4r Finc2D = MPM.MP[p].F*prev_F_inv;
   
   // remember here that MPM is 2D and DEM is 3D
   mat9r Finc3D;

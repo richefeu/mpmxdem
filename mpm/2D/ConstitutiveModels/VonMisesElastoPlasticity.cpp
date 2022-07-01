@@ -22,7 +22,7 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   vec2r vn;
-  mat4 dstrain;
+  mat4r dstrain;
   for (int r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {
       vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
@@ -42,15 +42,15 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   int N = 1;
 
-  mat4 deltastrain;
+  mat4r deltastrain;
 
   deltastrain.xx = dstrain.xx / N;
   deltastrain.yy = dstrain.yy / N;
   deltastrain.xy = deltastrain.yx = dstrain.xy / N;
 
-  mat4 gradg;
-  mat4 gradf;
-  mat4 plasticStress;
+  mat4r gradg;
+  mat4r gradf;
+  mat4r plasticStress;
   double yieldF;
 
   for (int i = 1; i <= N; ++i) {

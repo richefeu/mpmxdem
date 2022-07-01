@@ -10,7 +10,7 @@ void move_MP::read(std::istream& is) { is >> groupNb >> x0 >> y0 >> dx >> dy >> 
 
 void move_MP::exec() {
   double theta = thetaDeg * Mth::deg2rad;
-  mat4 rotation;
+  mat4r rotation;
   rotation.xx = cos(theta);
   rotation.xy = -sin(theta);
   rotation.yx = sin(theta);
