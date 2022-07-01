@@ -118,7 +118,7 @@ void Loading::BiaxialCompressionXPlaneStrainY(double pressure, double velocity) 
 
   Sig.xx = 0.0;
   Sig.yy = pressure;
-  Sig.zz =  0.0;
+  Sig.zz = 0.0;
   Sig.xy = Sig.yx = 0.0;
   Sig.xz = Sig.yz = 0.0;
   Sig.yz = Sig.zy = 0.0;
@@ -132,8 +132,6 @@ void Loading::BiaxialCompressionXPlaneStrainY(double pressure, double velocity) 
 
   ServoFunction = nullptr;
 }
-
-
 
 void Loading::IsostaticCompression(double pressure) {
   sprintf(StoredCommand, "IsostaticCompression %g", pressure);
@@ -155,11 +153,29 @@ void Loading::IsostaticCompression(double pressure) {
 
   ServoFunction = nullptr;
 }
+
+void Loading::RigidRotationZ(double omega) {
+  sprintf(StoredCommand, "RigidRotationZ %g", omega);
+  Drive.reset(VelocityDriven);
+  Sig.reset();
+  v.reset(); 
+  ServoFunction = [omega](PBC3Dbox& box) -> void {
+    double lx = sqrt(box.Cell.h.xx * box.Cell.h.xx + box.Cell.h.yx * box.Cell.h.yx + box.Cell.h.zx * box.Cell.h.zx);
+    double ly = sqrt(box.Cell.h.xy * box.Cell.h.xy + box.Cell.h.yy * box.Cell.h.yy + box.Cell.h.zy * box.Cell.h.zy);
+    double omegat = omega * box.t; // t initial must be zero
+    box.Load.v.xx = -lx * omega * sin(omegat); 
+    box.Load.v.yx = lx * omega * cos(omegat); 
+    
+    box.Load.v.xy = -ly * omega * cos(omegat); 
+    box.Load.v.yy = -ly * omega * sin(omegat); 
+  };
+}
+
 void Loading::BiaxialCompressionY(double pxz, double py) {
   sprintf(StoredCommand, "BiaxialCompressionY %g %g", pxz, py);
 
-  Drive.xx = Drive.yy =  Drive.zz = ForceDriven;
-  Drive.xy = Drive.yx =VelocityDriven;
+  Drive.xx = Drive.yy = Drive.zz = ForceDriven;
+  Drive.xy = Drive.yx = VelocityDriven;
   Drive.xz = Drive.zx = VelocityDriven;
   Drive.yz = Drive.zy = VelocityDriven;
 
@@ -235,7 +251,7 @@ void Loading::VelocityControl(mat9r& V) {
   v = V;
   ServoFunction = nullptr;
 }
-void Loading::StrainControl(mat9r &F){
+void Loading::StrainControl(mat9r& F) {
   sprintf(StoredCommand, "VelocityControl %g %g %g   %g %g %g   %g %g %g", F.xx, F.xy, F.xz, F.yx, F.yy, F.yz, F.zx,
           F.zy, F.zz);
   Drive.reset(VelocityDriven);

@@ -27,6 +27,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '0': {
       color_option = 0;
+      precomputeColors();
     } break;
 
     case '1': {
@@ -41,6 +42,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.setMinMax(0.0, vmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
+      precomputeColors();
       std::cout << "MP colored by velocity magnitude (vmin = " << vmin << ", vmax = " << vmax << ")\n";
     } break;
 
@@ -56,6 +58,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.setMinMax(pmin, pmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
+      precomputeColors();
       std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
     } break;
     case '3': {
@@ -63,16 +66,17 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       double rhomax = 0;
       double rhomin = 1e20;
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        double rho=SmoothedData[i].rho;
+        double rho = SmoothedData[i].rho;
         if (rho > rhomax) rhomax = rho;
         if (rho < rhomin) rhomin = rho;
       }
       colorTable.setMinMax(rhomin, rhomax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
-      std::cout << "MP colored by pressure (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
+      precomputeColors();
+      std::cout << "MP colored by density (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
     } break;
-   case '4': {
+    case '4': {
       color_option = 4;
       double pmax = -1e20;
       double pmin = 1e20;
@@ -84,6 +88,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.setMinMax(pmin, pmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
+      precomputeColors();
       std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
     } break;
 
@@ -98,6 +103,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     case 'g': {
       show_grid = 1 - show_grid;
     } break;
+    
+    case 'h':{
+      printHelp();
+    } break;
 
     case 'q': {
       exit(0);
@@ -105,6 +114,22 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case 's': {
       MP_deformed_shape = 1 - MP_deformed_shape;
+    } break;
+
+    case 'z': {
+      std::cout << "image saved in 'oneshot.tga'\n";
+      screenshot("oneshot.tga");
+    } break;
+    case 'Z': {
+      // be carreful there's no way to stop this loop
+      // if the process if too long
+      while (try_to_readConf(confNum + 1, Conf, confNum)) {
+        char name[256];
+        sprintf(name, "shot%d.tga", confNum);
+        display();
+        screenshot(name);
+      }
+      std::cout << "series of images saved in 'shot<n>.tga'\n";
     } break;
 
     case '-': {
@@ -261,8 +286,60 @@ void drawGrid() {
   }
 }
 
-void setColor(int i) {
+void precomputeColors() {
+  precompColors.clear();
+  precompColors.resize(SmoothedData.size());
+  
   switch (color_option) {
+
+    case 0: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+         precompColors[i].set(204, 204, 230, 255);
+      } 
+    } break;
+
+    case 1: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double vel = norm(SmoothedData[i].vel);
+        colorTable.getRGB(vel, &precompColors[i]);
+      }      
+    } break;
+
+    case 2: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        colorTable.getRGB(p, &precompColors[i]);
+      }
+    } break;
+
+    case 3: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double rho = SmoothedData[i].rho;
+        colorTable.getRGB(rho, &precompColors[i]);
+      }
+    } break;
+    
+    case 4: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double p = SmoothedData[i].stress.yy;
+        colorTable.getRGB(p, &precompColors[i]);
+      }
+    } break;
+
+    default: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+         precompColors[i].set(204, 204, 230, 255);
+      } 
+    } break;
+  }
+}
+
+void setColor(int i) {
+  glColor3f(precompColors[i].r/255., precompColors[i].g/255., precompColors[i].b/255.);
+  
+  /*
+  switch (color_option) {
+
 
     case 0: {
       glColor4f(0.8f, 0.8f, 0.9f, 1.0f);
@@ -299,10 +376,11 @@ void setColor(int i) {
       glColor4f(0.8f, 0.8f, 0.9f, 1.0f);
     } break;
   }
+  */
 }
 
 void drawMPs() {
-  //std::cout << "enterring draw MPs";
+  // std::cout << "enterring draw MPs";
   glLineWidth(1.0f);
 
   for (size_t i = 0; i < Conf.MP.size(); ++i) {
@@ -406,7 +484,7 @@ bool fileExists(const char* fileName) {
   return false;
 }
 
-void try_to_readConf(int num, MPMbox& CF, int& OKNum) {
+bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
   char file_name[256];
   sprintf(file_name, "conf%d.txt", num);
   if (fileExists(file_name)) {
@@ -415,8 +493,65 @@ void try_to_readConf(int num, MPMbox& CF, int& OKNum) {
     CF.clean();
     CF.read(file_name);
     CF.postProcess(SmoothedData);
-  } else
+    precomputeColors();
+  } else {
     std::cout << file_name << " does not exist" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+int screenshot(const char* filename) {
+  // http://forum.devmaster.net/t/rendering-a-single-frame-to-a-file-with-opengl/12469/2
+
+  // we will store the image data here
+  unsigned char* pixels;
+  // the thingy we use to write files
+  FILE* shot;
+  // we get the width/height of the screen into this array
+  int screenStats[4];
+
+  // get the width/height of the window
+  glGetIntegerv(GL_VIEWPORT, screenStats);
+
+  // generate an array large enough to hold the pixel data
+  // (width*height*bytesPerPixel)
+  pixels = new unsigned char[screenStats[2] * screenStats[3] * 3];
+  // read in the pixel data, TGA's pixels are BGR aligned
+  glReadPixels(0, 0, screenStats[2], screenStats[3], GL_BGR, GL_UNSIGNED_BYTE, pixels);
+
+  // open the file for writing. If unsucessful, return 1
+  if ((shot = fopen(filename, "wb")) == NULL) return 1;
+
+  // this is the tga header it must be in the beginning of
+  // every (uncompressed) .tga
+  unsigned char TGAheader[12] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  // the header that is used to get the dimensions of the .tga
+  // header[1]*256+header[0] - width
+  // header[3]*256+header[2] - height
+  // header[4] - bits per pixel
+  // header[5] - ?
+  unsigned char header[6] = {((unsigned char)(screenStats[2] % 256)),
+                             ((unsigned char)(screenStats[2] / 256)),
+                             ((unsigned char)(screenStats[3] % 256)),
+                             ((unsigned char)(screenStats[3] / 256)),
+                             24,
+                             0};
+
+  // write out the TGA header
+  fwrite(TGAheader, sizeof(unsigned char), 12, shot);
+  // write out the header
+  fwrite(header, sizeof(unsigned char), 6, shot);
+  // write the pixels
+  fwrite(pixels, sizeof(unsigned char), screenStats[2] * screenStats[3] * 3, shot);
+
+  // close the file
+  fclose(shot);
+  // free the memory
+  delete[] pixels;
+
+  // return success
+  return 0;
 }
 
 void menu(int num) {
@@ -453,12 +588,12 @@ void buildMenu() {
 // =====================================================================
 
 int main(int argc, char* argv[]) {
-  
+
   unsigned char Key;
 
-  confNum      = (argc > 1) ? atoi(argv[1]) : 0;
-  Key          = (argc > 2) ? *argv[2] : '2';
-  //color_option=atoi(Key);
+  confNum = (argc > 1) ? atoi(argv[1]) : 0;
+  Key = (argc > 2) ? *argv[2] : '2';
+  // color_option=atoi(Key);
 
   std::cout << "Current Configuration: ";
   try_to_readConf(confNum, Conf, confNum);
@@ -486,9 +621,9 @@ int main(int argc, char* argv[]) {
   glBlendEquation(GL_FUNC_ADD);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   std::cout << "definig color options ";
-  
+
   keyboard(Key, 0, 0);
-  
+
   // ==== Enter GLUT event processing cycle
   fit_view();
   glutMainLoop();

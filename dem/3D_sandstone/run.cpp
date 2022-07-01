@@ -5,7 +5,7 @@ int main(int argc, char const *argv[]) {
 
   if (argc < 2) {
     box.setSample();
-    box.saveConf(0);
+    box.saveConf("input.txt");
     return 0;
   } else {
     box.loadConf(argv[1]);

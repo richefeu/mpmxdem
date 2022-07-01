@@ -36,6 +36,7 @@ struct Loading {
   void SimpleShearXY(double pressure, double gammaDot);
   void ShearTestXY(double pressure, double gammaDot);
   void VelocityControl(mat9r &V);
+  void RigidRotationZ(double omega);
   void StrainControl(mat9r &F);
   void TransformationGradient(mat9r &h, mat9r &F, double duration);
   void LodeAnglePath(double pressure, double velocity, double LodeAngle);

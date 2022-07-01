@@ -12,7 +12,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 
   double kn, kt, mu, viscRate;
   double gap;
-  double VerletCoef=1;
+  double VerletCoef=MPM.boundary_layer;
   size_t g1, g2;
   for (size_t nn = 0; nn < MPM.Obstacles[o]->Neighbors.size(); ++nn) {
     size_t pn = MPM.Obstacles[o]->Neighbors[nn].PointNumber;

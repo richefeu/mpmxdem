@@ -4,8 +4,7 @@ void clear_background() {
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  if (!show_background)
-    return;
+  if (!show_background) return;
 
   glMatrixMode(GL_PROJECTION);
   glPushMatrix();
@@ -19,10 +18,10 @@ void clear_background() {
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glBegin(GL_QUADS);
-  glColor3f(0.4f, 0.4f, 1.0f); // Bottom color
+  glColor3f(0.4f, 0.4f, 1.0f);  // Bottom color
   glVertex2f(-1.0f, -1.0f);
   glVertex2f(1.0f, -1.0f);
-  glColor3f(1.0f, 1.0f, 1.0f); // Top color
+  glColor3f(1.0f, 1.0f, 1.0f);  // Top color
   glVertex2f(1.0f, 1.0f);
   glVertex2f(-1.0f, 1.0f);
   glEnd();
@@ -43,6 +42,7 @@ void printHelp() {
   cout << "a         (TODO) switch ON/OFF the fluctuating velocities" << endl;
   cout << "b         switch ON/OFF the background color" << endl;
   cout << "c         switch ON/OFF the periodic cell" << endl;
+  cout << "d         switch ON/OFF bond damage" << endl;
   cout << "e E       decrease/increase particles' alpha (transparence)" << endl;
   cout << "f         switch ON/OFF the forces" << endl;
   cout << "g         switch ON/OFF the ghost particles" << endl;
@@ -62,100 +62,112 @@ void printHelp() {
 void keyboard(unsigned char Key, int x, int y) {
   switch (Key) {
 
-  case 'b':
-    show_background = 1 - show_background;
-    break;
+    case 'b':
+      show_background = 1 - show_background;
+      break;
 
-  case 'c':
-    show_cell = 1 - show_cell;
-    break;
+    case 'c':
+      show_cell = 1 - show_cell;
+      break;
 
-  case 'e':
-    if (alpha_particles > 0.1)
-      alpha_particles -= 0.05;
-    break;
-  case 'E':
-    if (alpha_particles <= 0.95)
-      alpha_particles += 0.05;
-    break;
+    case 'd':
+      show_bond_damage = 1 - show_bond_damage;
+      break;
 
-  case 'f':
-    show_forces = 1 - show_forces;
-    break;
+    case 'e':
+      if (alpha_particles > 0.1) alpha_particles -= 0.05;
+      break;
+    case 'E':
+      if (alpha_particles <= 0.95) alpha_particles += 0.05;
+      break;
 
-  case 'g':
-    show_ghosts = 1 - show_ghosts;
-    break;
+    case 'f':
+      show_forces = 1 - show_forces;
+      break;
 
-  case 'h':
-    printHelp();
-    break;
+    case 'g':
+      show_ghosts = 1 - show_ghosts;
+      break;
 
-  case 'm':
-    export_sample();
-    break;
+    case 'h':
+      printHelp();
+      break;
 
-  case 'p':
-    show_particles = 1 - show_particles;
-    break;
+    case 'm':
+      export_sample();
+      break;
 
-  case 'q':
-    exit(0);
-    break;
+    case 'p':
+      show_particles = 1 - show_particles;
+      break;
 
-  case 'r':
-    if (alpha_ghosts > 0.1)
-      alpha_ghosts -= 0.05;
-    break;
-  case 'R':
-    if (alpha_ghosts <= 0.95)
-      alpha_ghosts += 0.05;
-    break;
+    case 'q':
+      exit(0);
+      break;
 
-  case 's':
-    show_slice = 1 - show_slice;
-    break;
+    case 'r':
+      if (alpha_ghosts > 0.1) alpha_ghosts -= 0.05;
+      break;
+    case 'R':
+      if (alpha_ghosts <= 0.95) alpha_ghosts += 0.05;
+      break;
 
-  case 't':
-    if (forceTubeFactor > 0.2)
-      forceTubeFactor -= 0.05;
-    break;
-  case 'T':
-    if (forceTubeFactor <= 0.9)
-      forceTubeFactor += 0.05;
-    break;
+    case 's':
+      show_slice = 1 - show_slice;
+      break;
 
-  case 'v':
-    show_velocities = 1 - show_velocities;
-    break;
+    case 't':
+      if (forceTubeFactor > 0.2) forceTubeFactor -= 0.05;
+      break;
+    case 'T':
+      if (forceTubeFactor <= 0.9) forceTubeFactor += 0.05;
+      break;
 
-  case 'w':
-    if (ghost_width > 0.1)
-      ghost_width -= 0.1;
-    break;
+    case 'v':
+      show_velocities = 1 - show_velocities;
+      break;
 
-  case 'W':
-    if (ghost_width <= 0.9)
-      ghost_width += 0.1;
-    break;
+    case 'w':
+      if (ghost_width > 0.1) ghost_width -= 0.1;
+      break;
 
-  case 'x':
-    display_mode = 1 - display_mode;
-    break;
+    case 'W':
+      if (ghost_width <= 0.9) ghost_width += 0.1;
+      break;
 
-  case '-':
-    if (confNum > 0)
-      try_to_readConf(confNum - 1);
-    break;
+    case 'x':
+      display_mode = 1 - display_mode;
+      break;
 
-  case '+':
-    try_to_readConf(confNum + 1);
-    break;
+    case 'z': {
+      std::cout << "image saved in 'oneshot.tga'\n";
+      screenshot("oneshot.tga");
+    } break;
 
-  case '=': {
-    fit_view();
-    adjust_clipping_plans();
-  } break;
+    case 'Z': {
+      // be carreful there's no way to stop this loop
+      // if the process if too long
+      while (try_to_readConf(confNum + 1)) {
+        char name[256];
+        sprintf(name, "shot%d.tga", confNum);
+        display();
+        screenshot(name);
+      }
+      std::cout << "series of images saved in 'shot<n>.tga'\n";
+    } break;
+
+    case '-':
+      if (confNum > 0) try_to_readConf(confNum - 1);
+      break;
+
+    case '+':
+      try_to_readConf(confNum + 1);
+      break;
+
+    case '=': {
+      fit_view();
+      adjust_clipping_plans();
+    } break;
   };
 
   glutPostRedisplay();
@@ -169,20 +181,20 @@ void mouse(int button, int state, int x, int y) {
     mouse_start[0] = x;
     mouse_start[1] = y;
     switch (button) {
-    case GLUT_LEFT_BUTTON:
-      if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
-        mouse_mode = PAN;
-      else
-        mouse_mode = ROTATION;
-      break;
-    case GLUT_MIDDLE_BUTTON:
-      mouse_mode = ZOOM;
-      break;
+      case GLUT_LEFT_BUTTON:
+        if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
+          mouse_mode = PAN;
+        else
+          mouse_mode = ROTATION;
+        break;
+      case GLUT_MIDDLE_BUTTON:
+        mouse_mode = ZOOM;
+        break;
     }
   }
 }
 
-vec3r rotatePoint(vec3r const &p, vec3r const &center, vec3r const &axis, double theta) {
+vec3r rotatePoint(vec3r const& p, vec3r const& center, vec3r const& axis, double theta) {
   double const c = cos(theta), s = sin(theta);
   double const C = 1.0 - c;
   vec3r tmp = p - center;
@@ -197,10 +209,9 @@ vec3r rotatePoint(vec3r const &p, vec3r const &center, vec3r const &axis, double
 // Adapted from NeHe production
 // glMultMatrixf(Matrix);
 // Note that openGL uses a column-major convention for the matrix storage
-void quat2GLMatrix(quat &q, GLfloat *pMatrix) {
+void quat2GLMatrix(quat& q, GLfloat* pMatrix) {
   // Make sure the matrix has allocated memory to store the rotation data
-  if (!pMatrix)
-    return;
+  if (!pMatrix) return;
 
   // First row
   pMatrix[0] = 1.0f - 2.0f * (q.v.y * q.v.y + q.v.z * q.v.z);
@@ -230,8 +241,7 @@ void quat2GLMatrix(quat &q, GLfloat *pMatrix) {
 }
 
 void motion(int x, int y) {
-  if (mouse_mode == NOTHING)
-    return;
+  if (mouse_mode == NOTHING) return;
 
   double dx = (double)(x - mouse_start[0]) / (double)width;
   double dy = (double)(y - mouse_start[1]) / (double)height;
@@ -240,29 +250,29 @@ void motion(int x, int y) {
 
   switch (mouse_mode) {
 
-  case ROTATION:
-    axis = (cross(up, center - eye));
-    axis.normalize();
-    eye = rotatePoint(eye, center, up, -dx * M_PI);
-    eye = rotatePoint(eye, center, axis, dy * M_PI);
-    up = (rotatePoint((center + up), center, axis, dy * M_PI) - center);
-    up.normalize();
-    break;
+    case ROTATION:
+      axis = (cross(up, center - eye));
+      axis.normalize();
+      eye = rotatePoint(eye, center, up, -dx * M_PI);
+      eye = rotatePoint(eye, center, axis, dy * M_PI);
+      up = (rotatePoint((center + up), center, axis, dy * M_PI) - center);
+      up.normalize();
+      break;
 
-  case ZOOM:
-    eye = center + (eye - center) * (dy + 1.0);
-    break;
+    case ZOOM:
+      eye = center + (eye - center) * (dy + 1.0);
+      break;
 
-  case PAN:
-    length = (eye - center).length() * tan(view_angle * M_PI / 360.0) * 2.0;
-    axis = cross(up, center - eye);
-    axis.normalize();
-    center = center + axis * dx * length * 0.8;
-    center = center + up * dy * length;
-    break;
+    case PAN:
+      length = (eye - center).length() * tan(view_angle * M_PI / 360.0) * 2.0;
+      axis = cross(up, center - eye);
+      axis.normalize();
+      center = center + axis * dx * length * 0.8;
+      center = center + up * dy * length;
+      break;
 
-  default:
-    break;
+    default:
+      break;
   }
   mouse_start[0] = x;
   mouse_start[1] = y;
@@ -270,14 +280,14 @@ void motion(int x, int y) {
   display();
 }
 
-void normalize(GLfloat *a) {
+void normalize(GLfloat* a) {
   GLfloat d = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
   a[0] /= d;
   a[1] /= d;
   a[2] /= d;
 }
 
-void drawtri(GLfloat *a, GLfloat *b, GLfloat *c, int div, float r) {
+void drawtri(GLfloat* a, GLfloat* b, GLfloat* c, int div, float r) {
   if (div <= 0) {
     glNormal3fv(a);
     glVertex3f(-a[0] * r, -a[1] * r, -a[2] * r);
@@ -309,11 +319,10 @@ void drawsphere(int ndiv, float radius) {
   glEnd();
 }
 
-void add_ghost_pos(int i, double mn, double mx, std::vector<vec3r> &lst) {
+void add_ghost_pos(int i, double mn, double mx, std::vector<vec3r>& lst) {
   lst.clear();
   vec3r pos = box.Particles[i].pos;
-  if (pos.x > mn && pos.x < mx && pos.y > mn && pos.y < mx && pos.z > mn && pos.z < mx)
-    return;
+  if (pos.x > mn && pos.x < mx && pos.y > mn && pos.y < mx && pos.z > mn && pos.z < mx) return;
 
   vec3r ghostPos;
 
@@ -450,14 +459,12 @@ void add_ghost_pos(int i, double mn, double mx, std::vector<vec3r> &lst) {
 }
 
 // Return true if the real position is inside the slice defined by slice_pos, slice_width and slice_norm
-bool inSlice(vec3r &pos) {
-  if (show_slice == 0)
-    return true;
+bool inSlice(vec3r& pos) {
+  if (show_slice == 0) return true;
 
   double dst = (pos - slice_pos) * slice_norm;
   double dstMax = 0.5 * slice_width;
-  if (dst > dstMax || dst < -dstMax)
-    return false;
+  if (dst > dstMax || dst < -dstMax) return false;
   return true;
 }
 
@@ -472,20 +479,15 @@ void display() {
   glShadeModel(GL_SMOOTH);
   glEnable(GL_DEPTH_TEST);
 
-  if (show_cell)
-    drawPeriodicCell();
-  if (show_velocities)
-    drawVelocities();
-  if (show_forces)
-    drawForces();
-  if (show_particles)
-    drawParticles();
-  if (show_ghosts)
-    drawGhosts();
+  if (show_cell) drawPeriodicCell();
+  if (show_velocities) drawVelocities();
+  if (show_forces) drawForces();
+  if (show_bond_damage) drawBondDamage();
+  if (show_particles) drawParticles();
+  if (show_ghosts) drawGhosts();
 
   // mode for slice edition
-  if (display_mode == 1)
-    drawSlice();
+  if (display_mode == 1) drawSlice();
 
   // TEST GRAPH
   // plot_fnft();
@@ -504,17 +506,13 @@ void plot_fnft() {
   double Fn, Ft;
   for (size_t k = 0; k < box.Interactions.size(); k++) {
     Fn = box.Interactions[k].fn;
-    if (fnMin > Fn)
-      fnMin = Fn;
-    if (fnMax < Fn)
-      fnMax = Fn;
+    if (fnMin > Fn) fnMin = Fn;
+    if (fnMax < Fn) fnMax = Fn;
     fn.push_back(Fn);
 
     Ft = norm(box.Interactions[k].ft);
-    if (ftMin > Ft)
-      ftMin = Ft;
-    if (ftMax < Ft)
-      ftMax = Ft;
+    if (ftMin > Ft) ftMin = Ft;
+    if (ftMax < Ft) ftMax = Ft;
     ft.push_back(Ft);
   }
 
@@ -553,10 +551,8 @@ void plot_qp() {
   U.set(1.0 / sqrt(3.0));
   double q, p, QP;
   for (size_t i = 0; i < Time.size(); i++) {
-    if (tMin > Time[i])
-      tMin = Time[i];
-    if (tMax < Time[i])
-      tMax = Time[i];
+    if (tMin > Time[i]) tMin = Time[i];
+    if (tMax < Time[i]) tMax = Time[i];
 
     Str[i].sym_eigen(V, D);
     q = norm(D - (D * U) * U);
@@ -565,10 +561,8 @@ void plot_qp() {
       QP = q / p;
     else
       QP = 0.0;
-    if (qpMin > QP)
-      qpMin = QP;
-    if (qpMax < QP)
-      qpMax = QP;
+    if (qpMin > QP) qpMin = QP;
+    if (qpMax < QP) qpMax = QP;
     qp[i] = QP;
   }
 
@@ -590,8 +584,7 @@ void adjust_clipping_plans() {
   max_length = (GLfloat)norm(mx);
   double znear = zf - 0.5 * max_length;
   double close_dst = 0.1 * zf;
-  if (znear < close_dst)
-    znear = close_dst;
+  if (znear < close_dst) znear = close_dst;
   double zfar = zf + 0.5 * max_length;
   gluPerspective(view_angle, wh_ratio, znear, zfar);
   glMatrixMode(GL_MODELVIEW);
@@ -672,13 +665,13 @@ void drawPeriodicCell() {
   glEnd();
 }
 
-void drawSlice() // TO BE CONTINUED
+void drawSlice()  // TO BE CONTINUED
 {
   vec3r orig = slice_pos - 0.5 * slice_width * slice_norm;
   vec3r dest = slice_pos + 0.5 * slice_width * slice_norm;
 
   vec3r v = slice_norm;
-  vec3r vmz(v.x, v.y, v.z - 1.0); // v - z
+  vec3r vmz(v.x, v.y, v.z - 1.0);  // v - z
 
   vec3r a;
   if (norm2(vmz) > 0.01)
@@ -714,7 +707,7 @@ void drawSlice() // TO BE CONTINUED
   glEnd();
 }
 
-void drawArrow(vec3r &orig, vec3r &arrow) {
+void drawArrow(vec3r& orig, vec3r& arrow) {
   vec3r dest = orig + arrow;
 
   glLineWidth(2.0f);
@@ -725,7 +718,7 @@ void drawArrow(vec3r &orig, vec3r &arrow) {
 
   vec3r v = arrow;
   v.normalize();
-  vec3r vmz(v.x, v.y, v.z - 1.0); // v - z
+  vec3r vmz(v.x, v.y, v.z - 1.0);  // v - z
 
   vec3r a;
   if (norm2(vmz) > 0.1)
@@ -742,18 +735,18 @@ void drawArrow(vec3r &orig, vec3r &arrow) {
   glVertex3f(dest.x, dest.y, dest.z);
   for (double angle = 0.0; angle <= 2.0 * M_PI; angle += 0.2 * M_PI) {
     c = cos(angle) * a + sin(angle) * b;
-    glNormal3f(c.x, c.y, c.z); // Pas tout à fait juste (!) Mais c'est pas grave, c'est pour le calcul de l'ombre
+    glNormal3f(c.x, c.y, c.z);  // Pas tout à fait juste (!) Mais c'est pas grave, c'est pour le calcul de l'ombre
     c = head + r * c;
     glVertex3f(c.x, c.y, c.z);
   }
   glEnd();
 }
 
-void drawTube(vec3r &orig, vec3r &arrow, double diam) {
+void drawTube(vec3r& orig, vec3r& arrow, double diam) {
   vec3r dest = orig + arrow;
   vec3r v = arrow;
   v.normalize();
-  vec3r vmz(v.x, v.y, v.z - 1.0); // v - z
+  vec3r vmz(v.x, v.y, v.z - 1.0);  // v - z
 
   vec3r a;
   if (norm2(vmz) > 0.1)
@@ -779,17 +772,15 @@ void drawTube(vec3r &orig, vec3r &arrow, double diam) {
 }
 
 void drawParticles() {
-  if (mouse_mode != NOTHING && box.Particles.size() > 2000)
-    return;
+  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
 
   GLColorRGBA color;
   glEnable(GL_LIGHTING);
-  for (uint i = 0; i < box.Particles.size(); ++i) {
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
     color = colorParticle(i);
     glColor4f(color.r, color.g, color.b, color.a);
     vec3r pos = box.Cell.h * box.Particles[i].pos;
-    if (!inSlice(pos))
-      continue;
+    if (!inSlice(pos)) continue;
     glPushMatrix();
     glTranslatef(pos.x, pos.y, pos.z);
     // Rotation is not necessary since the particles are spheres
@@ -801,21 +792,19 @@ void drawParticles() {
 }
 
 void drawGhosts() {
-  if (mouse_mode != NOTHING && box.Particles.size() > 2000)
-    return;
+  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
 
-  std::vector<vec3r> lst_pos; // list of reduced positions of ghost particles
+  std::vector<vec3r> lst_pos;  // list of reduced positions of ghost particles
   double mn = ghost_width;
   double mx = 1.0 - ghost_width;
   GLColorRGBA color;
-  for (uint i = 0; i < box.Particles.size(); ++i) {
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
     add_ghost_pos(i, mn, mx, lst_pos);
     for (size_t ig = 0; ig < lst_pos.size(); ig++) {
       color = colorParticle(i);
       glColor4f(color.r, color.g, color.b, alpha_ghosts);
       vec3r pos = box.Cell.h * lst_pos[ig];
-      if (!inSlice(pos))
-        continue;
+      if (!inSlice(pos)) continue;
       glPushMatrix();
       glTranslatef(pos.x, pos.y, pos.z);
       drawsphere(3, box.Particles[i].radius);
@@ -825,8 +814,7 @@ void drawGhosts() {
 }
 
 void drawForces() {
-  if (mouse_mode != NOTHING && box.Particles.size() > 2000)
-    return;
+  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
 
   // Scaling
   double scal = forceTubeFactor * radiusMax / box.FnMax;
@@ -840,8 +828,7 @@ void drawForces() {
     j = box.Interactions[k].j;
 
     vec3r orig = box.Cell.h * box.Particles[i].pos;
-    if (!inSlice(orig))
-      continue;
+    if (!inSlice(orig)) continue;
 
     diam = box.Interactions[k].fn;
 
@@ -872,19 +859,53 @@ void drawForces() {
   }
 }
 
+void drawBondDamage() {
+  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
+
+  // Scaling
+  double scal = 0.001;//radiusMax;
+
+  glEnable(GL_LIGHTING);
+  // GLColorRGBA color;
+  size_t i, j;
+  double diam;
+  for (size_t k = 0; k < box.Interactions.size(); k++) {
+    i = box.Interactions[k].i;
+    j = box.Interactions[k].j;
+
+    vec3r orig = box.Cell.h * box.Particles[i].pos;
+    if (!inSlice(orig)) continue;
+
+    diam = 1.0 - box.Interactions[k].D;
+
+    vec3r sij = box.Particles[j].pos - box.Particles[i].pos;
+    vec3r dec(floor(sij.x + 0.5), floor(sij.y + 0.5), floor(sij.z + 0.5));
+    sij -= dec;
+    vec3r branch = box.Cell.h * sij;
+
+    glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+    drawTube(orig, branch, scal * diam);
+    if (norm2(dec) > 0.0) {
+      vec3r da(box.Cell.h.xx * dec.x, box.Cell.h.yx * dec.x, box.Cell.h.zx * dec.x);
+      vec3r db(box.Cell.h.xy * dec.y, box.Cell.h.yy * dec.y, box.Cell.h.zy * dec.y);
+      vec3r dc(box.Cell.h.xz * dec.x, box.Cell.h.yz * dec.z, box.Cell.h.zz * dec.z);
+      orig += da + db + dc;
+      drawTube(orig, branch, scal * diam);
+    }
+  }
+}
+
 void drawVelocities() {
   // Scaling
   double velMax = 0.0;
   double velSqr;
   vec3r Vel;
-  for (uint i = 0; i < box.Particles.size(); ++i) {
-    Vel = box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel; // affine + fluctuation
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
+    Vel = box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel;  // affine + fluctuation
     velSqr = norm2(Vel);
-    if (velSqr > velMax)
-      velMax = velSqr;
+    if (velSqr > velMax) velMax = velSqr;
   }
-  if (velMax == 0.0)
-    return;
+  if (velMax == 0.0) return;
   velMax = sqrt(velMax);
   double scal = 5 * radiusMax / velMax;
 
@@ -893,10 +914,9 @@ void drawVelocities() {
   glEnable(GL_LIGHTING);
   glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
   GLColorRGBA color;
-  for (uint i = 0; i < box.Particles.size(); ++i) {
+  for (size_t i = 0; i < box.Particles.size(); ++i) {
     vec3r pos = box.Cell.h * box.Particles[i].pos;
-    if (!inSlice(pos))
-      continue;
+    if (!inSlice(pos)) continue;
 
     Vel = scal * (box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel);
     if (1) {
@@ -908,7 +928,7 @@ void drawVelocities() {
 }
 
 /// Robust and portable function to test if a file exists
-bool fileExists(const char *fileName) {
+bool fileExists(const char* fileName) {
   std::fstream fin;
   fin.open(fileName, std::ios::in);
   if (fin.is_open()) {
@@ -919,7 +939,7 @@ bool fileExists(const char *fileName) {
   return false;
 }
 
-void try_to_readConf(int num) {
+bool try_to_readConf(int num) {
   char file_name[256];
   sprintf(file_name, "conf%d", num);
   if (fileExists(file_name)) {
@@ -928,8 +948,64 @@ void try_to_readConf(int num) {
     confNum = num;
     box.loadConf(file_name);
     adjust_clipping_plans();
-  } else
+  } else {
     std::cout << file_name << " does not exist" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+int screenshot(const char* filename) {
+  // http://forum.devmaster.net/t/rendering-a-single-frame-to-a-file-with-opengl/12469/2
+
+  // we will store the image data here
+  unsigned char* pixels;
+  // the thingy we use to write files
+  FILE* shot;
+  // we get the width/height of the screen into this array
+  int screenStats[4];
+
+  // get the width/height of the window
+  glGetIntegerv(GL_VIEWPORT, screenStats);
+
+  // generate an array large enough to hold the pixel data
+  // (width*height*bytesPerPixel)
+  pixels = new unsigned char[screenStats[2] * screenStats[3] * 3];
+  // read in the pixel data, TGA's pixels are BGR aligned
+  glReadPixels(0, 0, screenStats[2], screenStats[3], GL_BGR, GL_UNSIGNED_BYTE, pixels);
+
+  // open the file for writing. If unsucessful, return 1
+  if ((shot = fopen(filename, "wb")) == NULL) return 1;
+
+  // this is the tga header it must be in the beginning of
+  // every (uncompressed) .tga
+  unsigned char TGAheader[12] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  // the header that is used to get the dimensions of the .tga
+  // header[1]*256+header[0] - width
+  // header[3]*256+header[2] - height
+  // header[4] - bits per pixel
+  // header[5] - ?
+  unsigned char header[6] = {((unsigned char)(screenStats[2] % 256)),
+                             ((unsigned char)(screenStats[2] / 256)),
+                             ((unsigned char)(screenStats[3] % 256)),
+                             ((unsigned char)(screenStats[3] / 256)),
+                             24,
+                             0};
+
+  // write out the TGA header
+  fwrite(TGAheader, sizeof(unsigned char), 12, shot);
+  // write out the header
+  fwrite(header, sizeof(unsigned char), 6, shot);
+  // write the pixels
+  fwrite(pixels, sizeof(unsigned char), screenStats[2] * screenStats[3] * 3, shot);
+
+  // close the file
+  fclose(shot);
+  // free the memory
+  delete[] pixels;
+
+  // return success
+  return 0;
 }
 
 void export_sample() {
@@ -950,34 +1026,34 @@ void export_sample() {
 void menu(int num) {
   switch (num) {
 
-  case 0:
-    exit(0);
-    break;
+    case 0:
+      exit(0);
+      break;
 
-  case 100:
-    colorParticle = colorParticleNone;
-    break;
-  case 101: {
-    colorParticle = colorParticleVelocityMagnitude;
-    ParticleColorTable.setMinMax(0.0, box.VelMax);
-    ParticleColorTable.Rebuild();
-  } break;
+    case 100:
+      colorParticle = colorParticleNone;
+      break;
+    case 101: {
+      colorParticle = colorParticleVelocityMagnitude;
+      ParticleColorTable.setMinMax(0.0, box.VelMax);
+      ParticleColorTable.Rebuild();
+    } break;
   };
 
   glutPostRedisplay();
 }
 
 void buildMenu() {
-  int submenu1 = glutCreateMenu(menu); // Particle Colors
+  int submenu1 = glutCreateMenu(menu);  // Particle Colors
   glutAddMenuEntry("None", 100);
   glutAddMenuEntry("Velocity Magnitude", 101);
   glutAddMenuEntry("Sum of Normal Contact Forces", 102);
 
-  int submenu2 = glutCreateMenu(menu); // Force Colors
+  int submenu2 = glutCreateMenu(menu);  // Force Colors
   glutAddMenuEntry("None", 200);
   glutAddMenuEntry("Magnitude", 201);
 
-  glutCreateMenu(menu); // Main menu
+  glutCreateMenu(menu);  // Main menu
   glutAddSubMenu("Particle Colors", submenu1);
   glutAddSubMenu("Force Colors", submenu2);
   glutAddSubMenu("Velocity Colors", submenu2);
@@ -1002,7 +1078,7 @@ GLColorRGBA colorParticleVelocityMagnitude(int i) {
 // Main function
 // =====================================================================
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc == 1) {
     box.loadConf("conf0");
   } else {
@@ -1018,10 +1094,8 @@ int main(int argc, char *argv[]) {
   double r;
   for (size_t i = 1; i < box.Particles.size(); i++) {
     r = box.Particles[i].radius;
-    if (radiusMin > r)
-      radiusMin = r;
-    if (radiusMax < r)
-      radiusMax = r;
+    if (radiusMin > r) radiusMin = r;
+    if (radiusMax < r) radiusMax = r;
     radiusMean += r;
   }
   radiusMean /= (double)(box.Particles.size());
@@ -1050,9 +1124,9 @@ int main(int argc, char *argv[]) {
   glutAttachMenu(GLUT_RIGHT_BUTTON);
 
   // ==== Init the visualizer
-  center.set(0.0, 0.0, 0.0); // where we look at
-  eye.set(0.0, 0.0, 1.0);    // from where we look
-  up.set(0.0, 1.0, 0.0);     // direction (normalized)
+  center.set(0.0, 0.0, 0.0);  // where we look at
+  eye.set(0.0, 0.0, 1.0);     // from where we look
+  up.set(0.0, 1.0, 0.0);      // direction (normalized)
 
   slice_pos = 0.5 * (box.Cell.h.get_xcol() + box.Cell.h.get_ycol() + box.Cell.h.get_zcol());
   slice_norm.set(1.0, 0.0, 0.0);

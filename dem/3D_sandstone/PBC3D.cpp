@@ -1,7 +1,7 @@
 // =========================================
 // Periodic boundary conditions with spheres
 // =========================================
-// This code is used with lagamine for FEMxDEM multiscale modeling.
+// This code is used with lagamine for FEMxDEM (or MPMxDEM) multiscale modeling.
 // It can also be used alone.
 
 #include "PBC3D.hpp"
@@ -38,22 +38,21 @@ PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig(), Sig
   permamentGluer = 0;
   numericalDampingCoeff = 0.0;
   Kratio = 1.0;
-  nbBondsini = 0;   ///< initial # of Bonds at start of Lagamine
-  porosityini = 0;  ///< initial porosity at start of Lagamine
+  nbBondsini = 0;
+  porosityini = 0;
   tensfailure = 0;
   fricfailure = 0;
-  dVerlet = 1e-7;  ///< Distance of Verlet
+  dVerlet = 1e-7;
   zetaMax = 1;
-  nodam=false;
+  nodam = false;
   enableSwitch = 1;
+  objectiveFriction = 1;
 }
 
 /// @brief Print a banner related with the current code
 void PBC3Dbox::showBanner() {
-  std::cout << std::endl;
-  std::cout << "PBC3Dbox_sandstone, Periodic Boundary Conditions in 3D" << std::endl;
-  std::cout << "<Vincent.Richefeu@3sr-grenoble.fr>" << std::endl;
-  std::cout << std::endl;
+  std::cout << "\nPBC3D (sandstone version), Periodic Boundary Conditions in 3D\n";
+  std::cout << "<Vincent.Richefeu@3sr-grenoble.fr>\n\n";
 }
 
 /// @brief open the files that will hold computation data
@@ -106,7 +105,9 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
   conf << "permamentGluer " << permamentGluer << '\n';
-  if (nodam){conf << "nodamage " << '\n';}
+  if (nodam) {
+    conf << "nodamage " << '\n';
+  }
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
   conf << "iconf " << iconf << '\n';
@@ -118,6 +119,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "hstrain " << Cell.strain << '\n';
   conf << "Sig " << Sig << '\n';
   conf << "enableSwitch " << enableSwitch << '\n';
+  conf << "objectiveFriction " << objectiveFriction << '\n';
   conf << "Load " << Load.StoredCommand << '\n';
   conf << "interVerletC " << interVerletC << '\n';
   conf << "interOutC " << interOutC << '\n';
@@ -259,6 +261,8 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> Sig;
     else if (token == "enableSwitch")
       conf >> enableSwitch;
+    else if (token == "objectiveFriction")
+      conf >> objectiveFriction;
     else if (token == "Load") {
       std::string command;
       conf >> command;
@@ -294,6 +298,10 @@ void PBC3Dbox::loadConf(const char* name) {
         mat9r vh;
         conf >> vh;
         Load.VelocityControl(vh);
+      } else if (command == "RigidRotationZ") {
+        double omega;
+        conf >> omega;
+        Load.RigidRotationZ(omega);
       } else if (command == "StrainControl") {
         mat9r fh;
         conf >> fh;
@@ -368,8 +376,8 @@ void PBC3Dbox::loadConf(const char* name) {
       double epsiDist;
       conf >> epsiDist;
       ActivateBonds(epsiDist, bondedState);
-    }else if (token == "nodamage") {
-      nodam=true;
+    } else if (token == "nodamage") {
+      nodam = true;
     } else if (token == "ActivateDamageableBonds") {
       double epsiDist;
       conf >> epsiDist;
@@ -422,7 +430,7 @@ void PBC3Dbox::loadConf(const char* name) {
 // Vsolid
 // Vmin, Vmax, Vmean
 // etc.
-// remark: it is called at the end of 'loadConf' and also 'initLagamine'
+// remark: it is called at the end of 'loadConf' and also in 'initLagamine'
 // ==========================================================================
 void PBC3Dbox::computeSampleData() {
   // Particle related data
@@ -452,8 +460,8 @@ void PBC3Dbox::computeSampleData() {
 
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
-      VectVelMean+= Vel;
-      VectAccMean+= Acc;
+      VectVelMean += Vel;
+      VectAccMean += Acc;
       double SqrVel = norm2(Vel);
       double SqrAcc = norm2(Acc);
       VelMean += SqrVel;
@@ -475,9 +483,9 @@ void PBC3Dbox::computeSampleData() {
     AccMax = sqrt(AccMax);
     for (size_t i = 0; i < Particles.size(); i++) {
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
-      vec3r Acc =  Cell.h * Particles[i].acc;
-      VelVar+=norm2(Vel-VectVelMean);
-      AccVar+=norm2(Acc-VectVelMean);
+      vec3r Acc = Cell.h * Particles[i].acc;
+      VelVar += norm2(Vel - VectVelMean);
+      AccVar += norm2(Acc - VectVelMean);
     }
     VelVar /= Particles.size();
     AccVar /= Particles.size();
@@ -508,6 +516,8 @@ void PBC3Dbox::computeSampleData() {
 }
 
 // This method is called as a pre-processing command at the end of a conf-file.
+// It 'activates' each interaction by with normal distance lower than epsiDist
+// into a point of glue by changing its state
 void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
   // In case the conf-file has no interactions, the neighbor list is updated
   updateNeighborList(dVerlet);
@@ -568,6 +578,7 @@ void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
   }
 }
 
+// This is the most radical damping ever
 void PBC3Dbox::freeze() {
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.reset();
@@ -678,7 +689,7 @@ void PBC3Dbox::setSample() {
   }
 
   Cell.mass = 1.0;
-  std::cout << "Mass of the periodic cell?  Set it as:" << std::endl;
+  std::cout << "Mass of the periodic cell?  Set it as (please choose 1):" << std::endl;
   std::cout << "   (1) mean mass of a single particle" << std::endl;
   std::cout << "   (2) approximative mass of a one-particle-depth slice" << std::endl;
   std::cout << "   (3) total mass" << std::endl;
@@ -702,7 +713,7 @@ void PBC3Dbox::setSample() {
   std::cout << "Norm of the randomly oriented velocities: ";
   std::cin >> vmax;
   ans << vmax << '\n';
-  double vmaxReduced = vmax / (2.0 * ngw * radius);  // A TESTER !!!
+  double vmaxReduced = vmax / (2.0 * ngw * radius);
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.x = vmaxReduced * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5);
     Particles[i].vel.y = vmaxReduced * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5);
@@ -717,7 +728,7 @@ void PBC3Dbox::setSample() {
   ans << press << '\n';
   Load.IsostaticCompression(press);
 
-  kn = 1e4;
+  kn = 1.0e4;
   while (true) {
     char rep = 'o';
     std::cout << "Normal stiffness, kn: ";
@@ -752,10 +763,10 @@ void PBC3Dbox::setSample() {
     std::cout << "Time step, dt: ";
     std::cin >> dt;
     ans << dt << '\n';
-    double m_max = M_PI * radius * radius * density;
-    double m_min = M_PI * (radius - deltaR) * (radius - deltaR) * density;
-    std::cout << "which corresponds to dt_crit/dt in [ " << (sqrt(m_min / kn)) / dt << " , " << (sqrt(m_max / kn)) / dt
-              << " ]" << std::endl;
+    double m_max = (4.0 / 3.0) * M_PI * radius * radius * radius * density;
+    double m_min = (4.0 / 3.0) * M_PI * (radius - deltaR) * (radius - deltaR) * (radius - deltaR) * density;
+    std::cout << "which corresponds to dt_crit/dt in [ " << (M_PI * sqrt(m_min / kn)) / dt << " , "
+              << (M_PI * sqrt(m_max / kn)) / dt << " ]" << std::endl;
     std::cout << "Satisfied? (y/n): ";
     std::cin >> rep;
     ans << (char)rep << '\n';
@@ -787,10 +798,10 @@ void PBC3Dbox::setSample() {
 
   std::cout << "Other parameters have been set to given values.\n"
             << "You can change it in the generated file.\n";
-  std::cout << "interVerlet: " << interVerlet << '\n';
-  std::cout << "interOut: " << interOut << '\n';
-  std::cout << "interConf: " << interConf << '\n';
-  std::cout << "enableSwitch: " << enableSwitch << '\n';
+  std::cout << "interVerlet " << interVerlet << '\n';
+  std::cout << "interOut " << interOut << '\n';
+  std::cout << "interConf " << interConf << '\n';
+  std::cout << "enableSwitch " << enableSwitch << '\n';
   return;
 }
 
@@ -964,7 +975,8 @@ void PBC3Dbox::dataOutput() {
   double Vcell = fabs(Cell.h.det());
   staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
   resultantOut << t << ' ' << Rmean << ' ' << R0mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
-               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMean << ' ' << VelMin << ' ' << VelMean << ' ' << VelVar << std::endl;
+               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMean << ' ' << VelMin << ' ' << VelMean
+               << ' ' << VelVar << std::endl;
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
@@ -1089,14 +1101,15 @@ void PBC3Dbox::accelerations() {
 }
 
 double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm, bool nodam) {
-      if (nodam) {zeta=1;}
+  if (nodam) {
+    zeta = 1;
+  }
   double yieldFunc;
-        if (drot0>0){
-        yieldFunc=Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) + pow(DrotNorm / (zeta * drot0), powSurf) - 1.0;
-       }
-      else{
-        yieldFunc=Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf)- 1.0;
-       }
+  if (drot0 > 0) {
+    yieldFunc = Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) + pow(DrotNorm / (zeta * drot0), powSurf) - 1.0;
+  } else {
+    yieldFunc = Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) - 1.0;
+  }
   return yieldFunc;
 }
 
@@ -1140,9 +1153,11 @@ void PBC3Dbox::computeForcesAndMoments() {
       Interactions[k].fn = fne + fnv;            // normal force component
 
       // Tangential force (elastic without viscuous damping)
-      vec3r ft_corr = Interactions[k].ft;                      // force that will be corrected
-      ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));  // 1st correction
-      ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
+      vec3r ft_corr = Interactions[k].ft;  // force that will be corrected
+      if (objectiveFriction == 1) {
+        ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));                               // 1st correction
+        ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
+      }
       vec3r vt = realVel - (vn * n);                // relative velocity projected on the tangential plan
       Interactions[k].ft = ft_corr - kt * vt * dt;  // increment the tangential force
 
@@ -1255,8 +1270,8 @@ void PBC3Dbox::computeForcesAndMoments() {
       double norm_dt_bond = norm(Interactions[k].dt_bond);
       double norm_drot_bond = norm(Interactions[k].drot_bond);
       double currentZeta = Interactions[k].D * (zetaMax - 1.0) + 1.0;
-      double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond,nodam);
-      double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond,nodam);
+      double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond, nodam);
+      double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond, nodam);
 
       /// UPDATE THE DAMAGE PARAMETER
       if (yieldFuncMax > 0.0) {
@@ -1269,7 +1284,7 @@ void PBC3Dbox::computeForcesAndMoments() {
         double zetaTest;  // the trial variable
         for (int p = 0; p < 20; p++) {
           zetaTest = 0.5 * (zeta1 + zeta2);
-          df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond,nodam);
+          df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond, nodam);
           if (df < 0.0)
             zeta2 = zetaTest;
           else if (df > 0.0)
@@ -1287,7 +1302,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // RUPTURE
       if (Interactions[k].D >= 1.0) {
-        if (Interactions[k].fn_elas == 0.0) {
+        if (Interactions[k].fn_elas == 0.0) {  // in case of absence of contact
           Interactions[k].state = noContactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
@@ -1296,7 +1311,7 @@ void PBC3Dbox::computeForcesAndMoments() {
           Interactions[k].ft_fric.reset();
           Interactions[k].mom.reset();
           tensfailure++;
-        } else if (Interactions[k].fn_elas > 0.0) {
+        } else if (Interactions[k].fn_elas > 0.0) {  // in case the particles were in contact
           Interactions[k].state = contactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
@@ -1360,15 +1375,16 @@ void PBC3Dbox::computeForcesAndMoments() {
         if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
         Interactions[k].fn_elas = Interactions[k].fn;
 
-        // Tangential force (friction)
-        // vec3r ft_corr = Interactions[k].ft;
-        // ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));
-        // ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);
-        vec3r vt = realVel - (vn * n);
+        vec3r ft_corr = Interactions[k].ft;  // force that will be corrected
+        if (objectiveFriction == 1) {
+          ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));                               // 1st correction
+          ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
+        }
+        vec3r vt = realVel - (vn * n);  // relative velocity projected on the tangential plan
         vec3r deltat = vt * dt;
         Interactions[k].dt_fric += deltat;
-        Interactions[k].ft -= w_particle * kt * deltat;    // no viscuous damping since friction can dissipate
-        double threshold = fabs(mu * Interactions[k].fn);  // Suppose that fn is elastic and without cohesion
+        Interactions[k].ft = ft_corr - w_particle * kt * deltat;  // no viscuous damping since friction can dissipate
+        double threshold = fabs(mu * Interactions[k].fn);         // Suppose that fn is elastic and without cohesion
         double ft_square = Interactions[k].ft * Interactions[k].ft;
         if (ft_square > 0.0 && ft_square >= threshold * threshold)
           Interactions[k].ft = threshold * Interactions[k].ft * (1.0f / sqrt(ft_square));
@@ -1422,19 +1438,24 @@ void PBC3Dbox::computeForcesAndMoments() {
   }  // Loop over interactions
 }
 
-// for MPMxDEM coupling
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double lengthAverage ) {
+// =======================================================================
+//             METHODS FOR MPMxDEM COUPLING
+// =======================================================================
+
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double lengthAverage) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
-  //double dtc = std::min(sqrt(Vmin * density / kn),(-VelMax+sqrt(VelMax*VelMax+2*AccMax*Rmin))/(AccMax));
-  //double dtc = std::min(sqrt(Vmin * density / kn),epsiDist/VelMax);
-  //printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
-  //printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
-  double beginavg=macro_dt*(1-lengthAverage);
+  // double dtc = std::min(sqrt(Vmin * density / kn),(-VelMax+sqrt(VelMax*VelMax+2*AccMax*Rmin))/(AccMax));
+  // double dtc = std::min(sqrt(Vmin * density / kn),epsiDist/VelMax);
+  // printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
+  // printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
+  double beginavg = macro_dt * (1.0 - lengthAverage);
   dt = dtc * 0.2;
-  //double navg=floor(macro_dt*lengthAverage/dt);
-  //double dti = dt;
-  if (dt >= (1/nstep) * macro_dt) dt = macro_dt * (1/nstep);
+
+  // double navg=floor(macro_dt*lengthAverage/dt);
+  // double dti = dt;
+  if (dt >= macro_dt / nstep) dt = macro_dt / nstep;
+
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   t = 0;
@@ -1463,26 +1484,26 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double len
   std::vector<double> szy;
   std::vector<double> szz;
   std::vector<double> tvec;
-  //int navg=0;
+  // int navg=0;
   while (t < tmax) {
     computeSampleData();
     // dt=0.8*std::min(dti,dVerlet/VelMax);
     // interVerlet=dt;
-    //printf("@@ PBC3D transform DEM time step %1.2e",dt);
+    // printf("@@ PBC3D transform DEM time step %1.2e",dt);
     velocityVerletStep();
-    if(t>=beginavg-dt){
-     //SigAvg+=Sig; navg+=1;
-     tvec.push_back(t);
-     sxx.push_back(Sig.xx);
-     sxy.push_back(Sig.xy);
-     sxz.push_back(Sig.xz);
-     syx.push_back(Sig.yx);
-     syy.push_back(Sig.yy);
-     syz.push_back(Sig.yz);
-     szx.push_back(Sig.zx);
-     szy.push_back(Sig.zy);
-     szz.push_back(Sig.zz);
-     }
+    if (t >= beginavg - dt) {
+      // SigAvg+=Sig; navg+=1;
+      tvec.push_back(t);
+      sxx.push_back(Sig.xx);
+      sxy.push_back(Sig.xy);
+      sxz.push_back(Sig.xz);
+      syx.push_back(Sig.yx);
+      syy.push_back(Sig.yy);
+      syz.push_back(Sig.yz);
+      szx.push_back(Sig.zx);
+      szy.push_back(Sig.zy);
+      szz.push_back(Sig.zz);
+    }
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
@@ -1491,53 +1512,57 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep , double len
     interVerletC += dt;
     t += dt;
   }
-  auto [origxx,slopexx]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxx);
-  SigAvg.xx=origxx+(t-dt)*slopexx;
-  auto [origxy,slopexy]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxy);
-  SigAvg.xy=origxy+(t-dt)*slopexy;
-  auto [origxz,slopexz]=boost::math::statistics::simple_ordinary_least_squares(tvec,sxz);
-  SigAvg.xz=origxz+(t-dt)*slopexz;
-  auto [origyx,slopeyx]=boost::math::statistics::simple_ordinary_least_squares(tvec,syx);
-  SigAvg.yx=origyx+(t-dt)*slopeyx;
-  auto [origyy,slopeyy]=boost::math::statistics::simple_ordinary_least_squares(tvec,syy);
-  SigAvg.yy=origyy+(t-dt)*slopeyy;
-  auto [origyz,slopeyz]=boost::math::statistics::simple_ordinary_least_squares(tvec,syz);
-  SigAvg.yz=origyz+(t-dt)*slopeyz;
-  auto [origzx,slopezx]=boost::math::statistics::simple_ordinary_least_squares(tvec,szx);
-  SigAvg.zx=origzx+(t-dt)*slopezx;
-  auto [origzy,slopezy]=boost::math::statistics::simple_ordinary_least_squares(tvec,szy);
-  SigAvg.zy=origzy+(t-dt)*slopezy;
-  auto [origzz,slopezz]=boost::math::statistics::simple_ordinary_least_squares(tvec,szz);
-  SigAvg.zz=origzz+(t-dt)*slopezz;
-  //printf("@@ PBC3D transform DEM navg %d\n",navg);
-  //printf("@@ PBC3D transform DEM navg %d\n",navg);
-  //printf("@@ PBC3D transform DEM nstep*la %1.2e\n",nstep*lengthAverage);
-  //SigAvg/=navg;
-//  if (stab){
-//    vh.reset();
-//    Load.VelocityControl(vh);
-//    updateNeighborList(dVerlet);
-//    accelerations();
 
-//    while (t < (dstab+1)*tmax) {
-//      computeSampleData();
-      // dt=0.8*std::min(dti,dVerlet/VelMax);
-      // interVerlet=dt;
-      // printf("DEM time step %1.2e",dt);
-//      velocityVerletStep();
+  linreg* Regr = linreg::get();
+  double tlast = t-dt;
+  Regr->run(tvec, sxx);
+  SigAvg.xx = Regr->orig + tlast * Regr->slope; 
+  Regr->run(tvec, sxy);
+  SigAvg.xy = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, sxz);
+  SigAvg.xz = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, syx);
+  SigAvg.yx = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, syy);
+  SigAvg.yy = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, syz);
+  SigAvg.yz = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, szx);
+  SigAvg.zx = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, szy);
+  SigAvg.zy = Regr->orig + tlast * Regr->slope;
+  Regr->run(tvec, szz);
+  SigAvg.zz = Regr->orig + tlast * Regr->slope;
 
-//      if (interVerletC >= interVerlet) {
-//        updateNeighborList(dVerlet);
-//        interVerletC = 0.0;
-//      }
+  
+  // printf("@@ PBC3D transform DEM navg %d\n",navg);
+  // printf("@@ PBC3D transform DEM navg %d\n",navg);
+  // printf("@@ PBC3D transform DEM nstep*la %1.2e\n",nstep*lengthAverage);
+  // SigAvg/=navg;
+  //  if (stab){
+  //    vh.reset();
+  //    Load.VelocityControl(vh);
+  //    updateNeighborList(dVerlet);
+  //    accelerations();
 
-//      interVerletC += dt;
-//      t += dt;
-//     }
+  //    while (t < (dstab+1)*tmax) {
+  //      computeSampleData();
+  // dt=0.8*std::min(dti,dVerlet/VelMax);
+  // interVerlet=dt;
+  // printf("DEM time step %1.2e",dt);
+  //      velocityVerletStep();
 
-//  }
+  //      if (interVerletC >= interVerlet) {
+  //        updateNeighborList(dVerlet);
+  //        interVerletC = 0.0;
+  //      }
+
+  //      interVerletC += dt;
+  //      t += dt;
+  //     }
+
+  //  }
 }
-
 
 void PBC3Dbox::mpmBonds(double Dist) {
   ActivateBonds(Dist, bondedState);
@@ -1553,7 +1578,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char* name) {
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   tmax = t + macro_dt;
-  interVerlet = 10 * dt;  // on peut faire une meilleur estimation
+  interVerlet = 10 * dt;  // on peut faire une meilleur estimation (?)
 
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
@@ -2341,10 +2366,8 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double* I, int* nstep) {
 
   // int nstep = 10; //max_dFmoinsI * sqrt(Vmean / 1.0 / Rmean) / (*I) / dt;
 
-  // std::cout << "nstep " << *nstep << std::endl;
-
   tmax = *nstep * dt;
-  interVerlet = 1000 * dt;  // TODO: compute it
+  interVerlet = 1000 * dt;  // TODO: compute it according to a criterion
 
   double fact = 1.0 / (dt * (*nstep));
 
@@ -2361,17 +2384,6 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double* I, int* nstep) {
   vh.zy = fact * (Cell.h.zx * dFmoinsI[0][1] + Cell.h.zy * dFmoinsI[1][1] + Cell.h.zz * dFmoinsI[2][1]);
   vh.zz = fact * (Cell.h.zx * dFmoinsI[0][2] + Cell.h.zy * dFmoinsI[1][2] + Cell.h.zz * dFmoinsI[2][2]);
 
-  /*
-  vh.xx = fact * (Cell.h.xx * dFmoinsI[0][0] + Cell.h.xy * dFmoinsI[1][0] + Cell.h.xz * dFmoinsI[2][0]);
-  vh.xy = fact * (Cell.h.xx * dFmoinsI[0][1] + Cell.h.xy * dFmoinsI[1][1] + Cell.h.xz * dFmoinsI[2][1]);
-  vh.xz = fact * (Cell.h.xx * dFmoinsI[0][2] + Cell.h.xy * dFmoinsI[1][2] + Cell.h.xz * dFmoinsI[2][2]);
-  vh.yx = fact * (Cell.h.yx * dFmoinsI[0][0] + Cell.h.yy * dFmoinsI[1][0] + Cell.h.yz * dFmoinsI[2][0]);
-  vh.yy = fact * (Cell.h.yx * dFmoinsI[0][1] + Cell.h.yy * dFmoinsI[1][1] + Cell.h.yz * dFmoinsI[2][1]);
-  vh.yz = fact * (Cell.h.yx * dFmoinsI[0][2] + Cell.h.yy * dFmoinsI[1][2] + Cell.h.yz * dFmoinsI[2][2]);
-  vh.zx = fact * (Cell.h.zx * dFmoinsI[0][0] + Cell.h.zy * dFmoinsI[1][0] + Cell.h.zz * dFmoinsI[2][0]);
-  vh.zy = fact * (Cell.h.zx * dFmoinsI[0][1] + Cell.h.zy * dFmoinsI[1][1] + Cell.h.zz * dFmoinsI[2][1]);
-  vh.zz = fact * (Cell.h.zx * dFmoinsI[0][2] + Cell.h.zy * dFmoinsI[1][2] + Cell.h.zz * dFmoinsI[2][2]);
-  */
   Load.VelocityControl(vh);
 
   updateNeighborList(dVerlet);
@@ -2442,8 +2454,6 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax) {
     interVerletC += dt;
     t += dt;
     nstep++;
-
-    // std::cout << "dt " << dt << std::endl;
   }
   if (nstep > 10000) std::cout << "large nstep " << nstep << std::endl;
   /*

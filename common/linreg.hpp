@@ -5,12 +5,17 @@
 #include <iostream>
 #include <cmath>
 
-namespace {
+class linreg {
 	
 	/// @brief Make a linear regression of a set of (x, y) pairs
 	/// @return Returns a, b so that the line ax+b is the linear regression of data x and y.
 	///         r is the coefficient of correlation.
-	void linreg(std::vector<double> &x, std::vector<double> &y, double & a, double & b, double &r)
+    public : 
+    double slope=0;
+    double orig=0;
+    double corr=0;
+   
+	void run(std::vector<double> &x, std::vector<double> &y)
 	{
 		if (x.size() != y.size()) {
 			std::cerr << "@linreg, x and y must have the same size" << std::endl;
@@ -40,16 +45,15 @@ namespace {
 			Sxy += dx * dy;
 		}
 
-		a = Sxy / Sx; // suppose that Sx cannot be zero
-		b = ymean - a * xmean;
+		slope = Sxy / Sx; // suppose that Sx cannot be zero
+		orig = ymean - slope * xmean;
 		if (Sy == 0.0) {
-			r = 1.0;
+			corr = 1.0;
 		}
 		else {
-			r = Sxy / sqrt(Sx * Sy);
+			corr = Sxy / sqrt(Sx * Sy);
 		}
 	}
-
-} // end namespace
+}; // end namespace
 
 #endif /* end of include guard: LINREG_HPP */
