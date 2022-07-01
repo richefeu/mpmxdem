@@ -1,5 +1,5 @@
 oneStepType ModifiedLagrangian
-result_folder ./ds_ncq125_400
+result_folder ./mpmxdem
 # Mass tolerance
 tolmass 1.e-6
 # Gravity    gx   gy
@@ -18,12 +18,12 @@ PICDissipation 0.98 1
 splitting 0
 shearLimit 1.0
 ramp 0 -9.81 0 -0.0005 
-demavg 50 0.2
+demavg 5 0.1
 acceleration
 # Materials
 #     modelID          modelName  Young     Poisson     FrictionAngle     Cohesion   DilatancyAngle (FrictionAngle -30°)
 model MohrCoulomb      M0         2.14e+05   0.498         0.400           8.26e3       -0.18
-model hnlDEM DE maycf125 0.0 1 1e-6
+model hnlDEM DE dem_conf0 0.0 1 1e-6
 
 #              lengthX   lengthY   spacing
 set_node_grid  W.H.lx.ly  4.8  3.2  0.08 0.08
