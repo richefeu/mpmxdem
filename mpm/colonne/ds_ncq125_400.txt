@@ -1,0 +1,55 @@
+oneStepType ModifiedLagrangian
+result_folder ./ds_ncq125_400
+# Mass tolerance
+tolmass 1.e-6
+# Gravity    gx   gy
+gravity      0.0  -9.81
+finalTime 2.5
+# Period of storing (in number of steps)
+confPeriod 100
+proxPeriod 50
+# Time increment
+dt 1e-5
+# Current time
+t 0.0
+# shape function can be Linear or GIMP (not yet implemented)
+ShapeFunction BSpline
+PICDissipation 0.98 1
+splitting 0
+shearLimit 1.0
+ramp 0 -9.81 0 -0.0005 
+demavg 50 0.2
+acceleration
+# Materials
+#     modelID          modelName  Young     Poisson     FrictionAngle     Cohesion   DilatancyAngle (FrictionAngle -30°)
+model MohrCoulomb      M0         2.14e+05   0.498         0.400           8.26e3       -0.18
+model hnlDEM DE maycf125 0.0 1 1e-6
+
+#              lengthX   lengthY   spacing
+set_node_grid  W.H.lx.ly  4.8  3.2  0.08 0.08
+#                   setObject#  modelName     mass_density(kg/m3)    x0    y0        x1     y1       size of boxes
+set_MP_grid         0           DE            550.0                  2   1.2    2.8    2.0     0.04
+
+
+BoundaryForceLaw frictionalViscoElastic 1
+BoundaryForceLaw frictionalViscoElastic 2
+
+DelObst 1 1
+
+#                group  x0    y0     x1     y1    driveMode
+Obstacle Line    1      2.8   2.4    2.8   1.2  freeze
+Obstacle Line    2      2.8   1.2    2.0   1.2  freeze
+Obstacle Line    1      2.0   1.2    2.0   2.4  freeze
+Obstacle Line    2      4.4   2.4    4.4   1.2  freeze
+Obstacle Line    2      4.4   1.2    0.4   1.2  freeze
+Obstacle Line    2      0.4   1.2    0.4   2.4  freeze
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0
+set              kn         0         1          1e7
+set              kt         0         1          1e7
+set              viscRate   0         1          0.98
+set              mu         0         2          0.2
+set              kn         0         2          1e7
+set              kt         0         2          1e7
+set              viscRate   0         2          0
