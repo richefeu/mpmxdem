@@ -72,7 +72,7 @@ void Line::checkProximity(MPMbox& MPM) {
     }
   }
 
-  // Get the known forces back
+  // Get the known forces back in the vector 'Neighbors'
   size_t istore = 0;
   for (size_t inew = 0; inew < Neighbors.size(); inew++) {
     while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) ++istore;

@@ -30,26 +30,26 @@ struct MaterialPoint {
 
   mat4r stress;         // Total stress
   mat4r plasticStress;  // Plastic Stress
-  double sigma3; // third principal stress
+  double sigma3;        // third principal stress
 
   double N[16];     // Value of shape function according to the position of the Material Point
   vec2r gradN[16];  // Gradient of shape function according to the position of the Material Point
   int e;            // Identify the element to which the point belongs
-  mat4r F;           // Deformation gradient matrix
-  mat4r velGrad;     // Gradient of velocity (required eg. for computation of F)
+  mat4r F;          // Deformation gradient matrix
+  mat4r velGrad;    // Gradient of velocity (required eg. for computation of F)
 
   vec2r corner[4];  // Four corners according to F (positions expressed in the global frame)
   int splitCount;   // Generation number caused by successive to splits
 
   vec2r prev_pos;  // Position at the previous time step
-  mat4r prev_F;     // Deformation gradient at the previous step
+  mat4r prev_F;    // Deformation gradient at the previous step
 
-  bool plastic;    // checks if the point was plastified
-  vec2r contactf;  // resultant force due to contacts only
-  bool ismicro;
+  bool plastic;                          // checks if the point was plastified
+  vec2r contactf;                        // resultant force due to contacts only
+  bool isDoubleScale;                    // use of numerically homogeneized law if true
   ConstitutiveModel* constitutiveModel;  // Pointer to the constitutive model
-  PBC3Dbox* PBC; // Pointer to a periodic 3D-DEM system (in case of 'homogeneised numerical law')
-  
+  PBC3Dbox* PBC;  // Pointer to a periodic 3D-DEM system (in case of 'homogeneised numerical law')
+
   // Ctor
   MaterialPoint(int Group = 0, double Vol = 0.0, double Rho = 0.0, ConstitutiveModel* CM = nullptr);
 

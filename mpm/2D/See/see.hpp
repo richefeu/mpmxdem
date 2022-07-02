@@ -5,10 +5,9 @@
 #include <GL/freeglut.h>
 #else
 #include <GL/freeglut.h>
-#include <GL/glut.h>
 #include <GL/freeglut_std.h>
+#include <GL/glut.h>
 #endif
-
 
 #include <cmath>
 #include <cstdio>
@@ -27,7 +26,30 @@ struct AABB {
   double ymax;
 };
 
+struct additionalData {
+  double MP_x;
+  double MP_y;
+  double NInt;
+  double NB;
+  double TF;
+  double FF;
+  double Rmean;
+  double Vmean;
+  double VelMean;
+  double VelMin;
+  double VelMax;
+  double VelVar;
+  double Vsolid;
+  double Vcell;
+  double h_xx;
+  double h_xy;
+  double h_yx;
+  double h_yy;
+};
+
 MPMbox Conf;
+std::vector<additionalData> ADsREF;
+std::vector<additionalData> ADs;
 std::vector<ProcessedDataMP> SmoothedData;
 std::vector<colorRGBA> precompColors;
 int confNum = 1;
@@ -75,8 +97,9 @@ void precomputeColors();
 void buildMenu();
 void printHelp();
 void fit_view();
-bool fileExists(const char *fileName);
-bool try_to_readConf(int num, MPMbox &CF, int &OKNum);
+bool fileExists(const char* fileName);
+bool try_to_readConf(int num, MPMbox& CF, int& OKNum);
+void readAdditionalData(const char* fileName);
 int screenshot(const char* filename);
 
 #endif /* end of include guard: SEE_CONF_HPP */

@@ -18,28 +18,30 @@ PICDissipation 0.98 1
 splitting 0
 shearLimit 1.0
 ramp 0 -9.81 0 -0.0005 
-demavg 5 0.1
+demavg 50 0.2
 acceleration
+
 # Materials
 #     modelID          modelName  Young     Poisson     FrictionAngle     Cohesion   DilatancyAngle (FrictionAngle -30°)
-model MohrCoulomb      M0         2.14e+05   0.498         0.400           8.26e3       -0.18
-model hnlDEM DE dem_conf0 0.0 1 1e-6
+model MohrCoulomb      M0         2.14e+05  0.498       0.400             8.26e3     -0.18
 
-#              lengthX   lengthY   spacing
-set_node_grid  W.H.lx.ly  4.8  3.2  0.08 0.08
-#                   setObject#  modelName     mass_density(kg/m3)    x0    y0        x1     y1       size of boxes
-set_MP_grid         0           DE            550.0                  2   1.2    2.8    2.0     0.04
+model hnlDEM           DE dem_conf0 0.0 1 1e-6
+
+set_node_grid  W.H.lx.ly  4.8  3.2  0.16 0.16
+
+#                   setObject#  modelName     mass_density(kg/m3)    x0    y0     x1     y1      size of boxes
+set_MP_grid         0           DE            550.0                  2     1.2    2.8    2.0     0.08
 
 
 BoundaryForceLaw frictionalViscoElastic 1
 BoundaryForceLaw frictionalViscoElastic 2
 
-DelObst 1 1
+#ObstaclePlannedRemoval 1 1
 
-#                group  x0    y0     x1     y1    driveMode
-Obstacle Line    1      2.8   2.4    2.8   1.2  freeze
-Obstacle Line    2      2.8   1.2    2.0   1.2  freeze
-Obstacle Line    1      2.0   1.2    2.0   2.4  freeze
+#                group  x0    y0     x1    y1   driveMode
+#Obstacle Line    1      2.8   2.4    2.8   1.2  freeze
+#Obstacle Line    2      2.8   1.2    2.0   1.2  freeze
+#Obstacle Line    1      2.0   1.2    2.0   2.4  freeze
 Obstacle Line    2      4.4   2.4    4.4   1.2  freeze
 Obstacle Line    2      4.4   1.2    0.4   1.2  freeze
 Obstacle Line    2      0.4   1.2    0.4   2.4  freeze

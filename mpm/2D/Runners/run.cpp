@@ -36,12 +36,9 @@ int main(int argc, char** argv) {
   } else
     Simulation.read(argv[1]);
 
-  //printf("Simultation::read done");
   SimuChrono.start();
   Simulation.init();
-  //printf("Simulation::init done");
   Simulation.run();
-  //printf("run finished");
 
   SimuChrono.stop();
   return 0;

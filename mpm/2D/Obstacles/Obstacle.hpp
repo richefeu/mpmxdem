@@ -15,7 +15,7 @@ struct BoundaryForceLaw;
 struct Obstacle {
   int group;
   double securDist;
-  bool isFree;  // true = x, y, and rot free; false = vx and vy imposed, and vrot = 0
+  bool isFree;  // true -> x, y, and rot free; false -> vx and vy imposed, and vrot = 0
 
   double mass;
   double I;

@@ -1,13 +1,17 @@
 #include "MPMbox.hpp"
-#include <BoundaryForceLaw/BoundaryForceLaw.hpp>
-#include <Commands/Command.hpp>
-#include <ConstitutiveModels/ConstitutiveModel.hpp>
-#include <Core/MaterialPoint.hpp>
-#include <Obstacles/Obstacle.hpp>
-#include <OneStep/OneStep.hpp>
-#include <ShapeFunctions/ShapeFunction.hpp>
-#include <Spies/Spy.hpp>
-#include <VtkOutputs/VtkOutput.hpp>
+
+#include "BoundaryForceLaw/BoundaryForceLaw.hpp"
+#include "Commands/Command.hpp"
+#include "ConstitutiveModels/ConstitutiveModel.hpp"
+#include "Core/MaterialPoint.hpp"
+#include "Obstacles/Obstacle.hpp"
+#include "OneStep/OneStep.hpp"
+#include "ShapeFunctions/ShapeFunction.hpp"
+#include "Spies/Spy.hpp"
+#include "VtkOutputs/VtkOutput.hpp"
+
+#include "Mth.hpp"
+
 #include <list>
 
 MPMbox::MPMbox() {
@@ -22,15 +26,18 @@ MPMbox::MPMbox() {
   gravity_max.set(0.0, -9.81);
   gravity.set(0.0, 0.0);
   gravity_incr.set(0.0, 0.0);
-  ramp=false;
-  DEMstep=5;
-  lengthAverage=0;
-  ViscousDissipation=0;  
-  dispacc=false;
-  FLIP=1;
-  activePIC=false;
-  timePIC=0.0;
-  boundary_layer=0.0;
+  ramp = false;
+  DEMstep = 5;
+  lengthAverage = 0;
+  ViscousDissipation = 0;
+  dispacc = false;
+  FLIP = 1;
+  activePIC = false;
+  timePIC = 0.0;
+  boundary_layer = 0.0;
+
+  ObstaclePlannedRemoval.time = -1.0;
+  ObstaclePlannedRemoval.groupNumber = -1;
 
   iconf = 0;
   confPeriod = 5000;
@@ -139,19 +146,19 @@ void MPMbox::read(const char* name) {
       file >> NumericalDissipation >> minVd >> EndNd;
       activeNumericalDissipation = true;
     } else if (token == "ViscousDissipation") {
-       file >> ViscousDissipation;  
+      file >> ViscousDissipation;
     } else if (token == "PICDissipation") {
-       file >> FLIP >>timePIC;
-       activePIC=true;  
-    }else if (token== "demavg"){
+      file >> FLIP >> timePIC;
+      activePIC = true;
+    } else if (token == "demavg") {
       file >> DEMstep >> lengthAverage;
-    }else if (token=="acceleration"){
-       dispacc=true;
+    } else if (token == "acceleration") {
+      dispacc = true;
     } else if (token == "ramp") {
-       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y ;
-       ramp=true;  
+      file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
+      ramp = true;
     } else if (token == "verletCoef") {
-       file >> boundary_layer;
+      file >> boundary_layer;
     } else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
@@ -198,11 +205,9 @@ void MPMbox::read(const char* name) {
       } else {
         std::cerr << "Obstacle " << obsName << " is unknown!" << std::endl;
       }
-    }
-    else if (token == "DelObst"){
-      file >> delnumber >> deltime; 
-    }
-    else if (token == "BoundaryForceLaw") {
+    } else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
+      file >> ObstaclePlannedRemoval.groupNumber >> ObstaclePlannedRemoval.time;
+    } else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
       std::string boundaryName;
       int obstacleGroup;
@@ -256,6 +261,7 @@ void MPMbox::read(const char* name) {
       for (size_t iMP = 0; iMP < nb; iMP++) {
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
             P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F >> P.sigma3;
+        // FIXME: pourquoi ce sigma3 est ajouté ici ?
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
@@ -271,7 +277,7 @@ void MPMbox::read(const char* name) {
       }
     }
 
-    else {
+    else {  // it is possible that the keyword corresponds to a command-pluggin
       Command* com = Factory<Command>::Instance()->Create(token);
       if (com != nullptr) {
         com->plug(this);
@@ -297,18 +303,27 @@ void MPMbox::read(const char* name) {
     oneStep = Factory<OneStep>::Instance()->Create(defaultOneStep);
     std::cout << "No OneStep type defined, automatically set to 'ModifiedLagrangian'." << std::endl;
   }
-  dt_init = dt;
+  dtInitial = dt;
+
+  NHL.hasDoubleScale = false;
+  for (size_t p = 0; p < MP.size(); p++) {
+    if (MP[p].isDoubleScale == true) {
+      NHL.hasDoubleScale = true;
+      break;
+    }
+  }
 }
 
 void MPMbox::save(const char* name) {
   char name_micro[256];
-  sprintf(name_micro,"%s_micro",name);
-  //std::cout << name_micro << std::endl;
+  sprintf(name_micro, "%s_micro", name);
+  // std::cout << name_micro << std::endl;
   std::ofstream file(name);
   std::ofstream file_micro(name_micro);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
-  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy" << std::endl;
+  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy"
+             << std::endl;
   if (planeStrain == true) {
     file << "planeStrain\n";
   }
@@ -317,12 +332,12 @@ void MPMbox::save(const char* name) {
   file << "tolmass " << tolmass << '\n';
   file << "gravity " << gravity_max << '\n';
   if (ramp) {
-  file << "ramp " << gravity.x << " " << gravity.y << " " <<gravity_incr.x << " " << gravity_incr.y << '\n';
+    file << "ramp " << gravity.x << " " << gravity.y << " " << gravity_incr.x << " " << gravity_incr.y << '\n';
   }
   file << "verletCoef " << boundary_layer << '\n';
-  file << "demavg " <<DEMstep << " " << lengthAverage << '\n';
-  if (dispacc){
-  file << "acceleration" << '\n';
+  file << "demavg " << DEMstep << " " << lengthAverage << '\n';
+  if (dispacc) {
+    file << "acceleration" << '\n';
   }
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
@@ -395,28 +410,17 @@ void MPMbox::save(const char* name) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
-         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].sigma3 <<'\n';
-           if (MP[iMP].ismicro){
-            MP[iMP].PBC->computeSampleData();
-            file_micro << MP[iMP].pos.x                     << " "
-                       << MP[iMP].pos.y                     << " "
-                       << MP[iMP].PBC->nbActiveInteractions << " "
-                       << MP[iMP].PBC->nbBonds              << " "
-                       << MP[iMP].PBC->tensfailure          << " "
-                       << MP[iMP].PBC->fricfailure          << " "
-                       << MP[iMP].PBC->Rmean                << " "
-                       << MP[iMP].PBC->Vmean                << " "
-                       << MP[iMP].PBC->VelMean              << " "
-                       << MP[iMP].PBC->VelMin               << " "
-                       << MP[iMP].PBC->VelMax               << " "
-                       << MP[iMP].PBC->VelVar               << " "
-                       << MP[iMP].PBC->Vsolid               << " "
-                       << fabs(MP[iMP].PBC->Cell.h.det())   << " "
-                       << MP[iMP].PBC->Cell.h.xx            << " "
-                       << MP[iMP].PBC->Cell.h.xy            << " "
-                       << MP[iMP].PBC->Cell.h.yx            << " "
-                       << MP[iMP].PBC->Cell.h.yy            << std::endl;
-       }
+         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].sigma3 << '\n';
+    if (MP[iMP].isDoubleScale) {
+      MP[iMP].PBC->computeSampleData();
+      file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << MP[iMP].PBC->nbActiveInteractions << " "
+                 << MP[iMP].PBC->nbBonds << " " << MP[iMP].PBC->tensfailure << " " << MP[iMP].PBC->fricfailure << " "
+                 << MP[iMP].PBC->Rmean << " " << MP[iMP].PBC->Vmean << " " << MP[iMP].PBC->VelMean << " "
+                 << MP[iMP].PBC->VelMin << " " << MP[iMP].PBC->VelMax << " " << MP[iMP].PBC->VelVar << " "
+                 << MP[iMP].PBC->Vsolid << " " << fabs(MP[iMP].PBC->Cell.h.det()) << " " << MP[iMP].PBC->Cell.h.xx
+                 << " " << MP[iMP].PBC->Cell.h.xy << " " << MP[iMP].PBC->Cell.h.yx << " " << MP[iMP].PBC->Cell.h.yy
+                 << std::endl;
+    }
   }
 }
 
@@ -504,44 +508,44 @@ void MPMbox::init() {
 
 void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
-  char name[256];
   MPinGridCheck();
-  if(!ramp){gravity.set(gravity_max.x,gravity_max.y);}
-   //std::cout << "ramp "<< ramp << '\n';
+
+  if (!ramp) {
+    gravity.set(gravity_max.x, gravity_max.y);
+  }
   step = 0;
 
   while (t < finalTime) {
-  if (ramp){
-  if (fabs(gravity.x) < fabs(gravity_max.x))
-     {gravity.x+=gravity_incr.x;}
-  if (fabs(gravity.y) < fabs(gravity_max.y))
-     {gravity.y+=gravity_incr.y;}
-  if((fabs(gravity.x) >= fabs(gravity_max.x)) && (fabs(gravity.y) >=fabs(gravity_max.y)))
-    { gravity.set(gravity_max.x,gravity_max.y); 
-      ramp=false;}
-   }
-   //std::cout << "g.x "<< gravity.x <<" g.y " << gravity.y << '\n';
-   //std::cout << "ramp "<< ramp << '\n';
-    // std::cout << "final Time: "<<finalTime << '\n';
-    // std::cout << "t: "<<t << '\n';
 
-    // checking cfl (should be improved but works for now)
-    //try {
-      cflCondition();
-    //} catch (char const* e) {
-    //  std::cout << "Error testing cfl: " << e << std::endl;
-    //}
+    if (ramp) {
+      if (fabs(gravity.x) < fabs(gravity_max.x)) {
+        gravity.x += gravity_incr.x;
+      }
+      if (fabs(gravity.y) < fabs(gravity_max.y)) {
+        gravity.y += gravity_incr.y;
+      }
+      if ((fabs(gravity.x) >= fabs(gravity_max.x)) && (fabs(gravity.y) >= fabs(gravity_max.y))) {
+        gravity.set(gravity_max.x, gravity_max.y);
+        ramp = false;
+      }
+    }
+
+    // checking convergence requirements
+    convergenceConditions();
 
     if (step % confPeriod == 0) {
       save(iconf);
       iconf++;
-    } 
-    if (dispacc){
-      if (step % confPeriod == 1) {
-         sprintf(name, "%s/acc%d.txt", result_folder.c_str(), iconf);
-         save(name);
+    }
+
+    if (dispacc) {
+      if (step % confPeriod == 1) {  // FIXME: c'est bizarre ce truc (à voir ensemble)
+        char name[256];
+        sprintf(name, "%s/acc%d.txt", result_folder.c_str(), iconf);
+        save(name);
       }
     }
+
     if (step % proxPeriod == 0 || MP.size() != number_MP) {  // second condition is needed because of the splitting
       checkProximity();
     }
@@ -549,12 +553,13 @@ void MPMbox::run() {
     // numerical dissipation
     // step > 100 is to give the material some time to settle
     if (activeNumericalDissipation == true && step > 100) {
-      checkNumericalDissipation(minVd,EndNd);
+      checkNumericalDissipation(minVd, EndNd);
     }
-    if (activePIC==true){
-      activePIC = timePIC>t;
-      if (activePIC==false){
-        printf("end of PIC damping at time %f", t);
+
+    if (activePIC == true) {
+      activePIC = timePIC > t;
+      if (activePIC == false) {
+        std::cout << "End of PIC damping at time " << t << '\n';
       }
     }
 
@@ -566,6 +571,7 @@ void MPMbox::run() {
     step++;
   }
 
+  // shutdown the spies
   for (size_t s = 0; s < Spies.size(); ++s) {
     Spies[s]->end();  // there is often nothing implemented
   }
@@ -574,10 +580,10 @@ void MPMbox::run() {
 }
 
 // This function deactivates the numerical dissipation if all MP-velocities are less than a prescribed value.
-void MPMbox::checkNumericalDissipation(double vmin,double EndNd) {
+void MPMbox::checkNumericalDissipation(double vmin, double EndNd) {
   // we check the velocity of MPs and if its less than a limit we set activeNumericalDissipation to false
   for (size_t p = 0; p < MP.size(); p++) {
-    if (norm(MP[p].vel) > vmin && t< EndNd) {
+    if (norm(MP[p].vel) > vmin && t < EndNd) {
       return;
     }
   }
@@ -609,40 +615,38 @@ void MPMbox::MPinGridCheck() {
   }
 }
 
-void MPMbox::cflCondition() {
+// Convergence conditions for MPs interacting with obstacles
+void MPMbox::convergenceConditions() {
   // finding necessary parameters
-  double inf = 1000000;
-  double negInf = -1000000;
-  double YoungMax = negInf;
-  double PoissonMax = negInf;
+  double inf = std::numeric_limits<double>::max();
+  double YoungMax = -inf;
+  double PoissonMax = -inf;
   double rhoMin = inf;
-  double rayMin=inf;
-  double knMax = negInf;
+  double rayMin = inf;
+  double knMax = -inf;
   double massMin = inf;
-  double eps=1e-6;
-  // FIXME: Mass is recalculated. this changes every timestep (for now we'll only check at the beginning)
-  double velMax = negInf;
+  double eps = 1e-6;
+  double velMax = -inf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;
   for (size_t p = 0; p < MP.size(); ++p) {
-    if (MP[p].constitutiveModel->getYoung() > YoungMax) YoungMax = MP[p].constitutiveModel->getYoung();
-    if (MP[p].constitutiveModel->getPoisson() > PoissonMax) PoissonMax = MP[p].constitutiveModel->getPoisson();
-    if (MP[p].density < rhoMin) rhoMin = MP[p].density;
-    if (MP[p].mass < massMin) massMin = MP[p].mass;
-    if (norm(MP[p].vel) > velMax) velMax = norm(MP[p].vel);
-    if (0.5*sqrt(MP[p].vol0) < rayMin) rayMin=0.5*sqrt(MP[p].vol0);
+    YoungMax = std::max(MP[p].constitutiveModel->getYoung(), YoungMax);
+    PoissonMax = std::max(MP[p].constitutiveModel->getPoisson(), PoissonMax);
+    rhoMin = std::min(MP[p].density, rhoMin);
+    massMin = std::min(MP[p].mass, massMin);
+    velMax = std::max(MP[p].vel * MP[p].vel, velMax);
+    rayMin = std::min(MP[p].vol * Mth::invPi, rayMin);
     groupsMP.insert((size_t)(MP[p].groupNb));
   }
-  double Kmax=YoungMax/(1-2*PoissonMax);
+  velMax = sqrt(velMax);
+  rayMin = sqrt(rayMin);
+
   if (Obstacles.size() > 0) {
     for (size_t o = 0; o < Obstacles.size(); ++o) {
       groupsObs.insert(Obstacles[o]->group);
     }
   }
 
-  // FIXME: It's not necessarily right since we can have only certain
-  // values for g1 and g2
-  // getting the knMax
   std::set<int>::iterator it;
   std::set<int>::iterator it2;
   for (it = groupsMP.begin(); it != groupsMP.end(); ++it) {
@@ -650,40 +654,36 @@ void MPMbox::cflCondition() {
       if (dataTable.get(id_kn, *it, *it2) > knMax) knMax = dataTable.get(id_kn, *it, *it2);
     }
   }
- 
-  // Second condition (due to the DEM boundaries)
-  double crit_dt2 = sqrt(massMin / knMax);
-  double crit_dt1;
-  double crit_dt3;
-  crit_dt1 = rayMin / (eps + velMax);
-  if (YoungMax>=0 && PoissonMax>=0){
-    crit_dt3 = rayMin/ sqrt(Kmax / rhoMin);
-  }
-  else{
-    crit_dt3=crit_dt1;
+
+  // compute the 3 timestep conditions
+  double collision_crit_dt = sqrt(massMin / knMax);
+  double passthough_crit_dt = collision_crit_dt;
+  if (velMax > 1e-6) passthough_crit_dt = rayMin / (eps + velMax);
+  double cfl_crit_dt;
+  if (YoungMax >= 0 && PoissonMax >= 0) {
+    double Kmax = YoungMax / (1.0 - 2.0 * PoissonMax);
+    cfl_crit_dt = rayMin / sqrt(Kmax / rhoMin);
+  } else {
+    cfl_crit_dt = passthough_crit_dt;
   }
 
   // Choosing critical dt as the smallest
-  double criticalDt;
-  if (crit_dt1 > crit_dt2)
-    criticalDt = crit_dt2;
-  else
-    criticalDt = crit_dt1;
-
-  if (criticalDt > crit_dt3) criticalDt = crit_dt3;
+  double criticalDt = std::max({passthough_crit_dt, collision_crit_dt, cfl_crit_dt});
 
   if (step == 0) {
-    std::cout << "dt_crit/dt (MPM): " << crit_dt1 / dt << "\ndt_crit/dt  (DEM): " << crit_dt2 / dt
-              << "\ndt_crit/dt  (MPM2): " << crit_dt3 / dt << "\nCurrent dt: " << dt << '\n';
+    std::cout << "dt_crit/dt (passthrough velocity): " << passthough_crit_dt / dt
+              << "\ndt_crit/dt  (collision): " << collision_crit_dt / dt << "\ndt_crit/dt  (CFL): " << cfl_crit_dt / dt
+              << "\nCurrent dt: " << dt << '\n';
   }
 
-  if (dt > criticalDt / 2) {
-    std::cout << "\n@MPMbox::cflCondition, timestep seems too large!\n";
-    dt = criticalDt / 2;
-    dt_init=dt;
+  if (dt > 0.5 * criticalDt) {
+    std::cout << "\n@MPMbox::convergenceConditions, timestep seems too large!\n";
+    dt = 0.5 * criticalDt;
+    dtInitial = dt;
     std::cout << "--> Adjusting to: " << dt << std::endl;
-    std::cout << "dt_crit/dt (MPM): " << crit_dt1 / dt << "\ndt_crit/dt  (DEM): " << crit_dt2 / dt
-              << "\ndt_crit/dt  (MPM2): " << crit_dt3 / dt << "\nCurrent dt: " << dt << '\n';
+    std::cout << "dt_crit/dt (passthrough velocity): " << passthough_crit_dt / dt
+              << "\ndt_crit/dt  (collision): " << collision_crit_dt / dt << "\ndt_crit/dt  (CFL): " << cfl_crit_dt / dt
+              << "\nCurrent dt: " << dt << '\n';
   }
 }
 
@@ -692,7 +692,7 @@ void MPMbox::cflCondition() {
 // =================================================
 
 // Node velocities (vel = q/m) need to be already updated after calling this function
-void MPMbox::updateTransformationGradient() {
+void MPMbox::updateVelocityGradient() {
   int* I;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -705,44 +705,53 @@ void MPMbox::updateTransformationGradient() {
   }
 }
 
-void MPMbox::DEMfinalTime() {
-  dt = dt_init;
+void MPMbox::limitTimeStepForDEM() {
+  dt = dtInitial;
   float dtmax = 0.0;
-  int micnb=0;
+
   for (size_t p = 0; p < MP.size(); p++) {
-    if (MP[p].ismicro) {
-       VG3D.reset();
-       VG3D.xx = MP[p].velGrad.xx;
-       VG3D.xy = MP[p].velGrad.xy;
-       VG3D.yx = MP[p].velGrad.yx;
-       VG3D.yy = MP[p].velGrad.yy;
-       VG3D.zz = 1.0; // assuming plane strain
-       VG3D=VG3D*MP[p].PBC->Cell.h;
-      dtmax = 1e-3 * MP[p].PBC->Rmin/(VG3D.normSup());
+    if (MP[p].isDoubleScale) {
+      mat9r VG3D;
+      VG3D.xx = MP[p].velGrad.xx;
+      VG3D.xy = MP[p].velGrad.xy;
+      VG3D.yx = MP[p].velGrad.yx;
+      VG3D.yy = MP[p].velGrad.yy;
+      VG3D.zz = 1.0;  // assuming plane strain
+      VG3D = VG3D * MP[p].PBC->Cell.h;
+      double maxi = std::max({fabs(VG3D.xx), fabs(VG3D.xy), fabs(VG3D.xz), fabs(VG3D.yx), fabs(VG3D.yy), fabs(VG3D.yz),
+                              fabs(VG3D.zx), fabs(VG3D.zy), fabs(VG3D.zz)});
+      if (maxi < 1e-12)
+        dtmax = dt;
+      else
+        dtmax = 1.0e-3 * MP[p].PBC->Rmin / maxi;
       dt = (dtmax <= dt) ? dtmax : dt;
-      micnb+=1;
     }
   }
-  if(micnb>0){
-     std::cout << "final DEM time-step " << dt << std::endl;
-  }
-  // original code
+
+  std::cout << "DEM time-step dt = " << dt << " after limitation\n";
+}
+
+void MPMbox::updateTransformationGradient() {
+  updateVelocityGradient();
+  if (NHL.hasDoubleScale == true) limitTimeStepForDEM();
+
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_F = MP[p].F;
     MP[p].F = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
-    //MP[p].F = MP[p].F + dt * MP[p].velGrad; 
   }
 }
-void MPMbox::DeleteObject(){
-  if (deltime>=t && deltime <= t+dt){
-      for (size_t i = 0; i < Obstacles.size(); i++) {
-        if (Obstacles[i]->group==delnumber){
-          delete (Obstacles[i]); 
-          Obstacles.erase(Obstacles.begin()+i);
-        }
-     }
-   }
+
+void MPMbox::plannedRemovalObstacle() {
+  if (ObstaclePlannedRemoval.time >= t && ObstaclePlannedRemoval.time <= t + dt) {
+    for (size_t i = 0; i < Obstacles.size(); i++) {
+      if (Obstacles[i]->group == ObstaclePlannedRemoval.groupNumber) {
+        delete (Obstacles[i]);
+        Obstacles.erase(Obstacles.begin() + i);
+      }
+    }
+  }
 }
+
 void MPMbox::adaptativeRefinement() {
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].splitCount > MaxSplitNumber) continue;
@@ -857,8 +866,8 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
 
   // Reset nodal mass
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass  = 0.0;
-    nodes[liveNodeNum[n]].sigma3= 0.0;
+    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].sigma3 = 0.0;
     nodes[liveNodeNum[n]].vel.reset();
     nodes[liveNodeNum[n]].stress.reset();
   }
@@ -889,11 +898,11 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       Data[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
       Data[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
       Data[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
-      Data[p].sigma3     +=  MP[p].N[r] * nodes[I[r]].sigma3;
+      Data[p].sigma3 += MP[p].N[r] * nodes[I[r]].sigma3;
     }
-    Data[p].pos=MP[p].pos;
-    Data[p].strain=MP[p].F;
-    Data[p].rho=MP[p].density;
+    Data[p].pos = MP[p].pos;
+    Data[p].strain = MP[p].F;
+    Data[p].rho = MP[p].density;
   }
 
   // corners from F (supposed to be already computed)
@@ -906,7 +915,6 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     Data[p].corner[3] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, halfSizeMP);
   }
 }
-
 
 /*
 // =======================

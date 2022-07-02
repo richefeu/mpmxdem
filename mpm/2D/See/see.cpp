@@ -91,6 +91,21 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
     } break;
+    case '5': {
+      if (ADs.empty()) break; 
+      color_option = 5;   
+      double Dmax = -1e20;
+      for (size_t i = 0; i < ADs.size(); i++) {
+        if (ADsREF[i].NB == 0.0) continue;
+        double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
+        if (D > Dmax) Dmax = D;
+      }
+      colorTable.setMinMax(0.0, Dmax);
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
+      precomputeColors();
+      std::cout << "MP colored by DEM-cell damage [0, " << Dmax << "] \n";
+    } break;
 
     case 'c': {
       MP_contour = 1 - MP_contour;
@@ -103,8 +118,8 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     case 'g': {
       show_grid = 1 - show_grid;
     } break;
-    
-    case 'h':{
+
+    case 'h': {
       printHelp();
     } break;
 
@@ -289,20 +304,20 @@ void drawGrid() {
 void precomputeColors() {
   precompColors.clear();
   precompColors.resize(SmoothedData.size());
-  
+
   switch (color_option) {
 
     case 0: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
-         precompColors[i].set(204, 204, 230, 255);
-      } 
+        precompColors[i].set(204, 204, 230, 255);
+      }
     } break;
 
     case 1: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
         double vel = norm(SmoothedData[i].vel);
         colorTable.getRGB(vel, &precompColors[i]);
-      }      
+      }
     } break;
 
     case 2: {
@@ -318,25 +333,33 @@ void precomputeColors() {
         colorTable.getRGB(rho, &precompColors[i]);
       }
     } break;
-    
+
     case 4: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
         double p = SmoothedData[i].stress.yy;
         colorTable.getRGB(p, &precompColors[i]);
       }
     } break;
+    
+    case 5: {
+      for (size_t i = 0; i < ADs.size(); i++) {
+        if (ADsREF[i].NB == 0.0) continue;
+        double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
+        colorTable.getRGB(D, &precompColors[i]);
+      }
+    } break;
 
     default: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
-         precompColors[i].set(204, 204, 230, 255);
-      } 
+        precompColors[i].set(204, 204, 230, 255);
+      }
     } break;
   }
 }
 
 void setColor(int i) {
-  glColor3f(precompColors[i].r/255., precompColors[i].g/255., precompColors[i].b/255.);
-  
+  glColor3f(precompColors[i].r / 255., precompColors[i].g / 255., precompColors[i].b / 255.);
+
   /*
   switch (color_option) {
 
@@ -494,11 +517,39 @@ bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
     CF.read(file_name);
     CF.postProcess(SmoothedData);
     precomputeColors();
+
+    char co_file_name[256];
+    sprintf(co_file_name, "conf%d.txt_micro", num);
+    if (fileExists(co_file_name)) {
+      std::cout << "  with additional data in file " << co_file_name << std::endl;
+      readAdditionalData(co_file_name);
+    }
+
   } else {
     std::cout << file_name << " does not exist" << std::endl;
     return false;
   }
   return true;
+}
+
+void readAdditionalData(const char* fileName) {
+  std::ifstream is(fileName);
+  std::string lineTop;
+  getline(is, lineTop);
+  ADs.clear();
+  additionalData D;
+  while (is.good()) {
+    is >> D.MP_x >> D.MP_y >> D.NInt >> D.NB >> D.TF >> D.FF >> D.Rmean >> D.Vmean >> D.VelMean >> D.VelMin >>
+        D.VelMax >> D.VelVar >> D.Vsolid >> D.Vcell >> D.h_xx >> D.h_xy >> D.h_yx >> D.h_yy;
+    ADs.push_back(D);
+  }
+
+  if (ADsREF.empty()) {
+    std::cout << "REF ADDITIONAL DATA\n";
+    for (size_t i = 0; i < ADs.size(); i++) {
+      ADsREF.push_back(ADs[i]);
+    }
+  }
 }
 
 int screenshot(const char* filename) {

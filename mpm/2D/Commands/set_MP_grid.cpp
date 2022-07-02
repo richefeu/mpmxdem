@@ -35,7 +35,7 @@ void set_MP_grid::exec() {
   nbMPY += 0.5;
   nbMPX = (int)nbMPX;
   nbMPY = (int)nbMPY;
- std::cerr << "@set_MP_grid::exec, nbMPX " << nbMPX << "nbMPY" << nbMPY << std::endl;
+ std::cerr << "@set_MP_grid::exec, nbMPX = " << nbMPX << ", nbMPY = " << nbMPY << std::endl;
   for (int i = 0; i < nbMPY; i++) {
     for (int j = 0; j < nbMPX; j++) {
       MaterialPoint P(groupNb, size, rho, CM);

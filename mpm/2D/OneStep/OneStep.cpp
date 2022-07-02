@@ -11,14 +11,14 @@ void OneStep::resetDEM(Obstacle* obst, vec2r gravity) {
 }
 
 void OneStep::moveDEM1(Obstacle* obst, double dt) {
-  // ==== Move the rigid obstacles according to their mode of driving  
+  // ==== Move the rigid obstacles according to their mode of driving
   if (obst->isFree) {
-      double dt_2 = 0.5 * dt;
-      double dt2_2 = dt_2 * dt;
-      obst->pos += obst->vel * dt + obst->acc * dt2_2;
-      obst->vel += obst->acc * dt_2;
-      obst->rot += obst->vrot * dt + obst->arot * dt2_2;
-      obst->vrot += obst->arot * dt_2;
+    double dt_2 = 0.5 * dt;
+    double dt2_2 = dt_2 * dt;
+    obst->pos += obst->vel * dt + obst->acc * dt2_2;
+    obst->vel += obst->acc * dt_2;
+    obst->rot += obst->vrot * dt + obst->arot * dt2_2;
+    obst->vrot += obst->arot * dt_2;
   } else {  // velocity is imposed (rotations are supposed blocked)
     obst->pos += obst->vel * dt;
   }
@@ -34,14 +34,16 @@ void OneStep::moveDEM2(Obstacle* obst, double dt) {
   }
 }
 
-vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP,double viscous_coefficient) {
-//Al-Kafaji PhD eq 4.131
-  vec2r  vecSigned;
-  vecSigned.x = (forceMP.x * velMP.x > 0.0) ? 1-viscous_coefficient : 1+viscous_coefficient;
-  vecSigned.y = (forceMP.y * velMP.y > 0.0) ? 1-viscous_coefficient : 1+viscous_coefficient;
+vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double viscous_coefficient) {
+  // Al-Kafaji PhD eq 4.131
+  vec2r vecSigned;
+  vecSigned.x = (forceMP.x * velMP.x > 0.0) ? 1.0 - viscous_coefficient : 1.0 + viscous_coefficient;
+  vecSigned.y = (forceMP.y * velMP.y > 0.0) ? 1.0 - viscous_coefficient : 1.0 + viscous_coefficient;
   return vecSigned;
 }
-/*vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double cundall) {
+
+/*
+vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double cundall) {
   double factor;
   double factorMinus = 1.0 - cundall;
   double factorPlus = 1.0 + cundall;
@@ -51,4 +53,5 @@ vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP,double viscous_co
   std::cout << "cundall factor" << factor << std::endl;
   forceMP.y *= factor;
   return forceMP;
-}*/
+}
+*/

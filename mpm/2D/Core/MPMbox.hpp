@@ -11,6 +11,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <limits>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -21,7 +22,7 @@
 // The linked DEM for HNL
 #include "PBC3D.hpp"
 
-// Headers in common
+// Headers in toofus
 #include "DataTable.hpp"
 #include "Mth.hpp"
 #include "factory.hpp"
@@ -61,26 +62,37 @@ class MPMbox {
   std::map<std::string, ConstitutiveModel*> models;  // The models
 
   std::string result_folder;  // The folder into which the result files will be saved
-  bool planeStrain;           // Plane strain assumption (plane stress if false, default)
+  bool planeStrain;           // Plane strain assumption (default value is false)
   grid Grid;                  // The fixed grid
   double tolmass;             // Tolerance for the mass of a MaterialPoint
-  vec2r gravity;              // The gravity acceleration vector
-  vec2r gravity_max;         // ramp gravity acceleration vector
-  vec2r gravity_incr;        // increment gravity acceleration vector
-  bool ramp;                 // ramp boolean
-  double boundary_layer;     // enlarge the contact zone
+
+  vec2r gravity;       // The gravity acceleration vector
+  vec2r gravity_max;   // ramp gravity acceleration vector
+  vec2r gravity_incr;  // increment gravity acceleration vector
+  bool ramp;           // ramp boolean
+
+  double boundary_layer;  // enlarge the contact zone
 
   double finalTime;  // Time in seconds at which the simulation ends
-  int step;          // The current step
+  int step;          // The current step number
   int iconf;         // File number of the comming save
   int confPeriod;    // Number of steps between conf files
   int proxPeriod;    // Number of steps between proximity check (rebuild the neighbor list)
-  int DEMPeriod;    // Number of spatial steps for DEM sampling
+  int DEMPeriod;     // Number of spatial steps for DEM sampling
+
   double dt;         // Time increment
-  double dt_init;    // Time increment
+  double dtInitial;  // Prescribed time increment
   double t;          // Current time
-  double deltime;    // time to delete an obstacle
-  int delnumber;     // osbsacle number to be deleted 
+
+  // scheduled removal of an obstacle:
+  // double deltime;    // time to delete an obstacle
+  // int delnumber;     // osbsacle number to be deleted
+
+  struct {
+    int groupNumber;  // osbsacle number to be deleted
+    double time;      // time to remove an obstacle
+
+  } ObstaclePlannedRemoval;
 
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
@@ -103,15 +115,18 @@ class MPMbox {
   bool activePIC;                   // damping with PIC flag
   double timePIC;                   // end of damping PIC
   bool dispacc;                     // activates doubles saves
+  
+  struct {
+    bool hasDoubleScale;
+  } NHL;
+  
+  
   int DEMstep;                      // minimal number of DEM time steps
   double lengthAverage;             // proportion of DEM aveaging
 
-
   std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step
                                  // It holds only the number of nodes concerned by the proximity of MP
-   
-  mat9r VG3D;                    // intermediate variable for MPM macro time step
-   
+
   size_t number_MP;  // used to check proximity if # of MP has changed
                      // (some "unknown" points could enter the obstacle and suddenly be detected
                      // once they are way inside)
@@ -124,20 +139,21 @@ class MPMbox {
   void read(const char* name);
   void save(const char* name);
   void save(int num);
-  void checkNumericalDissipation(double minVd,double EndNd);
+  void checkNumericalDissipation(double minVd, double EndNd);
   void checkProximity();
   void init();
 
   void MPinGridCheck();
-  void cflCondition();
+  void convergenceConditions();
   void run();
 
   // Functions called in OneStep
+  void updateVelocityGradient();
+  void limitTimeStepForDEM();
   void updateTransformationGradient();
-  void DEMfinalTime();
-  void DeleteObject();
+  void plannedRemovalObstacle();
   void adaptativeRefinement();
-  void weightIncrement();
+  // void weightIncrement();
 
   // postprocessing functions
   void postProcess(std::vector<ProcessedDataMP>& MPPD);

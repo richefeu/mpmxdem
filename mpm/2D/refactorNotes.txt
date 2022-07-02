@@ -17,3 +17,4 @@ X. faire un visualiseur pour remplacer paraview
 
 
 
+ATTENTION frottement MP <-> DEM a un problème il faudrait ft = mu 2sqrt(V/pi) |sig.n|

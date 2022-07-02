@@ -12,10 +12,9 @@ std::string result_folder;
 std::ofstream file;
 std::ofstream file_micro;
 
-
 int confNum;
-std::string typstr; 
+std::string typstr;
 double xcut;
 double aniso;
-vec2r d1,d2;
+vec2r d1, d2;
 void try_to_readConf(int num, MPMbox& CF);

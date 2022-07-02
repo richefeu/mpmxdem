@@ -1,3 +1,5 @@
+// Notice that only this integration scheme can be employed for double scale usage
+
 #include "ModifiedLagrangian.hpp"
 
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
@@ -28,8 +30,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
   std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
-
   // End of aliases ========================================
+  
   int* I;  // use as node index
 
   // 1. ==== Discard previous grid
@@ -188,7 +190,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   MPM.updateTransformationGradient();
 
   // ==== Update strain and stress
-  MPM.DEMfinalTime();
 
   // better to put it here because of the adaptative time step
   // for (size_t o = 0; o < Obstacles.size(); ++o) {
@@ -216,7 +217,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].vol *= (1.0 + volumetricdStrain);
     MP[p].density /= (1.0 + volumetricdStrain);
   }
-  MPM.DeleteObject();
+  MPM.plannedRemovalObstacle(); // FIXME: move it juste before or juste after advanceOneStep
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
 

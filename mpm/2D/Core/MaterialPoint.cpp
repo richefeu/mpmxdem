@@ -24,7 +24,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       prev_pos(),
       plastic(false),
       contactf(),
-      ismicro(false),
+      isDoubleScale(false),
       constitutiveModel(CM),
       PBC(nullptr)
       {
