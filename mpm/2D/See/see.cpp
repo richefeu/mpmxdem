@@ -101,7 +101,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
         if (D > Dmax) Dmax = D;
       }
       colorTable.setMinMax(0.0, Dmax);
-      colorTable.setTableID(3);
+      colorTable.setTableID(6);
       colorTable.Rebuild();
       precomputeColors();
       std::cout << "MP colored by DEM-cell damage [0, " << Dmax << "] \n";
