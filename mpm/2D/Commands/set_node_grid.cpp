@@ -3,6 +3,9 @@
 #include "Core/MPMbox.hpp"
 #include "set_node_grid.hpp"
 
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
+
 #include "factory.hpp"
 static Registrar<Command, set_node_grid> registrar("set_node_grid");
 
@@ -36,14 +39,16 @@ void set_node_grid::read(std::istream& is) {
     lx = W / (double)nbElemX;
     ly = H / (double)nbElemY;
   } else {
-    std::cerr << "@set_node_grid::read(), inputChoice: '" << inputChoice << "' is not known\n";
+    // std::cerr << "@set_node_grid::read(), inputChoice: '" << inputChoice << "' is not known\n";
+    box->console->error("@set_node_grid::read(), inputChoice: '{}' is not known", inputChoice);
   }
   // std::cerr << "@set_node_grid::exec, " << "nbElemX=" << nbElemX <<  "nbElemY=" << nbElemY  << std::endl;
 }
 
 void set_node_grid::exec() {
   if (box->shapeFunction == nullptr) {
-    std::cerr << "@set_node_grid::exec(), ShapeFunction has to be set BEFORE set_node_grid." << std::endl;
+    // std::cerr << "@set_node_grid::exec(), ShapeFunction has to be set BEFORE set_node_grid." << std::endl;
+    box->console->critical("@set_node_grid::exec(), ShapeFunction has to be set BEFORE set_node_grid");
     exit(0);
   }
 
@@ -120,7 +125,8 @@ void set_node_grid::exec() {
       }
     }
   } else {
-    std::cerr << "element::nbNodes = " << element::nbNodes << "! It can only be 4 or 16." << std::endl;
+    // std::cerr << "element::nbNodes = " << element::nbNodes << "! It can only be 4 or 16." << std::endl;
+    box->console->error("element::nbNodes = {}! It can only be 4 or 16", element::nbNodes);
   }
 
   // initial nodes for the first time

@@ -133,7 +133,6 @@ void MPMbox::clean() {
 void MPMbox::read(const char* name) {
   std::ifstream file(name);
   if (!file) {
-    // std::cerr << "@MPMbox::read, cannot open file " << name << std::endl;
     console->warn("@MPMbox::read, cannot open file {}", name);
     return;
   }
@@ -234,7 +233,6 @@ void MPMbox::read(const char* name) {
         CM->key = modelName;
         CM->read(file);
       } else {
-        // std::cerr << "model " << modelID << " is unknown!" << std::endl;
         console->warn("mode {} is unknown!", modelID);
       }
     }
@@ -247,7 +245,6 @@ void MPMbox::read(const char* name) {
         obs->read(file);
         Obstacles.push_back(obs);
       } else {
-        // std::cerr << "Obstacle " << obsName << " is unknown!" << std::endl;
         console->warn("Obstacle {} is unknown!", obsName);
       }
     } else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
@@ -274,7 +271,6 @@ void MPMbox::read(const char* name) {
         spy->read(file);
         Spies.push_back(spy);
       } else {
-        // std::cerr << "Spy " << spyName << " is unknown!" << std::endl;
         console->warn("Spy {} is unknown!", spyName);
       }
     } else if (token == "node") {
@@ -310,7 +306,6 @@ void MPMbox::read(const char* name) {
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
-          // std::cerr << "@MPMbox::read, model " << modelName << " not found" << std::endl;
           console->warn("@MPMbox::read, model {} not found", modelName);
         }
         P.constitutiveModel = itCM->second;
@@ -341,14 +336,12 @@ void MPMbox::read(const char* name) {
   if (!shapeFunction) {
     std::string defaultShapeFunction = "Linear";
     shapeFunction = Factory<ShapeFunction>::Instance()->Create(defaultShapeFunction);
-    // std::cout << "No ShapeFunction defined, automatically set to 'Linear'." << std::endl;
     console->info("No ShapeFunction defined, automatically set to 'Linear'");
   }
 
   if (!oneStep) {
     std::string defaultOneStep = "ModifiedLagrangian";
     oneStep = Factory<OneStep>::Instance()->Create(defaultOneStep);
-    // std::cout << "No OneStep type defined, automatically set to 'ModifiedLagrangian'." << std::endl;
     console->info("No OneStep type defined, automatically set to 'ModifiedLagrangian'");
   }
   dtInitial = dt;
@@ -480,7 +473,6 @@ void MPMbox::save(int num) {
   // Open file
   char name[256];
   sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
-  // std::cout << "Save " << name << " #MP: " << MP.size() << " Time: " << t << '\n';
   console->info("Save {}, #MP: {}, Time: {}", name, MP.size(), t);
   save(name);
 }
@@ -612,7 +604,6 @@ void MPMbox::run() {
     if (activePIC == true) {
       activePIC = timePIC > t;
       if (activePIC == false) {
-        // std::cout << "End of PIC damping at time " << t << '\n';
         console->info("End of PIC damping at time {}", t);
       }
     }
@@ -630,7 +621,6 @@ void MPMbox::run() {
     Spies[s]->end();  // there is often nothing implemented
   }
 
-  // std::cout << "MPMbox::run done" << '\n';
 }
 
 // This function deactivates the numerical dissipation if all MP-velocities are less than a prescribed value.
@@ -643,7 +633,6 @@ void MPMbox::checkNumericalDissipation(double vmin, double EndNd) {
   }
   // if we come here it means vels were small enough
   activeNumericalDissipation = false;
-  // std::cout << "activeNumericalDissipation is set to 'false'\n";
   console->info("activeNumericalDissipation is set to false");
 }
 
@@ -663,11 +652,9 @@ void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].pos.x > Grid.Nx * Grid.lx or MP[p].pos.x < 0.0 or MP[p].pos.y > Grid.Ny * Grid.ly or MP[p].pos.y < 0.0) {
-      // std::cerr << "@MPMbox::MPinGridCheck, Check before simulation: MP pos " << MP[p].pos << " is not inside the
-      // grid"
-      //         << std::endl;
-      console->critical("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
-                     MP[p].pos.x, MP[p].pos.y);
+      console->critical(
+          "@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
+          MP[p].pos.x, MP[p].pos.y);
       exit(0);
     }
   }
@@ -729,31 +716,22 @@ void MPMbox::convergenceConditions() {
   double criticalDt = std::max({passthough_crit_dt, collision_crit_dt, cfl_crit_dt});
 
   if (step == 0) {
-    /*
-    std::cout << "dt_crit/dt (passthrough velocity): " << passthough_crit_dt / dt
-              << "\ndt_crit/dt  (collision): " << collision_crit_dt / dt << "\ndt_crit/dt  (CFL): " << cfl_crit_dt / dt
-              << "\nCurrent dt: " << dt << '\n';*/
-    console->info("Current dt:                        {}", dt);
-    console->info("dt_crit/dt (passthrough velocity): {}", passthough_crit_dt / dt);
-    console->info("dt_crit/dt (collision):            {}", collision_crit_dt / dt);
-    console->info("dt_crit/dt (passthrough velocity): {}", cfl_crit_dt / dt);
-    console->info("Current dt:                        {}", dt);
+    console->debug("Current dt:                        {}", dt);
+    console->debug("dt_crit/dt (passthrough velocity): {}", passthough_crit_dt / dt);
+    console->debug("dt_crit/dt (collision):            {}", collision_crit_dt / dt);
+    console->debug("dt_crit/dt (CFL):                  {}", cfl_crit_dt / dt);
   }
 
   if (dt > 0.5 * criticalDt) {
-    std::cout << "\n@MPMbox::convergenceConditions, timestep seems too large!\n";
+    // std::cout << "\n@MPMbox::convergenceConditions, timestep seems too large!\n";
+    console->info("@MPMbox::convergenceConditions, timestep seems too large!");
     dt = 0.5 * criticalDt;
     dtInitial = dt;
-    /*
-    std::cout << "--> Adjusting to: " << dt << std::endl;
-    std::cout << "dt_crit/dt (passthrough velocity): " << passthough_crit_dt / dt
-              << "\ndt_crit/dt  (collision): " << collision_crit_dt / dt << "\ndt_crit/dt  (CFL): " << cfl_crit_dt / dt
-              << "\nCurrent dt: " << dt << '\n';*/
-    
+
     console->info("--> Adjusting to {}", dt);
-    console->info("dt_crit/dt (passthrough velocity): {}", passthough_crit_dt / dt);
-    console->info("dt_crit/dt (collision):            {}", collision_crit_dt / dt);
-    console->info("dt_crit/dt (passthrough velocity): {}", cfl_crit_dt / dt);
+    console->debug("dt_crit/dt (passthrough velocity): {}", passthough_crit_dt / dt);
+    console->debug("dt_crit/dt (collision):            {}", collision_crit_dt / dt);
+    console->debug("dt_crit/dt (CFL):                  {}", cfl_crit_dt / dt);
   }
 }
 
@@ -798,7 +776,6 @@ void MPMbox::limitTimeStepForDEM() {
     }
   }
 
-  //std::cout << "DEM time-step dt = " << dt << " after limitation\n";
   console->info("DEM time-step dt = {} after limitation", dt);
 }
 

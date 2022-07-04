@@ -3,22 +3,25 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
+
 #include "factory.hpp"
 static Registrar<Command, set_MP_grid> registrar("set_MP_grid");
 
-void set_MP_grid::read(std::istream& is) { 
-  is >> groupNb >> modelName >> rho >> x0 >> y0 >> x1 >> y1 >> size;
-}
+void set_MP_grid::read(std::istream& is) { is >> groupNb >> modelName >> rho >> x0 >> y0 >> x1 >> y1 >> size; }
 
 void set_MP_grid::exec() {
   if (box->Grid.lx / size < 2.0 || box->Grid.ly / size < 2.0) {
-    std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 2)" << std::endl;
+    // std::cerr << "@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 2)" << std::endl;
+    box->console->warn("@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 2)");
     exit(0);
   }
 
   auto itCM = box->models.find(modelName);
   if (itCM == box->models.end()) {
-    std::cerr << "@set_MP_grid::exec, model " << modelName << " not found" << std::endl;
+    // std::cerr << "@set_MP_grid::exec, model " << modelName << " not found" << std::endl;
+    box->console->error("@set_MP_grid::exec, model {} not found", modelName);
   }
   ConstitutiveModel* CM = itCM->second;
 
@@ -35,7 +38,8 @@ void set_MP_grid::exec() {
   nbMPY += 0.5;
   nbMPX = (int)nbMPX;
   nbMPY = (int)nbMPY;
- std::cerr << "@set_MP_grid::exec, nbMPX = " << nbMPX << ", nbMPY = " << nbMPY << std::endl;
+  //std::cerr << "@set_MP_grid::exec, nbMPX = " << nbMPX << ", nbMPY = " << nbMPY << std::endl;
+  box->console->info("@set_MP_grid::exec, nbMPX = {}, nbMPY = {}", nbMPX, nbMPY);
   for (int i = 0; i < nbMPY; i++) {
     for (int j = 0; j < nbMPX; j++) {
       MaterialPoint P(groupNb, size, rho, CM);
@@ -54,7 +58,8 @@ void set_MP_grid::exec() {
   for (size_t p = 0; p < box->MP.size(); p++) {
     if (box->MP[p].pos.x > box->Grid.Nx * box->Grid.lx || box->MP[p].pos.x < 0.0 ||
         box->MP[p].pos.y > box->Grid.Ny * box->Grid.ly || box->MP[p].pos.y < 0.0) {
-      std::cerr << "@set_MP_grid::exec, Check before simulation: Some MPs are not inside the grid" << std::endl;
+      //std::cerr << "@set_MP_grid::exec, Check before simulation: Some MPs are not inside the grid" << std::endl;
+      box->console->error("@set_MP_grid::exec, Check before simulation: Some MPs are not inside the grid");
       exit(0);
     }
   }
