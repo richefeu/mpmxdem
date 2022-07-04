@@ -37,7 +37,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // 1. ==== Discard previous grid
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     nodes[liveNodeNum[n]].mass  = 0.0;
-    nodes[liveNodeNum[n]].sigma3= 0.0;
+    nodes[liveNodeNum[n]].outOfPlaneStress= 0.0;
     nodes[liveNodeNum[n]].q.reset();
     nodes[liveNodeNum[n]].qdot.reset();
     nodes[liveNodeNum[n]].f.reset();
@@ -90,7 +90,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     for (int r = 0; r < element::nbNodes; r++) {
       // Nodal mass
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
-      nodes[I[r]].sigma3 += MP[p].N[r] * MP[p].sigma3;
+      nodes[I[r]].outOfPlaneStress += MP[p].N[r] * MP[p].outOfPlaneStress;
       nodes[I[r]].q += MP[p].N[r] * MP[p].vel * MP[p].mass;
 
       if (nodes[I[r]].xfixed) {
@@ -155,20 +155,17 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     double invmass;
     vec2r PICvelo;
     PICvelo.reset();
-    // vec2r tempForceMP;
-    // tempForceMP.reset();
-    //  double MPinvMass = 0;
+    
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
         PICvelo += MP[p].N[r] * nodes[I[r]].q * invmass;
         MP[p].vel += (MP[p].N[r] * dt * nodes[I[r]].qdot * invmass);
-        // tempForceMP += MP[p].N[r] * nodes[I[r]].qdot * invmass;
-        //  MPinvMass += invmass;
       }
     }
+    
     if (MPM.activePIC) {
-      MP[p].vel = MPM.FLIP * MP[p].vel + (1 - MPM.FLIP) * PICvelo;
+      MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelo;
     }
   }
 

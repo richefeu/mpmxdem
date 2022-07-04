@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     //    std::cout<<name<<std::endl;
     file.open(name);
     file << "# MP.x MP.y sigma_xx sigma_yy sigma_xy sigma_yx v_x v_y Fxx Fyy Fxy Fyx rho diam velGrad_xx VelGrad_yy "
-            "VelGrad_xy VelGrad_yx sigma3"
+            "VelGrad_xy VelGrad_yx outOfPlaneStress"
          << std::endl;
     for (size_t i = 0; i < Conf.MP.size(); i++) {
       if (SmoothedData[i].corner[0].x <= xcut && SmoothedData[i].corner[2].x >= xcut) {
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
              << SmoothedData[i].strain.yy << " " << SmoothedData[i].strain.xy << " " << SmoothedData[i].strain.yx << " "
              << SmoothedData[i].rho << " " << aniso << " " << SmoothedData[i].velGrad.xx << " "
              << SmoothedData[i].velGrad.yy << " " << SmoothedData[i].velGrad.xy << " " << SmoothedData[i].velGrad.yx
-             << " " << SmoothedData[i].sigma3 << std::endl;
+             << " " << SmoothedData[i].outOfPlaneStress << std::endl;
       }
     }
     file.close();
@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
     //    std::cout<<name<<std::endl;
     file.open(name);
     file << "# MP.x MP.y sigma_xx sigma_yy sigma_xy sigma_yx v_x v_y Fxx Fyy Fxy Fyx rho diam velGrad_xx VelGrad_yy "
-            "VelGrad_xy VelGrad_yx sigma3 "
+            "VelGrad_xy VelGrad_yx outOfPlaneStress "
          << std::endl;
     for (size_t i = 0; i < Conf.MP.size(); i++) {
       d1 = SmoothedData[i].corner[0] - SmoothedData[i].corner[2];
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
            << SmoothedData[i].strain.yy << " " << SmoothedData[i].strain.xy << " " << SmoothedData[i].strain.yx << " "
            << SmoothedData[i].rho << " " << std::max(norm(d1), norm(d1)) << " " << SmoothedData[i].velGrad.xx << " "
            << SmoothedData[i].velGrad.yy << " " << SmoothedData[i].velGrad.xy << " " << SmoothedData[i].velGrad.yx
-           << " " << SmoothedData[i].sigma3 << std::endl;
+           << " " << SmoothedData[i].outOfPlaneStress << std::endl;
     }
   }
   file.close();

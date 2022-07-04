@@ -14,7 +14,7 @@ struct node {
   bool xfixed;  // Null-velocity boolean along x
   bool yfixed;  // Null-velocity boolean along y
   mat4r stress;  // Node-stress (used e.g. for smoothing)
-  double sigma3; // third principal stress
+  double outOfPlaneStress; // third principal stress
   vec2r vel;    // Node-velocity (used e.g. for smoothing)
   int number;   // An identifier number
 

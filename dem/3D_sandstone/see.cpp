@@ -18,7 +18,8 @@ void clear_background() {
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glBegin(GL_QUADS);
-  glColor3f(0.4f, 0.4f, 1.0f);  // Bottom color
+  //glColor3f(0.4f, 0.4f, 1.0f);  // Bottom color
+  glColor3ub(102, 102, 255); 
   glVertex2f(-1.0f, -1.0f);
   glVertex2f(1.0f, -1.0f);
   glColor3f(1.0f, 1.0f, 1.0f);  // Top color
@@ -839,7 +840,7 @@ void drawForces() {
 
     // color = colorForce(i);
     if (box.Interactions[k].state == bondedState)
-      glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+      glColor4f(0.45f, 0.63f, 0.75f, 1.0f);
     else if (box.Interactions[k].state == bondedStateDam) {
       colorRGBA RGBA;
       DamCol.getRGB(box.Interactions[k].D, &RGBA);
@@ -847,7 +848,7 @@ void drawForces() {
       // glColor4f(color.r, color.g, color.b, 1.0f);
       glColor4f(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
     } else
-      glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
+      glColor4f(0.94f, 0.87f, 0.8f, 1.0f);
     drawTube(orig, branch, scal * diam);
     if (norm2(dec) > 0.0) {
       vec3r da(box.Cell.h.xx * dec.x, box.Cell.h.yx * dec.x, box.Cell.h.zx * dec.x);
@@ -863,7 +864,7 @@ void drawBondDamage() {
   if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
 
   // Scaling
-  double scal = 0.001;//radiusMax;
+  double scal = radiusMax;
 
   glEnable(GL_LIGHTING);
   // GLColorRGBA color;

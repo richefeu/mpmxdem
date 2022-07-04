@@ -6,7 +6,7 @@
 
 #include "PBC3D.hpp"
 
-PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig(), SigAvg() {
+PBC3Dbox::PBC3Dbox() {
   // Some default values (actually, most of them will be (re-)set after)
   t = 0.0;
   tmax = 5.0;
@@ -44,7 +44,7 @@ PBC3Dbox::PBC3Dbox() : Particles(1), Interactions(1), Load(), Cell(), Sig(), Sig
   fricfailure = 0;
   dVerlet = 1e-7;
   zetaMax = 1;
-  nodam = false;
+  //nodam = false;
   enableSwitch = 1;
   objectiveFriction = 1;
 }
@@ -105,9 +105,11 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
   conf << "permamentGluer " << permamentGluer << '\n';
+  /*
   if (nodam) {
     conf << "nodamage " << '\n';
   }
+  */
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
   conf << "iconf " << iconf << '\n';
@@ -377,7 +379,8 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> epsiDist;
       ActivateBonds(epsiDist, bondedState);
     } else if (token == "nodamage") {
-      nodam = true;
+      //nodam = true;
+      zetaMax = 1.0;
     } else if (token == "ActivateDamageableBonds") {
       double epsiDist;
       conf >> epsiDist;
@@ -805,7 +808,7 @@ void PBC3Dbox::setSample() {
   return;
 }
 
-void PBC3Dbox::nulvelo() {
+void PBC3Dbox::nulvelo() { // cancel all velocities
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.reset();
     Particles[i].acc.reset();
@@ -1100,10 +1103,7 @@ void PBC3Dbox::accelerations() {
   }
 }
 
-double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm, bool nodam) {
-  if (nodam) {
-    zeta = 1;
-  }
+double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm) {
   double yieldFunc;
   if (drot0 > 0) {
     yieldFunc = Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) + pow(DrotNorm / (zeta * drot0), powSurf) - 1.0;
@@ -1270,8 +1270,8 @@ void PBC3Dbox::computeForcesAndMoments() {
       double norm_dt_bond = norm(Interactions[k].dt_bond);
       double norm_drot_bond = norm(Interactions[k].drot_bond);
       double currentZeta = Interactions[k].D * (zetaMax - 1.0) + 1.0;
-      double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond, nodam);
-      double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond, nodam);
+      double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond);
+      double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond);
 
       /// UPDATE THE DAMAGE PARAMETER
       if (yieldFuncMax > 0.0) {
@@ -1284,7 +1284,7 @@ void PBC3Dbox::computeForcesAndMoments() {
         double zetaTest;  // the trial variable
         for (int p = 0; p < 20; p++) {
           zetaTest = 0.5 * (zeta1 + zeta2);
-          df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond, nodam);
+          df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond);
           if (df < 0.0)
             zeta2 = zetaTest;
           else if (df > 0.0)
@@ -1442,38 +1442,31 @@ void PBC3Dbox::computeForcesAndMoments() {
 //             METHODS FOR MPMxDEM COUPLING
 // =======================================================================
 
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double lengthAverage) {
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rateAverage, mat9r& SigAvg) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
-  // double dtc = std::min(sqrt(Vmin * density / kn),(-VelMax+sqrt(VelMax*VelMax+2*AccMax*Rmin))/(AccMax));
-  // double dtc = std::min(sqrt(Vmin * density / kn),epsiDist/VelMax);
-  // printf("@@ PBC3D transform DEM CFL     dtc %1.2e \n", sqrt(Vmin * density / kn));
-  // printf("@@ PBC3D transform DEM kinetic dtc %1.2e \n", Rmin/VelMax);
-  double beginavg = macro_dt * (1.0 - lengthAverage);
+  double beginavg = macro_dt * (1.0 - rateAverage);
   dt = dtc * 0.2;
 
-  // double navg=floor(macro_dt*lengthAverage/dt);
-  // double dti = dt;
   if (dt >= macro_dt / nstep) dt = macro_dt / nstep;
 
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
-  t = 0;
+  t = 0.0;
   tmax = macro_dt;
-  interVerlet = 5 * dt;  // on peut faire une meilleur estimation
-  interVerletC = 0;      // on peut faire une meilleur estimation
+  interVerlet = 5.0 * dt;  // on peut faire une meilleur estimation
+  interVerletC = 0;
 
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
   dFmI.yy -= 1.0;
   dFmI.zz -= 1.0;
-  // dFmI is 'Finc - I'
   mat9r vh = (1.0f / macro_dt) * (dFmI * Cell.h);
 
   Load.VelocityControl(vh);
   updateNeighborList(dVerlet);
   accelerations();
-  SigAvg.reset();
+  
   std::vector<double> sxx;
   std::vector<double> sxy;
   std::vector<double> sxz;
@@ -1484,15 +1477,11 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double leng
   std::vector<double> szy;
   std::vector<double> szz;
   std::vector<double> tvec;
-  // int navg=0;
+
   while (t < tmax) {
     computeSampleData();
-    // dt=0.8*std::min(dti,dVerlet/VelMax);
-    // interVerlet=dt;
-    // printf("@@ PBC3D transform DEM time step %1.2e",dt);
     velocityVerletStep();
     if (t >= beginavg - dt) {
-      // SigAvg+=Sig; navg+=1;
       tvec.push_back(t);
       sxx.push_back(Sig.xx);
       sxy.push_back(Sig.xy);
@@ -1533,35 +1522,6 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double leng
   SigAvg.zy = Regr->orig + tlast * Regr->slope;
   Regr->run(tvec, szz);
   SigAvg.zz = Regr->orig + tlast * Regr->slope;
-
-  
-  // printf("@@ PBC3D transform DEM navg %d\n",navg);
-  // printf("@@ PBC3D transform DEM navg %d\n",navg);
-  // printf("@@ PBC3D transform DEM nstep*la %1.2e\n",nstep*lengthAverage);
-  // SigAvg/=navg;
-  //  if (stab){
-  //    vh.reset();
-  //    Load.VelocityControl(vh);
-  //    updateNeighborList(dVerlet);
-  //    accelerations();
-
-  //    while (t < (dstab+1)*tmax) {
-  //      computeSampleData();
-  // dt=0.8*std::min(dti,dVerlet/VelMax);
-  // interVerlet=dt;
-  // printf("DEM time step %1.2e",dt);
-  //      velocityVerletStep();
-
-  //      if (interVerletC >= interVerlet) {
-  //        updateNeighborList(dVerlet);
-  //        interVerletC = 0.0;
-  //      }
-
-  //      interVerletC += dt;
-  //      t += dt;
-  //     }
-
-  //  }
 }
 
 void PBC3Dbox::mpmBonds(double Dist) {
@@ -1570,6 +1530,7 @@ void PBC3Dbox::mpmBonds(double Dist) {
   nulvelo();
 }
 
+// FIXME: à supprimer ???
 void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char* name) {
   char fname[256];
   double dtc = sqrt(Vmin * density / kn);

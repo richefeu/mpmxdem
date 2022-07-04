@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(CMAKE_CXX_COMPILER "g++-11") # do not use AppleClang
+endif()
+
 project(MPMbox LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,12 +12,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
+#find_package(spdlog CONFIG REQUIRED)
+#message(STATUS "SPDLOG_FOUND = " ${SPDLOG_FOUND})
+#message(STATUS "SPDLOG_INCLUDE_DIRS = " ${SPDLOG_INCLUDE_DIRS})
+
 # ========= OpenGL
 find_package(OpenGL REQUIRED)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-  set(CMAKE_CXX_COMPILER "g++-11") # do not use AppleClang
   # you might use: export CXX="g++-11"
   # before the find_package(OpenMP)
   find_package(OpenMP)

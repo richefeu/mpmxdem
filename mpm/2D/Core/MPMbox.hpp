@@ -6,18 +6,24 @@
 #include <ctime>
 #include <exception>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <set>
 #include <string>
 #include <vector>
-#include <limits>
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 
 #include <stdlib.h>
+
+#define SPGLOG_HEADER_ONLY
+#define FMT_HEADER_ONLY
+//#include "spdlog/sinks/stdout_color_sinks.h"
+//#include "spdlog/spdlog.h"
+#include "spdlog/fwd.h"
 
 // The linked DEM for HNL
 #include "PBC3D.hpp"
@@ -78,7 +84,9 @@ class MPMbox {
   int iconf;         // File number of the comming save
   int confPeriod;    // Number of steps between conf files
   int proxPeriod;    // Number of steps between proximity check (rebuild the neighbor list)
-  int DEMPeriod;     // Number of spatial steps for DEM sampling
+
+  int DEMPeriod;  // Number of spatial steps for DEM sampling FIXME: will be replaced by something that is able to
+                  // manage different solutions
 
   double dt;         // Time increment
   double dtInitial;  // Prescribed time increment
@@ -106,23 +114,27 @@ class MPMbox {
   double shearLimit;           // max Fxy or Fyx value. After this F becomes Identity matrix
   int MaxSplitNumber;          // The maximum number of splits
 
+  double ViscousDissipation;  // drag-like dissipation 0 means no dissipation FIXME: ne semble plus utilisé
+
+  // transient dissipation  FIXME: déactivé ??? sinon mettre dans une struct
   double NumericalDissipation;      // value of alpha for pfc dissipation. the closer to 0, the more it dissipates
-  double ViscousDissipation;        // drag-like dissipation 0 means no dissipation
   double minVd;                     // value of velocity norm beyond which dissipation is desactivated
   double EndNd;                     // time ending numerical dissipation
   bool activeNumericalDissipation;  // Flag for activating the numerical dissipation
-  double FLIP;                      // barycenter coef for using PIC as damping
-  bool activePIC;                   // damping with PIC flag
-  double timePIC;                   // end of damping PIC
-  bool dispacc;                     // activates doubles saves
-  
+
+  // integration scheme dissipation
+  double ratioFLIP;  // barycenter coef for using PIC as damping
+  bool activePIC;    // damping with PIC flag FIXME: public ???
+  double timePIC;    // end of damping PIC
+
+  bool dispacc;  // activates doubles saves FIXME: pas trop compris l'utilité
+
   struct {
     bool hasDoubleScale;
   } NHL;
-  
-  
-  int DEMstep;                      // minimal number of DEM time steps
-  double lengthAverage;             // proportion of DEM aveaging
+
+  int DEMstep;           // minimal number of DEM time steps FIXME: rename and move into NHL
+  double lengthAverage;  // proportion of DEM aveaging FIXME: rename and move into NHL
 
   std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step
                                  // It holds only the number of nodes concerned by the proximity of MP
@@ -131,10 +143,13 @@ class MPMbox {
                      // (some "unknown" points could enter the obstacle and suddenly be detected
                      // once they are way inside)
 
+  std::shared_ptr<spdlog::logger> console;
+
   MPMbox();   // Ctor
   ~MPMbox();  // Dtor
 
   void showAppBanner();
+  void setVerboseLevel(int v);
   void clean();
   void read(const char* name);
   void save(const char* name);

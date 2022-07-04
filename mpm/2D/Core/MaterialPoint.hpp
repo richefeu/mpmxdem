@@ -28,9 +28,9 @@ struct MaterialPoint {
   mat4r plasticStrain;  // Plastic Strain
   mat4r deltaStrain;    // Increment of strain (it is re-computed by ConstitutiveModel)
 
-  mat4r stress;         // Total stress
-  mat4r plasticStress;  // Plastic Stress
-  double sigma3;        // third principal stress
+  mat4r stress;             // Total stress
+  mat4r plasticStress;      // Plastic Stress
+  double outOfPlaneStress;  // Out-of-plan stress component
 
   double N[16];     // Value of shape function according to the position of the Material Point
   vec2r gradN[16];  // Gradient of shape function according to the position of the Material Point

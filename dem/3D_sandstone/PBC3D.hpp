@@ -33,7 +33,7 @@ class PBC3Dbox {
   Loading Load;                 ///< The Loading
   PeriodicCell Cell;            ///< The periodic cell
   mat9r Sig;                    ///< Internal stress
-  mat9r SigAvg;                 ///< Averaged Internal stress
+  //mat9r SigAvg;                 ///< Averaged Internal stress
   size_t nbActiveInteractions;  ///< Number of active contacts, ie all interactions without the "noContactState"
                                 ///< It can be different from Interactions.size()!
 
@@ -67,7 +67,7 @@ class PBC3Dbox {
   double fcoh;      ///< Cohesion force (strictly negative)
   double zetaMax;   ///< Can be seen as "dn_rupture / dn_dammage_starts"
   double Kratio;    ///< Ratio of particle stiffness over bond stiffness
-  bool nodam;       /// < unables damage in the damageable yield function
+  //bool nodam;       ///< unables damage in the damageable yield function
 
   // Solid cohesion
   double fn0;      ///< Maximum normal force
@@ -96,7 +96,7 @@ class PBC3Dbox {
                                    ///< (iteratively make a time increment and check for updates or saving)
   void accelerations();            ///< Computes accelerations (both for particles and the periodic-cell)
   void computeForcesAndMoments();  ///< Computes forces and moments (and cell-stress)
-  double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm, bool nodam);
+  double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);
   ///< Used for interaction of type 'bondedStateDam'
 
   void printScreen(double elapsedTime);  ///< Prints usefull data on screen during computation
@@ -114,7 +114,7 @@ class PBC3Dbox {
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
   void transform(mat9r& Finc, double macro_dt, double nstep,
-                 double lengthAverage);                            ///< for MPMxDEM double-scale simulation
+                 double rateAverage, mat9r& SigAvg);                            ///< for MPMxDEM double-scale simulation
   void transform(mat9r& Finc, double macro_dt, const char* name);  ///< for MPMxDEM double-scale simulation
   void nulvelo();                                                  ///< stop fulctuations
 
