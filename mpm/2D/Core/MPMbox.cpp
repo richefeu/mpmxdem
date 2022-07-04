@@ -741,6 +741,7 @@ void MPMbox::convergenceConditions() {
 
 // Node velocities (vel = q/m) need to be already updated after calling this function
 void MPMbox::updateVelocityGradient() {
+  START_TIMER("updateVelocityGradient");
   int* I;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -754,6 +755,7 @@ void MPMbox::updateVelocityGradient() {
 }
 
 void MPMbox::limitTimeStepForDEM() {
+  START_TIMER("limitTimeStepForDEM");
   dt = dtInitial;
   float dtmax = 0.0;
 
@@ -790,6 +792,7 @@ void MPMbox::updateTransformationGradient() {
 }
 
 void MPMbox::plannedRemovalObstacle() {
+  START_TIMER("plannedRemovalObstacle");
   if (ObstaclePlannedRemoval.time >= t && ObstaclePlannedRemoval.time <= t + dt) {
     for (size_t i = 0; i < Obstacles.size(); i++) {
       if (Obstacles[i]->group == ObstaclePlannedRemoval.groupNumber) {
@@ -801,6 +804,7 @@ void MPMbox::plannedRemovalObstacle() {
 }
 
 void MPMbox::adaptativeRefinement() {
+  START_TIMER("adaptativeRefinement");
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].splitCount > MaxSplitNumber) continue;
 

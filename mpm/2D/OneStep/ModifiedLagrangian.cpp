@@ -19,6 +19,7 @@ static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
 std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
+  START_TIMER("MUSCL step");
 
   if (MPM.step == 0) std::cout << "Running Modified Lagrangian!" << std::endl;
 
@@ -31,13 +32,13 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
   // End of aliases ========================================
-  
+
   int* I;  // use as node index
 
   // 1. ==== Discard previous grid
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass  = 0.0;
-    nodes[liveNodeNum[n]].outOfPlaneStress= 0.0;
+    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].outOfPlaneStress = 0.0;
     nodes[liveNodeNum[n]].q.reset();
     nodes[liveNodeNum[n]].qdot.reset();
     nodes[liveNodeNum[n]].f.reset();
@@ -155,7 +156,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     double invmass;
     vec2r PICvelo;
     PICvelo.reset();
-    
+
     for (int r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
@@ -163,7 +164,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
         MP[p].vel += (MP[p].N[r] * dt * nodes[I[r]].qdot * invmass);
       }
     }
-    
+
     if (MPM.activePIC) {
       MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelo;
     }
@@ -192,9 +193,12 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // for (size_t o = 0; o < Obstacles.size(); ++o) {
   //  OneStep::moveDEM2(Obstacles[o], dt);
   // }
+  {
+    START_TIMER("updateStrainAndStress");
 #pragma omp parallel for default(shared)
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
+    for (size_t p = 0; p < MP.size(); p++) {
+      MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
+    }
   }
   // [ALGO.POINT.13] ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
@@ -214,7 +218,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].vol *= (1.0 + volumetricdStrain);
     MP[p].density /= (1.0 + volumetricdStrain);
   }
-  MPM.plannedRemovalObstacle(); // FIXME: move it juste before or juste after advanceOneStep
+  MPM.plannedRemovalObstacle();  // FIXME: move it juste before or juste after advanceOneStep
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
 

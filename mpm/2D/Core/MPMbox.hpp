@@ -36,6 +36,7 @@
 #include "mat4.hpp"
 #include "message.hpp"
 #include "vec2.hpp"
+#include "profiler.hpp"
 
 // Headers that are part of MPMbox
 #include "Element.hpp"
