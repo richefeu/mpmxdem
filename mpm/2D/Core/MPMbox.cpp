@@ -723,11 +723,9 @@ void MPMbox::convergenceConditions() {
   }
 
   if (dt > 0.5 * criticalDt) {
-    // std::cout << "\n@MPMbox::convergenceConditions, timestep seems too large!\n";
     console->info("@MPMbox::convergenceConditions, timestep seems too large!");
     dt = 0.5 * criticalDt;
     dtInitial = dt;
-
     console->info("--> Adjusting to {}", dt);
     console->debug("dt_crit/dt (passthrough velocity): {}", passthough_crit_dt / dt);
     console->debug("dt_crit/dt (collision):            {}", collision_crit_dt / dt);

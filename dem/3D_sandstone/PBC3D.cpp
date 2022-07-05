@@ -1504,6 +1504,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rate
 
   linreg* Regr = linreg::get();
   double tlast = t-dt;
+  if (sxx.size() >1){
   Regr->run(tvec, sxx);
   SigAvg.xx = Regr->orig + tlast * Regr->slope; 
   Regr->run(tvec, sxy);
@@ -1522,8 +1523,11 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rate
   SigAvg.zy = Regr->orig + tlast * Regr->slope;
   Regr->run(tvec, szz);
   SigAvg.zz = Regr->orig + tlast * Regr->slope;
-}
-
+  }
+  else{
+  Sig=SigAvg;
+  }
+  }
 void PBC3Dbox::mpmBonds(double Dist) {
   ActivateBonds(Dist, bondedState);
   numericalDampingCoeff = 0;
