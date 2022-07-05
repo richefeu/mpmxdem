@@ -21,7 +21,7 @@ std::string ModifiedLagrangian::getRegistrationName() { return std::string("Modi
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   START_TIMER("MUSCL step");
 
-  if (MPM.step == 0) std::cout << "Running Modified Lagrangian!" << std::endl;
+  // if (MPM.step == 0) std::cout << "Running Modified Lagrangian!" << std::endl;
 
   // Defining aliases ======================================
   std::vector<node>& nodes = MPM.nodes;

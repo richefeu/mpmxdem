@@ -473,7 +473,7 @@ void MPMbox::save(int num) {
   // Open file
   char name[256];
   sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
-  console->info("Save {}, #MP: {}, Time: {}", name, MP.size(), t);
+  console->info("Save {}, #MP: {}, Time: {:.6f}", name, MP.size(), t);
   save(name);
 }
 
@@ -552,6 +552,7 @@ void MPMbox::init() {
 }
 
 void MPMbox::run() {
+  START_TIMER("run");
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
@@ -625,6 +626,7 @@ void MPMbox::run() {
 
 // This function deactivates the numerical dissipation if all MP-velocities are less than a prescribed value.
 void MPMbox::checkNumericalDissipation(double vmin, double EndNd) {
+  START_TIMER("checkNumericalDissipation");
   // we check the velocity of MPs and if its less than a limit we set activeNumericalDissipation to false
   for (size_t p = 0; p < MP.size(); p++) {
     if (norm(MP[p].vel) > vmin && t < EndNd) {
@@ -637,6 +639,7 @@ void MPMbox::checkNumericalDissipation(double vmin, double EndNd) {
 }
 
 void MPMbox::checkProximity() {
+  START_TIMER("checkProximity");
   // Compute securDist of MPs
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].securDist = securDistFactor * norm(MP[p].vel) * dt * proxPeriod;
@@ -662,6 +665,7 @@ void MPMbox::MPinGridCheck() {
 
 // Convergence conditions for MPs interacting with obstacles
 void MPMbox::convergenceConditions() {
+  START_TIMER("convergenceConditions");
   // finding necessary parameters
   double inf = std::numeric_limits<double>::max();
   double YoungMax = -inf;
@@ -717,9 +721,9 @@ void MPMbox::convergenceConditions() {
 
   if (step == 0) {
     console->debug("Current dt:                        {}", dt);
-    console->debug("dt_crit/dt (passthrough velocity): {}", passthough_crit_dt / dt);
-    console->debug("dt_crit/dt (collision):            {}", collision_crit_dt / dt);
-    console->debug("dt_crit/dt (CFL):                  {}", cfl_crit_dt / dt);
+    console->debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
+    console->debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
+    console->debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
   }
 
   if (dt > 0.5 * criticalDt) {
@@ -729,9 +733,9 @@ void MPMbox::convergenceConditions() {
     dtInitial = dt;
 
     console->info("--> Adjusting to {}", dt);
-    console->debug("dt_crit/dt (passthrough velocity): {}", passthough_crit_dt / dt);
-    console->debug("dt_crit/dt (collision):            {}", collision_crit_dt / dt);
-    console->debug("dt_crit/dt (CFL):                  {}", cfl_crit_dt / dt);
+    console->debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
+    console->debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
+    console->debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
   }
 }
 
@@ -778,10 +782,11 @@ void MPMbox::limitTimeStepForDEM() {
     }
   }
 
-  console->info("DEM time-step dt = {} after limitation", dt);
+  console->trace("DEM time-step dt = {} after limitation", dt);
 }
 
 void MPMbox::updateTransformationGradient() {
+  START_TIMER("updateTransformationGradient");
   updateVelocityGradient();
   if (NHL.hasDoubleScale == true) limitTimeStepForDEM();
 
@@ -967,200 +972,3 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     Data[p].corner[3] = MP[p].pos + MP[p].F * vec2r(-halfSizeMP, halfSizeMP);
   }
 }
-
-/*
-// =======================
-//  vtk-storing Routines
-// =======================
-
-// Notice that this function is okay only for regular grids
-void MPMbox::save_vtk_grid() {
-  char fname[256];
-  sprintf(fname, "%s/grid.vtk", result_folder.c_str());
-  std::cout << "Save " << fname << "... ";
-  std::ofstream file(fname);
-
-  // Header
-  file << "# vtk DataFile Version 2.0" << std::endl;
-  file << "The grid" << std::endl;
-  file << "ASCII" << std::endl;
-
-  // Content
-  file << "DATASET POLYDATA" << std::endl;
-  file << "POINTS " << nodes.size() << " float" << std::endl;
-  for (size_t i = 0; i < nodes.size(); ++i) file << nodes[i].pos << " 0" << std::endl;
-
-  file << " " << std::endl;
-  file << "POLYGONS " << Elem.size() << " " << (Elem.size()) * 5 << std::endl;
-  for (size_t i = 0; i < Elem.size(); ++i) {
-    file << "4 " << Elem[i].I[0] << " " << Elem[i].I[1] << " " << Elem[i].I[2] << " " << Elem[i].I[3] << std::endl;
-  }
-  // TODO: Print current time every time i save a vtk
-  std::cout << "done." << std::endl;
-}
-
-void MPMbox::save_vtk(const char* base, int num) {
-  // Preparation for smoothed data
-  int* I;
-  for (size_t p = 0; p < MP.size(); p++) {
-    shapeFunction->computeInterpolationValues(*this, p);
-  }
-
-  // Reset nodal mass
-  for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass = 0.0;
-    nodes[liveNodeNum[n]].vel.reset();
-    nodes[liveNodeNum[n]].stress.reset();
-  }
-  // Nodal mass
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
-      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
-    }
-  }
-
-  // Open file
-  char name[256];
-  sprintf(name, "%s/%s%d.vtk", result_folder.c_str(), base, num);
-  std::cout << "Save " << name << " #MP: " << MP.size() << " Time: " << t << " ... ";
-  std::ofstream file(name);
-
-  // Header
-  file << "# vtk DataFile Version 2.0" << std::endl;
-  file << "State at time " << t << std::endl;
-  file << "ASCII" << std::endl;
-
-  if (parallelogramMP == true) {
-    file << "DATASET POLYDATA" << std::endl;
-    file << "POINTS " << MP.size() * 4 << " float" << std::endl;
-    for (size_t p = 0; p < MP.size(); ++p) {
-      for (int j = 0; j < 4; ++j) {
-        file << MP[p].corner[j] << " 0" << std::endl;
-      }
-    }
-
-    file << " " << std::endl;
-    file << "POLYGONS " << MP.size() << " " << (MP.size()) * 5 << std::endl;
-    for (size_t i = 0; i < MP.size(); ++i) {
-      file << "4 " << 0 + 4 * i << " " << 1 + 4 * i << " " << 2 + 4 * i << " " << 3 + 4 * i << std::endl;
-    }
-    /// CELL DATA ==========
-    file << std::endl << "CELL_DATA " << MP.size() << std::endl;
-  } else {
-    file << "DATASET POLYDATA" << std::endl;
-    file << "POINTS " << MP.size() << " float" << std::endl;
-    for (size_t p = 0; p < MP.size(); ++p) {
-      file << MP[p].pos << " 0" << std::endl;
-    }
-    /// POINT DATA ==========
-    file << std::endl << "POINT_DATA " << MP.size() << std::endl;
-
-    // Size of material points (used for display with glyph)
-    file << std::endl << "VECTORS radius float" << std::endl;
-    for (size_t i = 0; i < MP.size(); ++i) {
-      file << sqrt(MP[i].vol) << " 0 0" << std::endl;
-    }
-  }
-
-  // Save according to the Options (VtkOutputs)
-  for (size_t n = 0; n < VtkOutputs.size(); n++) {
-    VtkOutputs[n]->save(file);
-  }
-  std::cout << "done." << std::endl;
-}
-
-void MPMbox::save_vtk_obst(const char* base, int numb) {
-  std::vector<int> nbNodesOfObstacle;
-  std::vector<vec2r> coords;
-
-  for (size_t o = 0; o < Obstacles.size(); o++) {
-    int nb = Obstacles[o]->addVtkPoints(coords);
-    nbNodesOfObstacle.push_back(nb);
-  }
-
-  char name[256];
-  sprintf(name, "%s/%s%d.vtk", result_folder.c_str(), base, numb);
-  std::ofstream file(name);
-
-  // Header
-  file << "# vtk DataFile Version 2.0" << std::endl;
-  file << "State at time " << t << std::endl;
-  file << "ASCII" << std::endl;
-
-  file << "DATASET UNSTRUCTURED_GRID" << std::endl;
-  file << "POINTS " << coords.size() << " float" << std::endl;
-  for (size_t i = 0; i < coords.size(); ++i) {
-    file << coords[i] << " 0" << std::endl;
-  }
-
-  file << " " << std::endl;
-  int nbData = 0;
-  for (size_t n = 0; n < nbNodesOfObstacle.size(); n++) nbData += nbNodesOfObstacle[n];
-  nbData += nbNodesOfObstacle.size();
-  file << "CELLS " << Obstacles.size() << " " << nbData << std::endl;
-  int num = 0;
-  for (size_t i = 0; i < Obstacles.size(); ++i) {
-    file << nbNodesOfObstacle[i];
-    for (int nn = 0; nn < nbNodesOfObstacle[i]; nn++) {
-      file << " " << num++;
-    }
-    file << std::endl;
-  }
-
-  /// CELL TYPES ==========
-  file << std::endl << "CELL_TYPES " << Obstacles.size() << std::endl;
-  for (size_t i = 0; i < Obstacles.size(); ++i) {
-    if (nbNodesOfObstacle[i] == 2)
-      file << "3" << std::endl;
-    else
-      file << "4" << std::endl;
-  }
-}
-
-
-void MPMbox::save_vtk_surface() {
-  char name[256];
-  sprintf(name, "%s/%s.vtk", result_folder.c_str(), "Surface");
-  std::ofstream file(name);
-
-  // Header
-  file << "# vtk DataFile Version 2.0" << std::endl;
-  file << "State at time " << t << std::endl;
-  file << "ASCII" << std::endl;
-
-  file << "DATASET UNSTRUCTURED_GRID" << std::endl;
-  file << "POINTS " << surfacePoints.size() << " float" << std::endl;
-  for (size_t i = 0; i < surfacePoints.size(); ++i) {
-    file << surfacePoints[i] << " 0" << std::endl;
-  }
-  file << " " << std::endl;
-
-  file << "CELLS " << surfacePoints.size() - 1 << " " << (surfacePoints.size() - 1) * 3 << std::endl;
-  int counter = 0;
-  for (size_t i = 0; i < surfacePoints.size() - 1; ++i) {
-    file << 2 << " " << counter << " " << counter + 1 << std::endl;
-    counter++;
-  }
-
-  /// CELL TYPES ==========
-  file << std::endl << "CELL_TYPES " << surfacePoints.size() - 1 << std::endl;
-  for (size_t i = 0; i < surfacePoints.size() - 1; ++i) {
-    file << "3" << std::endl;
-  }
-}
-
-// =======================
-//  State saving and loading Routines
-// =======================
-
-void MPMbox::save_state(const char* base, int num) {
-  char name[256];
-  sprintf(name, "%s/%s%d.mpm", result_folder.c_str(), base, num);
-  std::ofstream file(name);
-
-  for (size_t i = 0; i < MP.size(); i++) {
-    file << MP[i].pos << std::endl;
-  }
-}
-*/

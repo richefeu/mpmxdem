@@ -20,6 +20,7 @@ void mySigHandler(int sig) {
   for (size_t s = 0; s < SimuHandler->Spies.size(); ++s) {
     SimuHandler->Spies[s]->end();
   }
+  WRITE_TIMERS("stopped");
   // SimuHandler->save_state("data", SimuHandler->step);
   StackTracer::defaultSigHandler(sig);
 }
@@ -53,35 +54,33 @@ int main(int argc, char** argv) {
     std::cerr << "error: " << e.error() << " for argument " << e.argId() << std::endl;
   }
 
-  {
-    START_TIMER("Simulation");
-    MPMbox Simulation;
-    Simulation.setVerboseLevel(verboseLevel);
-    Simulation.showAppBanner();
+  MPMbox Simulation;
+  Simulation.setVerboseLevel(verboseLevel);
+  Simulation.showAppBanner();
 
-    StackTracer::initSignals(mySigHandler);
-    SimuHandler = &Simulation;
+  StackTracer::initSignals(mySigHandler);
+  SimuHandler = &Simulation;
 
 #ifdef _OPENMP
-    omp_set_num_threads(nbThreads);
-    Simulation.console->info("OpenMP acceleration (Number of threads = {})", nbThreads);
+  omp_set_num_threads(nbThreads);
+  Simulation.console->info("OpenMP acceleration (Number of threads = {})", nbThreads);
 #else
-    Simulation.console->info("No multithreading");
+  Simulation.console->info("No multithreading");
 #endif
 
-    Simulation.read(confFileName.c_str());
+  Simulation.read(confFileName.c_str());
 
-    Simulation.console->info("COMPUTATION STARTS");
+  Simulation.console->info("COMPUTATION STARTS");
 
-    SimuChrono.start();
-    Simulation.init();
-    Simulation.run();
+  SimuChrono.start();
+  Simulation.init();
+  Simulation.run();
 
-    SimuChrono.stop();
-    Simulation.console->info("COMPUTATION NORMALLY STOPPED");
-  }
+  SimuChrono.stop();
+  Simulation.console->info("COMPUTATION NORMALLY STOPPED");
 
   PRINT_TIMERS("mpmbox");
 
   return 0;
 }
+
