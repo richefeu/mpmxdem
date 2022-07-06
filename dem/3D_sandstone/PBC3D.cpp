@@ -44,7 +44,7 @@ PBC3Dbox::PBC3Dbox() {
   fricfailure = 0;
   dVerlet = 1e-7;
   zetaMax = 1;
-  //nodam = false;
+  // nodam = false;
   enableSwitch = 1;
   objectiveFriction = 1;
 }
@@ -300,6 +300,14 @@ void PBC3Dbox::loadConf(const char* name) {
         mat9r vh;
         conf >> vh;
         Load.VelocityControl(vh);
+      } else if (command == "AxisRotationZ") {
+        double E0, omega;
+        conf >> E0 >> omega;
+        // il faudrait calculer Lx et Ly à partir de h initial
+        // donc les deux lignes suivantes sont ok uniquement si un fichier conf n'est pas repris
+        double Lx = sqrt(Cell.h.xx * Cell.h.xx + Cell.h.yx * Cell.h.yx);
+        double Ly = sqrt(Cell.h.xy * Cell.h.xy + Cell.h.yy * Cell.h.yy);
+        Load.AxisRotationZ(E0, omega, Lx, Ly, t);
       } else if (command == "RigidRotationZ") {
         double omega;
         conf >> omega;
@@ -379,7 +387,7 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> epsiDist;
       ActivateBonds(epsiDist, bondedState);
     } else if (token == "nodamage") {
-      //nodam = true;
+      // nodam = true;
       zetaMax = 1.0;
     } else if (token == "ActivateDamageableBonds") {
       double epsiDist;
@@ -808,7 +816,7 @@ void PBC3Dbox::setSample() {
   return;
 }
 
-void PBC3Dbox::nulvelo() { // cancel all velocities
+void PBC3Dbox::nulvelo() {  // cancel all velocities
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.reset();
     Particles[i].acc.reset();
@@ -883,7 +891,7 @@ void PBC3Dbox::velocityVerletStep() {
 
 /// @brief Print information about the running computation and current state of the sample
 void PBC3Dbox::printScreen(double elapsedTime) {
-  std::cout << "+===============================================================================" << '\n';
+  std::cout << "+\n";
   std::cout << "|  iconf = " << iconf << ", Time = " << t << '\n';
   std::cout << "|  Elapsed time since last configuration: " << elapsedTime << " seconds" << '\n';
 
@@ -903,14 +911,27 @@ void PBC3Dbox::printScreen(double elapsedTime) {
 
   double Vcell = fabs(Cell.h.det());
   std::cout << "|  Solid fraction: " << Vsolid / Vcell << '\n';
+  std::cout << "|  dt_crit/dt in range [" << (M_PI * sqrt(Vmin * density / kn)) / dt << ", "
+            << (M_PI * sqrt(Vmax * density / kn)) / dt << "]\n";
 
   double Rmean, R0mean, fnMin, fnMean;
   staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
-  std::cout << "|  Mean resultant: " << Rmean << ", R0mean: " << R0mean << ", fnMin:  " << fnMin
-            << ", fnMean:  " << fnMean << '\n';
+  std::cout << "|  Mean resultant: " << Rmean << ", Mean resultant (without ratlers): " << R0mean << '\n';
+  std::cout << "|  Min contact normal force:  " << fnMin << ", Mean contact normal force:  " << fnMean << '\n';
+  std::cout << "|  R0mean/fnMean: " << R0mean / fnMean << '\n';
 
-  std::cout << "+===============================================================================" << '\n';
-  std::cout << '\n' << std::endl;
+  double vf = 0.0;
+  vec3r vel;
+  for (size_t i = 0; i < Particles.size(); i++) {
+    vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+    vf = std::max(vf, vel * vel);
+  }
+  vf = sqrt(vf) * interVerlet;
+  std::cout << "|  Estimated free flight distance between Neighbor updates: " << 1.0e6 * vf << "e-6\n";
+  std::cout << "|  Verlet distance: " << dVerlet << ", Rmin: " << Rmin << '\n';
+
+  std::cout << "+\n\n";
+  std::cout << std::flush;
 }
 
 /// @brief The main loop of time-integration
@@ -920,6 +941,7 @@ void PBC3Dbox::integrate() {
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   accelerations();
+
   dataOutput();
 
   char fname[256];
@@ -930,9 +952,15 @@ void PBC3Dbox::integrate() {
 
   double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
   while (t < tmax) {
+
+    t += dt;
+    interConfC += dt;
+    interOutC += dt;
+    interVerletC += dt;
+
     velocityVerletStep();
 
-    if (interConfC >= interConf) {
+    if (interConfC >= interConf - dt_2) {
       iconf++;
 
       double currentTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
@@ -943,20 +971,15 @@ void PBC3Dbox::integrate() {
       interConfC = 0.0;
     }
 
-    if (interVerletC >= interVerlet) {
+    if (interVerletC >= interVerlet - dt_2) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
     }
 
-    if (interOutC >= interOut) {
+    if (interOutC >= interOut - dt_2) {
       dataOutput();
       interOutC = 0.0;
     }
-
-    interConfC += dt;
-    interOutC += dt;
-    interVerletC += dt;
-    t += dt;
   }
 
   return;
@@ -1105,7 +1128,7 @@ void PBC3Dbox::accelerations() {
 
 double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm) {
   double yieldFunc;
-  if (drot0 > 0) {
+  if (drot0 > 0.0) {
     yieldFunc = Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) + pow(DrotNorm / (zeta * drot0), powSurf) - 1.0;
   } else {
     yieldFunc = Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) - 1.0;
@@ -1466,7 +1489,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rate
   Load.VelocityControl(vh);
   updateNeighborList(dVerlet);
   accelerations();
-  
+
   std::vector<double> sxx;
   std::vector<double> sxy;
   std::vector<double> sxz;
@@ -1503,27 +1526,31 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rate
   }
 
   linreg* Regr = linreg::get();
-  double tlast = t-dt;
-  Regr->run(tvec, sxx);
-  SigAvg.xx = Regr->orig + tlast * Regr->slope; 
-  Regr->run(tvec, sxy);
-  SigAvg.xy = Regr->orig + tlast * Regr->slope;
-  Regr->run(tvec, sxz);
-  SigAvg.xz = Regr->orig + tlast * Regr->slope;
-  Regr->run(tvec, syx);
-  SigAvg.yx = Regr->orig + tlast * Regr->slope;
-  Regr->run(tvec, syy);
-  SigAvg.yy = Regr->orig + tlast * Regr->slope;
-  Regr->run(tvec, syz);
-  SigAvg.yz = Regr->orig + tlast * Regr->slope;
-  Regr->run(tvec, szx);
-  SigAvg.zx = Regr->orig + tlast * Regr->slope;
-  Regr->run(tvec, szy);
-  SigAvg.zy = Regr->orig + tlast * Regr->slope;
-  Regr->run(tvec, szz);
-  SigAvg.zz = Regr->orig + tlast * Regr->slope;
+  double tlast = t - dt;
+  if (sxx.size() > 1) {
+    Regr->run(tvec, sxx);
+    SigAvg.xx = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, sxy);
+    SigAvg.xy = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, sxz);
+    SigAvg.xz = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, syx);
+    SigAvg.yx = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, syy);
+    SigAvg.yy = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, syz);
+    SigAvg.yz = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, szx);
+    SigAvg.zx = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, szy);
+    SigAvg.zy = Regr->orig + tlast * Regr->slope;
+    Regr->run(tvec, szz);
+    SigAvg.zz = Regr->orig + tlast * Regr->slope;
+  } else {
+    // Sig = SigAvg;
+    SigAvg = Sig;
+  }
 }
-
 void PBC3Dbox::mpmBonds(double Dist) {
   ActivateBonds(Dist, bondedState);
   numericalDampingCoeff = 0;

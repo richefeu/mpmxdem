@@ -3,8 +3,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>   // printf
-#include <cstdlib>  // rand
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -19,6 +19,7 @@
 #include "fileTool.hpp"
 #include "geoPack3D.hpp"
 #include "linreg.hpp"
+//#include "profiler.hpp"
 
 // This is useful to make fortran-like outputs
 #define __FORMATED(P, W, V) std::fixed << std::setprecision(P) << std::setw(W) << std::left << (V)
@@ -33,7 +34,6 @@ class PBC3Dbox {
   Loading Load;                 ///< The Loading
   PeriodicCell Cell;            ///< The periodic cell
   mat9r Sig;                    ///< Internal stress
-  //mat9r SigAvg;                 ///< Averaged Internal stress
   size_t nbActiveInteractions;  ///< Number of active contacts, ie all interactions without the "noContactState"
                                 ///< It can be different from Interactions.size()!
 
@@ -67,7 +67,6 @@ class PBC3Dbox {
   double fcoh;      ///< Cohesion force (strictly negative)
   double zetaMax;   ///< Can be seen as "dn_rupture / dn_dammage_starts"
   double Kratio;    ///< Ratio of particle stiffness over bond stiffness
-  //bool nodam;       ///< unables damage in the damageable yield function
 
   // Solid cohesion
   double fn0;      ///< Maximum normal force
@@ -153,11 +152,11 @@ class PBC3Dbox {
   double dt_2;   ///< Half the time-step
   double dt2_2;  ///< Half the squared time-step
 
-  //
+  // balancing of stiffnesses
   double w_bond;
   double w_particle;
 
-  int objectiveFriction;
+  int objectiveFriction; //< activation of the objectivity for friction forces
 
  public:
   // Sample
@@ -181,6 +180,7 @@ class PBC3Dbox {
   double VelMax;   ///< Maximum velocity magnitude of the particles
   double VelMean;  ///< Mean velocity magnitude of the particles
   double VelVar;   ///< Variance of velocity
+  
   // Particles accelerations
   double AccMin;   ///< Minimum acceleration magnitude of the particles
   double AccMax;   ///< Maximum acceleration magnitude of the particles

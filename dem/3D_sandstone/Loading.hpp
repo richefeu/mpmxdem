@@ -39,6 +39,7 @@ struct Loading {
   void RigidRotationZ(double omega);
   void StrainControl(mat9r &F);
   void TransformationGradient(mat9r &h, mat9r &F, double duration);
+  void AxisRotationZ(double E0, double omega, double Lx, double Ly, double iniTime);
   void LodeAnglePath(double pressure, double velocity, double LodeAngle);
   void LodeAnglePathMix(double pressure, double velocity, double LodeAngle);
   void Fixe();

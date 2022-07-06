@@ -15,7 +15,7 @@ void PeriodicCell::Define(double XX, double XY, double XZ, double YX, double YY,
                           double ZZ) {
   h.xx = XX;
   h.xy = XY;
-  h.yz = XZ;
+  h.xz = XZ;
 
   h.yx = YX;
   h.yy = YY;

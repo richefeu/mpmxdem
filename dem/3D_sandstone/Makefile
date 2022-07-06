@@ -51,7 +51,7 @@ clean:
 	rm -f *.o libPBC3D.a *.gch run see
 
 lib: $(SOURCES) $(HEADERS) 
-	$(CXX) $(CXXFLAGS) -c $(SOURCES) #$(GLINK) 
+	$(CXX) $(CXXFLAGS) -c $(SOURCES) 
 	ar rvs libPBC3D.a $(OBJECTS)
 
 # The application that runs a simulation

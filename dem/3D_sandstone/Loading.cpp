@@ -158,16 +158,16 @@ void Loading::RigidRotationZ(double omega) {
   sprintf(StoredCommand, "RigidRotationZ %g", omega);
   Drive.reset(VelocityDriven);
   Sig.reset();
-  v.reset(); 
+  v.reset();
   ServoFunction = [omega](PBC3Dbox& box) -> void {
     double lx = sqrt(box.Cell.h.xx * box.Cell.h.xx + box.Cell.h.yx * box.Cell.h.yx + box.Cell.h.zx * box.Cell.h.zx);
     double ly = sqrt(box.Cell.h.xy * box.Cell.h.xy + box.Cell.h.yy * box.Cell.h.yy + box.Cell.h.zy * box.Cell.h.zy);
-    double omegat = omega * box.t; // t initial must be zero
-    box.Load.v.xx = -lx * omega * sin(omegat); 
-    box.Load.v.yx = lx * omega * cos(omegat); 
-    
-    box.Load.v.xy = -ly * omega * cos(omegat); 
-    box.Load.v.yy = -ly * omega * sin(omegat); 
+    double omegat = omega * box.t;  // t initial must be zero
+    box.Load.v.xx = -lx * omega * sin(omegat);
+    box.Load.v.yx = lx * omega * cos(omegat);
+
+    box.Load.v.xy = -ly * omega * cos(omegat);
+    box.Load.v.yy = -ly * omega * sin(omegat);
   };
 }
 
@@ -335,6 +335,36 @@ void Loading::LodeAnglePathMix(double pressure, double velocity, double LodeAngl
 
     box.Load.Sig.xx = pressure + (b * dSigyy);
     box.Load.Sig.zz = pressure + (a * dSigyy);
+  };
+}
+
+void Loading::AxisRotationZ(double E0, double omega, double Lx, double Ly, double iniTime) {
+  sprintf(StoredCommand, "AxisRotationZ %g %g", E0, omega);
+
+  Drive.reset(VelocityDriven);
+  Sig.reset();
+  v.reset();
+
+  ServoFunction = [E0, omega, Lx, Ly, iniTime](PBC3Dbox& box) -> void {
+    double V0 = Lx * Ly;
+    double a = box.Cell.h.xy / (2.0 * V0);
+    double c = box.Cell.h.xx / (2.0 * V0);
+    double d = box.Cell.h.xx / (Lx * Lx);
+    double e = -box.Cell.h.yy / (Ly * Ly);
+    double f = -box.Cell.h.xy / (Ly * Ly);
+    double g = box.Cell.h.yy;
+    double h = box.Cell.h.xx;
+    double det = a * f * h - c * d * h + e * c * g;
+
+    double Co = 0.5 * E0 * omega * cos(omega * (box.t - iniTime));
+    double Si = -E0 * omega * sin(omega * (box.t - iniTime));
+
+    //if (det == 0.0) return;
+
+    box.Load.v.xx = (f * g * Co - c * h * Si) / det;
+    box.Load.v.yy = (-f * g * Co + c * g * Si) / det;
+    box.Load.v.xy = ((e * g - d * h) * Co + a * h * Si) / det;
+    box.Load.v.yx = 0.0;
   };
 }
 
