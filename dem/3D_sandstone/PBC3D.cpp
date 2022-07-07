@@ -526,7 +526,7 @@ void PBC3Dbox::computeSampleData() {
   w_particle = Kratio / (Kratio + 1.0);
 }
 
-// This method is called as a pre-processing command at the end of a conf-file.
+// This method is callinged as a pre-processing command at the end of a conf-file.
 // It 'activates' each interaction by with normal distance lower than epsiDist
 // into a point of glue by changing its state
 void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
@@ -1552,7 +1552,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rate
   }
 }
 void PBC3Dbox::mpmBonds(double Dist) {
-  ActivateBonds(Dist, bondedState);
+  ActivateBonds(Dist, bondedStateDam);
   numericalDampingCoeff = 0;
   nulvelo();
 }

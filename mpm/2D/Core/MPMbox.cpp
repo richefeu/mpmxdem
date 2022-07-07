@@ -20,7 +20,6 @@ MPMbox::MPMbox() {
   shapeFunction = nullptr;
   oneStep = nullptr;
   planeStrain = false;
-  activeNumericalDissipation = false;
   DEMPeriod = 5;
   Grid.Nx = 20;
   Grid.Ny = 20;
@@ -29,10 +28,9 @@ MPMbox::MPMbox() {
   gravity.set(0.0, 0.0);
   gravity_incr.set(0.0, 0.0);
   ramp = false;
-  DEMstep = 5;
-  lengthAverage = 0;
-  ViscousDissipation = 0;
-  dispacc = false;
+  NHL.minDEMstep = 5;
+  NHL.rateAverage = 0;
+  twinConfSave = false;
   ratioFLIP = 1;
   activePIC = false;
   timePIC = 0.0;
@@ -184,18 +182,13 @@ void MPMbox::read(const char* name) {
       file >> shearLimit;
     } else if (token == "MaxSplitNumber") {
       file >> MaxSplitNumber;
-    } else if (token == "NumericalDissipation") {
-      file >> NumericalDissipation >> minVd >> EndNd;
-      activeNumericalDissipation = true;
-    } else if (token == "ViscousDissipation") {
-      file >> ViscousDissipation;
     } else if (token == "PICDissipation") {
       file >> ratioFLIP >> timePIC;
       activePIC = true;
     } else if (token == "demavg") {
-      file >> DEMstep >> lengthAverage;
-    } else if (token == "acceleration") {
-      dispacc = true;
+      file >> NHL.minDEMstep >> NHL.rateAverage;
+    } else if (token == "twinConfSave") {
+      twinConfSave = true;
     } else if (token == "ramp") {
       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
       ramp = true;
@@ -376,9 +369,9 @@ void MPMbox::save(const char* name) {
     file << "ramp " << gravity.x << " " << gravity.y << " " << gravity_incr.x << " " << gravity_incr.y << '\n';
   }
   file << "verletCoef " << boundary_layer << '\n';
-  file << "demavg " << DEMstep << " " << lengthAverage << '\n';
-  if (dispacc) {
-    file << "acceleration" << '\n';
+  file << "demavg " << NHL.minDEMstep << " " << NHL.rateAverage << '\n';
+  if (twinConfSave) {
+    file << "twinConfSave" << '\n';
   }
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
@@ -584,7 +577,7 @@ void MPMbox::run() {
       iconf++;
     }
 
-    if (dispacc) {
+    if (twinConfSave) {
       if (step % confPeriod == 1) {  // FIXME: c'est bizarre ce truc (à voir ensemble)
         char name[256];
         sprintf(name, "%s/acc%d.txt", result_folder.c_str(), iconf);
@@ -594,12 +587,6 @@ void MPMbox::run() {
 
     if (step % proxPeriod == 0 || MP.size() != number_MP) {  // second condition is needed because of the splitting
       checkProximity();
-    }
-
-    // numerical dissipation
-    // step > 100 is to give the material some time to settle
-    if (activeNumericalDissipation == true && step > 100) {
-      checkNumericalDissipation(minVd, EndNd);
     }
 
     if (activePIC == true) {
@@ -624,20 +611,6 @@ void MPMbox::run() {
 
 }
 
-// This function deactivates the numerical dissipation if all MP-velocities are less than a prescribed value.
-void MPMbox::checkNumericalDissipation(double vmin, double EndNd) {
-  START_TIMER("checkNumericalDissipation");
-  // we check the velocity of MPs and if its less than a limit we set activeNumericalDissipation to false
-  for (size_t p = 0; p < MP.size(); p++) {
-    if (norm(MP[p].vel) > vmin && t < EndNd) {
-      return;
-    }
-  }
-  // if we come here it means vels were small enough
-  activeNumericalDissipation = false;
-  console->info("activeNumericalDissipation is set to false");
-}
-
 void MPMbox::checkProximity() {
   START_TIMER("checkProximity");
   // Compute securDist of MPs
@@ -655,10 +628,10 @@ void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].pos.x > Grid.Nx * Grid.lx or MP[p].pos.x < 0.0 or MP[p].pos.y > Grid.Ny * Grid.ly or MP[p].pos.y < 0.0) {
-      console->critical(
+      console->warn(
           "@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
           MP[p].pos.x, MP[p].pos.y);
-      exit(0);
+      //exit(0);
     }
   }
 }
@@ -674,7 +647,7 @@ void MPMbox::convergenceConditions() {
   double rayMin = inf;
   double knMax = -inf;
   double massMin = inf;
-  double eps = 1e-6;
+  //double eps = 1e-6;
   double velMax = -inf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;
@@ -707,7 +680,7 @@ void MPMbox::convergenceConditions() {
   // compute the 3 timestep conditions
   double collision_crit_dt = sqrt(massMin / knMax);
   double passthough_crit_dt = collision_crit_dt;
-  if (velMax > 1e-6) passthough_crit_dt = rayMin / (eps + velMax);
+  if (velMax > 1e-6) passthough_crit_dt = rayMin / velMax;
   double cfl_crit_dt;
   if (YoungMax >= 0 && PoissonMax >= 0) {
     double Kmax = YoungMax / (1.0 - 2.0 * PoissonMax);

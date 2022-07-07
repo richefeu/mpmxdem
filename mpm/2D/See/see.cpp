@@ -106,6 +106,23 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by DEM-cell damage [0, " << Dmax << "] \n";
     } break;
+    case '6': {
+      color_option = 6;
+      double depsqmax = -1e20;
+      double depsqmin = 1e20;
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        double d1 = SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy;
+        double d2 = SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx;
+        double depsq = sqrt(d1*d1 + d2*d2);
+        if (depsq > depsqmax) depsqmax = depsq;
+        if (depsq < depsqmin) depsqmin = depsq;
+      }
+      colorTable.setMinMax(depsqmin, depsqmax);
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
+      precomputeColors();
+      std::cout << "MP colored by deps_q (deps_q_min = " << depsqmin << ", deps_q_max = " << depsqmax << ")\n";
+    } break;
 
     case 'c': {
       MP_contour = 1 - MP_contour;
@@ -347,6 +364,16 @@ void precomputeColors() {
         double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
         colorTable.getRGB(D, &precompColors[i]);
       }
+    } break;
+    case 6: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        double d1 = SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy;
+        double d2 = SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx;
+        double depsq = sqrt(d1*d1 + d2*d2);  
+        colorTable.getRGB(depsq, &precompColors[i]);
+      }
+      
+      
     } break;
 
     default: {

@@ -34,11 +34,11 @@ void OneStep::moveDEM2(Obstacle* obst, double dt) {
   }
 }
 
-vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double viscous_coefficient) {
+vec2r OneStep::numericalDissipation(vec2r velMP, vec2r forceMP, double coefficient) {
   // Al-Kafaji PhD eq 4.131
   vec2r vecSigned;
-  vecSigned.x = (forceMP.x * velMP.x > 0.0) ? 1.0 - viscous_coefficient : 1.0 + viscous_coefficient;
-  vecSigned.y = (forceMP.y * velMP.y > 0.0) ? 1.0 - viscous_coefficient : 1.0 + viscous_coefficient;
+  vecSigned.x = (forceMP.x * velMP.x > 0.0) ? 1.0 - coefficient : 1.0 + coefficient;
+  vecSigned.y = (forceMP.y * velMP.y > 0.0) ? 1.0 - coefficient : 1.0 + coefficient;
   return vecSigned;
 }
 
