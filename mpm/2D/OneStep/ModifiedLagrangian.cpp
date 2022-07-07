@@ -135,11 +135,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     // sum of boundary and volume forces:
     nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].fb + nodes[liveNodeNum[n]].f;
-    // Numerical dissipation!
-    // if (MPM.activeNumericalDissipation) {
-    // vec2r vecDissp=OneStep::numericalDissipation(nodes[liveNodeNum[n]].q,nodes[liveNodeNum[n]].qdot,
-    // MPM.NumericalDissipation); nodes[liveNodeNum[n]].qdot.x/=vecDissp.x; nodes[liveNodeNum[n]].qdot.y/=vecDissp.y;
-    //}
+
     if (nodes[liveNodeNum[n]].xfixed) {
       nodes[liveNodeNum[n]].qdot.x = 0.0;
     }

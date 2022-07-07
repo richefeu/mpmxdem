@@ -21,8 +21,6 @@
 
 #define SPGLOG_HEADER_ONLY
 #define FMT_HEADER_ONLY
-//#include "spdlog/sinks/stdout_color_sinks.h"
-//#include "spdlog/spdlog.h"
 #include "spdlog/fwd.h"
 
 // The linked DEM for HNL
@@ -35,8 +33,8 @@
 #include "fileTool.hpp"
 #include "mat4.hpp"
 #include "message.hpp"
-#include "vec2.hpp"
 #include "profiler.hpp"
+#include "vec2.hpp"
 
 // Headers that are part of MPMbox
 #include "Element.hpp"
@@ -115,27 +113,18 @@ class MPMbox {
   double shearLimit;           // max Fxy or Fyx value. After this F becomes Identity matrix
   int MaxSplitNumber;          // The maximum number of splits
 
-  double ViscousDissipation;  // drag-like dissipation 0 means no dissipation FIXME: ne semble plus utilisé
-
-  // transient dissipation  FIXME: déactivé ??? sinon mettre dans une struct
-  double NumericalDissipation;      // value of alpha for pfc dissipation. the closer to 0, the more it dissipates
-  double minVd;                     // value of velocity norm beyond which dissipation is desactivated
-  double EndNd;                     // time ending numerical dissipation
-  bool activeNumericalDissipation;  // Flag for activating the numerical dissipation
-
   // integration scheme dissipation
   double ratioFLIP;  // barycenter coef for using PIC as damping
-  bool activePIC;    // damping with PIC flag FIXME: public ???
+  bool activePIC;    // damping with PIC flag
   double timePIC;    // end of damping PIC
 
-  bool dispacc;  // activates doubles saves FIXME: pas trop compris l'utilité
+  bool twinConfSave;  // activates consecutive backup of conf-files
 
   struct {
     bool hasDoubleScale;
+    int minDEMstep;      // minimal number of DEM time steps
+    double rateAverage;  // proportion of DEM aveaging
   } NHL;
-
-  int DEMstep;           // minimal number of DEM time steps FIXME: rename and move into NHL
-  double lengthAverage;  // proportion of DEM aveaging FIXME: rename and move into NHL
 
   std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step
                                  // It holds only the number of nodes concerned by the proximity of MP
@@ -155,7 +144,7 @@ class MPMbox {
   void read(const char* name);
   void save(const char* name);
   void save(int num);
-  void checkNumericalDissipation(double minVd, double EndNd);
+  // void checkNumericalDissipation(double minVd, double EndNd);
   void checkProximity();
   void init();
 
