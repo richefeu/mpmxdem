@@ -623,7 +623,7 @@ void reshape(int w, int h) {
 void drawPeriodicCell() {
   glDisable(GL_LIGHTING);
 
-  glLineWidth(1.0f);
+  glLineWidth(2.0f);
   glColor3f(0.8f, 0.2f, 0.2f);
 
   vec3r p0;
@@ -840,15 +840,16 @@ void drawForces() {
 
     // color = colorForce(i);
     if (box.Interactions[k].state == bondedState)
-      glColor4f(0.45f, 0.63f, 0.75f, 1.0f);
-    else if (box.Interactions[k].state == bondedStateDam) {
+      glColor4f(0.4f, 0.4f, 1.0f, 1.0f);
+    else if (box.Interactions[k].state == bondedStateDam) {/*
       colorRGBA RGBA;
       DamCol.getRGB(box.Interactions[k].D, &RGBA);
       // GLColorRGBA color = GLColorRGBA(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
       // glColor4f(color.r, color.g, color.b, 1.0f);
-      glColor4f(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
+      glColor4f(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);*/
+      glColor4f(0.4f,0.4f,1.0f,1.0f);
     } else
-      glColor4f(0.94f, 0.87f, 0.8f, 1.0f);
+      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
     drawTube(orig, branch, scal * diam);
     if (norm2(dec) > 0.0) {
       vec3r da(box.Cell.h.xx * dec.x, box.Cell.h.yx * dec.x, box.Cell.h.zx * dec.x);
