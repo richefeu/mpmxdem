@@ -46,7 +46,7 @@ void BSpline::computeInterpolationValues(MPMbox& MPM, size_t p) {
       std::cerr << "@BSpline::computeInterpolationValues, we shouldn't be landing here!" << std::endl;
       std::cerr << "MPs could be outside the grid." << std::endl;
       std::cerr << "Check MP number " << p << ", at position " << MPM.MP[p].pos << std::endl;
-      exit(EXIT_FAILURE);
+      //exit(EXIT_FAILURE);
     }
     iL = 1 - iL;  // this will generate 1 0 1 0 and so on, to switch between lx and ly
   }
