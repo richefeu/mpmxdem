@@ -6,7 +6,7 @@ struct Neighbor {
 
   double fn, dn;
   double ft, dt;
-
+  double sigma_n;
   Neighbor();  // Ctor
 };
 
