@@ -1,6 +1,7 @@
 #include "PBC3D.hpp"
 
 int main(int argc, char const *argv[]) {
+  INIT_TIMERS();
   PBC3Dbox box;
 
   if (argc < 2) {

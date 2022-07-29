@@ -909,7 +909,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
     }
   }
 
-  // smoothed velocities
+  // smooth procedure
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     for (int r = 0; r < element::nbNodes; r++) {

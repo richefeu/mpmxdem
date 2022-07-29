@@ -623,8 +623,9 @@ void reshape(int w, int h) {
 void drawPeriodicCell() {
   glDisable(GL_LIGHTING);
 
-  glLineWidth(2.0f);
-  glColor3f(0.8f, 0.2f, 0.2f);
+  glLineWidth(3.0f);
+  //glColor3f(0.8f, 0.2f, 0.2f);
+  glColor3f(1.0f, 0.25f, 0.1f);
 
   vec3r p0;
   vec3r p1 = box.Cell.h.get_xcol();
@@ -947,8 +948,8 @@ bool try_to_readConf(int num) {
   if (fileExists(file_name)) {
     std::cout << "Read " << file_name << std::endl;
     box.clearMemory();
-    confNum = num;
     box.loadConf(file_name);
+    confNum = box.iconf; 
     adjust_clipping_plans();
   } else {
     std::cout << file_name << " does not exist" << std::endl;
@@ -1081,18 +1082,21 @@ GLColorRGBA colorParticleVelocityMagnitude(int i) {
 // =====================================================================
 
 int main(int argc, char* argv[]) {
+  INIT_TIMERS();
   if (argc == 1) {
     box.loadConf("conf0");
+    confNum = 0;
   } else {
     box.loadConf(argv[1]);
+    confNum = box.iconf;
   }
 
   if (box.Particles.empty()) {
     std::cerr << "No particles! Goodbye." << std::endl;
     return 1;
   }
-  radiusMin = radiusMax = box.Particles[0].radius;
-  radiusMean = 0.0;
+  
+  radiusMean = radiusMin = radiusMax = box.Particles[0].radius;
   double r;
   for (size_t i = 1; i < box.Particles.size(); i++) {
     r = box.Particles[i].radius;

@@ -816,7 +816,7 @@ void PBC3Dbox::setSample() {
   return;
 }
 
-void PBC3Dbox::nulvelo() {  // cancel all velocities
+void PBC3Dbox::freezeSystem() {
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.reset();
     Particles[i].acc.reset();
@@ -829,6 +829,7 @@ void PBC3Dbox::nulvelo() {  // cancel all velocities
 
 /// @brief Computes a single step with the velocity-Verlet algorithm
 void PBC3Dbox::velocityVerletStep() {
+  START_TIMER("velocityVerletStep");
   if (Load.ServoFunction != nullptr) Load.ServoFunction(*this);
 
   for (size_t i = 0; i < Particles.size(); i++) {
@@ -936,7 +937,7 @@ void PBC3Dbox::printScreen(double elapsedTime) {
 
 /// @brief The main loop of time-integration
 void PBC3Dbox::integrate() {
-
+  START_TIMER("integrate");
   // (re)-compute some constants in case they were not yet set
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
@@ -1008,6 +1009,115 @@ void PBC3Dbox::dataOutput() {
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
 void PBC3Dbox::updateNeighborList(double dmax) {
+  START_TIMER("updateNeighborList");
+  // store ft because the list will be cleared before being rebuilt
+  std::vector<Interaction> Ibak;
+  Interaction I;
+  for (size_t k = 0; k < Interactions.size(); k++) {
+    I = Interactions[k];
+    Ibak.push_back(I);
+  }
+
+  // now rebuild the list
+#if 0
+  Interactions.clear();
+
+  OcTree q(0.0, 0.0, 0.0, std::max({Cell.h.xx, Cell.h.xy, Cell.h.xz}), std::max({Cell.h.yx, Cell.h.yy, Cell.h.yz}),
+           std::max({Cell.h.zx, Cell.h.zy, Cell.h.zz}), 4);
+  vec3r realPos;
+  for (size_t i = 0; i < Particles.size(); i++) {
+    realPos = Cell.h * Particles[i].pos;
+    ot_Point p(realPos.x, realPos.y, realPos.z, i, &Particles[i]);
+    q.insert(p);
+  }
+
+  for (size_t i = 0; i < Particles.size(); i++) {
+    double Dist = dmax + Particles[i].radius + Rmax;
+    realPos = Cell.h * Particles[i].pos;
+    ot_Sphere crange(realPos.x, realPos.y, realPos.z, Dist);
+    //ot_Box crange(realPos.x - Dist, realPos.y - Dist, realPos.z - Dist, realPos.x + Dist, realPos.y + Dist,
+    //              realPos.z + Dist);
+    std::vector<ot_Point> found;
+    q.query_periodic(crange, found, i + 1);
+    for (size_t f = 0; f < found.size(); f++) {
+      size_t j = found[f].index;
+
+      vec3r sij = Particles[j].pos - Particles[i].pos;
+      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
+      vec3r branch = Cell.h * sij;
+
+      double sum = dmax + Particles[i].radius + Particles[j].radius;
+      if (norm2(branch) <= sum * sum) {
+        /*double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
+        double Dampn = dampRate * 2.0 * sqrt(kn * m);
+        double Dampt = dampRate * 2.0 * sqrt(kt * m);
+        Interactions.push_back(Interaction(i, j, Dampn, Dampt));*/
+        Interactions.push_back(Interaction(i, j, 0.0, 0.0));
+      }
+    }
+  }
+
+#else
+
+  Interactions.clear();
+  for (size_t i = 0; i < Particles.size(); i++) {
+    for (size_t j = i + 1; j < Particles.size(); j++) {
+
+      vec3r sij = Particles[j].pos - Particles[i].pos;
+      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
+      vec3r branch = Cell.h * sij;
+
+      double sum = dmax + Particles[i].radius + Particles[j].radius;
+      if (norm2(branch) <= sum * sum) {
+        //double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
+        //double Dampn = dampRate * 2.0 * sqrt(kn * m);
+        //double Dampt = dampRate * 2.0 * sqrt(kt * m);
+        //Interactions.push_back(Interaction(i, j, Dampn, Dampt));
+        Interactions.push_back(Interaction(i, j, 0.0, 0.0));
+      }
+    }
+  }
+
+#endif
+
+  // retrieve previous contacts or bonds
+  size_t k, kold = 0;
+  for (k = 0; k < Interactions.size(); ++k) {
+    while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i) ++kold;
+    if (kold == Ibak.size()) break;
+
+    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j) ++kold;
+    if (kold == Ibak.size()) break;
+
+    if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j) {
+      Interactions[k] = Ibak[kold];
+      ++kold;
+    } else {
+      size_t i = Interactions[k].i;
+      size_t j = Interactions[k].j;
+      double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
+      Interactions[k].dampn = dampRate * 2.0 * sqrt(kn * m);
+      Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m);            
+    }
+  }
+  
+  // if the previous loop has been break, the other interactions are new ones.
+  // So, dampn and dampt need to be pre-computed
+  for (; k < Interactions.size(); ++k) {
+    size_t i = Interactions[k].i;
+    size_t j = Interactions[k].j;
+    double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
+    Interactions[k].dampn = dampRate * 2.0 * sqrt(kn * m);
+    Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m); 
+  }
+  
+  
+}
+
+/// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
+/// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
+void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
+  START_TIMER("updateNeighborList_brutForce");
   // store ft because the list will be cleared before being rebuilt
   std::vector<Interaction> Ibak;
   Interaction I;
@@ -1053,6 +1163,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
 
 /// @brief Compute acceleration of the particles and of the periodic-cell.
 void PBC3Dbox::accelerations() {
+  START_TIMER("accelerations");
   // Set forces and moments to zero
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].force.reset();
@@ -1127,6 +1238,7 @@ void PBC3Dbox::accelerations() {
 }
 
 double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm) {
+  START_TIMER("YieldFuncDam");
   double yieldFunc;
   if (drot0 > 0.0) {
     yieldFunc = Dn / (zeta * dn0) + pow(DtNorm / (zeta * dt0), powSurf) + pow(DrotNorm / (zeta * drot0), powSurf) - 1.0;
@@ -1139,6 +1251,7 @@ double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double Drot
 /// @brief Computes the interaction forces and moments,
 ///        and the tensorial moment (= Vcell * stress matrix) of the cell
 void PBC3Dbox::computeForcesAndMoments() {
+  START_TIMER("computeForcesAndMoments");
   size_t i, j;
   for (size_t k = 0; k < Interactions.size(); k++) {
     i = Interactions[k].i;
@@ -1465,13 +1578,14 @@ void PBC3Dbox::computeForcesAndMoments() {
 //             METHODS FOR MPMxDEM COUPLING
 // =======================================================================
 
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rateAverage, mat9r& SigAvg) {
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstepMin, double rateAverage, mat9r& SigAvg) {
   computeSampleData();
   double dtc = sqrt(Vmin * density / kn);
   double beginavg = macro_dt * (1.0 - rateAverage);
   dt = dtc * 0.2;
 
-  if (dt >= macro_dt / nstep) dt = macro_dt / nstep;
+  double dtMax = macro_dt / nstepMin;
+  if (dt >= dtMax) dt = dtMax;
 
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
@@ -1547,14 +1661,13 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstep, double rate
     Regr->run(tvec, szz);
     SigAvg.zz = Regr->orig + tlast * Regr->slope;
   } else {
-    // Sig = SigAvg;
     SigAvg = Sig;
   }
 }
 void PBC3Dbox::mpmBonds(double Dist) {
   ActivateBonds(Dist, bondedStateDam);
   numericalDampingCoeff = 0;
-  nulvelo();
+  freezeSystem();
 }
 
 // FIXME: à supprimer ???

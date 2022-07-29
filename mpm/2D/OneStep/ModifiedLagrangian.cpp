@@ -80,6 +80,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Getting material point mass (something we were not doing before)
+  // FIXME: je ne crois pas qu'on devrait faire ça !!!!!!!!!!!
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].mass = MP[p].density * MP[p].vol;
   }
@@ -116,7 +117,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // Updating free boundary conditions
-  // FIXME: This assummes that every obstacle has a boundaryType associated
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }

@@ -61,8 +61,9 @@ int main_window;
 // flags
 int show_background = 1;
 int show_MPs = 1;
-int show_grid = 1;
+int show_grid = 0;
 int show_obstacles = 1;
+int show_stress_directions = 0;
 
 int MP_deformed_shape = 1;
 int MP_contour = 1;
@@ -83,6 +84,7 @@ void setColor(int i);
 void drawGrid();
 void drawMPs();
 void drawObstacles();
+void drawStressDirections();
 
 // Callback functions
 void keyboard(unsigned char Key, int x, int y);
