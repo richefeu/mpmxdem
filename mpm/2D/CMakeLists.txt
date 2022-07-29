@@ -38,6 +38,10 @@ else()
   find_package(OpenMP)
   find_package(GLUT REQUIRED)
 
+  message(STATUS "OPENGL_INCLUDE_DIR = " ${OPENGL_INCLUDE_DIR})
+  message(STATUS "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
+  message(STATUS "OPENGL_LIBRARIES = " ${OPENGL_LIBRARIES})
+  message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
 endif()
 
 
