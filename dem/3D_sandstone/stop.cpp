@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
   // std::cout << "box.Interactions.size() = " << box.Interactions.size() << '\n';
 
   box.showBanner();
-  box.nulvelo();
+  box.freeze();
   box.saveConf(0);
   box.dataOutput();
   return 0;
