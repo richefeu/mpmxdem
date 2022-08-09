@@ -35,14 +35,14 @@ int confNum = 0;
 int main_window;
 
 // flags
-int show_background = 1;
+int show_background = 0;
 int show_particles = 1;
 int show_velocities = 0;
 int show_cell = 1;
 int show_ghosts = 0;
 int show_slice = 0;
 int show_forces = 0;
-int show_bond_damage = 1;
+int show_bond_damage = 0;
 
 GLfloat alpha_particles = 1.0f;
 GLfloat alpha_ghosts = 0.3f;

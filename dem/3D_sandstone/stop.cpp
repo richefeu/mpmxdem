@@ -1,6 +1,7 @@
 #include "PBC3D.hpp"
 
 int main(int argc, char const *argv[]) {
+  INIT_TIMERS();
   PBC3Dbox box;
 
   if (argc < 2) {
@@ -18,7 +19,7 @@ int main(int argc, char const *argv[]) {
   // std::cout << "box.Interactions.size() = " << box.Interactions.size() << '\n';
 
   box.showBanner();
-  box.nulvelo();
+  box.freeze();
   box.saveConf(0);
   box.dataOutput();
   return 0;

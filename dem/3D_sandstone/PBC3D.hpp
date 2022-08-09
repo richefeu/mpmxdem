@@ -19,7 +19,8 @@
 #include "fileTool.hpp"
 #include "geoPack3D.hpp"
 #include "linreg.hpp"
-//#include "profiler.hpp"
+#include "octree.hpp"
+#include "profiler.hpp"
 
 // This is useful to make fortran-like outputs
 #define __FORMATED(P, W, V) std::fixed << std::setprecision(P) << std::setw(W) << std::left << (V)
@@ -101,6 +102,7 @@ class PBC3Dbox {
   void printScreen(double elapsedTime);  ///< Prints usefull data on screen during computation
   void dataOutput();                     ///< Outputs usefull data during computation
   void updateNeighborList(double dmax);  ///< Updates the neighbor-list
+  void updateNeighborList_brutForce(double dmax);
   void saveConf(const char* name);
   void saveConf(int i);             ///< Saves the current configuration in a file named confX, where X=i
   void loadConf(const char* name);  ///< Loads a configuration from a file
@@ -112,10 +114,10 @@ class PBC3Dbox {
   void RemoveBonds(double percentRemove, int StrategyId);  ///< A kind of global damage
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
-  void transform(mat9r& Finc, double macro_dt, double nstep,
-                 double rateAverage, mat9r& SigAvg);                            ///< for MPMxDEM double-scale simulation
+  void transform(mat9r& Finc, double macro_dt, double nstep, double rateAverage,
+                 mat9r& SigAvg);                                   ///< for MPMxDEM double-scale simulation
   void transform(mat9r& Finc, double macro_dt, const char* name);  ///< for MPMxDEM double-scale simulation
-  void nulvelo();                                                  ///< stop fulctuations
+  void freezeSystem();  ///< set particle vel and acc to zero (and also the components of vh and ah)
 
   // Methods specifically written for Lagamine (FEMxDEM coupling).
   // They are compatible with fortran (it's the reason why all parameters are pointers).
@@ -124,7 +126,6 @@ class PBC3Dbox {
   void transform(double dFmoinsI[3][3], double* I, int* nstep);
   void hold(double* tol, int* nstepConv, int* nstepMax);
   void transform_and_hold(double dFmoinsI[3][3], double* I, double* tol, int* nstepConv, int* nstepMax, int* nstep);
-  // void runBlindly();  ///< Runs the simulation so that it ends with a static equilibrium state
   void runSilently();  ///< Runs the simulation silently (without outputs) from time t to tmax
   void endLagamine(double Q[], double SIG[3][3]);           ///< Kind of serialization to get the data back
   void endLagamineSandstone(double Q[], double SIG[3][3]);  ///< Kind of serialization to get the data back
@@ -156,7 +157,7 @@ class PBC3Dbox {
   double w_bond;
   double w_particle;
 
-  int objectiveFriction; //< activation of the objectivity for friction forces
+  int objectiveFriction;  //< activation of the objectivity for friction forces
 
  public:
   // Sample
@@ -180,7 +181,7 @@ class PBC3Dbox {
   double VelMax;   ///< Maximum velocity magnitude of the particles
   double VelMean;  ///< Mean velocity magnitude of the particles
   double VelVar;   ///< Variance of velocity
-  
+
   // Particles accelerations
   double AccMin;   ///< Minimum acceleration magnitude of the particles
   double AccMax;   ///< Maximum acceleration magnitude of the particles

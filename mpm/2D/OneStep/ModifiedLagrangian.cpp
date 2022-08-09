@@ -21,8 +21,6 @@ std::string ModifiedLagrangian::getRegistrationName() { return std::string("Modi
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   START_TIMER("MUSCL step");
 
-  // if (MPM.step == 0) std::cout << "Running Modified Lagrangian!" << std::endl;
-
   // Defining aliases ======================================
   std::vector<node>& nodes = MPM.nodes;
   std::vector<int>& liveNodeNum = MPM.liveNodeNum;
@@ -35,7 +33,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   int* I;  // use as node index
 
-  // 1. ==== Discard previous grid
+  // ==== Discard previous grid
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     nodes[liveNodeNum[n]].mass = 0.0;
     nodes[liveNodeNum[n]].outOfPlaneStress = 0.0;
@@ -47,7 +45,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   MPM.number_MP = MPM.MP.size();
-  // ==== Reset the resultant forces on MPs and velGrad
+  // ==== Reset the resultant forces and velGrad of MPs
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].f.reset();
     MP[p].velGrad.reset();
@@ -58,7 +56,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     OneStep::resetDEM(Obstacles[o], MPM.gravity);
   }
 
-  // [ALGO.POINT.2] ==== Compute interpolation values
+  // ==== Compute interpolation values
   for (size_t p = 0; p < MPM.MP.size(); p++) {
     MPM.shapeFunction->computeInterpolationValues(MPM, p);
   }
@@ -80,11 +78,12 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Getting material point mass (something we were not doing before)
+  // FIXME: je ne crois pas qu'on devrait faire ça !!!!!!!!!!!
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].mass = MP[p].density * MP[p].vol;
   }
 
-  // [ALGO.POINT.3] ==== Initialize grid state (mass and momentum)
+  // ==== Initialize grid state (mass and momentum)
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
@@ -103,7 +102,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // [ALGO.POINT.5] ==== Compute internal and external forces
+  // ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
@@ -116,7 +115,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // Updating free boundary conditions
-  // FIXME: This assummes that every obstacle has a boundaryType associated
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
@@ -131,7 +129,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // [ALGO.POINT.6] ==== Compute rate of momentum and update nodes
+  // ==== Compute rate of momentum and update nodes
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     // sum of boundary and volume forces:
     nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].fb + nodes[liveNodeNum[n]].f;
@@ -145,7 +143,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     nodes[liveNodeNum[n]].q += dt * nodes[liveNodeNum[n]].qdot;
   }
 
-  // [ALGO.POINT.7] ==== Calculate velocity in MP (to then update q). sort of smoothing?
+  // ==== Calculate velocity in MP (to then update q). sort of smoothing?
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
@@ -166,7 +164,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // [ALGO.POINT.9 and 10] ==== Calculate updated velocity in nodes to compute deformation
+  // ==== Calculate updated velocity in nodes to compute deformation
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     double invmass;
@@ -180,15 +178,10 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // [ALGO.POINT.11 to 12] ==== Deformation gradient
+  // ==== Deformation gradient
   MPM.updateTransformationGradient();
 
   // ==== Update strain and stress
-
-  // better to put it here because of the adaptative time step
-  // for (size_t o = 0; o < Obstacles.size(); ++o) {
-  //  OneStep::moveDEM2(Obstacles[o], dt);
-  // }
   {
     START_TIMER("updateStrainAndStress");
 #pragma omp parallel for default(shared)
@@ -196,7 +189,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
     }
   }
-  // [ALGO.POINT.13] ==== Update positions avec le q provisoire
+  
+  // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     double invmass;
@@ -208,13 +202,15 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  // [ALGO.POINT.14] ==== Update Volume and density
+  // ==== Update Volume and density
   for (size_t p = 0; p < MP.size(); p++) {
     double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy + MP[p].deltaStrain.det();
     MP[p].vol *= (1.0 + volumetricdStrain);
     MP[p].density /= (1.0 + volumetricdStrain);
   }
+  
   MPM.plannedRemovalObstacle();  // FIXME: move it juste before or juste after advanceOneStep
+  
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
 

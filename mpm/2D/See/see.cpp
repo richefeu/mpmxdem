@@ -92,8 +92,8 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
     } break;
     case '5': {
-      if (ADs.empty()) break; 
-      color_option = 5;   
+      if (ADs.empty()) break;
+      color_option = 5;
       double Dmax = -1e20;
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
@@ -113,7 +113,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       for (size_t i = 0; i < Conf.MP.size(); i++) {
         double d1 = SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy;
         double d2 = SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx;
-        double depsq = sqrt(d1*d1 + d2*d2);
+        double depsq = sqrt(d1 * d1 + d2 * d2);
         if (depsq > depsqmax) depsqmax = depsq;
         if (depsq < depsqmin) depsqmin = depsq;
       }
@@ -146,6 +146,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case 's': {
       MP_deformed_shape = 1 - MP_deformed_shape;
+    } break;
+
+    case 'x': {
+      show_stress_directions = 1 - show_stress_directions;
     } break;
 
     case 'z': {
@@ -252,6 +256,7 @@ void display() {
   if (show_grid == 1) drawGrid();
   drawMPs();
   if (show_obstacles == 1) drawObstacles();
+  if (show_stress_directions == 1) drawStressDirections();
 
   glFlush();
   glutSwapBuffers();
@@ -357,7 +362,7 @@ void precomputeColors() {
         colorTable.getRGB(p, &precompColors[i]);
       }
     } break;
-    
+
     case 5: {
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
@@ -369,11 +374,10 @@ void precomputeColors() {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
         double d1 = SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy;
         double d2 = SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx;
-        double depsq = sqrt(d1*d1 + d2*d2);  
+        double depsq = sqrt(d1 * d1 + d2 * d2);
         colorTable.getRGB(depsq, &precompColors[i]);
       }
-      
-      
+
     } break;
 
     default: {
@@ -384,53 +388,50 @@ void precomputeColors() {
   }
 }
 
-void setColor(int i) {
-  glColor3f(precompColors[i].r / 255., precompColors[i].g / 255., precompColors[i].b / 255.);
+void setColor(int i) { glColor3f(precompColors[i].r / 255.0, precompColors[i].g / 255.0, precompColors[i].b / 255.0); }
 
-  /*
-  switch (color_option) {
+void drawStressDirections() {
 
+  glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
 
-    case 0: {
-      glColor4f(0.8f, 0.8f, 0.9f, 1.0f);
-    } break;
+  double fac = 2.5e-6;
 
-    case 1: {
-      colorRGBA col;
-      double vel = norm(SmoothedData[i].vel);
-      colorTable.getRGB(vel, &col);
-      glColor3f(col.r / 255.0, col.g / 255.0, col.b / 255.0);
-    } break;
+  mat4r S, V, D;
+  for (size_t i = 0; i < Conf.MP.size(); ++i) {
+    double xc = Conf.MP[i].pos.x;
+    double yc = Conf.MP[i].pos.y;
 
-    case 2: {
-      colorRGBA col;
-      double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
-      colorTable.getRGB(p, &col);
-      glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, 1.0f);
-    } break;
+    S = SmoothedData[i].stress;
+    S.xy = 0.5 * (S.xy + S.yx);
+    S.yx = S.xy;
+    S.sym_eigen(V, D);
 
-    case 3: {
-      colorRGBA col;
-      double rho = SmoothedData[i].rho;
-      colorTable.getRGB(rho, &col);
-      glColor3f(col.r / 255.0, col.g / 255.0, col.b / 255.0);
-    } break;
-    case 4: {
-      colorRGBA col;
-      double p = SmoothedData[i].stress.yy;
-      colorTable.getRGB(p, &col);
-      glColor4f(col.r / 255.0, col.g / 255.0, col.b / 255.0, 1.0f);
-    } break;
+    glBegin(GL_LINES);
+    if (fabs(D.xx) > fabs(D.yy)) {
+      glLineWidth(2.0f);
+      glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+      glVertex2f(xc - fac * V.xx * fabs(D.xx), yc - fac * V.yx * fabs(D.xx));
+      glVertex2f(xc + fac * V.xx * fabs(D.xx), yc + fac * V.yx * fabs(D.xx));
+      glLineWidth(1.0f);
+      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+      glVertex2f(xc - fac * V.xy * fabs(D.yy), yc - fac * V.yy * fabs(D.yy));
+      glVertex2f(xc + fac * V.xy * fabs(D.yy), yc + fac * V.yy * fabs(D.yy));
+    } else {
+      glLineWidth(1.0f);
+      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+      glVertex2f(xc - fac * V.xx * fabs(D.xx), yc - fac * V.yx * fabs(D.xx));
+      glVertex2f(xc + fac * V.xx * fabs(D.xx), yc + fac * V.yx * fabs(D.xx));
+      glLineWidth(2.0f);
+      glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+      glVertex2f(xc - fac * V.xy * fabs(D.yy), yc - fac * V.yy * fabs(D.yy));
+      glVertex2f(xc + fac * V.xy * fabs(D.yy), yc + fac * V.yy * fabs(D.yy));
+    }
 
-    default: {
-      glColor4f(0.8f, 0.8f, 0.9f, 1.0f);
-    } break;
+    glEnd();
   }
-  */
 }
 
 void drawMPs() {
-  // std::cout << "enterring draw MPs";
   glLineWidth(1.0f);
 
   for (size_t i = 0; i < Conf.MP.size(); ++i) {
