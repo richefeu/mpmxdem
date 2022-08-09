@@ -1445,7 +1445,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
         if (permamentGluer == 1) {
           // switch to a cemented/bonded link
-          Interactions[k].state = bondedState;
+          Interactions[k].state = bondedStateDam;
 
           if (dn >= 0.0)
             Interactions[k].gap0 = dn;
