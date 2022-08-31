@@ -9,7 +9,7 @@ project(MPMbox LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra -DENABLE_PROFILING")
+set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra -DENABLE_PROFILING -lpthread")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 #find_package(spdlog CONFIG REQUIRED)

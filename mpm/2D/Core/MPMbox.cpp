@@ -35,7 +35,6 @@ MPMbox::MPMbox() {
   activePIC = false;
   timePIC = 0.0;
   boundary_layer = 0.0;
-
   ObstaclePlannedRemoval.time = -1.0;
   ObstaclePlannedRemoval.groupNumber = -1;
 
@@ -296,17 +295,16 @@ void MPMbox::read(const char* name) {
       for (size_t iMP = 0; iMP < nb; iMP++) {
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
             P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F >> P.outOfPlaneStress;
-
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
           console->warn("@MPMbox::read, model {} not found", modelName);
         }
         P.constitutiveModel = itCM->second;
+        P.constitutiveModel->init(P);
         P.constitutiveModel->key = modelName;
 
         P.mass = P.vol * P.density;
         P.size = sqrt(P.vol0);
-
         MP.push_back(P);
       }
     }
