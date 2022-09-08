@@ -458,6 +458,10 @@ void MPMbox::save(const char* name) {
                  << MP[iMP].PBC->Vsolid << " " << fabs(MP[iMP].PBC->Cell.h.det()) << " " << MP[iMP].PBC->Cell.h.xx
                  << " " << MP[iMP].PBC->Cell.h.xy << " " << MP[iMP].PBC->Cell.h.yx << " " << MP[iMP].PBC->Cell.h.yy
                  << std::endl;
+    }else{
+      file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+                 << 1.0           << " " << 1.0           << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+                 << 0.0           << " " << 1.0           << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << std::endl;
     }
   }
 }
