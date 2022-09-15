@@ -24,6 +24,7 @@ struct MohrCoulomb : public ConstitutiveModel {
   double getYoung();
   double getPoisson();
   void updateStrainAndStress(MPMbox& MPM, size_t p);
+  void init(MaterialPoint & MP);
 };
 
 #endif /* end of include guard: MOHRCOULOMB5_HPP */

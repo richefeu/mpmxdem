@@ -139,3 +139,9 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
     }
   }
 }
+
+
+void MohrCoulomb::init(MaterialPoint& MP) {
+  MP.isDoubleScale = false;
+}
+
