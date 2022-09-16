@@ -8,9 +8,9 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin) # ==========================================
 
 # The compiler to be used
-CXX = g++-11
+CXX = g++-12
 # The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++11 -I ~/toofus -I /usr/include -DENABLE_PROFILING
+CXXFLAGS = -O3 -Wall -std=c++17 -I ~/toofus -I /usr/include -DENABLE_PROFILING
 # Link flags for OpenGL and glut
 GLFLAGS = `pkg-config --cflags glut`
 GLLINK = `pkg-config --libs glut` -framework OpenGL

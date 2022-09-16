@@ -61,6 +61,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
     } break;
+    
     case '3': {
       color_option = 3;
       double rhomax = 0;
@@ -76,6 +77,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by density (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
     } break;
+    
     case '4': {
       color_option = 4;
       double pmax = -1e20;
@@ -91,6 +93,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
     } break;
+    
     case '5': {
       if (ADs.empty()) break;
       color_option = 5;
@@ -106,6 +109,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by DEM-cell damage [0, " << Dmax << "] \n";
     } break;
+    
     case '6': {
       color_option = 6;
       double depsqmax = -1e20;
@@ -122,6 +126,22 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.Rebuild();
       precomputeColors();
       std::cout << "MP colored by deps_q (deps_q_min = " << depsqmin << ", deps_q_max = " << depsqmax << ")\n";
+    } break;
+    
+    case '7': {
+      color_option = 7;
+      double fxmax = -1e20;
+      double fxmin = 1e20;
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        double fx = Conf.MP[i].contactf.x;
+        if (fx > fxmax) fxmax = fx;
+        if (fx < fxmin) fxmin = fx;
+      }
+      colorTable.setMinMax(fxmin, fxmax);
+      colorTable.setTableID(2);
+      colorTable.Rebuild();
+      precomputeColors();
+      std::cout << "MP colored by fx (fx_min = " << fxmin << ", fx_max = " << fxmax << ")\n";
     } break;
 
     case 'c': {
@@ -370,6 +390,7 @@ void precomputeColors() {
         colorTable.getRGB(D, &precompColors[i]);
       }
     } break;
+    
     case 6: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
         double d1 = SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy;
@@ -377,7 +398,12 @@ void precomputeColors() {
         double depsq = sqrt(d1 * d1 + d2 * d2);
         colorTable.getRGB(depsq, &precompColors[i]);
       }
-
+    } break;
+    
+    case 7: {
+      for (size_t i = 0; i < Conf.MP.size(); i++) {        
+        colorTable.getRGB(Conf.MP[i].contactf.x, &precompColors[i]);
+      }
     } break;
 
     default: {

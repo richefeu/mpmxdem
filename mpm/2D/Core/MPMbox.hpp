@@ -142,6 +142,7 @@ class MPMbox {
   void setVerboseLevel(int v);
   void clean();
   void read(const char* name);
+  void read(int num);
   void save(const char* name);
   void save(int num);
   // void checkNumericalDissipation(double minVd, double EndNd);
