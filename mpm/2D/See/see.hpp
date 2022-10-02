@@ -51,6 +51,7 @@ MPMbox Conf;
 std::vector<additionalData> ADsREF;
 std::vector<additionalData> ADs;
 std::vector<ProcessedDataMP> SmoothedData;
+std::vector<MaterialPoint> MPREF;
 std::vector<colorRGBA> precompColors;
 int confNum = 1;
 

@@ -56,6 +56,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
         if (p < pmin) pmin = p;
       }
       colorTable.setMinMax(pmin, pmax);
+      //colorTable.setMinMax(-1e4, 1e3);
       colorTable.setTableID(3);
       colorTable.Rebuild();
       precomputeColors();
@@ -122,6 +123,26 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.Rebuild();
       precomputeColors();
       std::cout << "MP colored by deps_q (deps_q_min = " << depsqmin << ", deps_q_max = " << depsqmax << ")\n";
+    } break;
+    case '7': {
+      color_option = 7;
+      double volvarmax = -1e20;
+      double volvarmin = 1e20;
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        if(fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx)==0) continue;
+        double volvar=fabs(Conf.MP[i].F.xx*Conf.MP[i].F.yy-Conf.MP[i].F.xy*Conf.MP[i].F.yx)
+                       /
+                      fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx)
+                      -1.0;
+        if (volvar > volvarmax) volvarmax = volvar;
+        if (volvar < volvarmin) volvarmin = volvar;
+      }
+      colorTable.setMinMax(volvarmin,volvarmax);
+      //colorTable.setMinMax(-0.4,0.05);  
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
+      precomputeColors();
+      std::cout << "MP colored by volvar (volvar_min = " << volvarmin << ", volvar_max = " << volvarmax << ")\n";
     } break;
 
     case 'c': {
@@ -377,8 +398,18 @@ void precomputeColors() {
         double depsq = sqrt(d1 * d1 + d2 * d2);
         colorTable.getRGB(depsq, &precompColors[i]);
       }
-
     } break;
+    case 7: {
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        if (fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx)==0) continue;
+        double volvar=fabs(Conf.MP[i].F.xx*Conf.MP[i].F.yy-Conf.MP[i].F.xy*Conf.MP[i].F.yx)
+                      /
+                      fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx) 
+                      -1.0;
+        colorTable.getRGB(volvar, &precompColors[i]);
+      }
+    } break;
+
 
     default: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
@@ -552,7 +583,9 @@ bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
       std::cout << "  with additional data in file " << co_file_name << std::endl;
       readAdditionalData(co_file_name);
     }
-
+    if (MPREF.empty()){
+       MPREF=CF.MP;
+    }
   } else {
     std::cout << file_name << " does not exist" << std::endl;
     return false;
