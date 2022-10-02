@@ -125,6 +125,9 @@ class MPMbox {
     int minDEMstep;      // minimal number of DEM time steps
     double rateAverage;  // proportion of DEM aveaging
   } NHL;
+  bool  switchGravity;
+  double switchGravTime;
+  vec2r planned_grav;
 
   std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step
                                  // It holds only the number of nodes concerned by the proximity of MP
