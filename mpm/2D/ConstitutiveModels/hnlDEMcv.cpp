@@ -64,12 +64,12 @@ void hnlDEMcv::updateStrainAndStress(MPMbox& MPM, size_t p) {
   col_i = p % MPM.Grid.Nx;
   row_i = floor(p / MPM.Grid.Nx);
   if (MPM.t >= timeBondchange - MPM.dt && MPM.t <= timeBondchange + MPM.dt) {
-    MPM.MP[p].PBC->fn0/=bondingfactor;
-    MPM.MP[p].PBC->ft0/=bondingfactor;
-    MPM.MP[p].PBC->mom0/=bondingfactor;
-    MPM.MP[p].PBC->dn0*=bondingfactor;
-    MPM.MP[p].PBC->dt0*=bondingfactor;
-    MPM.MP[p].PBC->drot0*=bondingfactor;
+    //MPM.MP[p].PBC->fn0/=bondingfactor;
+    //MPM.MP[p].PBC->ft0/=bondingfactor;
+    //MPM.MP[p].PBC->mom0/=bondingfactor;
+    MPM.MP[p].PBC->dn0/=bondingfactor;
+    MPM.MP[p].PBC->dt0/=bondingfactor;
+    MPM.MP[p].PBC->drot0/=bondingfactor;
   }
   if (MPM.step % MPM.confPeriod == 0 && col_i % MPM.DEMPeriod == 0 && row_i % MPM.DEMPeriod == 0) {
     sprintf(fnamea, "%s/DEM_MP%zu_t%i", MPM.result_folder.c_str(), p, MPM.iconf);
