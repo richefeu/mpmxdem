@@ -37,6 +37,10 @@ MPMbox::MPMbox() {
   boundary_layer = 0.0;
   ObstaclePlannedRemoval.time = -1.0;
   ObstaclePlannedRemoval.groupNumber = -1;
+  switchGravity=false;
+  switchGravTime=-1;
+  planned_grav.set(0.0,0.0);
+
 
   iconf = 0;
   confPeriod = 5000;
@@ -193,6 +197,9 @@ void MPMbox::read(const char* name) {
     } else if (token == "ramp") {
       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
       ramp = true;
+    } else if (token == "gravitySwitch") {
+      file >>  switchGravTime >> planned_grav.x >> planned_grav.y;
+      switchGravity=true;
     } else if (token == "verletCoef") {
       file >> boundary_layer;
     } else if (token == "set") {
@@ -356,7 +363,7 @@ void MPMbox::save(const char* name) {
   std::ofstream file_micro(name_micro);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
-  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy"
+  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy ReducedPartDistMean"
              << std::endl;
   if (planeStrain == true) {
     file << "planeStrain\n";
@@ -367,6 +374,9 @@ void MPMbox::save(const char* name) {
   file << "gravity " << gravity_max << '\n';
   if (ramp) {
     file << "ramp " << gravity.x << " " << gravity.y << " " << gravity_incr.x << " " << gravity_incr.y << '\n';
+  }
+  if (switchGravity){
+   file << "gravitySwitch " << switchGravTime << " " << planned_grav.x << " " << planned_grav.y << '\n';
   }
   file << "verletCoef " << boundary_layer << '\n';
   file << "demavg " << NHL.minDEMstep << " " << NHL.rateAverage << '\n';
@@ -451,7 +461,7 @@ void MPMbox::save(const char* name) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
-         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << '\n';
+         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress <<'\n';
 
     // Remarque : en procédant ainsi on fait l'hypothèse que tous les points matériels sont a double échelle
     // FIXME: il faudra changer la façon de faire (mais pas pour le moment, pour que les calculs déjà réalisés
@@ -465,11 +475,12 @@ void MPMbox::save(const char* name) {
                  << MP[iMP].PBC->VelMin << " " << MP[iMP].PBC->VelMax << " " << MP[iMP].PBC->VelVar << " "
                  << MP[iMP].PBC->Vsolid << " " << fabs(MP[iMP].PBC->Cell.h.det()) << " " << MP[iMP].PBC->Cell.h.xx
                  << " " << MP[iMP].PBC->Cell.h.xy << " " << MP[iMP].PBC->Cell.h.yx << " " << MP[iMP].PBC->Cell.h.yy
-                 << std::endl;
+                 << " " << MP[iMP].PBC->ReducedPartDistMean << std::endl;
     }else{
       file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
                  << 1.0           << " " << 1.0           << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-                 << 0.0           << " " << 1.0           << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << std::endl;
+                 << 0.0           << " " << 1.0           << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << " " 
+		 << std::endl;
     }
   }
 }
@@ -580,7 +591,10 @@ void MPMbox::run() {
         ramp = false;
       }
     }
-
+  if (switchGravity && switchGravTime<=t){
+     gravity_max.set(planned_grav.x,planned_grav.y);
+     switchGravity=false;
+   }
     // checking convergence requirements
     convergenceConditions();
 
