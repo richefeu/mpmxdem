@@ -175,6 +175,7 @@ class PBC3Dbox {
   double FnMin;   ///< Minimum normal force in the system
   double FnMax;   ///< Maximum normal force in the system
   double FnMean;  ///< Mean normal force in the system
+  double ReducedPartDistMean; 
 
   // Particle velocities
   double VelMin;   ///< Minimum velocity magnitude of the particles

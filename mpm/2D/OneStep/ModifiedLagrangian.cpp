@@ -184,20 +184,20 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // ==== Update strain and stress
   {
     START_TIMER("updateStrainAndStress");
-  if(MPM.NHL.hasDoubleScale == true){
+//  if(MPM.NHL.hasDoubleScale == true){
 #pragma omp parallel for default(shared)
     for (size_t p = 0; p < MP.size(); p++) {
       if(MP[p].isDoubleScale == true) {
       MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
     }
-   }
+//   }
+  }
   for (size_t p = 0; p < MP.size(); p++) {
       if(MP[p].isDoubleScale == false) {
       MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
    }
-  }
   // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);

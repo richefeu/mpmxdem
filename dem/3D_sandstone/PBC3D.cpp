@@ -442,6 +442,7 @@ void PBC3Dbox::computeSampleData() {
   if (!Particles.empty()) {
     Rmin = Rmax = Particles[0].radius;
     Rmean = 0.0;
+    ReducedPartDistMean= 0.0;
     VelMin = VelMax = VelMean = VelVar = 0.0;
     AccMin = AccMax = AccMean = AccVar = 0.0;
     vec3r VectVelMean;
@@ -476,6 +477,10 @@ void PBC3Dbox::computeSampleData() {
       if (SqrAcc > AccMax) AccMax = SqrAcc;
       if (SqrAcc < AccMin) AccMin = SqrAcc;
     }
+    for (size_t k=0; k<Interactions.size(); k++){
+      ReducedPartDistMean+=(norm(Cell.h*(Particles[Interactions[k].i].pos-Particles[Interactions[k].j].pos))+Interactions[k].gap0)
+	            /(Particles[Interactions[k].i].radius+Particles[Interactions[k].j].radius);
+    }
     Rmean /= Particles.size();
     Vmean /= Particles.size();
     VectVelMean /= Particles.size();
@@ -486,6 +491,7 @@ void PBC3Dbox::computeSampleData() {
     AccMean = sqrt(AccMean) / Particles.size();
     AccMin = sqrt(AccMin);
     AccMax = sqrt(AccMax);
+    ReducedPartDistMean/=Interactions.size();
     for (size_t i = 0; i < Particles.size(); i++) {
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
@@ -996,8 +1002,8 @@ void PBC3Dbox::dataOutput() {
   double Vcell = fabs(Cell.h.det());
   staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
   resultantOut << t << ' ' << Rmean << ' ' << R0mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
-               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMean << ' ' << VelMin << ' ' << VelMean
-               << ' ' << VelVar << std::endl;
+               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMax << ' ' << VelMin << ' ' << VelMean
+               << ' ' << VelVar << ReducedPartDistMean << std::endl;
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
