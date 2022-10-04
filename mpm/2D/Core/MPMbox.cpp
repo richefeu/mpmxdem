@@ -35,7 +35,6 @@ MPMbox::MPMbox() {
   activePIC = false;
   timePIC = 0.0;
   boundary_layer = 0.0;
-
   ObstaclePlannedRemoval.time = -1.0;
   ObstaclePlannedRemoval.groupNumber = -1;
 
@@ -57,6 +56,8 @@ MPMbox::MPMbox() {
   id_en2 = dataTable.add("en2");
   id_mu = dataTable.add("mu");
   id_viscRate = dataTable.add("viscRate");
+  id_dn0 = dataTable.add("dn0");
+  id_dt0 = dataTable.add("dt0");
 
   console = spdlog::stdout_color_mt("console");
 }
@@ -302,11 +303,11 @@ void MPMbox::read(const char* name) {
           console->warn("@MPMbox::read, model {} not found", modelName);
         }
         P.constitutiveModel = itCM->second;
+        P.constitutiveModel->init(P);
         P.constitutiveModel->key = modelName;
 
         P.mass = P.vol * P.density;
         P.size = sqrt(P.vol0);
-
         MP.push_back(P);
       }
     }
@@ -416,6 +417,14 @@ void MPMbox::save(const char* name) {
         file << "set viscRate " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_viscRate, MPgroup, ObstGroup)
              << '\n';
       }
+      if (dataTable.isDefined(id_dn0, MPgroup, ObstGroup)) {
+        file << "set dn0 " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_dn0, MPgroup, ObstGroup)
+             << '\n';
+      }
+      if (dataTable.isDefined(id_dt0, MPgroup, ObstGroup)) {
+        file << "set dt0 " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_dt0, MPgroup, ObstGroup)
+             << '\n';
+      }
     }
   }
 
@@ -467,6 +476,10 @@ void MPMbox::save(const char* name) {
                  << MP[iMP].PBC->Vsolid << " " << fabs(MP[iMP].PBC->Cell.h.det()) << " " << MP[iMP].PBC->Cell.h.xx
                  << " " << MP[iMP].PBC->Cell.h.xy << " " << MP[iMP].PBC->Cell.h.yx << " " << MP[iMP].PBC->Cell.h.yy
                  << std::endl;
+    }else{
+      file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+                 << 1.0           << " " << 1.0           << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+                 << 0.0           << " " << 1.0           << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << std::endl;
     }
   }
 }

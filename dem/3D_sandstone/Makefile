@@ -45,7 +45,7 @@ HEADERS = $(SOURCES:%.cpp=%.hpp)
 
 .PHONY: all lib clean
 
-all: run see stop # mpstest
+all: run see # mpstest
 
 clean:
 	rm -f *.o libPBC3D.a *.gch run see

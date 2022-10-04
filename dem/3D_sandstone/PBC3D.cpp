@@ -44,7 +44,6 @@ PBC3Dbox::PBC3Dbox() {
   fricfailure = 0;
   dVerlet = 1e-7;
   zetaMax = 1;
-  // nodam = false;
   enableSwitch = 1;
   objectiveFriction = 1;
 }
@@ -105,11 +104,6 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
   conf << "permamentGluer " << permamentGluer << '\n';
-  /*
-  if (nodam) {
-    conf << "nodamage " << '\n';
-  }
-  */
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
   conf << "iconf " << iconf << '\n';
@@ -1558,7 +1552,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
         if (permamentGluer == 1) {
           // switch to a cemented/bonded link
-          Interactions[k].state = bondedState;
+          Interactions[k].state = bondedStateDam;
 
           if (dn >= 0.0)
             Interactions[k].gap0 = dn;
