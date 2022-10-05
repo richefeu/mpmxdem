@@ -602,6 +602,7 @@ bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
     CF.read(file_name);
     CF.postProcess(SmoothedData);
     precomputeColors();
+    std::cout << "Read " << file_name << std::endl;
 
     char co_file_name[256];
     sprintf(co_file_name, "conf%d.txt_micro", num);
