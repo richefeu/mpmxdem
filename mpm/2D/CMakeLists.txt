@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set(CMAKE_CXX_COMPILER "g++-11") # do not use AppleClang
+message(STATUS "CMAKE_SYSTEM_NAME = " ${CMAKE_SYSTEM_NAME})
+message(STATUS "CMAKE_HOST_SYSTEM_NAME = " ${CMAKE_HOST_SYSTEM_NAME})
+ 
+if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
+  set(CMAKE_CXX_COMPILER "g++-12") # do not use AppleClang
+  message(STATUS "CMAKE_CXX_COMPILER = " ${CMAKE_CXX_COMPILER})
 endif()
 
 project(MPMbox LANGUAGES CXX)
@@ -19,11 +23,12 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 # ========= OpenGL
 find_package(OpenGL REQUIRED)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
 
-  # you might use: export CXX="g++-11"
+  # you might use: export CXX="g++-12"
   # before the find_package(OpenMP)
-  find_package(OpenMP)
+  #find_package(OpenMP)
+  # depuis g++-12 ça ne fonctionne plus sur mac
 
   # here, we do not uses find_package(glut) so that the version installed by apple is NOT used
   find_package(PkgConfig REQUIRED)
@@ -42,6 +47,7 @@ else()
   message(STATUS "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
   message(STATUS "OPENGL_LIBRARIES = " ${OPENGL_LIBRARIES})
   message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
+  
 endif()
 
 

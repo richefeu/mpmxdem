@@ -356,15 +356,30 @@ void Loading::AxisRotationZ(double E0, double omega, double Lx, double Ly, doubl
     double h = box.Cell.h.xx;
     double det = a * f * h - c * d * h + e * c * g;
 
+#if 0
+
     double Co = 0.5 * E0 * omega * cos(omega * (box.t - iniTime));
     double Si = -E0 * omega * sin(omega * (box.t - iniTime));
-
-    //if (det == 0.0) return;
 
     box.Load.v.xx = (f * g * Co - c * h * Si) / det;
     box.Load.v.yy = (-f * g * Co + c * g * Si) / det;
     box.Load.v.xy = ((e * g - d * h) * Co + a * h * Si) / det;
     box.Load.v.yx = 0.0;
+    
+#else
+    // Cette version fait le calcul exacte de l'incrément de h : hinc
+    // pour définir une vitesse vh telle que vh dt = hinc
+    
+    double intCo = (0.5 * E0 * (sin(omega * (iniTime - box.t)) - sin(omega * (iniTime - box.dt - box.t))));
+    double intSi = E0 * (cos(omega * (iniTime - box.dt - box.t)) - cos(omega * (iniTime - box.t)));
+
+    box.Load.v.xx = (f * g * intCo - c * h * intSi) / (det * box.dt);
+    box.Load.v.yy = (-f * g * intCo + c * g * intSi) / (det * box.dt);
+    box.Load.v.xy = ((e * g - d * h) * intCo + a * h * intSi) / (det * box.dt);
+    box.Load.v.yx = 0.0;
+    
+#endif
+    
   };
 }
 

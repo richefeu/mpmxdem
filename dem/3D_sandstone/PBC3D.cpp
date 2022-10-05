@@ -44,7 +44,6 @@ PBC3Dbox::PBC3Dbox() {
   fricfailure = 0;
   dVerlet = 1e-7;
   zetaMax = 1;
-  // nodam = false;
   enableSwitch = 1;
   objectiveFriction = 1;
 }
@@ -105,11 +104,6 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
   conf << "permamentGluer " << permamentGluer << '\n';
-  /*
-  if (nodam) {
-    conf << "nodamage " << '\n';
-  }
-  */
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
   conf << "iconf " << iconf << '\n';

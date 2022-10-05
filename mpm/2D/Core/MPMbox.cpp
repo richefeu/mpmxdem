@@ -303,7 +303,8 @@ void MPMbox::read(const char* name) {
       std::string modelName;
       for (size_t iMP = 0; iMP < nb; iMP++) {
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
-            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F >> P.outOfPlaneStress;
+            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F >> P.outOfPlaneStress >> P.contactf;
+
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
           console->warn("@MPMbox::read, model {} not found", modelName);
@@ -353,6 +354,14 @@ void MPMbox::read(const char* name) {
       break;
     }
   }
+}
+
+void MPMbox::read(int num) {
+  // Open file
+  char name[256];
+  sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
+  console->info("Read {}", name);
+  read(name);
 }
 
 void MPMbox::save(const char* name) {
@@ -461,7 +470,9 @@ void MPMbox::save(const char* name) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
-         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress <<'\n';
+         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
+         << '\n';
+
 
     // Remarque : en procédant ainsi on fait l'hypothèse que tous les points matériels sont a double échelle
     // FIXME: il faudra changer la façon de faire (mais pas pour le moment, pour que les calculs déjà réalisés
@@ -496,75 +507,10 @@ void MPMbox::save(int num) {
 void MPMbox::init() {
   // If the result folder does not exist, it is created
   fileTool::create_folder(result_folder);
-  // PBC3Dbox  box=PBC3Dbox();
-  // box.loadConf(dconf);
+
   for (size_t p = 0; p < MP.size(); p++) {
-    // MP[p].PBC.saveConf(p,"titi");
     MP[p].prev_pos = MP[p].pos;
-
-    // PBC.push_back(PBC3Dbox());
-    // PBC[p].loadConf(dconf);
-    // V0.reset(0);
-    // PBC[p].Load.VelocityControl(V0);
-    // PBC[p].enableSwitch = 1;
-    // PBC[p].interVerlet =dt/4.0;
-    // PBC[p].interOut =2*dt;
-    // PBC[p].interConf =2*dt;
   }
-
-  // copying input file to results folder
-  /*
-  std::ifstream src(name, std::ios::binary);
-  char newName[256];
-  sprintf(newName, "%s/INPUTFILE.sim", result_folder.c_str());
-  std::ofstream dst(newName, std::ios::binary);
-  dst << src.rdbuf();
-  */
-
-  /*
-  //good way to set initial vol but bugs the boundary condition when element (cell) is not full
-  //adding element number to a list
-  std::set<int> elementNumber;
-
-  for (size_t p = 0; p<MP.size();p++) {
-          double invL[2];
-          invL[0] = 1.0f / Grid.lx;
-          invL[1] = 1.0f / Grid.ly;
-          MP[p].e = (int)(trunc(MP[p].pos.x * invL[0]) + trunc(MP[p].pos.y * invL[1]) * Grid.Nx);
-          elementNumber.insert(MP[p].e);
-  }
-  std::vector<int> elementNum;
-  std::copy(elementNumber.begin(), elementNumber.end(), std::back_inserter(elementNum));  //copying set to a vector to
-  facilitate access
-
-  //now comparing each MP to each element while adding matching MP to a temporary list
-  std::vector<MaterialPoint*> tempMP;
-  double elementVol = Grid.lx*Grid.ly;
-  //big double loop. should prob be optimized (happening only once though)
-  for (size_t i = 0; i < elementNum.size(); i++){
-          tempMP.clear();
-          for (size_t p = 0; p<MP.size();p++) { //getting matching MP in the vector and summing their vols
-                  if (elementNum[i] == MP[p].e) {
-                          tempMP.push_back(&MP[p]);
-                  }
-          }
-          double mpvol = elementVol/tempMP.size();
-          for (size_t m = 0; m<tempMP.size();m++){
-                  MP[m].vol = mpvol;
-                  MP[m].vol0 = mpvol;
-          }
-  }
-
-  */
-  // Output files
-  // std::string namelogFile = "global_stream";
-  // std::string namelogFile2 = "dataStream";
-
-  // char name1[256];
-  // sprintf(name1, "%s.txt", namelogFile.c_str());
-  // logFile.open(name1, std::fstream::app);  // global file
-  // sprintf(name1, "%s/%s.txt", result_folder.c_str(), namelogFile2.c_str());
-  // logFile2.open(name1);  // save any kind of data here
 }
 
 void MPMbox::run() {
@@ -634,7 +580,6 @@ void MPMbox::run() {
   for (size_t s = 0; s < Spies.size(); ++s) {
     Spies[s]->end();  // there is often nothing implemented
   }
-
 }
 
 void MPMbox::checkProximity() {
@@ -653,11 +598,10 @@ void MPMbox::checkProximity() {
 void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
   for (size_t p = 0; p < MP.size(); p++) {
-    if (MP[p].pos.x > Grid.Nx * Grid.lx or MP[p].pos.x < 0.0 or MP[p].pos.y > Grid.Ny * Grid.ly or MP[p].pos.y < 0.0) {
-      console->warn(
-          "@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
-          MP[p].pos.x, MP[p].pos.y);
-      //exit(0);
+    if (MP[p].pos.x > Grid.Nx * Grid.lx || MP[p].pos.x < 0.0 || MP[p].pos.y > Grid.Ny * Grid.ly || MP[p].pos.y < 0.0) {
+      console->warn("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
+                    MP[p].pos.x, MP[p].pos.y);
+      // exit(0);
     }
   }
 }
@@ -673,7 +617,7 @@ void MPMbox::convergenceConditions() {
   double rayMin = inf;
   double knMax = -inf;
   double massMin = inf;
-  //double eps = 1e-6;
+  // double eps = 1e-6;
   double velMax = -inf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;

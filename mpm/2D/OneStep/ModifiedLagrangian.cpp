@@ -19,7 +19,7 @@ static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
 std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
-  START_TIMER("MUSCL step");
+  START_TIMER("MUSL step");
 
   // Defining aliases ======================================
   std::vector<node>& nodes = MPM.nodes;
