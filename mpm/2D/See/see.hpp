@@ -45,6 +45,7 @@ struct additionalData {
   double h_xy;
   double h_yx;
   double h_yy;
+  double ReducedPartDistMean;
 };
 
 MPMbox Conf;

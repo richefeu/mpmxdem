@@ -628,7 +628,7 @@ void readAdditionalData(const char* fileName) {
   additionalData D;
   while (is.good()) {
     is >> D.MP_x >> D.MP_y >> D.NInt >> D.NB >> D.TF >> D.FF >> D.Rmean >> D.Vmean >> D.VelMean >> D.VelMin >>
-        D.VelMax >> D.VelVar >> D.Vsolid >> D.Vcell >> D.h_xx >> D.h_xy >> D.h_yx >> D.h_yy;
+        D.VelMax >> D.VelVar >> D.Vsolid >> D.Vcell >> D.h_xx >> D.h_xy >> D.h_yx >> D.h_yy >> D.ReducedPartDistMean;
     ADs.push_back(D);
   }
 
