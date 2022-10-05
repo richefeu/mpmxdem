@@ -147,6 +147,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       colorTable.Rebuild();
       precomputeColors();
       std::cout << "MP colored by volvar (volvar_min = " << volvarmin << ", volvar_max = " << volvarmax << ")\n";
+    } break;
     case '8': {
       color_option = 8;
       double fxmax = -1e20;
