@@ -183,21 +183,29 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // ==== Update strain and stress
   {
+  if(MPM.NHL.hasDoubleScale == true){
     START_TIMER("updateStrainAndStress");
-//  if(MPM.NHL.hasDoubleScale == true){
-#pragma omp parallel for default(shared)
+     doubleScaleVector.clear();
+     simpleScaleVector.clear();
     for (size_t p = 0; p < MP.size(); p++) {
-      if(MP[p].isDoubleScale == true) {
+       //MaterialPoint *MPP=&MP[p];
+      if(MP[p].isDoubleScale) {doubleScaleVector.push_back(p);}
+      else                    {simpleScaleVector.push_back(p);}
+    }
+    for (size_t q = 0; q < simpleScaleVector.size(); q++) {
+      MP[simpleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM,simpleScaleVector[q]);
+    }
+#pragma omp parallel for default(shared)
+    for (size_t q = 0; q < doubleScaleVector.size(); q++) {
+      MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
+    }
+  }
+  else{
+    for (size_t p = 0; p < MP.size(); p++) {
       MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
     }
-//   }
   }
-  for (size_t p = 0; p < MP.size(); p++) {
-      if(MP[p].isDoubleScale == false) {
-      MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
-      }
-   }
   // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
