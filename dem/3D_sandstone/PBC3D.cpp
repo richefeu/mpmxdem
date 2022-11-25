@@ -46,6 +46,8 @@ PBC3Dbox::PBC3Dbox() {
   zetaMax = 1;
   enableSwitch = 1;
   objectiveFriction = 1;
+  rampRatio=1;
+  rampDuration=0;
 }
 
 /// @brief Print a banner related with the current code
@@ -106,6 +108,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "permamentGluer " << permamentGluer << '\n';
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
+  conf << "rampDuration " << rampDuration << '\n';
   conf << "iconf " << iconf << '\n';
   conf << "h " << Cell.h << '\n';
   conf << "vh " << Cell.vh << '\n';
@@ -235,6 +238,8 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> zetaMax;
     else if (token == "permamentGluer")
       conf >> permamentGluer;
+    else if (token == "rampDuration")
+      conf >> rampDuration;
     else if (token == "numericalDampingCoeff")
       conf >> numericalDampingCoeff;
     else if (token == "Kratio")
@@ -318,10 +323,6 @@ void PBC3Dbox::loadConf(const char* name) {
         double pressure, gammaDot;
         conf >> pressure >> gammaDot;
         Load.SimpleShearXY(pressure, gammaDot);
-      } else if (command == "ShearTestXY") {
-        double pressure, gammaDot;
-        conf >> pressure >> gammaDot;
-        Load.ShearTestXY(pressure, gammaDot);
       } else if (command == "LodeAnglePath") {
         double pressure, sigRate, LodeAngle;
         conf >> pressure >> sigRate >> LodeAngle;
@@ -883,10 +884,11 @@ void PBC3Dbox::velocityVerletStep() {
     Particles[i].vel -= vmean;
   }
 
+  if (rampDuration-t>0){rampRatio=t/rampDuration; }
+  else{rampRatio=1;}
   for (size_t c = 0; c < 9; c++) {
-    if (Load.Drive[c] == ForceDriven) Cell.vh[c] += dt_2 * Cell.ah[c];
+    if (Load.Drive[c] == ForceDriven) Cell.vh[c] += rampRatio*dt_2 * Cell.ah[c];
   }
-
   Cell.update(dt);
 }
 
@@ -914,7 +916,6 @@ void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << "|  Solid fraction: " << Vsolid / Vcell << '\n';
   std::cout << "|  dt_crit/dt in range [" << (M_PI * sqrt(Vmin * density / kn)) / dt << ", "
             << (M_PI * sqrt(Vmax * density / kn)) / dt << "]\n";
-
   double Rmean, R0mean, fnMin, fnMean;
   staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
   std::cout << "|  Mean resultant: " << Rmean << ", Mean resultant (without ratlers): " << R0mean << '\n';

@@ -225,7 +225,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].density /= (1.0 + volumetricdStrain);
   }
   
-  MPM.plannedRemovalObstacle();  // FIXME: move it juste before or juste after advanceOneStep
   
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();

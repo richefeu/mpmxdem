@@ -168,6 +168,12 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       MP_contour = 1 - MP_contour;
     } break;
 
+    case 'n' :{
+      std::cout << "number: ";
+      int num;
+      std::cin >> num;
+      try_to_readConf(num, Conf, confNum);    
+    } break;
     case 'i': {
       printInfo();
     } break;

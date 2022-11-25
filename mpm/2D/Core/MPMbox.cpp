@@ -250,6 +250,10 @@ void MPMbox::read(const char* name) {
       }
     } else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
       file >> ObstaclePlannedRemoval.groupNumber >> ObstaclePlannedRemoval.time;
+    } else if (token == "MPPlannedRemoval"){
+      MPlannedRemoval MPL;
+      file >> MPL.key >> MPL.time;
+      MPPlannedRemoval.push_back(MPL);
     } else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
       std::string boundaryName;
@@ -569,6 +573,8 @@ void MPMbox::run() {
     }
 
     // run onestep!
+    plannedRemovalObstacle();
+    plannedRemovalMP();
     int ret = oneStep->advanceOneStep(*this);
     if (ret == 1) break;  // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
 
@@ -743,12 +749,30 @@ void MPMbox::plannedRemovalObstacle() {
     for (size_t i = 0; i < Obstacles.size(); i++) {
       if (Obstacles[i]->group == ObstaclePlannedRemoval.groupNumber) {
         delete (Obstacles[i]);
-        Obstacles.erase(Obstacles.begin() + i);
       }
+     else{
+       Obs_swap.push_back(Obstacles[i]);
+     }
     }
+    Obs_swap.swap(Obstacles);
+    Obs_swap.clear();
   }
 }
 
+void MPMbox::plannedRemovalMP(){
+  START_TIMER("plannedRemovalMP");
+  for(size_t j= 0; j < MPPlannedRemoval.size(); j++){
+    if (MPPlannedRemoval[j].time >= t && MPPlannedRemoval[j].time <= t + dt) {
+      for (size_t i = 0; i < MP.size(); i++) {
+        if (MP[i].constitutiveModel->key != MPPlannedRemoval[j].key) {
+          MP_swap.push_back(MP[i]);
+        }
+      }
+      MP_swap.swap(MP);
+      MP_swap.clear();
+    }
+  }
+}
 void MPMbox::adaptativeRefinement() {
   START_TIMER("adaptativeRefinement");
   for (size_t p = 0; p < MP.size(); p++) {

@@ -58,8 +58,9 @@ class MPMbox {
   std::vector<node> nodes;        // The nodes of the Eulerian grid
   std::vector<element> Elem;      // Quad-elements of the grid
   std::vector<MaterialPoint> MP;  // Material Points
-
+  std::vector<MaterialPoint> MP_swap;
   std::vector<Obstacle*> Obstacles;  // List of rigid obstacles
+  std::vector<Obstacle*> Obs_swap;
   std::vector<Spy*> Spies;           // Spies for (post-)processing
 
   ShapeFunction* shapeFunction;                      // The shape functions
@@ -98,8 +99,14 @@ class MPMbox {
   struct {
     int groupNumber;  // osbsacle number to be deleted
     double time;      // time to remove an obstacle
-
   } ObstaclePlannedRemoval;
+
+struct MPlannedRemoval {
+    std::string key;
+    double time;
+    } ;
+
+std::vector<MPlannedRemoval> MPPlannedRemoval;
 
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
@@ -161,6 +168,7 @@ class MPMbox {
   void limitTimeStepForDEM();
   void updateTransformationGradient();
   void plannedRemovalObstacle();
+  void plannedRemovalMP();
   void adaptativeRefinement();
   // void weightIncrement();
 

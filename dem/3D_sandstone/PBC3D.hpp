@@ -77,6 +77,8 @@ class PBC3Dbox {
   double dt0;      ///< Maximum tangential displacement
   double drot0;    ///< Maximum angular rotation
   double powSurf;  ///< Power used in the breakage surface
+  double rampRatio;
+  double rampDuration;
 
   // Other parameters
   int iconf;           ///< Current configuration ID

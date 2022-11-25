@@ -219,30 +219,6 @@ void Loading::SimpleShearXY(double pressure, double gammaDot) {
   ServoFunction = [gammaDot](PBC3Dbox& box) -> void { box.Load.v.xy = gammaDot * box.Cell.h.yy; };
 }
 
-void Loading::ShearTestXY(double pressure, double gammaDot) {
-  sprintf(StoredCommand, "SimpleShearXY %g %g", pressure, gammaDot);
-
-  Drive.xx = Drive.yy = Drive.yx = ForceDriven;
-  Drive.zz = VelocityDriven;
-  Drive.xy = VelocityDriven;
-  Drive.xz = Drive.zx = VelocityDriven;
-  Drive.yz = Drive.zy = VelocityDriven;
-
-  Sig.yy = pressure;
-  Sig.xx = Sig.zz = 0.0;
-  Sig.xy = Sig.yx = 0.0;
-  Sig.xz = Sig.yz = 0.0;
-  Sig.yz = Sig.zy = 0.0;
-
-  v.xx = v.yy = v.yx = 0.0;  // free in fact
-  v.zz = 0.0;
-  v.xz = v.zx = 0.0;
-  v.yz = v.zy = 0.0;
-  v.xy = 0.0;  // will be driven by the servoFunction
-
-  ServoFunction = [gammaDot](PBC3Dbox& box) -> void { box.Load.v.xy = gammaDot * box.Cell.h.yy; };
-}
-
 void Loading::VelocityControl(mat9r& V) {
   sprintf(StoredCommand, "VelocityControl %g %g %g   %g %g %g   %g %g %g", V.xx, V.xy, V.xz, V.yx, V.yy, V.yz, V.zx,
           V.zy, V.zz);

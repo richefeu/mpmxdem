@@ -34,7 +34,6 @@ struct Loading {
   void BiaxialCompressionY(double px, double py);
   void IsostaticCompression(double pressure);
   void SimpleShearXY(double pressure, double gammaDot);
-  void ShearTestXY(double pressure, double gammaDot);
   void VelocityControl(mat9r &V);
   void RigidRotationZ(double omega);
   void StrainControl(mat9r &F);
