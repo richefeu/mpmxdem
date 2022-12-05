@@ -1667,7 +1667,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstepMin, double r
 }
 void PBC3Dbox::mpmBonds(double Dist) {
   ActivateBonds(Dist, bondedStateDam);
-  numericalDampingCoeff = 0;
+  numericalDampingCoeff = 0.0;
   freezeSystem();
 }
 

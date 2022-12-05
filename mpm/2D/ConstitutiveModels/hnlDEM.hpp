@@ -12,6 +12,7 @@ struct hnlDEM : public ConstitutiveModel {
   
   double timeBondReactivation;
   double bondingDistance;
+  double microdamping;
   // Different MP can use the same initial conf,
   // but each MP holds its own simulation
 

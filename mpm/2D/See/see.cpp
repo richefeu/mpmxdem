@@ -99,11 +99,14 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       if (ADs.empty()) break;
       color_option = 5;
       double Dmax = -1e20;
+      double Nbref=790;
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
-        double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
+        //double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
+        double D = 1.0 - ADs[i].NB / Nbref;
         if (D > Dmax) Dmax = D;
       }
+      //Dmax=0.65;
       colorTable.setMinMax(0.0, Dmax);
       colorTable.setTableID(6);
       colorTable.Rebuild();
