@@ -38,8 +38,8 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
       double delta_dt = (velRelative * T) * MPM.dt;
       MPM.Obstacles[o]->Neighbors[nn].ft += -kt * delta_dt;
       // === Friction force
-      //double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
-      double threshold = mu *MPM.Obstacles[o]->Neighbors[nn].sigma_n*MPM.MP[pn].vol0;
+      double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
+      //double threshold = mu *MPM.Obstacles[o]->Neighbors[nn].sigma_n*MPM.MP[pn].vol0;
       if (MPM.Obstacles[o]->Neighbors[nn].ft > threshold) MPM.Obstacles[o]->Neighbors[nn].ft = threshold;
       if (MPM.Obstacles[o]->Neighbors[nn].ft < -threshold) MPM.Obstacles[o]->Neighbors[nn].ft = -threshold;
       double visc = viscRate * 2.0 * sqrt(MPM.MP[pn].mass * kn);

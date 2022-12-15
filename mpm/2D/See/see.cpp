@@ -55,6 +55,8 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
         if (p > pmax) pmax = p;
         if (p < pmin) pmin = p;
       }
+      //pmin=-10000;
+      //pmax=10000;
       colorTable.setMinMax(pmin, pmax);
       //colorTable.setMinMax(-1e4, 1e3);
       colorTable.setTableID(3);
@@ -102,9 +104,11 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
         double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
+      //for (size_t i = 0; i < ADs.size(); i++) {
+        //if (ADs[i].NB == 0.0) continue;
+        //double D = 1.0 - ADs[i].NB / 790;
         if (D > Dmax) Dmax = D;
       }
-      Dmax=0.8;
       colorTable.setMinMax(0.0, Dmax);
       colorTable.setTableID(6);
       colorTable.Rebuild();
@@ -414,6 +418,8 @@ void precomputeColors() {
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
         double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
+        //if (ADs[i].NB == 0.0) continue;
+        //double D = 1.0 - ADs[i].NB / 790;
         colorTable.getRGB(D, &precompColors[i]);
       }
     } break;
