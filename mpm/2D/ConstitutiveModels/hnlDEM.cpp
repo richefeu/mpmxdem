@@ -12,11 +12,11 @@ std::string hnlDEM::getRegistrationName() { return std::string("hnlDEM"); }
 hnlDEM::hnlDEM() {}
 
 void hnlDEM::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingDistance >> microdamping; }
-void hnlDEM::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingDistance; }
+//void hnlDEM::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingDistance; }
 
 void hnlDEM::write(std::ostream& os) {
   os << fileName << ' ' << timeBondReactivation << ' ' << bondingDistance << ' ' << microdamping << '\n';
-  os << fileName << ' ' << timeBondReactivation << ' ' << bondingDistance << '\n';
+ // os << fileName << ' ' << timeBondReactivation << ' ' << bondingDistance << '\n';
 }
 
 // The elastic properties cannot be get that way, so, as a convention, -1 is returned
