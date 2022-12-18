@@ -81,7 +81,7 @@ void Work::exec() {
   }
 }
 
-void Work::record() {
+void Work::record() { 
   file << box->t << " " << -Wn_tot << " " << -Wt_tot << " " << Wint_tot << " " << -Wn_tot - Wt_tot + Wint_tot << " "
        << Wp_tot << std::endl;
 }

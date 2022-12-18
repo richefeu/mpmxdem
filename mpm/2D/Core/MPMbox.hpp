@@ -61,7 +61,7 @@ class MPMbox {
   std::vector<MaterialPoint> MP_swap;
   std::vector<Obstacle*> Obstacles;  // List of rigid obstacles
   std::vector<Obstacle*> Obs_swap;
-  std::vector<Spy*> Spies;           // Spies for (post-)processing
+  std::vector<Spy*> Spies;  // Spies for (post-)processing
 
   ShapeFunction* shapeFunction;                      // The shape functions
   OneStep* oneStep;                                  // Type of routine to be used
@@ -93,20 +93,17 @@ class MPMbox {
   double t;          // Current time
 
   // scheduled removal of an obstacle:
-  // double deltime;    // time to delete an obstacle
-  // int delnumber;     // osbsacle number to be deleted
-
   struct {
     int groupNumber;  // osbsacle number to be deleted
     double time;      // time to remove an obstacle
   } ObstaclePlannedRemoval;
 
-struct MPlannedRemoval {
+  struct MPlannedRemoval {
     std::string key;
     double time;
-    } ;
+  };
 
-std::vector<MPlannedRemoval> MPPlannedRemoval;
+  std::vector<MPlannedRemoval> MPPlannedRemoval;
 
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
@@ -132,7 +129,7 @@ std::vector<MPlannedRemoval> MPPlannedRemoval;
     int minDEMstep;      // minimal number of DEM time steps
     double rateAverage;  // proportion of DEM aveaging
   } NHL;
-  bool  switchGravity;
+  bool switchGravity;
   double switchGravTime;
   vec2r planned_grav;
 

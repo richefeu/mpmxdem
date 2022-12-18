@@ -46,8 +46,8 @@ PBC3Dbox::PBC3Dbox() {
   zetaMax = 1;
   enableSwitch = 1;
   objectiveFriction = 1;
-  rampRatio=1;
-  rampDuration=0;
+  rampRatio = 1;
+  rampDuration = 0;
 }
 
 /// @brief Print a banner related with the current code
@@ -443,7 +443,7 @@ void PBC3Dbox::computeSampleData() {
   if (!Particles.empty()) {
     Rmin = Rmax = Particles[0].radius;
     Rmean = 0.0;
-    ReducedPartDistMean= 0.0;
+    ReducedPartDistMean = 0.0;
     VelMin = VelMax = VelMean = VelVar = 0.0;
     AccMin = AccMax = AccMean = AccVar = 0.0;
     vec3r VectVelMean;
@@ -478,9 +478,10 @@ void PBC3Dbox::computeSampleData() {
       if (SqrAcc > AccMax) AccMax = SqrAcc;
       if (SqrAcc < AccMin) AccMin = SqrAcc;
     }
-    for (size_t k=0; k<Interactions.size(); k++){
-      ReducedPartDistMean+=(norm(Cell.h*(Particles[Interactions[k].i].pos-Particles[Interactions[k].j].pos))+Interactions[k].gap0)
-	            /(Particles[Interactions[k].i].radius+Particles[Interactions[k].j].radius);
+    for (size_t k = 0; k < Interactions.size(); k++) {
+      ReducedPartDistMean += (norm(Cell.h * (Particles[Interactions[k].i].pos - Particles[Interactions[k].j].pos)) +
+                              Interactions[k].gap0) /
+                             (Particles[Interactions[k].i].radius + Particles[Interactions[k].j].radius);
     }
     Rmean /= Particles.size();
     Vmean /= Particles.size();
@@ -492,7 +493,7 @@ void PBC3Dbox::computeSampleData() {
     AccMean = sqrt(AccMean) / Particles.size();
     AccMin = sqrt(AccMin);
     AccMax = sqrt(AccMax);
-    ReducedPartDistMean/=Interactions.size();
+    ReducedPartDistMean /= Interactions.size();
     for (size_t i = 0; i < Particles.size(); i++) {
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
@@ -884,10 +885,13 @@ void PBC3Dbox::velocityVerletStep() {
     Particles[i].vel -= vmean;
   }
 
-  if (rampDuration-t>0){rampRatio=t/rampDuration; }
-  else{rampRatio=1;}
+  if (rampDuration - t > 0) {
+    rampRatio = t / rampDuration;
+  } else {
+    rampRatio = 1;
+  }
   for (size_t c = 0; c < 9; c++) {
-    if (Load.Drive[c] == ForceDriven) Cell.vh[c] += rampRatio*dt_2 * Cell.ah[c];
+    if (Load.Drive[c] == ForceDriven) Cell.vh[c] += rampRatio * dt_2 * Cell.ah[c];
   }
   Cell.update(dt);
 }
@@ -1070,10 +1074,10 @@ void PBC3Dbox::updateNeighborList(double dmax) {
 
       double sum = dmax + Particles[i].radius + Particles[j].radius;
       if (norm2(branch) <= sum * sum) {
-        //double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
-        //double Dampn = dampRate * 2.0 * sqrt(kn * m);
-        //double Dampt = dampRate * 2.0 * sqrt(kt * m);
-        //Interactions.push_back(Interaction(i, j, Dampn, Dampt));
+        // double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
+        // double Dampn = dampRate * 2.0 * sqrt(kn * m);
+        // double Dampt = dampRate * 2.0 * sqrt(kt * m);
+        // Interactions.push_back(Interaction(i, j, Dampn, Dampt));
         Interactions.push_back(Interaction(i, j, 0.0, 0.0));
       }
     }
@@ -1098,10 +1102,10 @@ void PBC3Dbox::updateNeighborList(double dmax) {
       size_t j = Interactions[k].j;
       double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
       Interactions[k].dampn = dampRate * 2.0 * sqrt(kn * m);
-      Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m);            
+      Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m);
     }
   }
-  
+
   // if the previous loop has been break, the other interactions are new ones.
   // So, dampn and dampt need to be pre-computed
   for (; k < Interactions.size(); ++k) {
@@ -1109,10 +1113,8 @@ void PBC3Dbox::updateNeighborList(double dmax) {
     size_t j = Interactions[k].j;
     double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
     Interactions[k].dampn = dampRate * 2.0 * sqrt(kn * m);
-    Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m); 
+    Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m);
   }
-  
-  
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)

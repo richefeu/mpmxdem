@@ -37,10 +37,9 @@ MPMbox::MPMbox() {
   boundary_layer = 0.0;
   ObstaclePlannedRemoval.time = -1.0;
   ObstaclePlannedRemoval.groupNumber = -1;
-  switchGravity=false;
-  switchGravTime=-1;
-  planned_grav.set(0.0,0.0);
-
+  switchGravity = false;
+  switchGravTime = -1;
+  planned_grav.set(0.0, 0.0);
 
   iconf = 0;
   confPeriod = 5000;
@@ -198,8 +197,8 @@ void MPMbox::read(const char* name) {
       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
       ramp = true;
     } else if (token == "gravitySwitch") {
-      file >>  switchGravTime >> planned_grav.x >> planned_grav.y;
-      switchGravity=true;
+      file >> switchGravTime >> planned_grav.x >> planned_grav.y;
+      switchGravity = true;
     } else if (token == "verletCoef") {
       file >> boundary_layer;
     } else if (token == "set") {
@@ -250,7 +249,7 @@ void MPMbox::read(const char* name) {
       }
     } else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
       file >> ObstaclePlannedRemoval.groupNumber >> ObstaclePlannedRemoval.time;
-    } else if (token == "MPPlannedRemoval"){
+    } else if (token == "MPPlannedRemoval") {
       MPlannedRemoval MPL;
       file >> MPL.key >> MPL.time;
       MPPlannedRemoval.push_back(MPL);
@@ -376,7 +375,8 @@ void MPMbox::save(const char* name) {
   std::ofstream file_micro(name_micro);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
-  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy ReducedPartDistMean"
+  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy "
+                "ReducedPartDistMean"
              << std::endl;
   if (planeStrain == true) {
     file << "planeStrain\n";
@@ -388,8 +388,8 @@ void MPMbox::save(const char* name) {
   if (ramp) {
     file << "ramp " << gravity.x << " " << gravity.y << " " << gravity_incr.x << " " << gravity_incr.y << '\n';
   }
-  if (switchGravity){
-   file << "gravitySwitch " << switchGravTime << " " << planned_grav.x << " " << planned_grav.y << '\n';
+  if (switchGravity) {
+    file << "gravitySwitch " << switchGravTime << " " << planned_grav.x << " " << planned_grav.y << '\n';
   }
   file << "verletCoef " << boundary_layer << '\n';
   file << "demavg " << NHL.minDEMstep << " " << NHL.rateAverage << '\n';
@@ -432,12 +432,10 @@ void MPMbox::save(const char* name) {
              << '\n';
       }
       if (dataTable.isDefined(id_dn0, MPgroup, ObstGroup)) {
-        file << "set dn0 " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_dn0, MPgroup, ObstGroup)
-             << '\n';
+        file << "set dn0 " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_dn0, MPgroup, ObstGroup) << '\n';
       }
       if (dataTable.isDefined(id_dt0, MPgroup, ObstGroup)) {
-        file << "set dt0 " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_dt0, MPgroup, ObstGroup)
-             << '\n';
+        file << "set dt0 " << MPgroup << ' ' << ObstGroup << ' ' << dataTable.get(id_dt0, MPgroup, ObstGroup) << '\n';
       }
     }
   }
@@ -477,11 +475,6 @@ void MPMbox::save(const char* name) {
          << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
          << '\n';
 
-
-    // Remarque : en procédant ainsi on fait l'hypothèse que tous les points matériels sont a double échelle
-    // FIXME: il faudra changer la façon de faire (mais pas pour le moment, pour que les calculs déjà réalisés
-    //        soient toujours exploitables)
-
     if (MP[iMP].isDoubleScale) {
       MP[iMP].PBC->computeSampleData();
       file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << MP[iMP].PBC->nbActiveInteractions << " "
@@ -491,11 +484,11 @@ void MPMbox::save(const char* name) {
                  << MP[iMP].PBC->Vsolid << " " << fabs(MP[iMP].PBC->Cell.h.det()) << " " << MP[iMP].PBC->Cell.h.xx
                  << " " << MP[iMP].PBC->Cell.h.xy << " " << MP[iMP].PBC->Cell.h.yx << " " << MP[iMP].PBC->Cell.h.yy
                  << " " << MP[iMP].PBC->ReducedPartDistMean << std::endl;
-    }else{
+    } else {
       file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-                 << 1.0           << " " << 1.0           << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-                 << 0.0           << " " << 1.0           << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << " " 
-		 << " " << 0.0    << std::endl;
+                 << 1.0 << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
+                 << 1.0 << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << " "
+                 << " " << 0.0 << std::endl;
     }
   }
 }
@@ -541,10 +534,10 @@ void MPMbox::run() {
         ramp = false;
       }
     }
-  if (switchGravity && switchGravTime<=t){
-     gravity_max.set(planned_grav.x,planned_grav.y);
-     switchGravity=false;
-   }
+    if (switchGravity && switchGravTime <= t) {
+      gravity_max.set(planned_grav.x, planned_grav.y);
+      switchGravity = false;
+    }
     // checking convergence requirements
     convergenceConditions();
 
@@ -749,19 +742,18 @@ void MPMbox::plannedRemovalObstacle() {
     for (size_t i = 0; i < Obstacles.size(); i++) {
       if (Obstacles[i]->group == ObstaclePlannedRemoval.groupNumber) {
         delete (Obstacles[i]);
+      } else {
+        Obs_swap.push_back(Obstacles[i]);
       }
-     else{
-       Obs_swap.push_back(Obstacles[i]);
-     }
     }
     Obs_swap.swap(Obstacles);
     Obs_swap.clear();
   }
 }
 
-void MPMbox::plannedRemovalMP(){
+void MPMbox::plannedRemovalMP() {
   START_TIMER("plannedRemovalMP");
-  for(size_t j= 0; j < MPPlannedRemoval.size(); j++){
+  for (size_t j = 0; j < MPPlannedRemoval.size(); j++) {
     if (MPPlannedRemoval[j].time >= t && MPPlannedRemoval[j].time <= t + dt) {
       for (size_t i = 0; i < MP.size(); i++) {
         if (MP[i].constitutiveModel->key != MPPlannedRemoval[j].key) {

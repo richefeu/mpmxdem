@@ -32,7 +32,10 @@ if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
 
   # here, we do not uses find_package(glut) so that the version installed by apple is NOT used
   find_package(PkgConfig REQUIRED)
-  pkg_check_modules(GLUT REQUIRED glut)
+  pkg_check_modules(GLUT REQUIRED glut>=3.4.0)
+  IF(GLUT_FOUND)
+    message(STATUS "GLUT as been found")
+  ENDIF() 
   set(GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIRS})
   set(GLUT_LIBRARIES "-L${GLUT_LIBDIR} -lglut")
   message(STATUS "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
