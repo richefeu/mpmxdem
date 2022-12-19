@@ -1,6 +1,8 @@
 #ifndef NODE_HPP
 #define NODE_HPP
 
+#include <cstddef>
+
 #include "mat4.hpp"
 #include "vec2.hpp"
 
@@ -16,7 +18,7 @@ struct node {
   mat4r stress;  // Node-stress (used e.g. for smoothing)
   double outOfPlaneStress; // third principal stress
   vec2r vel;    // Node-velocity (used e.g. for smoothing)
-  int number;   // An identifier number
+  size_t number;   // An identifier number
 
   // operator used to compare. This allows me to use std::sort in a vector made of nodes
   bool operator<(const node& other) const { return number < other.number; }

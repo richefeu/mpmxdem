@@ -4,8 +4,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<Command, add_MP_ShallowPath> registrar("add_MP_ShallowPath");
+//#include "factory.hpp"
+//static Registrar<Command, add_MP_ShallowPath> registrar("add_MP_ShallowPath");
 
 void add_MP_ShallowPath::read(std::istream& is) {
   is >> groupNb >> nbPathPoints >> height >> modelName >> rho >> size;

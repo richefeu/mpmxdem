@@ -1,6 +1,8 @@
 #ifndef GRID_HPP
 #define GRID_HPP
 
+#include <cstddef>
+
 //   +---+---+---+
 //   |   |   |   |
 //   +---+---+---+
@@ -13,7 +15,7 @@
 
 struct grid {
   double lx, ly;  // Size of quad-elements (regular grid)
-  int Nx, Ny;     // Number of grid-elements (QUA4) along x and y directions
+  size_t Nx, Ny;  // Number of grid-elements (QUA4) along x and y directions
 
   grid();  // Ctor
 };

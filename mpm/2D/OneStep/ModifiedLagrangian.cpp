@@ -13,8 +13,8 @@
 
 #include "PBC3D.hpp"
 
-#include "factory.hpp"
-static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
+// #include "factory.hpp"
+// static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
 
 std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
@@ -23,7 +23,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // Defining aliases ======================================
   std::vector<node>& nodes = MPM.nodes;
-  std::vector<int>& liveNodeNum = MPM.liveNodeNum;
+  std::vector<size_t>& liveNodeNum = MPM.liveNodeNum;
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
@@ -31,7 +31,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   double& dt = MPM.dt;
   // End of aliases ========================================
 
-  int* I;  // use as node index
+  size_t* I;  // use as node index
 
   // ==== Discard previous grid
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
@@ -62,10 +62,10 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Update Vector of node indices
-  std::set<int> sortedLive;
+  std::set<size_t> sortedLive;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       sortedLive.insert(I[r]);
     }
   }
@@ -87,7 +87,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       // Nodal mass
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
       nodes[I[r]].outOfPlaneStress += MP[p].N[r] * MP[p].outOfPlaneStress;
@@ -106,7 +106,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       // Internal forces
       nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
       // External forces (gravity)
@@ -124,7 +124,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].fb += MP[p].f * MP[p].N[r];
     }
   }
@@ -151,7 +151,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     vec2r PICvelo;
     PICvelo.reset();
 
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
         PICvelo += MP[p].N[r] * nodes[I[r]].q * invmass;
@@ -168,7 +168,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     double invmass;
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
         nodes[I[r]].vel += invmass * MP[p].N[r] * MP[p].vel * MP[p].mass;
@@ -183,26 +183,28 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // ==== Update strain and stress
   {
-  if(MPM.NHL.hasDoubleScale == true){
-    START_TIMER("updateStrainAndStress");
-     doubleScaleVector.clear();
-     simpleScaleVector.clear();
-    for (size_t p = 0; p < MP.size(); p++) {
-       //MaterialPoint *MPP=&MP[p];
-      if(MP[p].isDoubleScale) {doubleScaleVector.push_back(p);}
-      else                    {simpleScaleVector.push_back(p);}
-    }
-    for (size_t q = 0; q < simpleScaleVector.size(); q++) {
-      MP[simpleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM,simpleScaleVector[q]);
-    }
+    if (MPM.NHL.hasDoubleScale == true) {
+      START_TIMER("updateStrainAndStress");
+
+      std::vector<size_t> simpleScaleVector;
+      std::vector<size_t> doubleScaleVector;
+      for (size_t p = 0; p < MP.size(); p++) {
+        if (MP[p].isDoubleScale) {
+          doubleScaleVector.push_back(p);
+        } else {
+          simpleScaleVector.push_back(p);
+        }
+      }
+      for (size_t q = 0; q < simpleScaleVector.size(); q++) {
+        MP[simpleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, simpleScaleVector[q]);
+      }
 #pragma omp parallel for default(shared)
-    for (size_t q = 0; q < doubleScaleVector.size(); q++) {
-      MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
-    }
-  }
-  else{
-    for (size_t p = 0; p < MP.size(); p++) {
-      MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
+      for (size_t q = 0; q < doubleScaleVector.size(); q++) {
+        MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
+      }
+    } else {
+      for (size_t p = 0; p < MP.size(); p++) {
+        MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
     }
   }
@@ -210,7 +212,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     double invmass;
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
         MP[p].pos += MP[p].N[r] * dt * (nodes[I[r]].q) * invmass;
@@ -224,8 +226,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].vol *= (1.0 + volumetricdStrain);
     MP[p].density /= (1.0 + volumetricdStrain);
   }
-  
-  
+
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
 

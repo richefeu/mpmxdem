@@ -11,15 +11,15 @@
 
 #include "PBC3D.hpp"
 
-#include <factory.hpp>
-static Registrar<OneStep, UpdateStressFirst> registrar("UpdateStressFirst");
+//#include <factory.hpp>
+//static Registrar<OneStep, UpdateStressFirst> registrar("UpdateStressFirst");
 
 std::string UpdateStressFirst::getRegistrationName() { return std::string("UpdateStressFirst"); }
 
 int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   // Defining aliases =============================
   std::vector<node>& nodes = MPM.nodes;
-  std::vector<int>& liveNodeNum = MPM.liveNodeNum;
+  std::vector<size_t>& liveNodeNum = MPM.liveNodeNum;
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
@@ -31,7 +31,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   // End of aliases ================================
 
   if (MPM.step == 0) std::cout << "Running UpdateStressFirst" << std::endl;
-  int* I;  // use as node index
+  size_t* I;  // use as node index
 
   // ==== Discard previous grid
 
@@ -61,10 +61,10 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Update Vector of node indices
-  std::set<int> sortedLive;
+  std::set<size_t> sortedLive;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       sortedLive.insert(I[r]);
     }
   }
@@ -80,7 +80,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       // Nodal mass
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
       // Nodal momentum
@@ -119,7 +119,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
   // ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       // Internal forces
       nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
       // External forces (gravity)
@@ -139,7 +139,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
 
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].fb += MP[p].f * MP[p].N[r];
     }
   }
@@ -165,7 +165,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
     I = &(Elem[MP[p].e].I[0]);
     MP[p].prev_pos = MP[p].pos;
     double invmass;
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > tolmass) {
         invmass = 1.0 / nodes[I[r]].mass;
         MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;

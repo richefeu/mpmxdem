@@ -5,8 +5,8 @@
 
 #include "PBC3D.hpp"
 
-#include "factory.hpp"
-static Registrar<ConstitutiveModel, hnlDEMcv> registrar("hnlDEMcv");
+//#include "factory.hpp"
+//static Registrar<ConstitutiveModel, hnlDEMcv> registrar("hnlDEMcv");
 std::string hnlDEMcv::getRegistrationName() { return std::string("hnlDEMcv"); }
 
 hnlDEMcv::hnlDEMcv() {}
@@ -28,14 +28,14 @@ void hnlDEMcv::init(MaterialPoint& MP) {
 }
 
 void hnlDEMcv::updateStrainAndStress(MPMbox& MPM, size_t p) {
-  int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+  size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
   // Get the total strain increment from node velocities
   vec2r vn;
   mat4r dstrain;
   char fnamea[256];
-  int col_i;
-  int row_i;
-  for (int r = 0; r < element::nbNodes; r++) {
+  size_t col_i;
+  size_t row_i;
+  for (size_t r = 0; r < element::nbNodes; r++) {
     dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy +=
         0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
@@ -61,8 +61,8 @@ void hnlDEMcv::updateStrainAndStress(MPMbox& MPM, size_t p) {
   mat9r SigAvg;
   MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.NHL.minDEMstep, MPM.NHL.rateAverage, SigAvg);
   
-  col_i = p % MPM.Grid.Nx;
-  row_i = floor(p / MPM.Grid.Nx);
+  col_i = static_cast<size_t>(p % MPM.Grid.Nx);
+  row_i = static_cast<size_t>(floor((double)p / (double)MPM.Grid.Nx));
   if (MPM.t >= timeBondchange - MPM.dt && MPM.t <= timeBondchange + MPM.dt) {
     //MPM.MP[p].PBC->fn0/=bondingfactor;
     //MPM.MP[p].PBC->ft0/=bondingfactor;

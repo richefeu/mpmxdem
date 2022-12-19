@@ -365,11 +365,11 @@ void drawGrid() {
   glLineWidth(1.0f);
 
   std::vector<node>& nodes = Conf.nodes;
-  int* I;
+  size_t* I;
   for (size_t e = 0; e < Conf.Elem.size(); e++) {
     I = &(Conf.Elem[e].I[0]);
     glBegin(GL_LINE_LOOP);
-    for (int r = 0; r < 4; r++) glVertex2f(nodes[I[r]].pos.x, nodes[I[r]].pos.y);
+    for (size_t r = 0; r < 4; r++) glVertex2d(nodes[I[r]].pos.x, nodes[I[r]].pos.y);
     glEnd();
   }
 }
@@ -480,21 +480,21 @@ void drawStressDirections() {
     if (fabs(D.xx) > fabs(D.yy)) {
       glLineWidth(2.0f);
       glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-      glVertex2f(xc - fac * V.xx * fabs(D.xx), yc - fac * V.yx * fabs(D.xx));
-      glVertex2f(xc + fac * V.xx * fabs(D.xx), yc + fac * V.yx * fabs(D.xx));
+      glVertex2d(xc - fac * V.xx * fabs(D.xx), yc - fac * V.yx * fabs(D.xx));
+      glVertex2d(xc + fac * V.xx * fabs(D.xx), yc + fac * V.yx * fabs(D.xx));
       glLineWidth(1.0f);
       glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-      glVertex2f(xc - fac * V.xy * fabs(D.yy), yc - fac * V.yy * fabs(D.yy));
-      glVertex2f(xc + fac * V.xy * fabs(D.yy), yc + fac * V.yy * fabs(D.yy));
+      glVertex2d(xc - fac * V.xy * fabs(D.yy), yc - fac * V.yy * fabs(D.yy));
+      glVertex2d(xc + fac * V.xy * fabs(D.yy), yc + fac * V.yy * fabs(D.yy));
     } else {
       glLineWidth(1.0f);
       glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-      glVertex2f(xc - fac * V.xx * fabs(D.xx), yc - fac * V.yx * fabs(D.xx));
-      glVertex2f(xc + fac * V.xx * fabs(D.xx), yc + fac * V.yx * fabs(D.xx));
+      glVertex2d(xc - fac * V.xx * fabs(D.xx), yc - fac * V.yx * fabs(D.xx));
+      glVertex2d(xc + fac * V.xx * fabs(D.xx), yc + fac * V.yx * fabs(D.xx));
       glLineWidth(2.0f);
       glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-      glVertex2f(xc - fac * V.xy * fabs(D.yy), yc - fac * V.yy * fabs(D.yy));
-      glVertex2f(xc + fac * V.xy * fabs(D.yy), yc + fac * V.yy * fabs(D.yy));
+      glVertex2d(xc - fac * V.xy * fabs(D.yy), yc - fac * V.yy * fabs(D.yy));
+      glVertex2d(xc + fac * V.xy * fabs(D.yy), yc + fac * V.yy * fabs(D.yy));
     }
 
     glEnd();
@@ -515,7 +515,7 @@ void drawMPs() {
 
       glBegin(GL_POLYGON);
       for (size_t r = 0; r < 4; r++) {
-        glVertex2f(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
+        glVertex2d(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
       }
       glEnd();
 
@@ -523,7 +523,7 @@ void drawMPs() {
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
         glBegin(GL_LINE_LOOP);
         for (size_t r = 0; r < 4; r++) {
-          glVertex2f(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
+          glVertex2d(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y);
         }
         glEnd();
       }
@@ -533,7 +533,7 @@ void drawMPs() {
 
       glBegin(GL_POLYGON);
       for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-        glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
+        glVertex2d(xc + R * cos(angle), yc + R * sin(angle));
       }
       glEnd();
 
@@ -541,7 +541,7 @@ void drawMPs() {
         glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
         glBegin(GL_LINE_LOOP);
         for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-          glVertex2f(xc + R * cos(angle), yc + R * sin(angle));
+          glVertex2d(xc + R * cos(angle), yc + R * sin(angle));
         }
         glEnd();
       }
@@ -558,7 +558,7 @@ void drawObstacles() {
       glLineWidth(1.0f);
       glBegin(GL_POLYGON);
       for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-        glVertex2f(C->pos.x + C->R * cos(angle), C->pos.y + C->R * sin(angle));
+        glVertex2d(C->pos.x + C->R * cos(angle), C->pos.y + C->R * sin(angle));
       }
       glEnd();
 
@@ -566,7 +566,7 @@ void drawObstacles() {
       glLineWidth(2.0f);
       glBegin(GL_LINE_LOOP);
       for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-        glVertex2f(C->pos.x + C->R * cos(angle), C->pos.y + C->R * sin(angle));
+        glVertex2d(C->pos.x + C->R * cos(angle), C->pos.y + C->R * sin(angle));
       }
       glEnd();
 
@@ -577,17 +577,17 @@ void drawObstacles() {
       glLineWidth(1.0f);
       double w = (Conf.Grid.lx + Conf.Grid.ly) * 0.5;
       glBegin(GL_POLYGON);
-      glVertex2f(L->pos.x, L->pos.y);
-      glVertex2f(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
-      glVertex2f(L->pos.x + L->len * L->t.x - w * L->n.x, L->pos.y + L->len * L->t.y - w * L->n.y);
-      glVertex2f(L->pos.x - w * L->n.x, L->pos.y - w * L->n.y);
+      glVertex2d(L->pos.x, L->pos.y);
+      glVertex2d(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
+      glVertex2d(L->pos.x + L->len * L->t.x - w * L->n.x, L->pos.y + L->len * L->t.y - w * L->n.y);
+      glVertex2d(L->pos.x - w * L->n.x, L->pos.y - w * L->n.y);
       glEnd();
 
       glColor4f(0.5f, 0.0f, 0.0f, 1.0f);
       glLineWidth(2.0f);
       glBegin(GL_LINES);
-      glVertex2f(L->pos.x, L->pos.y);
-      glVertex2f(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
+      glVertex2d(L->pos.x, L->pos.y);
+      glVertex2d(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
       glEnd();
     }
   }

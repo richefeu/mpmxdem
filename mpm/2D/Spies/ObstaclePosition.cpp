@@ -6,8 +6,8 @@
 
 #include <fileTool.hpp>
 
-#include <factory.hpp>
-static Registrar<Spy, ObstaclePosition> registrar("ObstaclePosition");
+//#include <factory.hpp>
+//static Registrar<Spy, ObstaclePosition> registrar("ObstaclePosition");
 
 void ObstaclePosition::read(std::istream& is) {
   std::string Filename;

@@ -9,7 +9,7 @@ struct set_node_grid : public Command {
 
  private:
   
-  int nbElemX, nbElemY;
+  size_t nbElemX, nbElemY;
   double lx, ly;
 };
 

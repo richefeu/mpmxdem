@@ -6,8 +6,8 @@
 
 #include <fileTool.hpp>
 
-#include <factory.hpp>
-static Registrar<Spy, ObstacleVelAllTimes> registrar("ObstacleVelAllTimes");
+//#include <factory.hpp>
+//static Registrar<Spy, ObstacleVelAllTimes> registrar("ObstacleVelAllTimes");
 
 void ObstacleVelAllTimes::read(std::istream& is) {
   std::string Filename;

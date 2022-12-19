@@ -4,8 +4,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<Command, set_MP_polygon> registrar("set_MP_polygon");
+//#include "factory.hpp"
+//static Registrar<Command, set_MP_polygon> registrar("set_MP_polygon");
 
 void set_MP_polygon::read(std::istream& is) {
   is >> groupNb >> nbVertices >> modelName >> rho >> size;

@@ -3,8 +3,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<ConstitutiveModel, HookeElasticity> registrar("HookeElasticity");
+//#include "factory.hpp"
+//static Registrar<ConstitutiveModel, HookeElasticity> registrar("HookeElasticity");
 std::string HookeElasticity::getRegistrationName() { return std::string("HookeElasticity"); }
 
 HookeElasticity::HookeElasticity(double young, double poisson) : Young(young), Poisson(poisson) {}
@@ -13,13 +13,13 @@ void HookeElasticity::read(std::istream& is) { is >> Young >> Poisson; }
 void HookeElasticity::write(std::ostream& os) { os << Young << ' ' << Poisson << '\n'; }
 
 void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
-  int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+  size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   // Get the total strain increment from node velocities
   vec2r vn;
   mat4r dstrain;
 
-  for (int r = 0; r < element::nbNodes; r++) {
+  for (size_t r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {
       vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
     } else {

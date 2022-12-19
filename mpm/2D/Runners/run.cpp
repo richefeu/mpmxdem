@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   printf("The current local time is: %s", ctime(&rawtime));
 
   std::string confFileName;
-  int nbThreads = 1;
+  int nbThreads = 1; 
   int verboseLevel = 0;
 
   try {
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
   omp_set_num_threads(nbThreads);
   Simulation.console->info("OpenMP acceleration (Number of threads = {})", nbThreads);
 #else
-  Simulation.console->info("No multithreading");
+  Simulation.console->info("No multithreading (Number of threads = {})", nbThreads);
 #endif
 
   Simulation.read(confFileName.c_str());

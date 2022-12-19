@@ -1,8 +1,10 @@
 #ifndef NEIGHBOR_HPP
 #define NEIGHBOR_HPP
 
+#include <cstddef>
+
 struct Neighbor {
-  int PointNumber;  // Material Point number
+  size_t PointNumber;  // Material Point number
 
   double fn, dn;
   double ft, dt;

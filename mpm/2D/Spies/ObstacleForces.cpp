@@ -6,8 +6,8 @@
 
 #include <fileTool.hpp>
 
-#include <factory.hpp>
-static Registrar<Spy, ObstacleForces> registrar("ObstacleForces");
+//#include <factory.hpp>
+//static Registrar<Spy, ObstacleForces> registrar("ObstacleForces");
 
 void ObstacleForces::read(std::istream& is) {
   is >> obstacleNumber >> nrec;

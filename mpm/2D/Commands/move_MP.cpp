@@ -3,8 +3,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<Command, move_MP> registrar("move_MP");
+//#include "factory.hpp"
+//static Registrar<Command, move_MP> registrar("move_MP");
 
 void move_MP::read(std::istream& is) { is >> groupNb >> x0 >> y0 >> dx >> dy >> thetaDeg; }
 

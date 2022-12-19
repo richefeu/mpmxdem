@@ -8,7 +8,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 
 CXX = g++-12
-CXXFLAGS = -O3 -std=c++17 -Wall -Wextra -Wshadow \
+CXXFLAGS = -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
 
 # Link flags for OpenGL and glut
@@ -55,12 +55,12 @@ $(LIB).a: $(OBJS)
 bin/mpmbox: Runners/run.cpp $(OBJS)
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) -c $< -o $(patsubst %.cpp, %.o, $<)
-	$(CXX) -o $@ Runners/run.o $(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
+	$(CXX) -o $@ Runners/run.o lib/$(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
 	
 bin/see: See/see.cpp $(OBJS)
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) $(GLUTFLAGS) -c $< -o $(patsubst %.cpp, %.o, $<)
-	$(CXX) $(GLUTLIBS) -o $@ See/see.o $(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
+	$(CXX) $(GLUTLIBS) -o $@ See/see.o lib/$(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
 
 clean:
 	rm -f $(OBJS)

@@ -6,8 +6,8 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
-#include "factory.hpp"
-static Registrar<Command, set_node_grid> registrar("set_node_grid");
+//#include "factory.hpp"
+//static Registrar<Command, set_node_grid> registrar("set_node_grid");
 
 void set_node_grid::read(std::istream& is) {
 
@@ -31,8 +31,8 @@ void set_node_grid::read(std::istream& is) {
   } else if (inputChoice == "W.H.lx.ly") {
     double W, H;
     is >> W >> H >> lx >> ly;
-    nbElemX = floor(W / lx);
-    nbElemY = floor(H / ly);
+    nbElemX = static_cast<size_t>(fabs(floor(W / lx)));
+    nbElemY = static_cast<size_t>(fabs(floor(H / ly)));
   } else if (inputChoice == "W.H.Nx.Ny") {
     double W, H;
     is >> W >> H >> nbElemX >> nbElemX;
@@ -67,12 +67,12 @@ void set_node_grid::exec() {
   N.fb.reset();
   N.xfixed = false;
   N.yfixed = false;
-  int counter = 0;
-  for (int j = 0; j <= box->Grid.Ny; j++) {
-    for (int i = 0; i <= box->Grid.Nx; i++) {
+  size_t counter = 0;
+  for (size_t j = 0; j <= box->Grid.Ny; j++) {
+    for (size_t i = 0; i <= box->Grid.Nx; i++) {
       N.number = counter;
-      N.pos.x = i * box->Grid.lx;
-      N.pos.y = j * box->Grid.ly;
+      N.pos.x = (double)i * box->Grid.lx;
+      N.pos.y = (double)j * box->Grid.ly;
       box->nodes.push_back(N);
       counter++;
     }
@@ -83,8 +83,8 @@ void set_node_grid::exec() {
     // 0 1
     if (!box->Elem.empty()) box->Elem.clear();
     element E;
-    for (int j = 0; j < box->Grid.Ny; j++) {
-      for (int i = 0; i < box->Grid.Nx; i++) {
+    for (size_t j = 0; j < box->Grid.Ny; j++) {
+      for (size_t i = 0; i < box->Grid.Nx; i++) {
         E.I[0] = (box->Grid.Nx + 1) * j + i;
         E.I[1] = (box->Grid.Nx + 1) * j + i + 1;
         E.I[2] = (box->Grid.Nx + 1) * (j + 1) + i + 1;
@@ -97,8 +97,8 @@ void set_node_grid::exec() {
     // 	  14 3  2  9
     //    15 0  1  8
     //    4  5  6  7
-    for (int j = 0; j < box->Grid.Ny; j++) {
-      for (int i = 0; i < box->Grid.Nx; i++) {
+    for (size_t j = 0; j < box->Grid.Ny; j++) {
+      for (size_t i = 0; i < box->Grid.Nx; i++) {
         element E;
         E.I[0] = (box->Grid.Nx + 1) * j + i;
         E.I[1] = (box->Grid.Nx + 1) * j + i + 1;

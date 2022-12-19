@@ -1,8 +1,8 @@
 #include "new_set_grid.hpp"
 #include "../Core/MPMbox.hpp"
 
-#include "factory.hpp"
-static Registrar<Command, new_set_grid> registrar("new_set_grid");
+//#include "factory.hpp"
+//static Registrar<Command, new_set_grid> registrar("new_set_grid");
 
 void new_set_grid::read(std::istream& is) { is >> lengthX >> lengthY >> spacing; }
 
@@ -13,8 +13,8 @@ void new_set_grid::exec() {
     exit(0);
   }
 
-  box->Grid.Nx = floor(lengthX / spacing);
-  box->Grid.Ny = floor(lengthY / spacing);
+  box->Grid.Nx = static_cast<int>(floor(lengthX / spacing));
+  box->Grid.Ny = static_cast<int>(floor(lengthY / spacing));
 
   // Used when calculating the shape Functions
   box->Grid.lx = spacing;
@@ -31,11 +31,11 @@ void new_set_grid::exec() {
   N.yfixed = false;
   int counter = 0;
 
-  for (int j = 0; j <= box->Grid.Ny; j++) {
-    for (int i = 0; i <= box->Grid.Nx; i++) {
+  for (size_t j = 0; j <= box->Grid.Ny; j++) {
+    for (size_t i = 0; i <= box->Grid.Nx; i++) {
       N.number = counter;
-      N.pos.x = i * spacing;
-      N.pos.y = j * spacing;
+      N.pos.x = (double)i * spacing;
+      N.pos.y = (double)j * spacing;
       counter++;
       box->nodes.push_back(N);
     }
@@ -46,8 +46,8 @@ void new_set_grid::exec() {
     // 0 1
     if (!box->Elem.empty()) box->Elem.clear();
     element E;
-    for (int j = 0; j < box->Grid.Ny; j++) {
-      for (int i = 0; i < box->Grid.Nx; i++) {
+    for (size_t j = 0; j < box->Grid.Ny; j++) {
+      for (size_t i = 0; i < box->Grid.Nx; i++) {
         E.I[0] = (box->Grid.Nx + 1) * j + i;
         E.I[1] = (box->Grid.Nx + 1) * j + i + 1;
         E.I[2] = (box->Grid.Nx + 1) * (j + 1) + i + 1;
@@ -60,8 +60,8 @@ void new_set_grid::exec() {
     // 	  14 3  2  9
     //    15 0  1  8
     //    4  5  6  7
-    for (int j = 0; j < box->Grid.Ny; j++) {
-      for (int i = 0; i < box->Grid.Nx; i++) {
+    for (size_t j = 0; j < box->Grid.Ny; j++) {
+      for (size_t i = 0; i < box->Grid.Nx; i++) {
         element E;
         E.I[0] = (box->Grid.Nx + 1) * j + i;
         E.I[1] = (box->Grid.Nx + 1) * j + i + 1;

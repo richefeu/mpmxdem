@@ -5,16 +5,16 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<ShapeFunction, RegularQuadLinear> registrar("RegularQuadLinear");
+//#include "factory.hpp"
+//static Registrar<ShapeFunction, RegularQuadLinear> registrar("RegularQuadLinear");
 std::string RegularQuadLinear::getRegistrationName() { return std::string("RegularQuadLinear"); }
 
 RegularQuadLinear::RegularQuadLinear() { element::nbNodes = 4; }
 
 void RegularQuadLinear::computeInterpolationValues(MPMbox& MPM, size_t p) {
 
-  if (MPM.MP[p].pos.x < 0.0 && MPM.MP[p].pos.x > MPM.Grid.Nx * MPM.Grid.lx && MPM.MP[p].pos.y < 0.0 &&
-      MPM.MP[p].pos.y > MPM.Grid.Ny * MPM.Grid.ly) {
+  if (MPM.MP[p].pos.x < 0.0 && MPM.MP[p].pos.x > (double)MPM.Grid.Nx * MPM.Grid.lx && MPM.MP[p].pos.y < 0.0 &&
+      MPM.MP[p].pos.y > (double)MPM.Grid.Ny * MPM.Grid.ly) {
     std::cerr << "@RegularQuadLinear::computeInterpolationValues: the sum of shape functions does not equals 1!"
               << std::endl;
     std::cerr << "MPs could be outside the grid." << std::endl;
@@ -22,8 +22,8 @@ void RegularQuadLinear::computeInterpolationValues(MPMbox& MPM, size_t p) {
     exit(EXIT_FAILURE);
   }
 
-  MPM.MP[p].e = (int)(trunc(MPM.MP[p].pos.x / MPM.Grid.lx) + trunc(MPM.MP[p].pos.y / MPM.Grid.ly) * MPM.Grid.Nx);
-  int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+  MPM.MP[p].e = (size_t)(trunc(MPM.MP[p].pos.x / MPM.Grid.lx) + trunc(MPM.MP[p].pos.y / MPM.Grid.ly) * (double)MPM.Grid.Nx);
+  size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   double invx = 1.0 / MPM.Grid.lx;
   double invy = 1.0 / MPM.Grid.ly;

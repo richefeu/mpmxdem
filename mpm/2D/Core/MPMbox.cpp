@@ -3,14 +3,52 @@
 #include "spdlog/spdlog.h"
 
 #include "BoundaryForceLaw/BoundaryForceLaw.hpp"
+#include "BoundaryForceLaw/frictionalNormalRestitution.hpp"
+#include "BoundaryForceLaw/frictionalViscoElastic.hpp"
+
 #include "Commands/Command.hpp"
+#include "Commands/add_MP_ShallowPath.hpp"
+#include "Commands/move_MP.hpp"
+#include "Commands/new_set_grid.hpp"
+#include "Commands/reset_model.hpp"
+#include "Commands/set_BC_column.hpp"
+#include "Commands/set_BC_line.hpp"
+#include "Commands/set_K0_stress.hpp"
+#include "Commands/set_MP_grid.hpp"
+#include "Commands/set_MP_polygon.hpp"
+#include "Commands/set_node_grid.hpp"
+
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
-#include "Core/MaterialPoint.hpp"
+#include "ConstitutiveModels/hnlDEM.hpp"
+#include "ConstitutiveModels/hnlDEMcv.hpp"
+#include "ConstitutiveModels/hnlDEML.hpp"
+#include "ConstitutiveModels/HookeElasticity.hpp"
+#include "ConstitutiveModels/MohrCoulomb.hpp"
+#include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
+
 #include "Obstacles/Obstacle.hpp"
+#include "Obstacles/Circle.hpp"
+#include "Obstacles/Line.hpp"
+#include "Obstacles/Polygon.hpp"
+
 #include "OneStep/OneStep.hpp"
+#include "OneStep/ModifiedLagrangian.hpp"
+#include "OneStep/UpdateStressFirst.hpp"
+#include "OneStep/UpdateStressLast.hpp"
+
 #include "ShapeFunctions/ShapeFunction.hpp"
+#include "ShapeFunctions/BSpline.hpp"
+#include "ShapeFunctions/Linear.hpp"
+#include "ShapeFunctions/RegularQuadLinear.hpp"
+
 #include "Spies/Spy.hpp"
-#include "VtkOutputs/VtkOutput.hpp"
+#include "Spies/ObstacleForces.hpp"
+#include "Spies/ObstaclePosition.hpp"
+#include "Spies/ObstacleVelAllTimes.hpp"
+#include "Spies/ObstacleVelTouching.hpp"
+#include "Spies/Work.hpp"
+
+#include "Core/MaterialPoint.hpp"
 
 #include "Mth.hpp"
 
@@ -63,18 +101,102 @@ MPMbox::MPMbox() {
   id_dt0 = dataTable.add("dt0");
 
   console = spdlog::stdout_color_mt("console");
+  ExplicitRegistrations();
 }
 
 MPMbox::~MPMbox() { clean(); }
 
 void MPMbox::showAppBanner() {
-  std::cout << std::endl;
+  std::cout << "@@@@@@@@@@@\n";
+  std::cout << std::endl;std::cout << std::endl;std::cout << std::endl;
   std::cout << "    _/      _/  _/_/_/    _/      _/  _/                         " << std::endl;
   std::cout << "   _/_/  _/_/  _/    _/  _/_/  _/_/  _/_/_/      _/_/    _/    _/" << std::endl;
   std::cout << "  _/  _/  _/  _/_/_/    _/  _/  _/  _/    _/  _/    _/    _/_/   " << std::endl;
   std::cout << " _/      _/  _/        _/      _/  _/    _/  _/    _/  _/    _/  " << std::endl;
   std::cout << "_/      _/  _/        _/      _/  _/_/_/      _/_/    _/    _/   " << std::endl;
   std::cout << std::endl;
+}
+
+void MPMbox::ExplicitRegistrations() {
+  std::cout << "@@@@@@@@@@@@MPMbox::ExplicitRegistrations\n";
+
+  // BoundaryForceLaw ===============
+  Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
+      "frictionalNormalRestitution", [](void) -> BoundaryForceLaw* { return new frictionalNormalRestitution(); });
+  Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
+      "frictionalViscoElastic", [](void) -> BoundaryForceLaw* { return new frictionalViscoElastic(); });
+  
+  // Command ===============
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "add_MP_ShallowPath", [](void) -> Command* { return new add_MP_ShallowPath(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "move_MP", [](void) -> Command* { return new move_MP(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "new_set_grid", [](void) -> Command* { return new new_set_grid(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "reset_model", [](void) -> Command* { return new reset_model(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "set_BC_column", [](void) -> Command* { return new set_BC_column(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "set_BC_line", [](void) -> Command* { return new set_BC_line(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "set_K0_stress", [](void) -> Command* { return new set_K0_stress(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "set_MP_grid", [](void) -> Command* { return new set_MP_grid(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "set_MP_polygon", [](void) -> Command* { return new set_MP_polygon(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "set_node_grid", [](void) -> Command* { return new set_node_grid(); });
+  
+  // ConstitutiveModel ===============
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "hnlDEM", [](void) -> ConstitutiveModel* { return new hnlDEM(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "hnlDEMcv", [](void) -> ConstitutiveModel* { return new hnlDEMcv(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "hnlDEML", [](void) -> ConstitutiveModel* { return new hnlDEML(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "HookeElasticity", [](void) -> ConstitutiveModel* { return new HookeElasticity(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "MohrCoulomb", [](void) -> ConstitutiveModel* { return new MohrCoulomb(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel* { return new VonMisesElastoPlasticity(); });
+  
+  // Obstacle ===============
+  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction(
+      "Circle", [](void) -> Obstacle* { return new Circle(); });
+  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction(
+      "Line", [](void) -> Obstacle* { return new Line(); });
+  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction(
+      "Polygon", [](void) -> Obstacle* { return new Polygon(); });
+  
+  // OneStep ===============
+  Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
+      "ModifiedLagrangian", [](void) -> OneStep* { return new ModifiedLagrangian(); });
+  Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
+      "UpdateStressFirst", [](void) -> OneStep* { return new UpdateStressFirst(); });
+  Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
+      "UpdateStressLast", [](void) -> OneStep* { return new UpdateStressLast(); });
+  
+  // ShapeFunction ===============
+  Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
+      "BSpline", [](void) -> ShapeFunction* { return new BSpline(); });
+  Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
+      "Linear", [](void) -> ShapeFunction* { return new Linear(); });
+  Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
+      "RegularQuadLinear", [](void) -> ShapeFunction* { return new RegularQuadLinear(); });
+  
+  // Spy ===============
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
+      "ObstacleForces", [](void) -> Spy* { return new ObstacleForces(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
+      "ObstaclePosition", [](void) -> Spy* { return new ObstaclePosition(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
+      "ObstacleVelAllTimes", [](void) -> Spy* { return new ObstacleVelAllTimes(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
+      "ObstacleVelTouching", [](void) -> Spy* { return new ObstacleVelTouching(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
+      "Work", [](void) -> Spy* { return new Work(); });
 }
 
 /*
@@ -597,7 +719,8 @@ void MPMbox::checkProximity() {
 void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
   for (size_t p = 0; p < MP.size(); p++) {
-    if (MP[p].pos.x > Grid.Nx * Grid.lx || MP[p].pos.x < 0.0 || MP[p].pos.y > Grid.Ny * Grid.ly || MP[p].pos.y < 0.0) {
+    if (MP[p].pos.x > (double)Grid.Nx * Grid.lx || MP[p].pos.x < 0.0 || MP[p].pos.y > (double)Grid.Ny * Grid.ly ||
+        MP[p].pos.y < 0.0) {
       console->warn("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
                     MP[p].pos.x, MP[p].pos.y);
       // exit(0);
@@ -686,10 +809,10 @@ void MPMbox::convergenceConditions() {
 // Node velocities (vel = q/m) need to be already updated after calling this function
 void MPMbox::updateVelocityGradient() {
   START_TIMER("updateVelocityGradient");
-  int* I;
+  size_t* I;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       MP[p].velGrad.xx += (MP[p].gradN[r].x * nodes[I[r]].vel.x);
       MP[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
       MP[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
@@ -701,7 +824,7 @@ void MPMbox::updateVelocityGradient() {
 void MPMbox::limitTimeStepForDEM() {
   START_TIMER("limitTimeStepForDEM");
   dt = dtInitial;
-  float dtmax = 0.0;
+  double dtmax = 0.0;
 
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].isDoubleScale) {
@@ -862,16 +985,16 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   Data.resize(MP.size());
 
   // Preparation for smoothed data
-  int* I;
+  size_t* I;
   for (size_t p = 0; p < MP.size(); p++) {
     shapeFunction->computeInterpolationValues(*this, p);
   }
 
   // Update Vector of node indices
-  std::set<int> sortedLive;
+  std::set<size_t> sortedLive;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       sortedLive.insert(I[r]);
     }
   }
@@ -889,7 +1012,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   // Nodal mass
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
       nodes[I[r]].outOfPlaneStress += MP[p].N[r] * MP[p].outOfPlaneStress;
     }
@@ -898,14 +1021,14 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   // smooth procedure
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].vel += MP[p].N[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
       nodes[I[r]].stress += MP[p].N[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
     }
   }
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (int r = 0; r < element::nbNodes; r++) {
+    for (size_t r = 0; r < element::nbNodes; r++) {
       Data[p].vel += nodes[I[r]].vel * MP[p].N[r];
       Data[p].stress += nodes[I[r]].stress * MP[p].N[r];
       Data[p].velGrad.xx += (MP[p].gradN[r].x * nodes[I[r]].vel.x);

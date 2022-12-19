@@ -5,8 +5,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<BoundaryForceLaw, frictionalViscoElastic> registrar("frictionalViscoElastic");
+//#include "factory.hpp"
+//static Registrar<BoundaryForceLaw, frictionalViscoElastic> registrar("frictionalViscoElastic");
 
 void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 

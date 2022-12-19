@@ -3,8 +3,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<ConstitutiveModel, MohrCoulomb> registrar("MohrCoulomb");
+//#include "factory.hpp"
+//static Registrar<ConstitutiveModel, MohrCoulomb> registrar("MohrCoulomb");
 std::string MohrCoulomb::getRegistrationName() { return std::string("MohrCoulomb"); }
 
 // ==================================================================================
@@ -38,12 +38,12 @@ double MohrCoulomb::getPoisson() { return Poisson; }
 
 void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Get pointer to the first of the nodes
-  int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+  size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   // Compute a strain increment (during dt) from the node-velocities
   vec2r vn;
   mat4r dstrain;
-  for (int r = 0; r < element::nbNodes; r++) {
+  for (size_t r = 0; r < element::nbNodes; r++) {
     dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy += 0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;

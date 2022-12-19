@@ -133,7 +133,7 @@ class MPMbox {
   double switchGravTime;
   vec2r planned_grav;
 
-  std::vector<int> liveNodeNum;  // list of node numbers being updated and used during each time step
+  std::vector<size_t> liveNodeNum;  // list of node numbers being updated and used during each time step
                                  // It holds only the number of nodes concerned by the proximity of MP
 
   size_t number_MP;  // used to check proximity if # of MP has changed
@@ -145,6 +145,7 @@ class MPMbox {
   MPMbox();   // Ctor
   ~MPMbox();  // Dtor
 
+  void ExplicitRegistrations();
   void showAppBanner();
   void setVerboseLevel(int v);
   void clean();

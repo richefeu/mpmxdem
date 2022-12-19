@@ -1,5 +1,5 @@
-#ifndef HNLDEM_HPP
-#define HNLDEM_HPP
+#ifndef HNLDEMCV_HPP
+#define HNLDEMCV_HPP
 
 // This is Homogenised Numerical Law (HNL) with DEM
 
@@ -25,4 +25,4 @@ struct hnlDEMcv : public ConstitutiveModel {
   void init(MaterialPoint & MP);
 };
 
-#endif /* end of include guard: HNLDEM_HPP */
+#endif /* end of include guard: HNLDEMCV_HPP */

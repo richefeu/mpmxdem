@@ -6,8 +6,8 @@
 
 #include <fileTool.hpp>
 
-#include <factory.hpp>
-static Registrar<Spy, Work> registrar("Work");
+//#include <factory.hpp>
+//static Registrar<Spy, Work> registrar("Work");
 
 void Work::read(std::istream& is) {
   std::string Filename;

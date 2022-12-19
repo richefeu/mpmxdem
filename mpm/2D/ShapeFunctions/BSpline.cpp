@@ -5,8 +5,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<ShapeFunction, BSpline> registrar("BSpline");
+//#include "factory.hpp"
+//static Registrar<ShapeFunction, BSpline> registrar("BSpline");
 std::string BSpline::getRegistrationName() { return std::string("BSpline"); }
 
 // Reference: Paper Steffen - Analysis and reduction of quadrature errors in mpm
@@ -17,8 +17,8 @@ void BSpline::computeInterpolationValues(MPMbox& MPM, size_t p) {
   invL[0] = 1.0f / MPM.Grid.lx;
   invL[1] = 1.0f / MPM.Grid.ly;
 
-  MPM.MP[p].e = (int)(trunc(MPM.MP[p].pos.x * invL[0]) + trunc(MPM.MP[p].pos.y * invL[1]) * MPM.Grid.Nx);
-  int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+  MPM.MP[p].e = (size_t)(trunc(MPM.MP[p].pos.x * invL[0]) + trunc(MPM.MP[p].pos.y * invL[1]) * (double)MPM.Grid.Nx);
+  size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   std::vector<double> localCoord;
   std::vector<double> Phi;      // we calculate for 1D and then we multiply when we calculate the N vector

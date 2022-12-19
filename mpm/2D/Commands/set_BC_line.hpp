@@ -1,6 +1,8 @@
 #ifndef SET_BC_LINE_HPP
 #define SET_BC_LINE_HPP
 
+#include <cstddef>
+
 #include "Command.hpp"
 
 struct set_BC_line : public Command {
@@ -8,7 +10,7 @@ struct set_BC_line : public Command {
   void exec();
 
  private:
-  int line_num, column0, column1;
+  size_t line_num, column0, column1;
   bool Xfixed, Yfixed;
 };
 

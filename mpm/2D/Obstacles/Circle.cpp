@@ -2,8 +2,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<Obstacle, Circle> registrar("Circle");
+//#include "factory.hpp"
+//static Registrar<Obstacle, Circle> registrar("Circle");
 std::string Circle::getRegistrationName() { return std::string("Circle"); }
 
 void Circle::read(std::istream& is) {

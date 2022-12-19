@@ -3,8 +3,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<Command, set_K0_stress> registrar("set_K0_stress");
+//#include "factory.hpp"
+//static Registrar<Command, set_K0_stress> registrar("set_K0_stress");
 
 void set_K0_stress::read(std::istream& is) { is >> nu >> rho0; }
 

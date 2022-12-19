@@ -3,8 +3,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<ConstitutiveModel, VonMisesElastoPlasticity> registrar("VonMisesElastoPlasticity");
+//#include "factory.hpp"
+//static Registrar<ConstitutiveModel, VonMisesElastoPlasticity> registrar("VonMisesElastoPlasticity");
 std::string VonMisesElastoPlasticity::getRegistrationName() { return std::string("VonMisesElastoPlasticity"); }
 
 // ==== VonMisesElastoPlasticity =================================================
@@ -19,11 +19,11 @@ void VonMisesElastoPlasticity::write(std::ostream& os) {
 }
 
 void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
-  int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+  size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   vec2r vn;
   mat4r dstrain;
-  for (int r = 0; r < element::nbNodes; r++) {
+  for (size_t r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {
       vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
     } else {

@@ -3,15 +3,15 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<ShapeFunction, Linear> registrar("Linear");
+//#include "factory.hpp"
+//static Registrar<ShapeFunction, Linear> registrar("Linear");
 std::string Linear::getRegistrationName() { return std::string("Linear"); }
 
 Linear::Linear() {}
 
 void Linear::computeInterpolationValues(MPMbox& MPM, size_t p) {
-  MPM.MP[p].e = (int)(trunc(MPM.MP[p].pos.x / MPM.Grid.lx) + trunc(MPM.MP[p].pos.y / MPM.Grid.ly) * MPM.Grid.Nx);
-  int* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+  MPM.MP[p].e = (size_t)(trunc(MPM.MP[p].pos.x / MPM.Grid.lx) + trunc(MPM.MP[p].pos.y / MPM.Grid.ly) * (double)MPM.Grid.Nx);
+  size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   double inv = 1.0 / (0.5 * MPM.Grid.lx);
 

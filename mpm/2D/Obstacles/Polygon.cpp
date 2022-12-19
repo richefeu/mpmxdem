@@ -3,8 +3,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include "factory.hpp"
-static Registrar<Obstacle, Polygon> registrar("Polygon");
+//#include "factory.hpp"
+//static Registrar<Obstacle, Polygon> registrar("Polygon");
 std::string Polygon::getRegistrationName() { return std::string("Polygon"); }
 
 
@@ -13,7 +13,6 @@ std::string Polygon::getRegistrationName() { return std::string("Polygon"); }
 
 void Polygon::read(std::istream& is) {
 
-  // std::cout<<"enters read!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
   is >> group >> nVertices >> pos >> rot >> R;
 
   std::string driveMode;
@@ -34,7 +33,7 @@ void Polygon::read(std::istream& is) {
     I = mass * (sideLength * sideLength + sideLength * sideLength) / 12;  // works for square only
     is >> vel >> vrot;
   } else {
-    std::cerr << "@Circle::read, driveMode " << driveMode << " is unknown!" << std::endl;
+    std::cerr << "@Polygon::read, driveMode " << driveMode << " is unknown!" << std::endl;
   }
 
   verticePos.clear();
@@ -53,12 +52,10 @@ void Polygon::write(std::ostream& os) {
 }
 
 int Polygon::touch(MaterialPoint& MP, double& dn) {
-  // std::cout << "Touch polygon" << '\n';
   // it models the MP as a circle
   verticePos.clear();
   createPolygon(verticePos);
   int Corner = -1;
-  // vec2r point = MP.pos;
   double testdn;
 
   // part for adding the radius in the right direction

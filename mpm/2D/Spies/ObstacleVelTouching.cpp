@@ -6,8 +6,8 @@
 
 #include <fileTool.hpp>
 
-#include <factory.hpp>
-static Registrar<Spy, ObstacleVelTouching> registrar("ObstacleVelTouching");
+//#include <factory.hpp>
+//static Registrar<Spy, ObstacleVelTouching> registrar("ObstacleVelTouching");
 
 void ObstacleVelTouching::read(std::istream& is) {
   std::string Filename;

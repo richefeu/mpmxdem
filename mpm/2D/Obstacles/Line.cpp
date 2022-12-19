@@ -2,8 +2,8 @@
 #include <Core/MPMbox.hpp>
 #include <Core/MaterialPoint.hpp>
 
-#include <factory.hpp>
-static Registrar<Obstacle, Line> registrar("Line");
+//#include <factory.hpp>
+//static Registrar<Obstacle, Line> registrar("Line");
 std::string Line::getRegistrationName() { return std::string("Line"); }
 
 void Line::read(std::istream& is) {
