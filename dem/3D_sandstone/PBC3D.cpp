@@ -483,25 +483,25 @@ void PBC3Dbox::computeSampleData() {
                               Interactions[k].gap0) /
                              (Particles[Interactions[k].i].radius + Particles[Interactions[k].j].radius);
     }
-    Rmean /= Particles.size();
-    Vmean /= Particles.size();
-    VectVelMean /= Particles.size();
-    VectAccMean /= Particles.size();
-    VelMean = sqrt(VelMean) / Particles.size();
+    Rmean /= (double)Particles.size();
+    Vmean /= (double)Particles.size();
+    VectVelMean /= (double)Particles.size();
+    VectAccMean /= (double)Particles.size();
+    VelMean = sqrt(VelMean) / (double)Particles.size();
     VelMin = sqrt(VelMin);
     VelMax = sqrt(VelMax);
-    AccMean = sqrt(AccMean) / Particles.size();
+    AccMean = sqrt(AccMean) / (double)Particles.size();
     AccMin = sqrt(AccMin);
     AccMax = sqrt(AccMax);
-    ReducedPartDistMean /= Interactions.size();
+    ReducedPartDistMean /= (double)Interactions.size();
     for (size_t i = 0; i < Particles.size(); i++) {
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
       VelVar += norm2(Vel - VectVelMean);
       AccVar += norm2(Acc - VectVelMean);
     }
-    VelVar /= Particles.size();
-    AccVar /= Particles.size();
+    VelVar /= (double)Particles.size();
+    AccVar /= (double)Particles.size();
   }
 
   // Interaction related data
@@ -580,7 +580,7 @@ void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
       return (a_rmean > b_rmean);
     });
   }
-  size_t last = (size_t)floor(indices.size() * percentRemove * 0.01);
+  size_t last = (size_t)floor((double)indices.size() * percentRemove * 0.01);
   for (size_t i = 0; i < last; i++) {
     size_t k = indices[i];
     if (Interactions[k].gap0 > 0.0) {
@@ -920,11 +920,11 @@ void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << "|  Solid fraction: " << Vsolid / Vcell << '\n';
   std::cout << "|  dt_crit/dt in range [" << (M_PI * sqrt(Vmin * density / kn)) / dt << ", "
             << (M_PI * sqrt(Vmax * density / kn)) / dt << "]\n";
-  double Rmean, R0mean, fnMin, fnMean;
-  staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
-  std::cout << "|  Mean resultant: " << Rmean << ", Mean resultant (without ratlers): " << R0mean << '\n';
+  double ResMean, Res0Mean, fnMin, fnMean;
+  staticQualityData(&ResMean, &Res0Mean, &fnMin, &fnMean);
+  std::cout << "|  Mean resultant: " << ResMean << ", Mean resultant (without ratlers): " << Res0Mean << '\n';
   std::cout << "|  Min contact normal force:  " << fnMin << ", Mean contact normal force:  " << fnMean << '\n';
-  std::cout << "|  R0mean/fnMean: " << R0mean / fnMean << '\n';
+  std::cout << "|  Res0Mean/fnMean: " << Res0Mean / fnMean << '\n';
 
   double vf = 0.0;
   vec3r vel;
@@ -1003,10 +1003,10 @@ void PBC3Dbox::dataOutput() {
   strainOut << t << ' ' << Cell.strain << std::endl;
 
   // Resultant
-  double Rmean, R0mean, fnMin, fnMean;
+  double ResMean, Res0Mean, fnMin, fnMean;
   double Vcell = fabs(Cell.h.det());
-  staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
-  resultantOut << t << ' ' << Rmean << ' ' << R0mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
+  staticQualityData(&ResMean, &Res0Mean, &fnMin, &fnMean);
+  resultantOut << t << ' ' << ResMean << ' ' << Res0Mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
                << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMax << ' ' << VelMin << ' ' << VelMean
                << ' ' << VelVar << ReducedPartDistMean << std::endl;
 }
@@ -1761,50 +1761,50 @@ void PBC3Dbox::getOperatorKruyt(double L[6][6]) {
     vec3r l = Cell.h * sij;
     vec3r n = l;
     n.normalize();
-    vec3r t = Interactions[k].ft;
-    t.normalize();
+    vec3r T = Interactions[k].ft;
+    T.normalize();
 
-    L[xx][xx] += kn_Vcell * n.x * l.x * n.x * l.x + kt_Vcell * t.x * l.x * t.x * l.x;
-    L[xx][yy] += kn_Vcell * n.x * l.x * n.y * l.y + kt_Vcell * t.x * l.x * t.y * l.y;
-    L[xx][zz] += kn_Vcell * n.x * l.x * n.z * l.z + kt_Vcell * t.x * l.x * t.z * l.z;
-    L[xx][xy] += kn_Vcell * n.x * l.x * n.x * l.y + kt_Vcell * t.x * l.x * t.x * l.y;
-    L[xx][xz] += kn_Vcell * n.x * l.x * n.x * l.z + kt_Vcell * t.x * l.x * t.x * l.z;
-    L[xx][yz] += kn_Vcell * n.x * l.x * n.y * l.z + kt_Vcell * t.x * l.x * t.y * l.z;
+    L[xx][xx] += kn_Vcell * n.x * l.x * n.x * l.x + kt_Vcell * T.x * l.x * T.x * l.x;
+    L[xx][yy] += kn_Vcell * n.x * l.x * n.y * l.y + kt_Vcell * T.x * l.x * T.y * l.y;
+    L[xx][zz] += kn_Vcell * n.x * l.x * n.z * l.z + kt_Vcell * T.x * l.x * T.z * l.z;
+    L[xx][xy] += kn_Vcell * n.x * l.x * n.x * l.y + kt_Vcell * T.x * l.x * T.x * l.y;
+    L[xx][xz] += kn_Vcell * n.x * l.x * n.x * l.z + kt_Vcell * T.x * l.x * T.x * l.z;
+    L[xx][yz] += kn_Vcell * n.x * l.x * n.y * l.z + kt_Vcell * T.x * l.x * T.y * l.z;
 
-    L[yy][xx] += kn_Vcell * n.y * l.y * n.x * l.x + kt_Vcell * t.y * l.y * t.x * l.x;
-    L[yy][yy] += kn_Vcell * n.y * l.y * n.y * l.y + kt_Vcell * t.y * l.y * t.y * l.y;
-    L[yy][zz] += kn_Vcell * n.y * l.y * n.z * l.z + kt_Vcell * t.y * l.y * t.z * l.z;
-    L[yy][xy] += kn_Vcell * n.y * l.y * n.x * l.y + kt_Vcell * t.y * l.y * t.x * l.y;
-    L[yy][xz] += kn_Vcell * n.y * l.y * n.x * l.z + kt_Vcell * t.y * l.y * t.x * l.z;
-    L[yy][yz] += kn_Vcell * n.y * l.y * n.y * l.z + kt_Vcell * t.y * l.y * t.y * l.z;
+    L[yy][xx] += kn_Vcell * n.y * l.y * n.x * l.x + kt_Vcell * T.y * l.y * T.x * l.x;
+    L[yy][yy] += kn_Vcell * n.y * l.y * n.y * l.y + kt_Vcell * T.y * l.y * T.y * l.y;
+    L[yy][zz] += kn_Vcell * n.y * l.y * n.z * l.z + kt_Vcell * T.y * l.y * T.z * l.z;
+    L[yy][xy] += kn_Vcell * n.y * l.y * n.x * l.y + kt_Vcell * T.y * l.y * T.x * l.y;
+    L[yy][xz] += kn_Vcell * n.y * l.y * n.x * l.z + kt_Vcell * T.y * l.y * T.x * l.z;
+    L[yy][yz] += kn_Vcell * n.y * l.y * n.y * l.z + kt_Vcell * T.y * l.y * T.y * l.z;
 
-    L[zz][xx] += kn_Vcell * n.z * l.z * n.x * l.x + kt_Vcell * t.z * l.z * t.x * l.x;
-    L[zz][yy] += kn_Vcell * n.z * l.z * n.y * l.y + kt_Vcell * t.z * l.z * t.y * l.y;
-    L[zz][zz] += kn_Vcell * n.z * l.z * n.z * l.z + kt_Vcell * t.z * l.z * t.z * l.z;
-    L[zz][xy] += kn_Vcell * n.z * l.z * n.x * l.y + kt_Vcell * t.z * l.z * t.x * l.y;
-    L[zz][xz] += kn_Vcell * n.z * l.z * n.x * l.z + kt_Vcell * t.z * l.z * t.x * l.z;
-    L[zz][yz] += kn_Vcell * n.z * l.z * n.y * l.z + kt_Vcell * t.z * l.z * t.y * l.z;
+    L[zz][xx] += kn_Vcell * n.z * l.z * n.x * l.x + kt_Vcell * T.z * l.z * T.x * l.x;
+    L[zz][yy] += kn_Vcell * n.z * l.z * n.y * l.y + kt_Vcell * T.z * l.z * T.y * l.y;
+    L[zz][zz] += kn_Vcell * n.z * l.z * n.z * l.z + kt_Vcell * T.z * l.z * T.z * l.z;
+    L[zz][xy] += kn_Vcell * n.z * l.z * n.x * l.y + kt_Vcell * T.z * l.z * T.x * l.y;
+    L[zz][xz] += kn_Vcell * n.z * l.z * n.x * l.z + kt_Vcell * T.z * l.z * T.x * l.z;
+    L[zz][yz] += kn_Vcell * n.z * l.z * n.y * l.z + kt_Vcell * T.z * l.z * T.y * l.z;
 
-    L[xy][xx] += kn_Vcell * n.x * l.y * n.x * l.x + kt_Vcell * t.x * l.y * t.x * l.x;
-    L[xy][yy] += kn_Vcell * n.x * l.y * n.y * l.y + kt_Vcell * t.x * l.y * t.y * l.y;
-    L[xy][zz] += kn_Vcell * n.x * l.y * n.z * l.z + kt_Vcell * t.x * l.y * t.z * l.z;
-    L[xy][xy] += kn_Vcell * n.x * l.y * n.x * l.y + kt_Vcell * t.x * l.y * t.x * l.y;
-    L[xy][xz] += kn_Vcell * n.x * l.y * n.x * l.z + kt_Vcell * t.x * l.y * t.x * l.z;
-    L[xy][yz] += kn_Vcell * n.x * l.y * n.y * l.z + kt_Vcell * t.x * l.y * t.y * l.z;
+    L[xy][xx] += kn_Vcell * n.x * l.y * n.x * l.x + kt_Vcell * T.x * l.y * T.x * l.x;
+    L[xy][yy] += kn_Vcell * n.x * l.y * n.y * l.y + kt_Vcell * T.x * l.y * T.y * l.y;
+    L[xy][zz] += kn_Vcell * n.x * l.y * n.z * l.z + kt_Vcell * T.x * l.y * T.z * l.z;
+    L[xy][xy] += kn_Vcell * n.x * l.y * n.x * l.y + kt_Vcell * T.x * l.y * T.x * l.y;
+    L[xy][xz] += kn_Vcell * n.x * l.y * n.x * l.z + kt_Vcell * T.x * l.y * T.x * l.z;
+    L[xy][yz] += kn_Vcell * n.x * l.y * n.y * l.z + kt_Vcell * T.x * l.y * T.y * l.z;
 
-    L[xz][xx] += kn_Vcell * n.x * l.z * n.x * l.x + kt_Vcell * t.x * l.z * t.x * l.x;
-    L[xz][yy] += kn_Vcell * n.x * l.z * n.y * l.y + kt_Vcell * t.x * l.z * t.y * l.y;
-    L[xz][zz] += kn_Vcell * n.x * l.z * n.z * l.z + kt_Vcell * t.x * l.z * t.z * l.z;
-    L[xz][xy] += kn_Vcell * n.x * l.z * n.x * l.y + kt_Vcell * t.x * l.z * t.x * l.y;
-    L[xz][xz] += kn_Vcell * n.x * l.z * n.x * l.z + kt_Vcell * t.x * l.z * t.x * l.z;
-    L[xz][yz] += kn_Vcell * n.x * l.z * n.y * l.z + kt_Vcell * t.x * l.z * t.y * l.z;
+    L[xz][xx] += kn_Vcell * n.x * l.z * n.x * l.x + kt_Vcell * T.x * l.z * T.x * l.x;
+    L[xz][yy] += kn_Vcell * n.x * l.z * n.y * l.y + kt_Vcell * T.x * l.z * T.y * l.y;
+    L[xz][zz] += kn_Vcell * n.x * l.z * n.z * l.z + kt_Vcell * T.x * l.z * T.z * l.z;
+    L[xz][xy] += kn_Vcell * n.x * l.z * n.x * l.y + kt_Vcell * T.x * l.z * T.x * l.y;
+    L[xz][xz] += kn_Vcell * n.x * l.z * n.x * l.z + kt_Vcell * T.x * l.z * T.x * l.z;
+    L[xz][yz] += kn_Vcell * n.x * l.z * n.y * l.z + kt_Vcell * T.x * l.z * T.y * l.z;
 
-    L[yz][xx] += kn_Vcell * n.y * l.z * n.x * l.x + kt_Vcell * t.y * l.z * t.x * l.x;
-    L[yz][yy] += kn_Vcell * n.y * l.z * n.y * l.y + kt_Vcell * t.y * l.z * t.y * l.y;
-    L[yz][zz] += kn_Vcell * n.y * l.z * n.z * l.z + kt_Vcell * t.y * l.z * t.z * l.z;
-    L[yz][xy] += kn_Vcell * n.y * l.z * n.x * l.y + kt_Vcell * t.y * l.z * t.x * l.y;
-    L[yz][xz] += kn_Vcell * n.y * l.z * n.x * l.z + kt_Vcell * t.y * l.z * t.x * l.z;
-    L[yz][yz] += kn_Vcell * n.y * l.z * n.y * l.z + kt_Vcell * t.y * l.z * t.y * l.z;
+    L[yz][xx] += kn_Vcell * n.y * l.z * n.x * l.x + kt_Vcell * T.y * l.z * T.x * l.x;
+    L[yz][yy] += kn_Vcell * n.y * l.z * n.y * l.y + kt_Vcell * T.y * l.z * T.y * l.y;
+    L[yz][zz] += kn_Vcell * n.y * l.z * n.z * l.z + kt_Vcell * T.y * l.z * T.z * l.z;
+    L[yz][xy] += kn_Vcell * n.y * l.z * n.x * l.y + kt_Vcell * T.y * l.z * T.x * l.y;
+    L[yz][xz] += kn_Vcell * n.y * l.z * n.x * l.z + kt_Vcell * T.y * l.z * T.x * l.z;
+    L[yz][yz] += kn_Vcell * n.y * l.z * n.y * l.z + kt_Vcell * T.y * l.z * T.y * l.z;
   }
 }
 
@@ -1848,8 +1848,8 @@ void PBC3Dbox::getOperatorKruyt2(double L[9][9]) {
     vec3r l = Cell.h * sij;
     vec3r n = l;
     n.normalize();
-    vec3r t = Interactions[k].ft;
-    t.normalize();
+    //vec3r t = Interactions[k].ft;
+    //t.normalize();
 
     // Noraml vector n
     nx = n.x;
@@ -2021,8 +2021,8 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
     vec3r l = Cell.h * sij;
     vec3r n = l;
     n.normalize();
-    vec3r t = Interactions[k].ft;
-    t.normalize();
+    //vec3r t = Interactions[k].ft;
+    //t.normalize();
 
     // vector normal n
     nx = n.x;
@@ -2395,8 +2395,8 @@ void PBC3Dbox::initLagamine(double Q[]) {
   Interactions.clear();
   Interaction I;
   for (size_t i = 0; i < nbActiveInteractions; i++) {
-    I.i = Q[offset++] - 1;  // Remenber that Fortran first index is 1
-    I.j = Q[offset++] - 1;
+    I.i = static_cast<size_t>(fabs(Q[offset++] - 1));  // Remenber that Fortran first index is 1
+    I.j = static_cast<size_t>(fabs(Q[offset++] - 1));
     I.gap0 = Q[offset++];
     I.n.x = Q[offset++];
     I.n.y = Q[offset++];
@@ -2416,13 +2416,13 @@ void PBC3Dbox::initLagamine(double Q[]) {
     I.mom.x = Q[offset++];
     I.mom.y = Q[offset++];
     I.mom.z = Q[offset++];
-    I.state = Q[offset++];
+    I.state = static_cast<int>(Q[offset++]);
     I.D = Q[offset++];
 
     // std::cout << "STATE" << I.state << std::endl;
     Interactions.push_back(I);
   }
-  nbBondsini = Q[offset++];
+  nbBondsini = static_cast<int>(Q[offset++]);
   porosityini = Q[offset++];
 
   computeSampleData();
@@ -2452,7 +2452,7 @@ void PBC3Dbox::runSilently() {
 }
 
 // This version is for Lagamine (fortran)
-void PBC3Dbox::transform(double dFmoinsI[3][3], double* I, int* nstep) {
+void PBC3Dbox::transform(double dFmoinsI[3][3], double* /*I*/, int* nstep) {
   // const double dtcFactor = 0.04; // 0.04 = 1/25
 
   double dtc = sqrt(Vmin * density / kn);
@@ -2461,8 +2461,8 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double* I, int* nstep) {
   dt2_2 = 0.5 * dt * dt;
 
   double max_dFmoinsI = fabs(dFmoinsI[0][0]);
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
       double tmp = fabs(dFmoinsI[i][j]);
       if (tmp > max_dFmoinsI) max_dFmoinsI = tmp;
     }
@@ -2587,7 +2587,7 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   Q[offset++] = 0;  // 0 for 3D (this was used in 2D to say wether the in plane strain condition was used)
 
   // Particles
-  Q[offset++] = Particles.size();
+  Q[offset++] = (double)Particles.size();
   for (size_t i = 0; i < Particles.size(); i++) {
     Q[offset++] = Particles[i].pos.x;
     Q[offset++] = Particles[i].pos.y;
@@ -2620,11 +2620,11 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
     if (Interactions[k].state == bondedStateDam) nbBonds++;
     nbActiveInteractions++;
   }
-  Q[offset++] = nbActiveInteractions;
+  Q[offset++] = (double)nbActiveInteractions;
   for (size_t k = 0; k < Interactions.size(); k++) {
     if (Interactions[k].state == noContactState) continue;
-    Q[offset++] = Interactions[k].i + 1;  // Fortran index starts with 1
-    Q[offset++] = Interactions[k].j + 1;
+    Q[offset++] = (double)(Interactions[k].i + 1);  // Fortran index starts with 1
+    Q[offset++] = (double)(Interactions[k].j + 1);
     Q[offset++] = Interactions[k].gap0;
 
     Q[offset++] = Interactions[k].n.x;
@@ -2652,15 +2652,15 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   double Vcell = fabs(Cell.h.det());
   // update initial values if equal to -1 (specified in the REVini file, ugly but works...)
   if (nbBondsini == -1) nbBondsini = nbBonds;
-  Q[offset++] = nbBondsini;
+  Q[offset++] = (double)nbBondsini;
   if (porosityini == -1) porosityini = (Vcell - Vsolid) / Vcell;
   Q[offset++] = porosityini;
 
-  Q[offset++] = nbBonds;
+  Q[offset++] = (double)nbBonds;
   Q[offset++] = (Vcell - Vsolid) / Vcell;
-  Q[offset++] = nbActiveInteractions / Particles.size();  // to plot the evolution of coordination number
-  double Rmean, R0mean, fnMin, fnMean;
-  staticQualityData(&Rmean, &R0mean, &fnMin, &fnMean);
+  Q[offset++] = (double)nbActiveInteractions / (double)Particles.size();  // to plot the evolution of coordination number
+  double ResMean, Res0Mean, fnMin, fnMean;
+  staticQualityData(&ResMean, &Res0Mean, &fnMin, &fnMean);
 
   // std::cout << "fnmin*** " << fnMin << std::endl;
   Q[offset++] = fnMin;
@@ -2679,12 +2679,12 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
 }
 
 /// @brief Computes some indicators related to the staticity
-/// @param[out]  Rmean    Average resultant force over all bodies
-/// @param[out]  R0mean   Same as Rmean but with only the body holding more than 2 contacts
+/// @param[out]  ResMean    Average resultant force over all bodies
+/// @param[out]  Res0Mean   Same as ResMean but with only the body holding more than 2 contacts
 /// @param[out]  fnMin    Minimum nonzero normal force
 /// @param[out]  fnMean   Mean nonzero normal force
-void PBC3Dbox::staticQualityData(double* Rmean, double* R0mean, double* fnMin, double* fnMean) const {
-  *Rmean = *R0mean = *fnMin = *fnMean = 0.0;
+void PBC3Dbox::staticQualityData(double* ResMean, double* Res0Mean, double* fnMin, double* fnMean) const {
+  *ResMean = *Res0Mean = *fnMin = *fnMean = 0.0;
 
   size_t Nc = Interactions.size();
   size_t Np = Particles.size();
@@ -2721,12 +2721,12 @@ void PBC3Dbox::staticQualityData(double* Rmean, double* R0mean, double* fnMin, d
   size_t Np0 = 0;
   for (size_t i = 0; i < R.size(); i++) {
     double len = R[i].length();
-    *Rmean += len;
+    *ResMean += len;
     if (z[i] > 2) {
       Np0++;
-      *R0mean += len;
+      *Res0Mean += len;
     }
   }
-  *Rmean /= (double)Np;
-  if (Np0 > 0) *R0mean /= (double)Np0;
+  *ResMean /= (double)Np;
+  if (Np0 > 0) *Res0Mean /= (double)Np0;
 }

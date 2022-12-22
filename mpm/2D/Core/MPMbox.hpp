@@ -126,8 +126,8 @@ class MPMbox {
 
   struct {
     bool hasDoubleScale;
-    int minDEMstep;      // minimal number of DEM time steps
-    double rateAverage;  // proportion of DEM aveaging
+    int minDEMstep;      // minimum number of DEM time steps for linear regression of stress
+    double rateAverage;  // end-part of MPM time step used for stress averaging
   } NHL;
   bool switchGravity;
   double switchGravTime;

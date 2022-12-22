@@ -38,9 +38,9 @@ class PBC3Dbox {
   size_t nbActiveInteractions;  ///< Number of active contacts, ie all interactions without the "noContactState"
                                 ///< It can be different from Interactions.size()!
 
-  double nbBondsini;   ///< initial # of Bonds at start of Lagamine
+  int nbBondsini;   ///< initial # of Bonds at start of Lagamine
   double porosityini;  ///< initial porosity at start of Lagamine
-  double nbBonds;
+  int nbBonds;
   double tensfailure;
   double fricfailure;
 
@@ -84,7 +84,7 @@ class PBC3Dbox {
   int iconf;           ///< Current configuration ID
   int enableSwitch;    ///< If non-null, enable the switch of particles from one boundary to the opposite
   int permamentGluer;  ///< If 1, contacts are permanently transformed to glued-point
-  double numericalDampingCoeff;
+  double numericalDampingCoeff; ///< This is the so called Cundall damping
 
   // Ctor
   PBC3Dbox();
@@ -136,7 +136,7 @@ class PBC3Dbox {
   void getOperatorKruyt3(double L[9][9]);                   ///< Gets the operator proposed by Kruyt
   ///< (version Kien avec sliding-contacts)
 
-  void staticQualityData(double* Rmean, double* R0mean, double* fnMin,
+  void staticQualityData(double* ResMean, double* Res0Mean, double* fnMin,
                          double* fnMean) const;  ///< Methods to evaluate the quality of static state
 
  private:
@@ -177,7 +177,7 @@ class PBC3Dbox {
   double FnMin;   ///< Minimum normal force in the system
   double FnMax;   ///< Maximum normal force in the system
   double FnMean;  ///< Mean normal force in the system
-  double ReducedPartDistMean; 
+  double ReducedPartDistMean;
 
   // Particle velocities
   double VelMin;   ///< Minimum velocity magnitude of the particles

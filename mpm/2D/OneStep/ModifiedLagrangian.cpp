@@ -13,8 +13,8 @@
 
 #include "PBC3D.hpp"
 
-// #include "factory.hpp"
-// static Registrar<OneStep, ModifiedLagrangian> registrar("ModifiedLagrangian");
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
 
 std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
@@ -201,6 +201,9 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 #pragma omp parallel for default(shared)
       for (size_t q = 0; q < doubleScaleVector.size(); q++) {
         MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
+        spdlog::get("console")->trace("Stress for MP #{} = xx {} / xy {} / yx {} / yy {}", doubleScaleVector[q],
+                                      MP[doubleScaleVector[q]].stress.xx, MP[doubleScaleVector[q]].stress.xy,
+                                      MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
       }
     } else {
       for (size_t p = 0; p < MP.size(); p++) {

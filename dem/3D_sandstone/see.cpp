@@ -60,7 +60,7 @@ void printHelp() {
   cout << endl;
 }
 
-void keyboard(unsigned char Key, int x, int y) {
+void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
   switch (Key) {
 
     case 'b':
@@ -76,10 +76,10 @@ void keyboard(unsigned char Key, int x, int y) {
       break;
 
     case 'e':
-      if (alpha_particles > 0.1) alpha_particles -= 0.05;
+      if (alpha_particles > 0.1f) alpha_particles -= 0.05f;
       break;
     case 'E':
-      if (alpha_particles <= 0.95) alpha_particles += 0.05;
+      if (alpha_particles <= 0.95f) alpha_particles += 0.05f;
       break;
 
     case 'f':
@@ -107,10 +107,10 @@ void keyboard(unsigned char Key, int x, int y) {
       break;
 
     case 'r':
-      if (alpha_ghosts > 0.1) alpha_ghosts -= 0.05;
+      if (alpha_ghosts > 0.1f) alpha_ghosts -= 0.05f;
       break;
     case 'R':
-      if (alpha_ghosts <= 0.95) alpha_ghosts += 0.05;
+      if (alpha_ghosts <= 0.95f) alpha_ghosts += 0.05f;
       break;
 
     case 's':
@@ -195,10 +195,10 @@ void mouse(int button, int state, int x, int y) {
   }
 }
 
-vec3r rotatePoint(vec3r const& p, vec3r const& center, vec3r const& axis, double theta) {
+vec3r rotatePoint(vec3r const& p, vec3r const& center_, vec3r const& axis, double theta) {
   double const c = cos(theta), s = sin(theta);
   double const C = 1.0 - c;
-  vec3r tmp = p - center;
+  vec3r tmp = p - center_;
   return center + vec3r(tmp[0] * (axis[0] * axis[0] * C + c) + tmp[1] * (axis[0] * axis[1] * C - axis[2] * s) +
                             tmp[2] * (axis[0] * axis[2] * C + axis[1] * s),
                         tmp[0] * (axis[1] * axis[0] * C + axis[2] * s) + tmp[1] * (axis[1] * axis[1] * C + c) +
@@ -215,21 +215,21 @@ void quat2GLMatrix(quat& q, GLfloat* pMatrix) {
   if (!pMatrix) return;
 
   // First row
-  pMatrix[0] = 1.0f - 2.0f * (q.v.y * q.v.y + q.v.z * q.v.z);
-  pMatrix[1] = 2.0f * (q.v.x * q.v.y + q.v.z * q.s);
-  pMatrix[2] = 2.0f * (q.v.x * q.v.z - q.v.y * q.s);
+  pMatrix[0] = 1.0f - 2.0f * (GLfloat)(q.v.y * q.v.y + q.v.z * q.v.z);
+  pMatrix[1] = 2.0f * (GLfloat)(q.v.x * q.v.y + q.v.z * q.s);
+  pMatrix[2] = 2.0f * (GLfloat)(q.v.x * q.v.z - q.v.y * q.s);
   pMatrix[3] = 0.0f;
 
   // Second row
-  pMatrix[4] = 2.0f * (q.v.x * q.v.y - q.v.z * q.s);
-  pMatrix[5] = 1.0f - 2.0f * (q.v.x * q.v.x + q.v.z * q.v.z);
-  pMatrix[6] = 2.0f * (q.v.z * q.v.y + q.v.x * q.s);
+  pMatrix[4] = 2.0f * (GLfloat)(q.v.x * q.v.y - q.v.z * q.s);
+  pMatrix[5] = 1.0f - 2.0f * (GLfloat)(q.v.x * q.v.x + q.v.z * q.v.z);
+  pMatrix[6] = 2.0f * (GLfloat)(q.v.z * q.v.y + q.v.x * q.s);
   pMatrix[7] = 0.0f;
 
   // Third row
-  pMatrix[8] = 2.0f * (q.v.x * q.v.z + q.v.y * q.s);
-  pMatrix[9] = 2.0f * (q.v.y * q.v.z - q.v.x * q.s);
-  pMatrix[10] = 1.0f - 2.0f * (q.v.x * q.v.x + q.v.y * q.v.y);
+  pMatrix[8] = 2.0f * (GLfloat)(q.v.x * q.v.z + q.v.y * q.s);
+  pMatrix[9] = 2.0f * (GLfloat)(q.v.y * q.v.z - q.v.x * q.s);
+  pMatrix[10] = 1.0f - 2.0f * (GLfloat)(q.v.x * q.v.x + q.v.y * q.v.y);
   pMatrix[11] = 0.0f;
 
   // Fourth row
@@ -282,7 +282,7 @@ void motion(int x, int y) {
 }
 
 void normalize(GLfloat* a) {
-  GLfloat d = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+  GLfloat d = (GLfloat)sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
   a[0] /= d;
   a[1] /= d;
   a[2] /= d;
@@ -320,7 +320,7 @@ void drawsphere(int ndiv, float radius) {
   glEnd();
 }
 
-void add_ghost_pos(int i, double mn, double mx, std::vector<vec3r>& lst) {
+void add_ghost_pos(size_t i, double mn, double mx, std::vector<vec3r>& lst) {
   lst.clear();
   vec3r pos = box.Particles[i].pos;
   if (pos.x > mn && pos.x < mx && pos.y > mn && pos.y < mx && pos.z > mn && pos.z < mx) return;
@@ -579,14 +579,14 @@ void adjust_clipping_plans() {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   wh_ratio = (float)width / (float)height;
-  double zf = (eye - center).normalize();
+  float zf = (float)((eye - center).normalize());
   vec3r mx = component_max(box.Cell.h.get_xcol(), box.Cell.h.get_ycol());
   mx = component_max(mx, box.Cell.h.get_zcol());
   max_length = (GLfloat)norm(mx);
-  double znear = zf - 0.5 * max_length;
-  double close_dst = 0.1 * zf;
+  znear = zf - 0.5f * max_length;
+  float close_dst = 0.1f * zf;
   if (znear < close_dst) znear = close_dst;
-  double zfar = zf + 0.5 * max_length;
+  zfar = zf + 0.5f * max_length;
   gluPerspective(view_angle, wh_ratio, znear, zfar);
   glMatrixMode(GL_MODELVIEW);
 }
@@ -596,7 +596,7 @@ void fit_view() {
   vec3r diag = box.Cell.h.get_xcol() + box.Cell.h.get_ycol() + box.Cell.h.get_zcol();
   dir.normalize();
   center = 0.5 * diag;
-  GLfloat d = 0.5 * diag.length() / (atan(view_angle * M_PI / 360.0));
+  GLfloat d = 0.5f * (GLfloat)diag.length() / (GLfloat)(atan(view_angle * M_PI / 360.0));
   eye = center + d * dir;
 }
 
@@ -637,33 +637,33 @@ void drawPeriodicCell() {
   vec3r p7 = p3 + box.Cell.h.get_zcol();
 
   glBegin(GL_LINE_LOOP);
-  glVertex3f(p0.x, p0.y, p0.z);
-  glVertex3f(p1.x, p1.y, p1.z);
-  glVertex3f(p2.x, p2.y, p2.z);
-  glVertex3f(p3.x, p3.y, p3.z);
-  glVertex3f(p0.x, p0.y, p0.z);
+  glVertex3d(p0.x, p0.y, p0.z);
+  glVertex3d(p1.x, p1.y, p1.z);
+  glVertex3d(p2.x, p2.y, p2.z);
+  glVertex3d(p3.x, p3.y, p3.z);
+  glVertex3d(p0.x, p0.y, p0.z);
   glEnd();
 
   glBegin(GL_LINE_LOOP);
-  glVertex3f(p4.x, p4.y, p4.z);
-  glVertex3f(p5.x, p5.y, p5.z);
-  glVertex3f(p6.x, p6.y, p6.z);
-  glVertex3f(p7.x, p7.y, p7.z);
-  glVertex3f(p4.x, p4.y, p4.z);
+  glVertex3d(p4.x, p4.y, p4.z);
+  glVertex3d(p5.x, p5.y, p5.z);
+  glVertex3d(p6.x, p6.y, p6.z);
+  glVertex3d(p7.x, p7.y, p7.z);
+  glVertex3d(p4.x, p4.y, p4.z);
   glEnd();
 
   glBegin(GL_LINES);
-  glVertex3f(p0.x, p0.y, p0.z);
-  glVertex3f(p4.x, p4.y, p4.z);
+  glVertex3d(p0.x, p0.y, p0.z);
+  glVertex3d(p4.x, p4.y, p4.z);
 
-  glVertex3f(p1.x, p1.y, p1.z);
-  glVertex3f(p5.x, p5.y, p5.z);
+  glVertex3d(p1.x, p1.y, p1.z);
+  glVertex3d(p5.x, p5.y, p5.z);
 
-  glVertex3f(p2.x, p2.y, p2.z);
-  glVertex3f(p6.x, p6.y, p6.z);
+  glVertex3d(p2.x, p2.y, p2.z);
+  glVertex3d(p6.x, p6.y, p6.z);
 
-  glVertex3f(p3.x, p3.y, p3.z);
-  glVertex3f(p7.x, p7.y, p7.z);
+  glVertex3d(p3.x, p3.y, p3.z);
+  glVertex3d(p7.x, p7.y, p7.z);
   glEnd();
 }
 
@@ -689,22 +689,22 @@ void drawSlice()  // TO BE CONTINUED
   glColor4f(0.3f, 1.0f, 0.3f, 0.25f);
 
   glBegin(GL_TRIANGLE_FAN);
-  glVertex3f(orig.x, orig.y, orig.z);
+  glVertex3d(orig.x, orig.y, orig.z);
   for (double angle = 0.0; angle <= 2.0 * M_PI; angle += 0.2 * M_PI) {
     c = cos(angle) * a + sin(angle) * b;
-    glNormal3f(c.x, c.y, c.z);
+    glNormal3d(c.x, c.y, c.z);
     c = orig + r * c;
-    glVertex3f(c.x, c.y, c.z);
+    glVertex3d(c.x, c.y, c.z);
   }
   glEnd();
 
   glBegin(GL_TRIANGLE_FAN);
-  glVertex3f(dest.x, dest.y, dest.z);
+  glVertex3d(dest.x, dest.y, dest.z);
   for (double angle = 0.0; angle <= 2.0 * M_PI; angle += 0.2 * M_PI) {
     c = cos(angle) * a + sin(angle) * b;
-    glNormal3f(c.x, c.y, c.z);
+    glNormal3d(c.x, c.y, c.z);
     c = dest + r * c;
-    glVertex3f(c.x, c.y, c.z);
+    glVertex3d(c.x, c.y, c.z);
   }
   glEnd();
 }
@@ -714,8 +714,8 @@ void drawArrow(vec3r& orig, vec3r& arrow) {
 
   glLineWidth(2.0f);
   glBegin(GL_LINES);
-  glVertex3f(orig.x, orig.y, orig.z);
-  glVertex3f(dest.x, dest.y, dest.z);
+  glVertex3d(orig.x, orig.y, orig.z);
+  glVertex3d(dest.x, dest.y, dest.z);
   glEnd();
 
   vec3r v = arrow;
@@ -734,12 +734,12 @@ void drawArrow(vec3r& orig, vec3r& arrow) {
   vec3r c;
   double r = arrowSize * tan(0.5 * arrowAngle);
   glBegin(GL_TRIANGLE_FAN);
-  glVertex3f(dest.x, dest.y, dest.z);
+  glVertex3d(dest.x, dest.y, dest.z);
   for (double angle = 0.0; angle <= 2.0 * M_PI; angle += 0.2 * M_PI) {
     c = cos(angle) * a + sin(angle) * b;
-    glNormal3f(c.x, c.y, c.z);  // Pas tout à fait juste (!) Mais c'est pas grave, c'est pour le calcul de l'ombre
+    glNormal3d(c.x, c.y, c.z);  // Pas tout à fait juste (!) Mais c'est pas grave, c'est pour le calcul de l'ombre
     c = head + r * c;
-    glVertex3f(c.x, c.y, c.z);
+    glVertex3d(c.x, c.y, c.z);
   }
   glEnd();
 }
@@ -763,12 +763,12 @@ void drawTube(vec3r& orig, vec3r& arrow, double diam) {
   glBegin(GL_TRIANGLE_STRIP);
   for (double angle = 0.0; angle <= 2.0 * M_PI; angle += 0.2 * M_PI) {
     n = cos(angle) * a + sin(angle) * b;
-    glNormal3f(n.x, n.y, n.z);
+    glNormal3d(n.x, n.y, n.z);
     n *= r;
     c1 = orig + n;
     c2 = dest + n;
-    glVertex3f(c1.x, c1.y, c1.z);
-    glVertex3f(c2.x, c2.y, c2.z);
+    glVertex3d(c1.x, c1.y, c1.z);
+    glVertex3d(c2.x, c2.y, c2.z);
   }
   glEnd();
 }
@@ -779,16 +779,16 @@ void drawParticles() {
   GLColorRGBA color;
   glEnable(GL_LIGHTING);
   for (size_t i = 0; i < box.Particles.size(); ++i) {
-    color = colorParticle(i);
+    color = colorParticle((int)i);
     glColor4f(color.r, color.g, color.b, color.a);
     vec3r pos = box.Cell.h * box.Particles[i].pos;
     if (!inSlice(pos)) continue;
     glPushMatrix();
-    glTranslatef(pos.x, pos.y, pos.z);
+    glTranslated(pos.x, pos.y, pos.z);
     // Rotation is not necessary since the particles are spheres
     // quat2GLMatrix (box.Particles[i].Q, Rot_Matrix);
     // glMultMatrixf (Rot_Matrix);
-    drawsphere(3, box.Particles[i].radius);
+    drawsphere(3, (float)box.Particles[i].radius);
     glPopMatrix();
   }
 }
@@ -803,13 +803,13 @@ void drawGhosts() {
   for (size_t i = 0; i < box.Particles.size(); ++i) {
     add_ghost_pos(i, mn, mx, lst_pos);
     for (size_t ig = 0; ig < lst_pos.size(); ig++) {
-      color = colorParticle(i);
+      color = colorParticle((int)i);
       glColor4f(color.r, color.g, color.b, alpha_ghosts);
       vec3r pos = box.Cell.h * lst_pos[ig];
       if (!inSlice(pos)) continue;
       glPushMatrix();
-      glTranslatef(pos.x, pos.y, pos.z);
-      drawsphere(3, box.Particles[i].radius);
+      glTranslated(pos.x, pos.y, pos.z);
+      drawsphere(3, (float)box.Particles[i].radius);
       glPopMatrix();
     }
   }
@@ -923,7 +923,7 @@ void drawVelocities() {
 
     Vel = scal * (box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel);
     if (1) {
-      color = colorParticleVelocityMagnitude(i);
+      color = colorParticleVelocityMagnitude((int)i);
       glColor4f(color.r, color.g, color.b, color.a);
     }
     drawArrow(pos, Vel);
@@ -1038,7 +1038,7 @@ void menu(int num) {
       break;
     case 101: {
       colorParticle = colorParticleVelocityMagnitude;
-      ParticleColorTable.setMinMax(0.0, box.VelMax);
+      ParticleColorTable.setMinMax(0.0f, (float)box.VelMax);
       ParticleColorTable.Rebuild();
     } break;
   };
@@ -1068,11 +1068,11 @@ void buildMenu() {
 // =====================================================================
 
 GLColorRGBA colorForceNone(int) { return GLColorRGBA(0.2f, 0.2f, 0.2f, 1.0f); }
-GLColorRGBA colorParticleNone(int i) { return GLColorRGBA(0.5f, 0.5f, 0.5f, alpha_particles); }
+GLColorRGBA colorParticleNone(int /*i*/) { return GLColorRGBA(0.5f, 0.5f, 0.5f, alpha_particles); }
 
 GLColorRGBA colorParticleVelocityMagnitude(int i) {
   colorRGBA RGBA;
-  double vel = norm(box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel);
+  float vel = (float)norm(box.Cell.vh * box.Particles[i].pos + box.Cell.h * box.Particles[i].vel);
   ParticleColorTable.getRGB(vel, &RGBA);
   return GLColorRGBA(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
 }
@@ -1140,8 +1140,8 @@ int main(int argc, char* argv[]) {
 
   mouse_mode = NOTHING;
   view_angle = 45.0;
-  znear = 0.01;
-  zfar = 10.0;
+  znear = 0.01f;
+  zfar = 10.0f;
 
   glDisable(GL_CULL_FACE);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -1153,7 +1153,7 @@ int main(int argc, char* argv[]) {
 
   // Create light components
   GLfloat ambientLight[] = {0.2f, 0.2f, 0.2f, 1.0f};
-  GLfloat diffuseLight[] = {0.8f, 0.8f, 0.8, 1.0f};
+  GLfloat diffuseLight[] = {0.8f, 0.8f, 0.8f, 1.0f};
   GLfloat specularLight[] = {0.5f, 0.5f, 0.5f, 1.0f};
   GLfloat positionLight0[] = {1000000.0f, 1000000.0f, 1000000.0f, 1.0f};
   GLfloat positionLight1[] = {-1000000.0f, -1000000.0f, -1000000.0f, 1.0f};

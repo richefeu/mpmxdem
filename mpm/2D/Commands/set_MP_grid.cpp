@@ -6,9 +6,6 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
-//#include "factory.hpp"
-//static Registrar<Command, set_MP_grid> registrar("set_MP_grid");
-
 void set_MP_grid::read(std::istream& is) { is >> groupNb >> modelName >> rho >> x0 >> y0 >> x1 >> y1 >> size; }
 
 void set_MP_grid::exec() {
@@ -42,6 +39,10 @@ void set_MP_grid::exec() {
     for (int j = 0; j < nbMPX; j++) {
       MaterialPoint P(groupNb, size, rho, CM);
       CM->init(P);
+      if (P.isDoubleScale == true) {
+        double Vcell = fabs(P.PBC->Cell.h.det());
+        P.density = P.PBC->Cell.mass / Vcell;        
+      }
       P.pos.set(x0 + halfSizeMP + size * j, y0 + halfSizeMP + size * i);
       P.nb = counter;
       counter++;

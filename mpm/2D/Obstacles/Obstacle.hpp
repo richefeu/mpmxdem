@@ -39,7 +39,7 @@ struct Obstacle {
   virtual void checkProximity(MPMbox& MPM) = 0;
   virtual int touch(MaterialPoint& MP, double& dn) = 0;
   virtual void getContactFrame(MaterialPoint& MP, vec2r& n, vec2r& t) = 0;
-  virtual int addVtkPoints(std::vector<vec2r>& coords) = 0;
+  //virtual int addVtkPoints(std::vector<vec2r>& coords) = 0;
 
   virtual bool MPisInside(MaterialPoint& MP);
 

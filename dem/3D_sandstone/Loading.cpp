@@ -327,10 +327,10 @@ void Loading::AxisRotationZ(double E0, double omega, double Lx, double Ly, doubl
     double c = box.Cell.h.xx / (2.0 * V0);
     double d = box.Cell.h.xx / (Lx * Lx);
     double e = -box.Cell.h.yy / (Ly * Ly);
-    double f = -box.Cell.h.xy / (Ly * Ly);
+    double ff = -box.Cell.h.xy / (Ly * Ly);
     double g = box.Cell.h.yy;
     double h = box.Cell.h.xx;
-    double det = a * f * h - c * d * h + e * c * g;
+    double det = a * ff * h - c * d * h + e * c * g;
 
 #if 0
 
@@ -349,8 +349,8 @@ void Loading::AxisRotationZ(double E0, double omega, double Lx, double Ly, doubl
     double intCo = (0.5 * E0 * (sin(omega * (iniTime - box.t)) - sin(omega * (iniTime - box.dt - box.t))));
     double intSi = E0 * (cos(omega * (iniTime - box.dt - box.t)) - cos(omega * (iniTime - box.t)));
 
-    box.Load.v.xx = (f * g * intCo - c * h * intSi) / (det * box.dt);
-    box.Load.v.yy = (-f * g * intCo + c * g * intSi) / (det * box.dt);
+    box.Load.v.xx = (ff * g * intCo - c * h * intSi) / (det * box.dt);
+    box.Load.v.yy = (-ff * g * intCo + c * g * intSi) / (det * box.dt);
     box.Load.v.xy = ((e * g - d * h) * intCo + a * h * intSi) / (det * box.dt);
     box.Load.v.yx = 0.0;
     

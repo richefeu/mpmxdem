@@ -16,7 +16,7 @@ MaxSplitNumber 3
 #     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
 model MohrCoulomb    MC         1.0e7     0.42      0.3            5e1        0.01
 
-set_node_grid  W.H.lx.ly  0.4  0.3  0.02 0.02
+set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
 
 #            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
 set_MP_grid  0       MC            3000.0        0.04   0.04    0.1    0.20    0.005
@@ -35,8 +35,5 @@ set              mu         0         1          0.2
 set              kn         0         1          1e6
 set              kt         0         1          1e6
 set              viscRate   0         1          0.98
-
-
-
 
 

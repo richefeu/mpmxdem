@@ -90,19 +90,6 @@ void Circle::checkProximity(MPMbox& MPM) {
   }
 }
 
-int Circle::addVtkPoints(std::vector<vec2r>& coords) {
-  const int nbSectors = 100;
-  vec2r P;
-  double inc = Mth::_2pi / (double)nbSectors;
-  coords.push_back(pos);
-  for (int i = 0; i <= nbSectors; i++) {
-    P.x = pos.x + R * cos(rot + i * inc);
-    P.y = pos.y + R * sin(rot + i * inc);
-    coords.push_back(P);
-  }
-  return nbSectors + 1 + 1;  // one of the 1 is because of the central pos
-}
-
 bool Circle::MPisInside(MaterialPoint& MP) {
   vec2r l = MP.pos - pos;
   double radiusMP = 0.5 * sqrt(MP.vol0);

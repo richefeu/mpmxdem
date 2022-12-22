@@ -8,8 +8,10 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 
 CXX = g++-12
-CXXFLAGS = -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion \
+CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
+
+OPENMP_LIB = -l gomp
 
 # Link flags for OpenGL and glut
 GLUTFLAGS = `pkg-config --cflags glut`
@@ -18,8 +20,10 @@ GLUTLIBS = `pkg-config --libs glut` -framework OpenGL
 else
 
 CXX = g++
-CXXFLAGS = -O3 -std=c++17 -Wall -Wextra \
+CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
+
+OPENMP_LIB = -l gomp
 
 # Link flags for OpenGL and glut
 #GLUTFLAGS = 
@@ -44,23 +48,33 @@ OBJS = $(SRCS:.cpp=.o)
 #========================================================================
 
 %.o:%.cpp
+	@echo "\033[0;32m-> COMPILING" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 	
-all: $(LIB).a	bin/mpmbox bin/see
+all: lib mpmbox see
 
-$(LIB).a: $(OBJS)
+lib: lib/$(LIB).a
+	
+lib/$(LIB).a: $(OBJS)
+	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	@mkdir -p lib
-	ar rvs lib/$@ $^
+	ar rs $@ $^
 
+mpmbox: bin/mpmbox
+	
 bin/mpmbox: Runners/run.cpp $(OBJS)
+	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) -c $< -o $(patsubst %.cpp, %.o, $<)
-	$(CXX) -o $@ Runners/run.o lib/$(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
+	$(CXX) $(OPENMP_LIB) -o $@ Runners/run.o lib/$(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
+
+see: bin/see
 	
 bin/see: See/see.cpp $(OBJS)
+	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) $(GLUTFLAGS) -c $< -o $(patsubst %.cpp, %.o, $<)
-	$(CXX) $(GLUTLIBS) -o $@ See/see.o lib/$(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
+	$(CXX) $(OPENMP_LIB) $(GLUTLIBS) -o $@ See/see.o lib/$(LIB).a $(CHCL_LIB_PATH)/$(CHCL_LIB).a
 
 clean:
 	rm -f $(OBJS)

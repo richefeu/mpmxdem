@@ -10,7 +10,7 @@
 struct ConstitutiveModel;
 
 struct MaterialPoint {
-  size_t nb;          // Number of the Material Point
+  size_t nb;       // Number of the Material Point
   int groupNb;     // Group Number
   double mass;     // Mass
   double size;     // size of the sides of squared MP
@@ -34,7 +34,7 @@ struct MaterialPoint {
 
   double N[16];     // Value of shape function according to the position of the Material Point
   vec2r gradN[16];  // Gradient of shape function according to the position of the Material Point
-  size_t e;            // Identify the element to which the point belongs
+  size_t e;         // Identify the element to which the point belongs
   mat4r F;          // Deformation gradient matrix
   mat4r velGrad;    // Gradient of velocity (required eg. for computation of F)
 

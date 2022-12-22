@@ -1,5 +1,6 @@
 #include "see.hpp"
 
+#include <limits>
 #include <typeinfo>
 
 #include "Obstacles/Circle.hpp"
@@ -32,14 +33,14 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '1': {
       color_option = 1;
-      double vmax = 0;
-      double vmin = 1e20;
+      float vmax = 0.0f;
+      float vmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        double vel = norm(SmoothedData[i].vel);
+        float vel = (float)norm(SmoothedData[i].vel);
         if (vel > vmax) vmax = vel;
         if (vel < vmax) vmin = vel;
       }
-      colorTable.setMinMax(0.0, vmax);
+      colorTable.setMinMax(0.0f, vmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
       precomputeColors();
@@ -48,29 +49,29 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '2': {
       color_option = 2;
-      double pmax = -1e20;
-      double pmin = 1e20;
+      float pmax = -std::numeric_limits<float>::max();
+      float pmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        float p = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
         if (p > pmax) pmax = p;
         if (p < pmin) pmin = p;
       }
-      //pmin=-10000;
-      //pmax=10000;
+      // pmin=-10000;
+      // pmax=10000;
       colorTable.setMinMax(pmin, pmax);
-      //colorTable.setMinMax(-1e4, 1e3);
+      // colorTable.setMinMax(-1e4, 1e3);
       colorTable.setTableID(3);
       colorTable.Rebuild();
       precomputeColors();
       std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
     } break;
-    
+
     case '3': {
       color_option = 3;
-      double rhomax = 0;
-      double rhomin = 1e20;
+      float rhomax = 0.0f;
+      float rhomin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        double rho = SmoothedData[i].rho;
+        float rho = (float)SmoothedData[i].rho;
         if (rho > rhomax) rhomax = rho;
         if (rho < rhomin) rhomin = rho;
       }
@@ -80,13 +81,13 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by density (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
     } break;
-    
+
     case '4': {
       color_option = 4;
-      double pmax = -1e20;
-      double pmin = 1e20;
+      float pmax = -std::numeric_limits<float>::max();
+      float pmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        double p = SmoothedData[i].stress.yy;
+        float p = (float)SmoothedData[i].stress.yy;
         if (p > pmax) pmax = p;
         if (p < pmin) pmin = p;
       }
@@ -96,34 +97,31 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
     } break;
-    
+
     case '5': {
       if (ADs.empty()) break;
       color_option = 5;
-      double Dmax = -1e20;
+      float Dmax = 0.0f;
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
-        double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
-      //for (size_t i = 0; i < ADs.size(); i++) {
-        //if (ADs[i].NB == 0.0) continue;
-        //double D = 1.0 - ADs[i].NB / 790;
+        float D = 1.0f - (float)ADs[i].NB / (float)ADsREF[i].NB;
         if (D > Dmax) Dmax = D;
       }
-      colorTable.setMinMax(0.0, Dmax);
+      colorTable.setMinMax(0.0f, Dmax);
       colorTable.setTableID(6);
       colorTable.Rebuild();
       precomputeColors();
       std::cout << "MP colored by DEM-cell damage [0, " << Dmax << "] \n";
     } break;
-    
+
     case '6': {
       color_option = 6;
-      double depsqmax = -1e20;
-      double depsqmin = 1e20;
+      float depsqmax = -std::numeric_limits<float>::max();
+      float depsqmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        double d1 = SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy;
-        double d2 = SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx;
-        double depsq = sqrt(d1 * d1 + d2 * d2);
+        float d1 = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
+        float d2 = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
+        float depsq = (float)sqrt(d1 * d1 + d2 * d2);
         if (depsq > depsqmax) depsqmax = depsq;
         if (depsq < depsqmin) depsqmin = depsq;
       }
@@ -135,19 +133,17 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     } break;
     case '7': {
       color_option = 7;
-      double volvarmax = -1e20;
-      double volvarmin = 1e20;
+      float volvarmax = -std::numeric_limits<float>::max();
+      float volvarmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        if(fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx)==0) continue;
-        double volvar=fabs(Conf.MP[i].F.xx*Conf.MP[i].F.yy-Conf.MP[i].F.xy*Conf.MP[i].F.yx)
-                       /
-                      fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx)
-                      -1.0;
+        if (fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx) == 0) continue;
+        float volvar = (float)(fabs(Conf.MP[i].F.xx * Conf.MP[i].F.yy - Conf.MP[i].F.xy * Conf.MP[i].F.yx) /
+                               fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx)) -
+                       1.0f;
         if (volvar > volvarmax) volvarmax = volvar;
         if (volvar < volvarmin) volvarmin = volvar;
       }
-      colorTable.setMinMax(volvarmin,volvarmax);
-      //colorTable.setMinMax(-0.4,0.05);  
+      colorTable.setMinMax(volvarmin, volvarmax);
       colorTable.setTableID(3);
       colorTable.Rebuild();
       precomputeColors();
@@ -155,10 +151,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     } break;
     case '8': {
       color_option = 8;
-      double fxmax = -1e20;
-      double fxmin = 1e20;
+      float fxmax = -std::numeric_limits<float>::max();
+      float fxmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        double fx = Conf.MP[i].contactf.x;
+        float fx = (float)Conf.MP[i].contactf.x;
         if (fx > fxmax) fxmax = fx;
         if (fx < fxmin) fxmin = fx;
       }
@@ -173,11 +169,11 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       MP_contour = 1 - MP_contour;
     } break;
 
-    case 'n' :{
+    case 'n': {
       std::cout << "number: ";
       int num;
       std::cin >> num;
-      try_to_readConf(num, Conf, confNum);    
+      try_to_readConf(num, Conf, confNum);
     } break;
     case 'i': {
       printInfo();
@@ -388,28 +384,28 @@ void precomputeColors() {
 
     case 1: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
-        double vel = norm(SmoothedData[i].vel);
+        float vel = (float)norm(SmoothedData[i].vel);
         colorTable.getRGB(vel, &precompColors[i]);
       }
     } break;
 
     case 2: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
-        double p = 0.5 * (SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        float p = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
         colorTable.getRGB(p, &precompColors[i]);
       }
     } break;
 
     case 3: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
-        double rho = SmoothedData[i].rho;
+        float rho = (float)SmoothedData[i].rho;
         colorTable.getRGB(rho, &precompColors[i]);
       }
     } break;
 
     case 4: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
-        double p = SmoothedData[i].stress.yy;
+        float p = (float)SmoothedData[i].stress.yy;
         colorTable.getRGB(p, &precompColors[i]);
       }
     } break;
@@ -417,36 +413,33 @@ void precomputeColors() {
     case 5: {
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
-        double D = 1.0 - ADs[i].NB / ADsREF[i].NB;
-        //if (ADs[i].NB == 0.0) continue;
-        //double D = 1.0 - ADs[i].NB / 790;
+        float D = 1.0f - (float)ADs[i].NB / (float)ADsREF[i].NB;
         colorTable.getRGB(D, &precompColors[i]);
       }
     } break;
-    
+
     case 6: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
-        double d1 = SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy;
-        double d2 = SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx;
-        double depsq = sqrt(d1 * d1 + d2 * d2);
+        float d1 = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
+        float d2 = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
+        float depsq = (float)sqrt(d1 * d1 + d2 * d2);
         colorTable.getRGB(depsq, &precompColors[i]);
       }
     } break;
-    
+
     case 7: {
       for (size_t i = 0; i < Conf.MP.size(); i++) {
-        if (fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx)==0) continue;
-        double volvar=fabs(Conf.MP[i].F.xx*Conf.MP[i].F.yy-Conf.MP[i].F.xy*Conf.MP[i].F.yx)
-                      /
-                      fabs(MPREF[i].F.xx*MPREF[i].F.yy-MPREF[i].F.xy*MPREF[i].F.yx) 
-                      -1.0;
+        if (fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx) == 0) continue;
+        float volvar = (float)(fabs(Conf.MP[i].F.xx * Conf.MP[i].F.yy - Conf.MP[i].F.xy * Conf.MP[i].F.yx) /
+                               fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx)) -
+                       1.0f;
         colorTable.getRGB(volvar, &precompColors[i]);
       }
     } break;
 
     case 8: {
-      for (size_t i = 0; i < Conf.MP.size(); i++) {        
-        colorTable.getRGB(Conf.MP[i].contactf.x, &precompColors[i]);
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        colorTable.getRGB((float)Conf.MP[i].contactf.x, &precompColors[i]);
       }
     } break;
 
@@ -458,7 +451,10 @@ void precomputeColors() {
   }
 }
 
-void setColor(int i) { glColor3f(precompColors[i].r / 255.0, precompColors[i].g / 255.0, precompColors[i].b / 255.0); }
+void setColor(int i) {
+  glColor3f((GLfloat)precompColors[i].r / 255.0f, (GLfloat)precompColors[i].g / 255.0f,
+            (GLfloat)precompColors[i].b / 255.0f);
+}
 
 void drawStressDirections() {
 
@@ -511,7 +507,7 @@ void drawMPs() {
     double R = 0.5 * Conf.MP[i].size;
 
     if (MP_deformed_shape == 1) {
-      setColor(i);
+      setColor((int)i);
 
       glBegin(GL_POLYGON);
       for (size_t r = 0; r < 4; r++) {
@@ -529,7 +525,7 @@ void drawMPs() {
       }
 
     } else {
-      setColor(i);
+      setColor((int)i);
 
       glBegin(GL_POLYGON);
       for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
@@ -623,8 +619,8 @@ bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
       std::cout << "  with additional data in file " << co_file_name << std::endl;
       readAdditionalData(co_file_name);
     }
-    if (MPREF.empty()){
-       MPREF=CF.MP;
+    if (MPREF.empty()) {
+      MPREF = CF.MP;
     }
   } else {
     std::cout << file_name << " does not exist" << std::endl;

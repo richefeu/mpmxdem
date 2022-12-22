@@ -32,7 +32,7 @@ struct Interaction {
   double D;     ///< Damage parameter
 
   Interaction();
-  Interaction(const Interaction &I); // copy Ctor
+  //Interaction(const Interaction &I); // copy Ctor
   Interaction(size_t I, size_t J, double Dampn, double Dampt);
 };
 

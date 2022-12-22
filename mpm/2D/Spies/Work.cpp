@@ -6,13 +6,10 @@
 
 #include <fileTool.hpp>
 
-//#include <factory.hpp>
-//static Registrar<Spy, Work> registrar("Work");
-
 void Work::read(std::istream& is) {
   std::string Filename;
   is >> nrec >> Filename;
-  nstep = 1; // exec is called at each time step
+  nstep = 1;  // exec is called at each time step
 
   filenameSlices = box->result_folder + fileTool::separator() + fileTool::GetFileName(Filename) + "Slices." +
                    fileTool::GetFileExt(Filename);
@@ -81,7 +78,7 @@ void Work::exec() {
   }
 }
 
-void Work::record() { 
+void Work::record() {
   file << box->t << " " << -Wn_tot << " " << -Wt_tot << " " << Wint_tot << " " << -Wn_tot - Wt_tot + Wint_tot << " "
        << Wp_tot << std::endl;
 }
@@ -92,6 +89,6 @@ void Work::end() {
   for (int i = 0; i < Range.getNumberOfSlices(); i++) {
     fileSlices << vmin + (i + 1) * bin << " " << -Wn[i] << " " << -Wt[i] << " " << Wint[i] << std::endl;
   }
-  //fileSlices.close();
-  //file.close();
+  // fileSlices.close();
+  // file.close();
 }

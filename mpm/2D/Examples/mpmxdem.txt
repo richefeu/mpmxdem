@@ -6,7 +6,7 @@ tolmass 1.e-6
 gravity      0.0  -9.81
 finalTime 2.5
 # Period of storing (in number of steps)
-confPeriod 100
+confPeriod 1000
 proxPeriod 50
 # Time increment
 dt 1e-5
@@ -14,7 +14,7 @@ dt 1e-5
 t 0.0
 # shape function can be Linear or GIMP (not yet implemented)
 ShapeFunction BSpline
-PICDissipation 0.98 1
+PICDissipation 0.98 0.1
 
 splitting 0
 shearLimit 1.0
@@ -24,10 +24,10 @@ demavg 50 0.2
 
 # Materials
 #     modelID          modelName  Young     Poisson     FrictionAngle     Cohesion   DilatancyAngle (FrictionAngle -30°)
-model MohrCoulomb      M0         2.14e+05  0.498       0.400             8.26e3     -0.18
+model MohrCoulomb      M0         2.14e+05  0.498       0.400             8.26e1     -0.18
 
-#                         PBC3D-file   reactivationTime  reactivationDistance
-model hnlDEM           DE dem_conf0    1                 1e-6
+#                                 PBC3D-file   reactivationTime  reactivationDistance  numericalDamping
+model hnlDEM           DE         dem_conf0    1                 1e-6                  0.0
 
 set_node_grid  W.H.lx.ly  4.8  3.2  0.16 0.16
 
@@ -41,9 +41,6 @@ BoundaryForceLaw frictionalViscoElastic 2
 #ObstaclePlannedRemoval 1 1
 
 #                group  x0    y0     x1    y1   driveMode
-#Obstacle Line    1      2.8   2.4    2.8   1.2  freeze
-#Obstacle Line    2      2.8   1.2    2.0   1.2  freeze
-#Obstacle Line    1      2.0   1.2    2.0   2.4  freeze
 Obstacle Line    2      4.4   2.4    4.4   1.2  freeze
 Obstacle Line    2      4.4   1.2    0.4   1.2  freeze
 Obstacle Line    2      0.4   1.2    0.4   2.4  freeze

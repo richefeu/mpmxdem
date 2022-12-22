@@ -26,8 +26,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       contactf(),
       isDoubleScale(false),
       constitutiveModel(CM),
-      PBC(nullptr)
-      {
+      PBC(nullptr) {
   vol0 = vol = size * size;
   mass = vol0 * density;
   F = mat4r::unit();
@@ -48,7 +47,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
 void MaterialPoint::updateCornersFromF() {
   // TODO: This is wrong if it's to be used in move_MP.cpp
   // -> faire une fonction updateCornersFromFincrement
-  
+
   double halfSizeMP = 0.5 * size;
   corner[0] = pos + F * vec2r(-halfSizeMP, -halfSizeMP);
   corner[1] = pos + F * vec2r(halfSizeMP, -halfSizeMP);

@@ -5,8 +5,6 @@
 
 #include "PBC3D.hpp"
 
-//#include "factory.hpp"
-//static Registrar<ConstitutiveModel, hnlDEML> registrar("hnlDEML");
 std::string hnlDEML::getRegistrationName() { return std::string("hnlDEML"); }
 
 hnlDEML::hnlDEML() {}

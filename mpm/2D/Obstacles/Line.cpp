@@ -87,8 +87,3 @@ void Line::checkProximity(MPMbox& MPM) {
   }
 }
 
-int Line::addVtkPoints(std::vector<vec2r>& coords) {
-  coords.push_back(pos);
-  coords.push_back(pos + len * t);
-  return 2;
-}

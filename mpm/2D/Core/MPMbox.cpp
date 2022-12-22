@@ -107,8 +107,7 @@ MPMbox::MPMbox() {
 MPMbox::~MPMbox() { clean(); }
 
 void MPMbox::showAppBanner() {
-  std::cout << "@@@@@@@@@@@\n";
-  std::cout << std::endl;std::cout << std::endl;std::cout << std::endl;
+  std::cout << std::endl;
   std::cout << "    _/      _/  _/_/_/    _/      _/  _/                         " << std::endl;
   std::cout << "   _/_/  _/_/  _/    _/  _/_/  _/_/  _/_/_/      _/_/    _/    _/" << std::endl;
   std::cout << "  _/  _/  _/  _/_/_/    _/  _/  _/  _/    _/  _/    _/    _/_/   " << std::endl;
@@ -118,7 +117,6 @@ void MPMbox::showAppBanner() {
 }
 
 void MPMbox::ExplicitRegistrations() {
-  std::cout << "@@@@@@@@@@@@MPMbox::ExplicitRegistrations\n";
 
   // BoundaryForceLaw ===============
   Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
@@ -731,6 +729,7 @@ void MPMbox::MPinGridCheck() {
 // Convergence conditions for MPs interacting with obstacles
 void MPMbox::convergenceConditions() {
   START_TIMER("convergenceConditions");
+  
   // finding necessary parameters
   double inf = std::numeric_limits<double>::max();
   double YoungMax = -inf;
@@ -845,7 +844,7 @@ void MPMbox::limitTimeStepForDEM() {
     }
   }
 
-  console->trace("DEM time-step dt = {} after limitation", dt);
+  console->trace("DEM time-step dt = {} at the end limitTimeStepForDEM", dt);
 }
 
 void MPMbox::updateTransformationGradient() {

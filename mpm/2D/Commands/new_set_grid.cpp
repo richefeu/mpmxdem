@@ -1,9 +1,6 @@
 #include "new_set_grid.hpp"
 #include "../Core/MPMbox.hpp"
 
-//#include "factory.hpp"
-//static Registrar<Command, new_set_grid> registrar("new_set_grid");
-
 void new_set_grid::read(std::istream& is) { is >> lengthX >> lengthY >> spacing; }
 
 void new_set_grid::exec() {

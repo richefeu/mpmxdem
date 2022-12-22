@@ -1,5 +1,5 @@
-#ifndef POLYGON_HPP
-#define POLYGON_HPP
+#ifndef OBSTACLE_POLYGON_HPP
+#define OBSTACLE_POLYGON_HPP
 
 #include "Obstacle.hpp"
 
@@ -17,13 +17,10 @@ struct Polygon : public Obstacle {
   virtual void checkProximity(MPMbox& MPM);
   virtual int touch(MaterialPoint& MP, double& dn);
   virtual void getContactFrame(MaterialPoint& MP, vec2r& n, vec2r& t);
-  virtual int addVtkPoints(std::vector<vec2r>& coords);
   virtual bool MPisInside(MaterialPoint& MP);
-  bool pointinPolygon(int& nVertices, vec2r& point, std::vector<vec2r>& verticePos, MaterialPoint& MP, vec2r& tang,
-                      vec2r& normal, double& testdn);
-  bool edgeinMP(vec2r& edgePos, int& closestCorner, MaterialPoint& MP, vec2r& tang, vec2r& normal, double& testdn);
+  bool pointinPolygon(vec2r& point, MaterialPoint& MP, double& testdn);
   virtual void createPolygon(std::vector<vec2r>& vect);
   virtual double Area();
 };
 
-#endif /* end of include guard: POLYGON2_HPP */
+#endif /* end of include guard: OBSTACLE_POLYGON2_HPP */

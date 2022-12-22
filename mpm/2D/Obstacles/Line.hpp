@@ -1,10 +1,9 @@
-#ifndef LINE_HPP
-#define LINE_HPP
+#ifndef OBSTACLE_LINE_HPP
+#define OBSTACLE_LINE_HPP
 
 #include "Obstacle.hpp"
 
 struct Line : public Obstacle {
-
   double len;
   vec2r n, t;
   
@@ -14,7 +13,6 @@ struct Line : public Obstacle {
   virtual void checkProximity(MPMbox& MPM);
   virtual int touch(MaterialPoint& MP, double& dn);
   virtual void getContactFrame(MaterialPoint& MP, vec2r& n, vec2r& t);
-  virtual int addVtkPoints(std::vector<vec2r>& coords);
 };
 
-#endif /* end of include guard: LINE_HPP */
+#endif /* end of include guard: OBSTACLE_LINE_HPP */

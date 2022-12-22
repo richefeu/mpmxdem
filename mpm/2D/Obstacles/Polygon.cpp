@@ -65,7 +65,7 @@ int Polygon::touch(MaterialPoint& MP, double& dn) {
   double len = sqrt(MP.vol) / 2.0;
   vec2r point = MP.pos + c * len;
 
-  if (pointinPolygon(nVertices, point, verticePos, MP, tang, normal, testdn)) {
+  if (pointinPolygon(point, MP, testdn)) {
     // FIXME: This if shouldnt exist since if its inside we assume that testdn is negative!
     if (testdn < 0.0) {
       dn = testdn;
@@ -73,68 +73,6 @@ int Polygon::touch(MaterialPoint& MP, double& dn) {
     }
   }
   return Corner;
-
-  // original (uses the corners)
-  // TODO: It only works when contact happens on the upper part of the MP. Should be corrected soon!!
-  // A more advanced version of Polygon.
-  // It includes MP corner inside polygon, but also polygon corner inside MP
-
-  /*
-  verticePos.clear();
-  createPolygon(verticePos);
-
-  int Corner = -1;
-  double testdn;
-
-  vec2r point = MP.corner[0];
-
-
-  //Checking if one of the MP corners is inside the polygon
-  if (pointinPolygon(nVertices, point, verticePos, MP, tang, normal, testdn)) {
-          Corner = 0;
-          dn = testdn;
-  }
-
-  for (int r = 1; r < 4 ; r++) {
-          vec2r point = MP.corner[r];
-          if (pointinPolygon(nVertices, point, verticePos, MP, tang, normal, testdn)) {
-
-                  if (testdn < dn) {  //dn is supposed to be a negative value
-                          Corner = r;
-                          dn = testdn;
-                  }
-          }
-  }
-
-  if (Corner >= 0) {
-          return Corner;  //if contact found with corner, exit function
-  }
-
-  else {
-          //TODO: This second part should actually go first since its more likely to happen. It would accelerate the
-code a bit
-          // If not found yet...
-          // we check if one of the polygon edges is
-          //inside the MP (MP bounded by the four corners)
-          int closestCorner;
-          if (edgeinMP(verticePos[0], closestCorner, MP, tang, normal, testdn)){
-                  Corner = closestCorner; //i need it for later (MPMbox.cpp)
-                  dn = testdn;
-          }
-
-          for (int e = 1; e < nVertices; e++){
-                  vec2r edgePos = verticePos[e];
-                  if(edgeinMP(edgePos, closestCorner, MP, tang, normal, testdn)) {
-                          if (testdn < dn) {
-                                  Corner = closestCorner; //i need it for later (MPMbox.cpp)
-                                  dn = testdn;
-                          }
-                  }
-          }
-}
-
-  return Corner;
-  */
 }
 
 void Polygon::getContactFrame(MaterialPoint&, vec2r& N, vec2r& T) {
@@ -179,11 +117,6 @@ void Polygon::checkProximity(MPMbox& MPM) {
   }
 }
 
-int Polygon::addVtkPoints(std::vector<vec2r>& coords) {
-  coords.push_back(pos);  // center
-  createPolygon(coords);
-  return nVertices + 1 + 1;
-}
 
 // not being used
 bool Polygon::MPisInside(MaterialPoint& MP) {
@@ -194,11 +127,10 @@ bool Polygon::MPisInside(MaterialPoint& MP) {
 }
 
 // TODO: shoudl create a library and call it instead of implementing it here
-bool Polygon::pointinPolygon(int& nVertices, vec2r& point, std::vector<vec2r>& verticePos, MaterialPoint& MP,
-                             vec2r& tang, vec2r& normal, double& testdn) {
+bool Polygon::pointinPolygon(vec2r& point, MaterialPoint& MP,
+                             double& testdn) {
   int i, j = 0;
   bool c = false;
-  // TODO: You can also define nVertices as verticePos.size() - 1 (because the first pos is repeated)
 
   // from
   // http://stackoverflow.com/questions/217578/how-can-i-determine-whether-a-2d-point-is-within-a-polygon/2922778#2922778
@@ -222,7 +154,7 @@ bool Polygon::pointinPolygon(int& nVertices, vec2r& point, std::vector<vec2r>& v
 
     // finding the closest vertex...
     // FIXME: this part is to be reviewed
-    double closestVertex = 0;
+    size_t closestVertex = 0;
     double distanceClosest = 10000000;                // just giving a random initial val
     for (size_t e = 0; e < verticePos.size(); e++) {  // finding the vertex  that is in contact
       double normDiff = norm(point - verticePos[e]);
@@ -234,46 +166,6 @@ bool Polygon::pointinPolygon(int& nVertices, vec2r& point, std::vector<vec2r>& v
     }
     testdn = (verticePos[closestVertex] - point) * -normal;
   }
-  return c;
-}
-
-// not being used
-bool Polygon::edgeinMP(vec2r& edgePos, int& closestCorner, MaterialPoint& MP, vec2r& tang, vec2r& normal,
-                       double& testdn) {
-  int i, j = 0;
-  bool c = false;
-  double nbCorners = 4;
-
-  for (i = 0, j = nbCorners - 1; i < nbCorners; j = i++) {
-    if (((MP.corner[i].y > edgePos.y) != (MP.corner[j].y > edgePos.y)) &&
-        (edgePos.x <
-         (MP.corner[j].x - MP.corner[i].x) * (edgePos.y - MP.corner[i].y) / (MP.corner[j].y - MP.corner[i].y) +
-             MP.corner[i].x)) {
-      c = !c;
-    }
-  }
-
-  if (c == true) {
-    tang = MP.corner[2] - MP.corner[3];  // this has to be corrected
-    tang.normalize();
-    normal.x = tang.y;
-    normal.y = -tang.x;
-
-    // finding closest corner (to the edge that we're analyzing)
-    // double closestCorner = 0;
-    double distanceClosest = 2 * MP.size;  // random initial value that is big enough
-    for (int r = 0; r < 4; r++) {
-      double normDiff = norm(edgePos - MP.corner[r]);
-      // std::cout<<normDiff<< " "<<distanceClosest<<std::endl;
-      if (normDiff < distanceClosest) {
-        distanceClosest = normDiff;
-        closestCorner = r;
-      }
-    }
-    // once found the closest corner, we calculate the testdn
-    testdn = (edgePos - MP.corner[closestCorner]) * -normal;
-  }
-
   return c;
 }
 

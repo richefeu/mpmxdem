@@ -29,6 +29,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 
       vec2r N, T;
       MPM.Obstacles[o]->getContactFrame(MPM.MP[pn], N, T);
+      
       // === Normal force
       vec2r velRelative = MPM.MP[pn].vel - MPM.Obstacles[o]->vel;
       // remark: not really correct because the Obstable rotation is not accounted for.
@@ -37,6 +38,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
       double normalVel = velRelative * N;
       double delta_dt = (velRelative * T) * MPM.dt;
       MPM.Obstacles[o]->Neighbors[nn].ft += -kt * delta_dt;
+      
       // === Friction force
       //double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
       double threshold = mu *MPM.Obstacles[o]->Neighbors[nn].sigma_n*MPM.MP[pn].vol0;
@@ -62,7 +64,7 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
         MPM.Obstacles[o]->force -= f;
         MPM.MP[pn].contactf = -f;
       }
-      // === Resultant force
+      
     } else {
       MPM.Obstacles[o]->Neighbors[nn].dn = 0.0;
       MPM.Obstacles[o]->Neighbors[nn].dt = 0.0;
