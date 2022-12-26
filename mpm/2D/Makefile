@@ -61,7 +61,6 @@ lib/$(LIB).a: $(OBJS)
 	ar rs $@ $^
 
 mpmbox: bin/mpmbox
-	
 bin/mpmbox: Runners/run.cpp $(OBJS)
 	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	@mkdir -p bin
