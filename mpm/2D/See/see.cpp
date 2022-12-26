@@ -164,7 +164,25 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by fx (fx_min = " << fxmin << ", fx_max = " << fxmax << ")\n";
     } break;
-
+    case '9': {
+      color_option = 9;
+      float Imax = -std::numeric_limits<float>::max();
+      float Imin = std::numeric_limits<float>::max();
+      for (size_t i = 0; i < Conf.MP.size(); i++) {
+        float d1 = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
+        float d2 = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
+        float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        float I = (float)((2*ADs[i].Rmean*sqrt(d1 * d1 + d2 * d2))/sqrt((abs(pres)+1e-6)/SmoothedData[i].rho));
+        if (I > Imax) Imax = I;
+        if (I < Imin) Imin = I;
+      }
+      colorTable.setMinMax(Imin, Imax);
+      colorTable.setTableID(3);
+      colorTable.Rebuild();
+      precomputeColors();
+      std::cout << "MP colored by I (I_min = " << Imin << ", I_max = " << Imax << ")\n";
+    } break;
+ 
     case 'c': {
       MP_contour = 1 - MP_contour;
     } break;
@@ -442,6 +460,16 @@ void precomputeColors() {
         colorTable.getRGB((float)Conf.MP[i].contactf.x, &precompColors[i]);
       }
     } break;
+    case 9: {
+      for (size_t i = 0; i < SmoothedData.size(); i++) {
+        float d1 = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
+        float d2 = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
+        float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+        float I = (float)((ADs[i].Rmean/sqrt(d1 * d1 + d2 * d2))/sqrt((abs(pres)+1e-6)*SmoothedData[i].rho));
+        colorTable.getRGB(I, &precompColors[i]);
+      }
+    } break;
+
 
     default: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
