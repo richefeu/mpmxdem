@@ -18,8 +18,8 @@ void clear_background() {
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glBegin(GL_QUADS);
-  //glColor3f(0.4f, 0.4f, 1.0f);  // Bottom color
-  glColor3ub(102, 102, 255); 
+  // glColor3f(0.4f, 0.4f, 1.0f);  // Bottom color
+  glColor3ub(102, 102, 255);
   glVertex2f(-1.0f, -1.0f);
   glVertex2f(1.0f, -1.0f);
   glColor3f(1.0f, 1.0f, 1.0f);  // Top color
@@ -150,7 +150,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       // if the process if too long
       while (try_to_readConf(confNum + 1)) {
         char name[256];
-        sprintf(name, "shot%d.tga", confNum);
+        snprintf(name, 256, "shot%d.tga", confNum);
         display();
         screenshot(name);
       }
@@ -624,7 +624,7 @@ void drawPeriodicCell() {
   glDisable(GL_LIGHTING);
 
   glLineWidth(3.0f);
-  //glColor3f(0.8f, 0.2f, 0.2f);
+  // glColor3f(0.8f, 0.2f, 0.2f);
   glColor3f(1.0f, 0.25f, 0.1f);
 
   vec3r p0;
@@ -842,13 +842,13 @@ void drawForces() {
     // color = colorForce(i);
     if (box.Interactions[k].state == bondedState)
       glColor4f(0.4f, 0.4f, 1.0f, 1.0f);
-    else if (box.Interactions[k].state == bondedStateDam) {/*
-      colorRGBA RGBA;
-      DamCol.getRGB(box.Interactions[k].D, &RGBA);
-      // GLColorRGBA color = GLColorRGBA(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
-      // glColor4f(color.r, color.g, color.b, 1.0f);
-      glColor4f(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);*/
-      glColor4f(0.4f,0.4f,1.0f,1.0f);
+    else if (box.Interactions[k].state == bondedStateDam) { /*
+       colorRGBA RGBA;
+       DamCol.getRGB(box.Interactions[k].D, &RGBA);
+       // GLColorRGBA color = GLColorRGBA(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
+       // glColor4f(color.r, color.g, color.b, 1.0f);
+       glColor4f(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);*/
+      glColor4f(0.4f, 0.4f, 1.0f, 1.0f);
     } else
       glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
     drawTube(orig, branch, scal * diam);
@@ -944,12 +944,12 @@ bool fileExists(const char* fileName) {
 
 bool try_to_readConf(int num) {
   char file_name[256];
-  sprintf(file_name, "conf%d", num);
+  snprintf(file_name, 256, "conf%d", num);
   if (fileExists(file_name)) {
     std::cout << "Read " << file_name << std::endl;
     box.clearMemory();
     box.loadConf(file_name);
-    confNum = box.iconf; 
+    confNum = box.iconf;
     adjust_clipping_plans();
   } else {
     std::cout << file_name << " does not exist" << std::endl;
@@ -1095,7 +1095,7 @@ int main(int argc, char* argv[]) {
     std::cerr << "No particles! Goodbye." << std::endl;
     return 1;
   }
-  
+
   radiusMean = radiusMin = radiusMax = box.Particles[0].radius;
   double r;
   for (size_t i = 1; i < box.Particles.size(); i++) {

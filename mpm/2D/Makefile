@@ -8,7 +8,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 
 CXX = g++-12
-CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion \
+CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion -pedantic \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
 
 OPENMP_LIB = -l gomp
@@ -20,7 +20,7 @@ GLUTLIBS = `pkg-config --libs glut` -framework OpenGL
 else
 
 CXX = g++
-CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra \
+CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion -pedantic \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
 
 OPENMP_LIB = -l gomp

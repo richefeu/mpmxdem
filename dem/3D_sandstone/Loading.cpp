@@ -3,7 +3,7 @@
 Loading::Loading() {}
 
 void Loading::TriaxialCompressionY(double pressure, double velocity) {
-  sprintf(StoredCommand, "TriaxialCompressionY %g %g", pressure, velocity);
+  snprintf(StoredCommand, 256, "TriaxialCompressionY %g %g", pressure, velocity);
 
   Drive.xx = Drive.zz = ForceDriven;
   Drive.yy = VelocityDriven;
@@ -27,7 +27,7 @@ void Loading::TriaxialCompressionY(double pressure, double velocity) {
 }
 
 void Loading::TriaxialCompressionZ(double pressure, double velocity) {
-  sprintf(StoredCommand, "TriaxialCompressionZ %g %g", pressure, velocity);
+  snprintf(StoredCommand, 256, "TriaxialCompressionZ %g %g", pressure, velocity);
 
   Drive.xx = Drive.yy = ForceDriven;
   Drive.zz = VelocityDriven;
@@ -51,7 +51,7 @@ void Loading::TriaxialCompressionZ(double pressure, double velocity) {
 }
 
 void Loading::BiaxialCompressionYPlaneStrainZ(double pressure, double velocity) {
-  sprintf(StoredCommand, "BiaxialCompressionYPlaneStrainZ %g %g", pressure, velocity);
+  snprintf(StoredCommand, 256, "BiaxialCompressionYPlaneStrainZ %g %g", pressure, velocity);
 
   Drive.xx = ForceDriven;     // Pressure applied along x
   Drive.yy = VelocityDriven;  // Velocity imposed
@@ -78,7 +78,7 @@ void Loading::BiaxialCompressionYPlaneStrainZ(double pressure, double velocity) 
 }
 
 void Loading::BiaxialCompressionZPlaneStrainX(double pressure, double velocity) {
-  sprintf(StoredCommand, "BiaxialCompressionZPlaneStrainX %g %g", pressure, velocity);
+  snprintf(StoredCommand, 256, "BiaxialCompressionZPlaneStrainX %g %g", pressure, velocity);
 
   Drive.yy = ForceDriven;     // Pressure applied along y
   Drive.xx = VelocityDriven;  // Velocity imposed
@@ -106,7 +106,7 @@ void Loading::BiaxialCompressionZPlaneStrainX(double pressure, double velocity) 
 }
 
 void Loading::BiaxialCompressionXPlaneStrainY(double pressure, double velocity) {
-  sprintf(StoredCommand, "BiaxialCompressionXPlaneStrainY %g %g", pressure, velocity);
+  snprintf(StoredCommand, 256, "BiaxialCompressionXPlaneStrainY %g %g", pressure, velocity);
 
   Drive.yy = ForceDriven;     // Pressure applied along y
   Drive.xx = VelocityDriven;  // Velocity imposed
@@ -134,7 +134,7 @@ void Loading::BiaxialCompressionXPlaneStrainY(double pressure, double velocity) 
 }
 
 void Loading::IsostaticCompression(double pressure) {
-  sprintf(StoredCommand, "IsostaticCompression %g", pressure);
+  snprintf(StoredCommand, 256, "IsostaticCompression %g", pressure);
 
   Drive.xx = Drive.yy = Drive.zz = ForceDriven;
   Drive.xy = Drive.yx = VelocityDriven;
@@ -155,7 +155,7 @@ void Loading::IsostaticCompression(double pressure) {
 }
 
 void Loading::RigidRotationZ(double omega) {
-  sprintf(StoredCommand, "RigidRotationZ %g", omega);
+  snprintf(StoredCommand, 256, "RigidRotationZ %g", omega);
   Drive.reset(VelocityDriven);
   Sig.reset();
   v.reset();
@@ -172,7 +172,7 @@ void Loading::RigidRotationZ(double omega) {
 }
 
 void Loading::BiaxialCompressionY(double pxz, double py) {
-  sprintf(StoredCommand, "BiaxialCompressionY %g %g", pxz, py);
+  snprintf(StoredCommand, 256, "BiaxialCompressionY %g %g", pxz, py);
 
   Drive.xx = Drive.yy = Drive.zz = ForceDriven;
   Drive.xy = Drive.yx = VelocityDriven;
@@ -195,7 +195,7 @@ void Loading::BiaxialCompressionY(double pxz, double py) {
 
 // Shear in X direction while applying a pressure in Y direction
 void Loading::SimpleShearXY(double pressure, double gammaDot) {
-  sprintf(StoredCommand, "SimpleShearXY %g %g", pressure, gammaDot);
+  snprintf(StoredCommand, 256, "SimpleShearXY %g %g", pressure, gammaDot);
 
   Drive.yy = ForceDriven;
   Drive.xx = Drive.zz = VelocityDriven;
@@ -220,16 +220,16 @@ void Loading::SimpleShearXY(double pressure, double gammaDot) {
 }
 
 void Loading::VelocityControl(mat9r& V) {
-  sprintf(StoredCommand, "VelocityControl %g %g %g   %g %g %g   %g %g %g", V.xx, V.xy, V.xz, V.yx, V.yy, V.yz, V.zx,
-          V.zy, V.zz);
+  snprintf(StoredCommand, 256, "VelocityControl %g %g %g   %g %g %g   %g %g %g", V.xx, V.xy, V.xz, V.yx, V.yy, V.yz,
+           V.zx, V.zy, V.zz);
   Drive.reset(VelocityDriven);
   Sig.reset();
   v = V;
   ServoFunction = nullptr;
 }
 void Loading::StrainControl(mat9r& F) {
-  sprintf(StoredCommand, "VelocityControl %g %g %g   %g %g %g   %g %g %g", F.xx, F.xy, F.xz, F.yx, F.yy, F.yz, F.zx,
-          F.zy, F.zz);
+  snprintf(StoredCommand, 256, "VelocityControl %g %g %g   %g %g %g   %g %g %g", F.xx, F.xy, F.xz, F.yx, F.yy, F.yz,
+           F.zx, F.zy, F.zz);
   Drive.reset(VelocityDriven);
   Sig.reset();
   f = F;
@@ -238,8 +238,8 @@ void Loading::StrainControl(mat9r& F) {
 
 // This loading can be usefull for multiscale modeling (FEMxDEM or MPMxDEM).
 void Loading::TransformationGradient(mat9r& h, mat9r& F, double duration) {
-  sprintf(StoredCommand, "TransformationGradient %g %g %g %g %g %g %g %g %g", F.xx, F.xy, F.xz, F.yx, F.yy, F.yz, F.zx,
-          F.zy, F.zz);
+  snprintf(StoredCommand, 256, "TransformationGradient %g %g %g %g %g %g %g %g %g", F.xx, F.xy, F.xz, F.yx, F.yy, F.yz,
+           F.zx, F.zy, F.zz);
   Drive.reset(VelocityDriven);
   Sig.reset();
   mat9r FmI = F;
@@ -251,7 +251,7 @@ void Loading::TransformationGradient(mat9r& h, mat9r& F, double duration) {
 }
 
 void Loading::LodeAnglePath(double pressure, double sigRate, double LodeAngle) {
-  sprintf(StoredCommand, "LodeAnglePath %g %g %g", pressure, sigRate, LodeAngle);
+  snprintf(StoredCommand, 256, "LodeAnglePath %g %g %g", pressure, sigRate, LodeAngle);
 
   Drive.xx = Drive.yy = Drive.zz = ForceDriven;
   Drive.xy = Drive.yx = VelocityDriven;
@@ -281,7 +281,7 @@ void Loading::LodeAnglePath(double pressure, double sigRate, double LodeAngle) {
 }
 
 void Loading::LodeAnglePathMix(double pressure, double velocity, double LodeAngle) {
-  sprintf(StoredCommand, "LodeAnglePathMix %g %g %g", pressure, velocity, LodeAngle);
+  snprintf(StoredCommand, 256, "LodeAnglePathMix %g %g %g", pressure, velocity, LodeAngle);
 
   Drive.yy = VelocityDriven;
   Drive.xx = Drive.zz = ForceDriven;
@@ -315,7 +315,7 @@ void Loading::LodeAnglePathMix(double pressure, double velocity, double LodeAngl
 }
 
 void Loading::AxisRotationZ(double E0, double omega, double Lx, double Ly, double iniTime) {
-  sprintf(StoredCommand, "AxisRotationZ %g %g", E0, omega);
+  snprintf(StoredCommand, 256, "AxisRotationZ %g %g", E0, omega);
 
   Drive.reset(VelocityDriven);
   Sig.reset();
@@ -341,11 +341,11 @@ void Loading::AxisRotationZ(double E0, double omega, double Lx, double Ly, doubl
     box.Load.v.yy = (-f * g * Co + c * g * Si) / det;
     box.Load.v.xy = ((e * g - d * h) * Co + a * h * Si) / det;
     box.Load.v.yx = 0.0;
-    
+
 #else
     // Cette version fait le calcul exacte de l'incrément de h : hinc
     // pour définir une vitesse vh telle que vh dt = hinc
-    
+
     double intCo = (0.5 * E0 * (sin(omega * (iniTime - box.t)) - sin(omega * (iniTime - box.dt - box.t))));
     double intSi = E0 * (cos(omega * (iniTime - box.dt - box.t)) - cos(omega * (iniTime - box.t)));
 
@@ -353,14 +353,13 @@ void Loading::AxisRotationZ(double E0, double omega, double Lx, double Ly, doubl
     box.Load.v.yy = (-ff * g * intCo + c * g * intSi) / (det * box.dt);
     box.Load.v.xy = ((e * g - d * h) * intCo + a * h * intSi) / (det * box.dt);
     box.Load.v.yx = 0.0;
-    
+
 #endif
-    
   };
 }
 
 void Loading::Fixe() {
-  sprintf(StoredCommand, "Fixe");
+  snprintf(StoredCommand, 256, "Fixe");
   Drive.reset(VelocityDriven);
   Sig.reset();
   v.reset();

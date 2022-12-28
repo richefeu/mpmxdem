@@ -11,9 +11,7 @@ hnlDEML::hnlDEML() {}
 
 void hnlDEML::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingFactor; }
 
-void hnlDEML::write(std::ostream& os) {
-  os << fileName << ' ' << timeBondReactivation << ' ' << bondingFactor << '\n';
-}
+void hnlDEML::write(std::ostream& os) { os << fileName << ' ' << timeBondReactivation << ' ' << bondingFactor << '\n'; }
 
 // The elastic properties cannot be get that way, so, as a convention, -1 is returned
 double hnlDEML::getYoung() { return -1.0; }
@@ -54,24 +52,24 @@ void hnlDEML::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.xy = Finc2D.xy;
   Finc3D.yx = Finc2D.yx;
   Finc3D.yy = Finc2D.yy;
-  Finc3D.zz = 1.0; // assuming plane strain
-  
+  Finc3D.zz = 1.0;  // assuming plane strain
+
   mat9r SigAvg;
   MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.NHL.minDEMstep, MPM.NHL.rateAverage, SigAvg);
-  
+
   col_i = static_cast<size_t>(p % MPM.Grid.Nx);
   row_i = static_cast<size_t>(floor((double)p / (double)MPM.Grid.Nx));
   if (MPM.t >= timeBondReactivation - MPM.dt && MPM.t <= timeBondReactivation + MPM.dt) {
-    MPM.MP[p].PBC->dn0/=bondingFactor;
-    MPM.MP[p].PBC->dt0/=bondingFactor;
+    MPM.MP[p].PBC->dn0 /= bondingFactor;
+    MPM.MP[p].PBC->dt0 /= bondingFactor;
     MPM.MP[p].PBC->numericalDampingCoeff = 0.0;
   }
   if (MPM.step % MPM.confPeriod == 0 && col_i % MPM.DEMPeriod == 0 && row_i % MPM.DEMPeriod == 0) {
-    sprintf(fnamea, "%s/DEM_MP%zu_t%i", MPM.result_folder.c_str(), p, MPM.iconf);
+    snprintf(fnamea, 256, "%s/DEM_MP%zu_t%i", MPM.result_folder.c_str(), p, MPM.iconf);
     MPM.MP[p].PBC->saveConf(fnamea);
     MPM.MP[p].PBC->iconf++;
   }
-  
+
   // Stress
   // !!! (Sign convention is opposed) !!!
   MPM.MP[p].stress.xx = -SigAvg.xx;

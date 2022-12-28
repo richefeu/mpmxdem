@@ -172,7 +172,8 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
         float d1 = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
         float d2 = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
         float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
-        float I = (float)((2*ADs[i].Rmean*sqrt(d1 * d1 + d2 * d2))/sqrt((abs(pres)+1e-6)/SmoothedData[i].rho));
+        float I =
+            (float)((2 * ADs[i].Rmean * sqrt(d1 * d1 + d2 * d2)) / sqrt((abs(pres) + 1e-6) / SmoothedData[i].rho));
         if (I > Imax) Imax = I;
         if (I < Imin) Imin = I;
       }
@@ -182,7 +183,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       precomputeColors();
       std::cout << "MP colored by I (I_min = " << Imin << ", I_max = " << Imax << ")\n";
     } break;
- 
+
     case 'c': {
       MP_contour = 1 - MP_contour;
     } break;
@@ -226,7 +227,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       // if the process if too long
       while (try_to_readConf(confNum + 1, Conf, confNum)) {
         char name[256];
-        sprintf(name, "shot%d.tga", confNum);
+        snprintf(name, 256, "shot%d.tga", confNum);
         display();
         screenshot(name);
       }
@@ -465,11 +466,10 @@ void precomputeColors() {
         float d1 = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
         float d2 = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
         float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
-        float I = (float)((ADs[i].Rmean/sqrt(d1 * d1 + d2 * d2))/sqrt((abs(pres)+1e-6)*SmoothedData[i].rho));
+        float I = (float)((ADs[i].Rmean / sqrt(d1 * d1 + d2 * d2)) / sqrt((abs(pres) + 1e-6) * SmoothedData[i].rho));
         colorTable.getRGB(I, &precompColors[i]);
       }
     } break;
-
 
     default: {
       for (size_t i = 0; i < SmoothedData.size(); i++) {
@@ -631,7 +631,7 @@ bool fileExists(const char* fileName) {
 
 bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
   char file_name[256];
-  sprintf(file_name, "conf%d.txt", num);
+  snprintf(file_name, 256, "conf%d.txt", num);
   if (fileExists(file_name)) {
     std::cout << "Read " << file_name << std::endl;
     OKNum = num;
@@ -642,7 +642,7 @@ bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
     std::cout << "Read " << file_name << std::endl;
 
     char co_file_name[256];
-    sprintf(co_file_name, "conf%d.txt_micro", num);
+    snprintf(co_file_name, 256, "conf%d.txt_micro", num);
     if (fileExists(co_file_name)) {
       std::cout << "  with additional data in file " << co_file_name << std::endl;
       readAdditionalData(co_file_name);
