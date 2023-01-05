@@ -774,7 +774,7 @@ void drawTube(vec3r& orig, vec3r& arrow, double diam) {
 }
 
 void drawParticles() {
-  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
+  if (mouse_mode != NOTHING && box.Particles.size() > 100) return;
 
   GLColorRGBA color;
   glEnable(GL_LIGHTING);
@@ -788,13 +788,13 @@ void drawParticles() {
     // Rotation is not necessary since the particles are spheres
     // quat2GLMatrix (box.Particles[i].Q, Rot_Matrix);
     // glMultMatrixf (Rot_Matrix);
-    drawsphere(3, (float)box.Particles[i].radius);
+    drawsphere(2, (float)box.Particles[i].radius);
     glPopMatrix();
   }
 }
 
 void drawGhosts() {
-  if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
+  if (mouse_mode != NOTHING && box.Particles.size() > 100) return;
 
   std::vector<vec3r> lst_pos;  // list of reduced positions of ghost particles
   double mn = ghost_width;
@@ -809,7 +809,7 @@ void drawGhosts() {
       if (!inSlice(pos)) continue;
       glPushMatrix();
       glTranslated(pos.x, pos.y, pos.z);
-      drawsphere(3, (float)box.Particles[i].radius);
+      drawsphere(2, (float)box.Particles[i].radius);
       glPopMatrix();
     }
   }
@@ -866,7 +866,7 @@ void drawBondDamage() {
   if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
 
   // Scaling
-  double scal = radiusMax;
+  double scal = 2.0 * radiusMax;
 
   glEnable(GL_LIGHTING);
   // GLColorRGBA color;

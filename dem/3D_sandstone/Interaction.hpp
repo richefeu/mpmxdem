@@ -25,7 +25,11 @@ struct Interaction {
   vec3r dt_fric;
   vec3r dt_bond;
   vec3r drot_bond;
+  vec3r drot_fric;
   vec3r mom;    ///< Torque vector (due to bond angular resistance)
+  vec3r mom_fric;
+  vec3r mom_bond;
+  
   double dampn; ///< Precomputed vicuous damping coefficient in normal direction
   double dampt; ///< Precomputed vicuous damping coefficient in tangent direction
   int state;    ///< State of the contact (can be noContactState, contactState or bondedState)
