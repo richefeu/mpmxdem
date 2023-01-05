@@ -76,7 +76,7 @@ void PBC3Dbox::clearMemory() {
 /// @param[in] i File number. It will be named 'confx' where x is replaced by i
 void PBC3Dbox::saveConf(int i) {
   char fname[256];
-  sprintf(fname, "conf%d", i);
+  snprintf(fname, 256, "conf%d", i);
   saveConf(fname);
 }
 
@@ -977,7 +977,7 @@ void PBC3Dbox::integrate() {
   dataOutput();
 
   char fname[256];
-  sprintf(fname, "conf%d", iconf);
+  snprintf(fname, 256, "conf%d", iconf);
   if (!fileTool::fileExists(fname)) {
     saveConf(iconf);
   }
@@ -1759,7 +1759,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char* name) {
   Load.VelocityControl(vh);
   accelerations();
   dataOutput();
-  sprintf(fname, "%s%d", name, iconf);
+  snprintf(fname, 256, "%s%d", name, iconf);
   saveConf(fname);
 
   double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
@@ -1769,7 +1769,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char* name) {
       double currentTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
       printScreen(currentTime - previousTime);
       previousTime = currentTime;
-      sprintf(fname, "%s%d", name, iconf);
+      snprintf(fname, 256, "%s%d", name, iconf);
       saveConf(fname);
       interConfC = 0.0;
       iconf++;

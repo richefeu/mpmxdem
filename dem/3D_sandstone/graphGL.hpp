@@ -4,7 +4,7 @@
 #include <cmath>
 
 class graphGL {
-public:
+ public:
   // Window position
   int winOffsetX, winOffsetY;
   int winWidth, winHeight;
@@ -20,7 +20,7 @@ public:
     rangeHeight = RangeHeight;
   }
 
-  void begin(int WinOffsetX, int WinOffsetY, int WinWidth, int WinHeight, const char *title) {
+  void begin(int WinOffsetX, int WinOffsetY, int WinWidth, int WinHeight, const char* title) {
     winOffsetX = WinOffsetX;
     winOffsetY = WinOffsetY;
     winWidth = WinWidth;
@@ -63,8 +63,7 @@ public:
     // Tick marks along X
     double spaceW = BestTick(rangeWidth, 4);
     double X0tick = floor(rangeOffsetX / spaceW) * spaceW;
-    if (X0tick < rangeOffsetX)
-      X0tick += spaceW;
+    if (X0tick < rangeOffsetX) X0tick += spaceW;
 
     double ex;
     int xo;
@@ -85,8 +84,7 @@ public:
     // Tick marks along Y
     double spaceH = BestTick(rangeHeight, 4);
     double Y0tick = floor(rangeOffsetY / spaceH) * spaceH;
-    if (Y0tick < rangeOffsetY)
-      Y0tick += spaceH;
+    if (Y0tick < rangeOffsetY) Y0tick += spaceH;
 
     double ey;
     int yo;
@@ -131,55 +129,46 @@ public:
     return tick;
   }
 
-  void drawTitle(const char *label) {
+  void drawTitle(const char* label) {
     char textValue[50];
-    sprintf(textValue, "%s", label); // to be sure it is null terminated
+    snprintf(textValue, 50, "%s", label);  // to be sure it is null terminated
     int len = 0;
-    for (int i = 0; textValue[i] != '\0'; i++)
-      len++;
+    for (int i = 0; textValue[i] != '\0'; i++) len++;
     glRasterPos2i(winOffsetX + (int)round(0.5 * winWidth - 0.5 * len * 9), winOffsetY + winHeight + 4);
-    for (int i = 0; textValue[i] != '\0'; i++)
-      glutBitmapCharacter(GLUT_BITMAP_9_BY_15, textValue[i]);
+    for (int i = 0; textValue[i] != '\0'; i++) glutBitmapCharacter(GLUT_BITMAP_9_BY_15, textValue[i]);
   }
 
   void drawTickXValue(int xt, double value) {
     char textValue[50];
-    sprintf(textValue, "%.2g", value);
+    snprintf(textValue, 50, "%.2g", value);
     int len = 0;
-    for (int i = 0; textValue[i] != '\0'; i++)
-      len++;
+    for (int i = 0; textValue[i] != '\0'; i++) len++;
     glRasterPos2i(xt - (int)round(0.5 * len * 8), winOffsetY - 13);
-    for (int i = 0; textValue[i] != '\0'; i++)
-      glutBitmapCharacter(GLUT_BITMAP_8_BY_13, textValue[i]);
+    for (int i = 0; textValue[i] != '\0'; i++) glutBitmapCharacter(GLUT_BITMAP_8_BY_13, textValue[i]);
   }
 
   void drawTickYValue(int yt, double value) {
     char textValue[50];
-    sprintf(textValue, "%.2g", value);
+    snprintf(textValue, 50, "%.2g", value);
     int len = 0;
-    for (int i = 0; textValue[i] != '\0'; i++)
-      len++;
+    for (int i = 0; textValue[i] != '\0'; i++) len++;
     glRasterPos2i(winOffsetX - (len * 8) - 4, yt - 4);
-    for (int i = 0; textValue[i] != '\0'; i++)
-      glutBitmapCharacter(GLUT_BITMAP_8_BY_13, textValue[i]);
+    for (int i = 0; textValue[i] != '\0'; i++) glutBitmapCharacter(GLUT_BITMAP_8_BY_13, textValue[i]);
   }
 
-  void fit(std::vector<double> &buf, double &valMin, double &valMax) {
-    if (buf.empty())
-      return;
+  void fit(std::vector<double>& buf, double& valMin, double& valMax) {
+    if (buf.empty()) return;
 
     valMin = buf[0];
     valMax = buf[0];
     for (size_t i = 1; i < buf.size(); i++) {
-      if (buf[i] > valMax)
-        valMax = buf[i];
+      if (buf[i] > valMax) valMax = buf[i];
 
-      if (buf[i] < valMin)
-        valMin = buf[i];
+      if (buf[i] < valMin) valMin = buf[i];
     }
   }
 
-  void plot(std::vector<double> &xbuf, std::vector<double> &ybuf, int opt) {
+  void plot(std::vector<double>& xbuf, std::vector<double>& ybuf, int opt) {
     double ex, ey;
     if (rangeWidth != 0.0)
       ex = (double)(winWidth) / rangeWidth;

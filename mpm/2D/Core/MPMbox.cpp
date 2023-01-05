@@ -19,33 +19,33 @@
 #include "Commands/set_node_grid.hpp"
 
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
-#include "ConstitutiveModels/hnlDEM.hpp"
-#include "ConstitutiveModels/hnlDEMcv.hpp"
-#include "ConstitutiveModels/hnlDEML.hpp"
 #include "ConstitutiveModels/HookeElasticity.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
 #include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
+#include "ConstitutiveModels/hnlDEM.hpp"
+#include "ConstitutiveModels/hnlDEML.hpp"
+#include "ConstitutiveModels/hnlDEMcv.hpp"
 
-#include "Obstacles/Obstacle.hpp"
 #include "Obstacles/Circle.hpp"
 #include "Obstacles/Line.hpp"
+#include "Obstacles/Obstacle.hpp"
 #include "Obstacles/Polygon.hpp"
 
-#include "OneStep/OneStep.hpp"
 #include "OneStep/ModifiedLagrangian.hpp"
+#include "OneStep/OneStep.hpp"
 #include "OneStep/UpdateStressFirst.hpp"
 #include "OneStep/UpdateStressLast.hpp"
 
-#include "ShapeFunctions/ShapeFunction.hpp"
 #include "ShapeFunctions/BSpline.hpp"
 #include "ShapeFunctions/Linear.hpp"
 #include "ShapeFunctions/RegularQuadLinear.hpp"
+#include "ShapeFunctions/ShapeFunction.hpp"
 
-#include "Spies/Spy.hpp"
 #include "Spies/ObstacleForces.hpp"
 #include "Spies/ObstaclePosition.hpp"
 #include "Spies/ObstacleVelAllTimes.hpp"
 #include "Spies/ObstacleVelTouching.hpp"
+#include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
 
 #include "Core/MaterialPoint.hpp"
@@ -123,12 +123,12 @@ void MPMbox::ExplicitRegistrations() {
       "frictionalNormalRestitution", [](void) -> BoundaryForceLaw* { return new frictionalNormalRestitution(); });
   Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
       "frictionalViscoElastic", [](void) -> BoundaryForceLaw* { return new frictionalViscoElastic(); });
-  
+
   // Command ===============
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "add_MP_ShallowPath", [](void) -> Command* { return new add_MP_ShallowPath(); });
-  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "move_MP", [](void) -> Command* { return new move_MP(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction("move_MP",
+                                                                     [](void) -> Command* { return new move_MP(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "new_set_grid", [](void) -> Command* { return new new_set_grid(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
@@ -145,7 +145,7 @@ void MPMbox::ExplicitRegistrations() {
       "set_MP_polygon", [](void) -> Command* { return new set_MP_polygon(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "set_node_grid", [](void) -> Command* { return new set_node_grid(); });
-  
+
   // ConstitutiveModel ===============
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "hnlDEM", [](void) -> ConstitutiveModel* { return new hnlDEM(); });
@@ -159,15 +159,15 @@ void MPMbox::ExplicitRegistrations() {
       "MohrCoulomb", [](void) -> ConstitutiveModel* { return new MohrCoulomb(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel* { return new VonMisesElastoPlasticity(); });
-  
+
   // Obstacle ===============
-  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction(
-      "Circle", [](void) -> Obstacle* { return new Circle(); });
-  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction(
-      "Line", [](void) -> Obstacle* { return new Line(); });
-  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction(
-      "Polygon", [](void) -> Obstacle* { return new Polygon(); });
-  
+  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
+                                                                      [](void) -> Obstacle* { return new Circle(); });
+  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Line",
+                                                                      [](void) -> Obstacle* { return new Line(); });
+  Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Polygon",
+                                                                      [](void) -> Obstacle* { return new Polygon(); });
+
   // OneStep ===============
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
       "ModifiedLagrangian", [](void) -> OneStep* { return new ModifiedLagrangian(); });
@@ -175,7 +175,7 @@ void MPMbox::ExplicitRegistrations() {
       "UpdateStressFirst", [](void) -> OneStep* { return new UpdateStressFirst(); });
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
       "UpdateStressLast", [](void) -> OneStep* { return new UpdateStressLast(); });
-  
+
   // ShapeFunction ===============
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
       "BSpline", [](void) -> ShapeFunction* { return new BSpline(); });
@@ -183,18 +183,17 @@ void MPMbox::ExplicitRegistrations() {
       "Linear", [](void) -> ShapeFunction* { return new Linear(); });
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
       "RegularQuadLinear", [](void) -> ShapeFunction* { return new RegularQuadLinear(); });
-  
+
   // Spy ===============
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
-      "ObstacleForces", [](void) -> Spy* { return new ObstacleForces(); });
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
-      "ObstaclePosition", [](void) -> Spy* { return new ObstaclePosition(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleForces",
+                                                                 [](void) -> Spy* { return new ObstacleForces(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstaclePosition",
+                                                                 [](void) -> Spy* { return new ObstaclePosition(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
       "ObstacleVelAllTimes", [](void) -> Spy* { return new ObstacleVelAllTimes(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
       "ObstacleVelTouching", [](void) -> Spy* { return new ObstacleVelTouching(); });
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
-      "Work", [](void) -> Spy* { return new Work(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy* { return new Work(); });
 }
 
 /*
@@ -482,14 +481,14 @@ void MPMbox::read(const char* name) {
 void MPMbox::read(int num) {
   // Open file
   char name[256];
-  sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
+  snprintf(name, 256, "%s/conf%d.txt", result_folder.c_str(), num);
   console->info("Read {}", name);
   read(name);
 }
 
 void MPMbox::save(const char* name) {
   char name_micro[256];
-  sprintf(name_micro, "%s_micro", name);
+  snprintf(name_micro, 256, "%s_micro", name);
   // std::cout << name_micro << std::endl;
   std::ofstream file(name);
   std::ofstream file_micro(name_micro);
@@ -616,7 +615,7 @@ void MPMbox::save(const char* name) {
 void MPMbox::save(int num) {
   // Open file
   char name[256];
-  sprintf(name, "%s/conf%d.txt", result_folder.c_str(), num);
+  snprintf(name, 256, "%s/conf%d.txt", result_folder.c_str(), num);
   console->info("Save {}, #MP: {}, Time: {:.6f}", name, MP.size(), t);
   save(name);
 }
@@ -669,7 +668,7 @@ void MPMbox::run() {
     if (twinConfSave) {
       if (step % confPeriod == 1) {  // FIXME: c'est bizarre ce truc (à voir ensemble)
         char name[256];
-        sprintf(name, "%s/acc%d.txt", result_folder.c_str(), iconf);
+        snprintf(name, 256, "%s/acc%d.txt", result_folder.c_str(), iconf);
         save(name);
       }
     }
@@ -729,7 +728,7 @@ void MPMbox::MPinGridCheck() {
 // Convergence conditions for MPs interacting with obstacles
 void MPMbox::convergenceConditions() {
   START_TIMER("convergenceConditions");
-  
+
   // finding necessary parameters
   double inf = std::numeric_limits<double>::max();
   double YoungMax = -inf;

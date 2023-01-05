@@ -156,6 +156,7 @@ void Loading::IsostaticCompression(double pressure) {
 
 void Loading::RigidRotationZ(double omega) {
   snprintf(StoredCommand, 512, "RigidRotationZ %g", omega);
+
   Drive.reset(VelocityDriven);
   Sig.reset();
   v.reset();

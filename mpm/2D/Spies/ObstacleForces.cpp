@@ -31,7 +31,7 @@ void ObstacleForces::exec() {
 void ObstacleForces::record() {
   /*
   char filename[256];
-  sprintf(filename, "%s/obsForce%d.txt", box->result_folder.c_str(), box->step);
+  snprintf(filename, 256, "%s/obsForce%d.txt", box->result_folder.c_str(), box->step);
   std::ofstream file(filename);
 
   for (size_t i = 0 ; i < pos.size() ; i++) {
