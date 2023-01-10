@@ -1015,6 +1015,7 @@ void PBC3Dbox::dataOutput() {
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
 void PBC3Dbox::updateNeighborList(double dmax) {
   START_TIMER("updateNeighborList");
+	
   // store ft because the list will be cleared before being rebuilt
   std::vector<Interaction> Ibak;
   Interaction I;
@@ -1121,6 +1122,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
 void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
   START_TIMER("updateNeighborList_brutForce");
+	
   // store ft because the list will be cleared before being rebuilt
   std::vector<Interaction> Ibak;
   Interaction I;

@@ -48,7 +48,7 @@ HEADERS = $(SOURCES:%.cpp=%.hpp)
 all: lib run see
 
 lib: $(OBJECTS)
-	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
+	@echo "\033[0;32m-> BUILDING/UPDATING" $@ "\033[0m"
 	ar rs libPBC3D.a $(OBJECTS)
 
 # The application that runs a simulation
