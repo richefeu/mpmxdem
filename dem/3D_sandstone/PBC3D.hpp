@@ -38,7 +38,9 @@ class PBC3Dbox {
   size_t nbActiveInteractions;  ///< Number of active contacts, ie all interactions without the "noContactState"
                                 ///< It can be different from Interactions.size()!
 
-  int nbBondsini;   ///< initial # of Bonds at start of Lagamine
+  bool oldVersion;
+
+  int nbBondsini;      ///< initial # of Bonds at start of Lagamine
   double porosityini;  ///< initial porosity at start of Lagamine
   int nbBonds;
   double tensfailure;
@@ -81,10 +83,10 @@ class PBC3Dbox {
   double rampDuration;
 
   // Other parameters
-  int iconf;           ///< Current configuration ID
-  int enableSwitch;    ///< If non-null, enable the switch of particles from one boundary to the opposite
-  int permamentGluer;  ///< If 1, contacts are permanently transformed to glued-point
-  double numericalDampingCoeff; ///< This is the so called Cundall damping
+  int iconf;                     ///< Current configuration ID
+  int enableSwitch;              ///< If non-null, enable the switch of particles from one boundary to the opposite
+  int permamentGluer;            ///< If 1, contacts are permanently transformed to glued-point
+  double numericalDampingCoeff;  ///< This is the so called Cundall damping
 
   // Ctor
   PBC3Dbox();
@@ -125,15 +127,17 @@ class PBC3Dbox {
   // They are compatible with fortran (it's the reason why all parameters are pointers).
   void initLagamine(double Q[]);  ///< Kind of serialization solution to get the initial configuration from Lagamine
   void initLagamineSandstone(double Q[]);  ///< Gets the initial configuration from Lagamine
-  void transform(double dFmoinsI[3][3], double* I, int* nstep);
-  void hold(double* tol, int* nstepConv, int* nstepMax);
-  void transform_and_hold(double dFmoinsI[3][3], double* I, double* tol, int* nstepConv, int* nstepMax, int* nstep);
+  void transform(double dFmoinsI[3][3], double* I, int* nstep, int* iana, double* pressure, double* sigRate);
+  void hold(double* tol, int* nstepConv, int* nstepMax, int* iana, double* pressure, double* sigRate);
+  void transform_and_hold(double dFmoinsI[3][3], double* I, double* tol, int* nstepConv, int* nstepMax, int* nstep,
+                          int* iana, double* pressure, double* sigRate);
   void runSilently();  ///< Runs the simulation silently (without outputs) from time t to tmax
   void endLagamine(double Q[], double SIG[3][3]);           ///< Kind of serialization to get the data back
   void endLagamineSandstone(double Q[], double SIG[3][3]);  ///< Kind of serialization to get the data back
   void getOperatorKruyt(double L[6][6]);                    ///< Gets the operator proposed by Kruyt
   void getOperatorKruyt2(double L[9][9]);                   ///< Gets the operator proposed by Kruyt (version Kien)
-  void getOperatorKruyt3(double L[9][9]);                   ///< Gets the operator proposed by Kruyt
+  void getOperatorKruyt2b(double L[3][3][3][3]);
+  void getOperatorKruyt3(double L[9][9]);  ///< Gets the operator proposed by Kruyt
   ///< (version Kien avec sliding-contacts)
 
   void staticQualityData(double* ResMean, double* Res0Mean, double* fnMin,

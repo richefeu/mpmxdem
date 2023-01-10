@@ -17,7 +17,7 @@ struct Loading {
   mat9r v;     ///< Imposed velocities
   mat9r f;     ///< Imposed strain
 
-  char StoredCommand[256];
+  char StoredCommand[512];
 
   // This function will be set to a lambda (c++11)
   // It can be used for 'smart' driving conditions like high dependent velocity or complexe loading
@@ -35,6 +35,7 @@ struct Loading {
   void IsostaticCompression(double pressure);
   void SimpleShearXY(double pressure, double gammaDot);
   void VelocityControl(mat9r &V);
+  void VelocityControlPlaneStress(mat9r &V,double &pressure);
   void RigidRotationZ(double omega);
   void StrainControl(mat9r &F);
   void TransformationGradient(mat9r &h, mat9r &F, double duration);

@@ -8,6 +8,7 @@
 
 PBC3Dbox::PBC3Dbox() {
   // Some default values (actually, most of them will be (re-)set after)
+  oldVersion = false;
   t = 0.0;
   tmax = 5.0;
   dt = 1e-6;
@@ -136,15 +137,29 @@ void PBC3Dbox::saveConf(const char* name) {
          << ' ' << Particles[i].mass << '\n';
   }
   conf << "Interactions " << nbActiveInteractions << '\n';
-  for (size_t i = 0; i < Interactions.size(); i++) {
-    if (Interactions[i].state == noContactState) continue;
-    conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
-         << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
-         << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
-         << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' '
-         << Interactions[i].mom << ' ' << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' '
-         << Interactions[i].state << ' ' << Interactions[i].D << '\n';
+  if (oldVersion == true) {
+    for (size_t i = 0; i < Interactions.size(); i++) {
+      if (Interactions[i].state == noContactState) continue;
+      conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
+           << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
+           << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
+           << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' '
+           << Interactions[i].mom << ' ' << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' '
+           << Interactions[i].state << ' ' << Interactions[i].D << '\n';
+    }
+  } else {
+    for (size_t i = 0; i < Interactions.size(); i++) {
+      if (Interactions[i].state == noContactState) continue;
+      conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
+           << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
+           << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
+           << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' ' 
+           << Interactions[i].drot_fric << ' ' << Interactions[i].mom << ' ' << Interactions[i].mom_bond << ' ' 
+           << Interactions[i].mom_fric << ' ' << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' '
+           << Interactions[i].state << ' ' << Interactions[i].D << '\n';
+    }
   }
+  
 }
 
 /// @brief Load the configuration
@@ -365,15 +380,26 @@ void PBC3Dbox::loadConf(const char* name) {
         conf >> P.pos >> P.vel >> P.acc >> P.Q >> P.vrot >> P.arot >> P.radius >> P.inertia >> P.mass;
         Particles.push_back(P);
       }
+    } else if (token == "noRollingFriction") {
+      oldVersion = true;
     } else if (token == "Interactions") {
       size_t nb;
       conf >> nb;
       Interactions.clear();
       Interaction I;
-      for (size_t i = 0; i < nb; i++) {
-        conf >> I.i >> I.j >> I.gap0 >> I.n >> I.fn >> I.fn_elas >> I.fn_bond >> I.ft >> I.ft_fric >> I.ft_bond >>
-            I.dt_fric >> I.dt_bond >> I.drot_bond >> I.mom >> I.dampn >> I.dampt >> I.state >> I.D;
-        Interactions.push_back(I);
+      if (oldVersion == true) {
+        for (size_t i = 0; i < nb; i++) {
+          conf >> I.i >> I.j >> I.gap0 >> I.n >> I.fn >> I.fn_elas >> I.fn_bond >> I.ft >> I.ft_fric >> I.ft_bond >>
+              I.dt_fric >> I.dt_bond >> I.drot_bond >> I.mom >> I.dampn >> I.dampt >> I.state >> I.D;
+          Interactions.push_back(I);
+        }
+      } else {
+        for (size_t i = 0; i < nb; i++) {
+          conf >> I.i >> I.j >> I.gap0 >> I.n >> I.fn >> I.fn_elas >> I.fn_bond >> I.ft >> I.ft_fric >> I.ft_bond >>
+              I.dt_fric >> I.dt_bond >> I.drot_bond >> I.drot_fric >> I.mom >> I.mom_bond >> I.mom_fric >> I.dampn >>
+              I.dampt >> I.state >> I.D;
+          Interactions.push_back(I);
+        }
       }
     }
     /// ============= PRE-PROCESSING ==============
@@ -1403,9 +1429,27 @@ void PBC3Dbox::computeForcesAndMoments() {
       Interactions[k].ft = Interactions[k].ft_fric + Interactions[k].ft_bond;
 
       // Torque (elastic without viscuous damping)
+      // vec3r drot = (Particles[j].vrot - Particles[i].vrot) * dt;
+      // Interactions[k].drot_bond += drot;
+      // Interactions[k].mom -= (1.0 - Interactions[k].D) * kr * drot;
+
+      // Torque (elastic-plastic without viscuous damping)
       vec3r drot = (Particles[j].vrot - Particles[i].vrot) * dt;
       Interactions[k].drot_bond += drot;
-      Interactions[k].mom -= (1.0 - Interactions[k].D) * kr * drot;
+      Interactions[k].mom_bond -= (1.0 - Interactions[k].D) * kr * drot;
+      if (dn < 0.0) {
+        Interactions[k].drot_fric += drot;
+        Interactions[k].mom_fric -= kr * drot;
+        double thresholdr = fabs(mur * Interactions[k].fn);
+        double mom_square = Interactions[k].mom_fric * Interactions[k].mom_fric;
+        if (mom_square > 0.0 && mom_square >= thresholdr * thresholdr) {
+          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));  //??
+        }
+      } else {
+        Interactions[k].drot_fric.reset();
+        Interactions[k].mom_fric.reset();
+      }
+      Interactions[k].mom = Interactions[k].mom_fric + Interactions[k].mom_bond;
 
       // Update of the damage parameter D + Rupture criterion
       double norm_dt_bond = norm(Interactions[k].dt_bond);
@@ -1447,16 +1491,26 @@ void PBC3Dbox::computeForcesAndMoments() {
           Interactions[k].state = noContactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
+          Interactions[k].mom_bond.reset();
+
+          Interactions[k].ft_fric.reset();
+          Interactions[k].mom_fric.reset();
+
           Interactions[k].fn = 0.0;
           Interactions[k].ft.reset();
-          Interactions[k].ft_fric.reset();
           Interactions[k].mom.reset();
+
           tensfailure++;
         } else if (Interactions[k].fn_elas > 0.0) {  // in case the particles were in contact
           Interactions[k].state = contactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
-          Interactions[k].mom.reset();
+          Interactions[k].mom_bond.reset();
+
+          Interactions[k].fn = Interactions[k].fn_elas;
+          Interactions[k].ft = Interactions[k].ft_fric;
+          Interactions[k].mom = Interactions[k].mom_fric;
+
           fricfailure++;
         }
       }
@@ -1531,6 +1585,16 @@ void PBC3Dbox::computeForcesAndMoments() {
           Interactions[k].ft = threshold * Interactions[k].ft * (1.0f / sqrt(ft_square));
         Interactions[k].ft_fric = Interactions[k].ft;
 
+        // moment of resistance
+        vec3r drot = (Particles[j].vrot - Particles[i].vrot) * dt;
+        Interactions[k].drot_fric += drot;
+        Interactions[k].mom_fric -= kr * drot;
+        double thresholdr = fabs(mur * Interactions[k].fn);
+        double mom_square = Interactions[k].mom_fric * Interactions[k].mom_fric;
+        if (mom_square > 0.0 && mom_square >= thresholdr * thresholdr)
+          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));  //??
+        Interactions[k].mom = Interactions[k].mom_fric;
+
         // Cohesion
         Interactions[k].fn += fcoh;
 
@@ -1572,6 +1636,8 @@ void PBC3Dbox::computeForcesAndMoments() {
         }
       } else {
         Interactions[k].dt_fric.reset();
+        Interactions[k].mom_fric.reset();
+        Interactions[k].mom.reset();
         Interactions[k].state = noContactState;
       }
     }  // ====== end if non-bonded interactions
@@ -1966,6 +2032,244 @@ void PBC3Dbox::getOperatorKruyt2(double L[9][9]) {
     L[zy][yx] += kn_Vcell * nz * l.y * ny * l.x + kt_Vcell * tz * l.y * ty * l.x + kt_Vcell * wz * l.y * wy * l.x;  // 7
     L[zy][zx] += kn_Vcell * nz * l.y * nz * l.x + kt_Vcell * tz * l.y * tz * l.x + kt_Vcell * wz * l.y * wz * l.x;  // 8
     L[zy][zy] += kn_Vcell * nz * l.y * nz * l.y + kt_Vcell * tz * l.y * tz * l.y + kt_Vcell * wz * l.y * wz * l.y;  // 9
+  }
+}
+
+// this version 2b is essentially the same as 2 but written in true 4th order rank tensor (easier to apply rotation)
+void PBC3Dbox::getOperatorKruyt2b(double L[3][3][3][3]) {
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      for (size_t k = 0; k < 3; k++) {
+        for (size_t l = 0; l < 3; l++) {
+          L[i][j][k][l] = 0.0;
+        }
+      }
+    }
+  }
+
+  // precomputations
+  double Vcell = fabs(Cell.h.det());
+  double kn_Vcell = 0.93 * kn / Vcell;
+  double kt_Vcell = 0.63 * kt / Vcell;
+
+  // indexes
+  const size_t x = 0;
+  const size_t y = 1;
+  const size_t z = 2;
+
+  double nx, ny, nz, tx, ty, tz, wx, wy, wz;
+
+  for (size_t k = 0; k < Interactions.size(); k++) {
+    if (Interactions[k].state == noContactState) continue;
+
+    size_t i = Interactions[k].i;
+    size_t j = Interactions[k].j;
+
+    vec3r sij = Particles[j].pos - Particles[i].pos;
+    sij.x -= floor(sij.x + 0.5);
+    sij.y -= floor(sij.y + 0.5);
+    sij.z -= floor(sij.z + 0.5);
+    vec3r l = Cell.h * sij;
+    vec3r n = l;
+    n.normalize();
+    //vec3r t = Interactions[k].ft;
+    //t.normalize();
+
+    // Noraml vector n
+    nx = n.x;
+    ny = n.y;
+    nz = n.z;
+
+    // vector t
+    tx = ny / sqrt(nx * nx + ny * ny);
+    ty = -nx / sqrt(nx * nx + ny * ny);
+    tz = 0.0;
+
+    // vector w
+    wx = ny * tz - nz * ty;
+    wy = nz * tx - nx * tz;
+    wz = nx * ty - ny * tx;
+
+    // xx
+    L[x][x][x][x] +=
+        kn_Vcell * nx * l.x * nx * l.x + kt_Vcell * tx * l.x * tx * l.x + kt_Vcell * wx * l.x * wx * l.x;  // 1
+    // std::cout << "L[x][x][x][x]***" << L[x][x][x][x] << std::endl;
+    L[x][x][y][y] +=
+        kn_Vcell * nx * l.x * ny * l.y + kt_Vcell * tx * l.x * ty * l.y + kt_Vcell * wx * l.x * wy * l.y;  // 2
+    L[x][x][z][z] +=
+        kn_Vcell * nx * l.x * nz * l.z + kt_Vcell * tx * l.x * tz * l.z + kt_Vcell * wx * l.x * wz * l.z;  // 3
+    L[x][x][x][y] +=
+        kn_Vcell * nx * l.x * nx * l.y + kt_Vcell * tx * l.x * tx * l.y + kt_Vcell * wx * l.x * wx * l.y;  // 4
+    L[x][x][x][z] +=
+        kn_Vcell * nx * l.x * nx * l.z + kt_Vcell * tx * l.x * tx * l.z + kt_Vcell * wx * l.x * wx * l.z;  // 5
+    L[x][x][y][z] +=
+        kn_Vcell * nx * l.x * ny * l.z + kt_Vcell * tx * l.x * ty * l.z + kt_Vcell * wx * l.x * wy * l.z;  // 6
+    L[x][x][y][x] +=
+        kn_Vcell * nx * l.x * ny * l.x + kt_Vcell * tx * l.x * ty * l.x + kt_Vcell * wx * l.x * wy * l.x;  // 7
+    L[x][x][z][x] +=
+        kn_Vcell * nx * l.x * nz * l.x + kt_Vcell * tx * l.x * tz * l.x + kt_Vcell * wx * l.x * wz * l.x;  // 8
+    L[x][x][z][y] +=
+        kn_Vcell * nx * l.x * nz * l.y + kt_Vcell * tx * l.x * tz * l.y + kt_Vcell * wx * l.x * wz * l.y;  // 9
+
+    // yy
+    L[y][y][x][x] +=
+        kn_Vcell * ny * l.y * nx * l.x + kt_Vcell * ty * l.y * tx * l.x + kt_Vcell * wy * l.y * wx * l.x;  // 1
+    L[y][y][y][y] +=
+        kn_Vcell * ny * l.y * ny * l.y + kt_Vcell * ty * l.y * ty * l.y + kt_Vcell * wy * l.y * wy * l.y;  // 2
+    L[y][y][z][z] +=
+        kn_Vcell * ny * l.y * nz * l.z + kt_Vcell * ty * l.y * tz * l.z + kt_Vcell * wy * l.y * wz * l.z;  // 3
+    L[y][y][x][y] +=
+        kn_Vcell * ny * l.y * nx * l.y + kt_Vcell * ty * l.y * tx * l.y + kt_Vcell * wy * l.y * wx * l.y;  // 4
+    L[y][y][x][z] +=
+        kn_Vcell * ny * l.y * nx * l.z + kt_Vcell * ty * l.y * tx * l.z + kt_Vcell * wy * l.y * wx * l.z;  // 5
+    L[y][y][y][z] +=
+        kn_Vcell * ny * l.y * ny * l.z + kt_Vcell * ty * l.y * ty * l.z + kt_Vcell * wy * l.y * wy * l.z;  // 6
+    L[y][y][y][x] +=
+        kn_Vcell * ny * l.y * ny * l.x + kt_Vcell * ty * l.y * ty * l.x + kt_Vcell * wy * l.y * wy * l.x;  // 7
+    L[y][y][z][x] +=
+        kn_Vcell * ny * l.y * nz * l.x + kt_Vcell * ty * l.y * tz * l.x + kt_Vcell * wy * l.y * wz * l.x;  // 8
+    L[y][y][z][y] +=
+        kn_Vcell * ny * l.y * nz * l.y + kt_Vcell * ty * l.y * tz * l.y + kt_Vcell * wy * l.y * wz * l.y;  // 9
+
+    // zz
+    L[z][z][x][x] +=
+        kn_Vcell * nz * l.z * nx * l.x + kt_Vcell * tz * l.z * tx * l.x + kt_Vcell * wz * l.z * wx * l.x;  // 1
+    L[z][z][y][y] +=
+        kn_Vcell * nz * l.z * ny * l.y + kt_Vcell * tz * l.z * ty * l.y + kt_Vcell * wz * l.z * wy * l.y;  // 2
+    L[z][z][z][z] +=
+        kn_Vcell * nz * l.z * nz * l.z + kt_Vcell * tz * l.z * tz * l.z + kt_Vcell * wz * l.z * wz * l.z;  // 3
+    L[z][z][x][y] +=
+        kn_Vcell * nz * l.z * nx * l.y + kt_Vcell * tz * l.z * tx * l.y + kt_Vcell * wz * l.z * wx * l.y;  // 4
+    L[z][z][x][z] +=
+        kn_Vcell * nz * l.z * nx * l.z + kt_Vcell * tz * l.z * tx * l.z + kt_Vcell * wz * l.z * wx * l.z;  // 5
+    L[z][z][y][z] +=
+        kn_Vcell * nz * l.z * ny * l.z + kt_Vcell * tz * l.z * ty * l.z + kt_Vcell * wz * l.z * wy * l.z;  // 6
+    L[z][z][y][x] +=
+        kn_Vcell * nz * l.z * ny * l.x + kt_Vcell * tz * l.z * ty * l.x + kt_Vcell * wz * l.z * wy * l.x;  // 7
+    L[z][z][z][x] +=
+        kn_Vcell * nz * l.z * nz * l.x + kt_Vcell * tz * l.z * tz * l.x + kt_Vcell * wz * l.z * wz * l.x;  // 8
+    L[z][z][z][y] +=
+        kn_Vcell * nz * l.z * nz * l.y + kt_Vcell * tz * l.z * tz * l.y + kt_Vcell * wz * l.z * wz * l.y;  // 9
+
+    // xy
+    L[x][y][x][x] +=
+        kn_Vcell * nx * l.y * nx * l.x + kt_Vcell * tx * l.y * tx * l.x + kt_Vcell * wx * l.y * wx * l.x;  // 1
+    L[x][y][y][y] +=
+        kn_Vcell * nx * l.y * ny * l.y + kt_Vcell * tx * l.y * ty * l.y + kt_Vcell * wx * l.y * wy * l.y;  // 2
+    L[x][y][z][z] +=
+        kn_Vcell * nx * l.y * nz * l.z + kt_Vcell * tx * l.y * tz * l.z + kt_Vcell * wx * l.y * wz * l.z;  // 3
+    L[x][y][x][y] +=
+        kn_Vcell * nx * l.y * nx * l.y + kt_Vcell * tx * l.y * tx * l.y + kt_Vcell * wx * l.y * wx * l.y;  // 4
+    L[x][y][x][z] +=
+        kn_Vcell * nx * l.y * nx * l.z + kt_Vcell * tx * l.y * tx * l.z + kt_Vcell * wx * l.y * wx * l.z;  // 5
+    L[x][y][y][z] +=
+        kn_Vcell * nx * l.y * ny * l.z + kt_Vcell * tx * l.y * ty * l.z + kt_Vcell * wx * l.y * wy * l.z;  // 6
+    L[x][y][y][x] +=
+        kn_Vcell * nx * l.y * ny * l.x + kt_Vcell * tx * l.y * ty * l.x + kt_Vcell * wx * l.y * wy * l.x;  // 7
+    L[x][y][z][x] +=
+        kn_Vcell * nx * l.y * nz * l.x + kt_Vcell * tx * l.y * tz * l.x + kt_Vcell * wx * l.y * wz * l.x;  // 8
+    L[x][y][z][y] +=
+        kn_Vcell * nx * l.y * nz * l.y + kt_Vcell * tx * l.y * tz * l.y + kt_Vcell * wx * l.y * wz * l.y;  // 9
+
+    // xz
+    L[x][z][x][x] +=
+        kn_Vcell * nx * l.z * nx * l.x + kt_Vcell * tx * l.z * tx * l.x + kt_Vcell * wx * l.z * wx * l.x;  // 1
+    L[x][z][y][y] +=
+        kn_Vcell * nx * l.z * ny * l.y + kt_Vcell * tx * l.z * ty * l.y + kt_Vcell * wx * l.z * wy * l.y;  // 2
+    L[x][z][z][z] +=
+        kn_Vcell * nx * l.z * nz * l.z + kt_Vcell * tx * l.z * tz * l.z + kt_Vcell * wx * l.z * wz * l.z;  // 3
+    L[x][z][x][y] +=
+        kn_Vcell * nx * l.z * nx * l.y + kt_Vcell * tx * l.z * tx * l.y + kt_Vcell * wx * l.z * wx * l.y;  // 4
+    L[x][z][x][z] +=
+        kn_Vcell * nx * l.z * nx * l.z + kt_Vcell * tx * l.z * tx * l.z + kt_Vcell * wx * l.z * wx * l.z;  // 5
+    L[x][z][y][z] +=
+        kn_Vcell * nx * l.z * ny * l.z + kt_Vcell * tx * l.z * ty * l.z + kt_Vcell * wx * l.z * wy * l.z;  // 6
+    L[x][z][y][x] +=
+        kn_Vcell * nx * l.z * ny * l.x + kt_Vcell * tx * l.z * ty * l.x + kt_Vcell * wx * l.z * wy * l.x;  // 7
+    L[x][z][z][x] +=
+        kn_Vcell * nx * l.z * nz * l.x + kt_Vcell * tx * l.z * tz * l.x + kt_Vcell * wx * l.z * wz * l.x;  // 8
+    L[x][z][z][y] +=
+        kn_Vcell * nx * l.z * nz * l.y + kt_Vcell * tx * l.z * tz * l.y + kt_Vcell * wx * l.z * wz * l.y;  // 9
+
+    // yz
+    L[y][z][x][x] +=
+        kn_Vcell * ny * l.z * nx * l.x + kt_Vcell * ty * l.z * tx * l.x + kt_Vcell * wy * l.z * wx * l.x;  // 1
+    L[y][z][y][y] +=
+        kn_Vcell * ny * l.z * ny * l.y + kt_Vcell * ty * l.z * ty * l.y + kt_Vcell * wy * l.z * wy * l.y;  // 2
+    L[y][z][z][z] +=
+        kn_Vcell * ny * l.z * nz * l.z + kt_Vcell * ty * l.z * tz * l.z + kt_Vcell * wy * l.z * wz * l.z;  // 3
+    L[y][z][x][y] +=
+        kn_Vcell * ny * l.z * nx * l.y + kt_Vcell * ty * l.z * tx * l.y + kt_Vcell * wy * l.z * wx * l.y;  // 4
+    L[y][z][x][z] +=
+        kn_Vcell * ny * l.z * nx * l.z + kt_Vcell * ty * l.z * tx * l.z + kt_Vcell * wy * l.z * wx * l.z;  // 5
+    L[y][z][y][z] +=
+        kn_Vcell * ny * l.z * ny * l.z + kt_Vcell * ty * l.z * ty * l.z + kt_Vcell * wy * l.z * wy * l.z;  // 6
+    L[y][z][y][x] +=
+        kn_Vcell * ny * l.z * ny * l.x + kt_Vcell * ty * l.z * ty * l.x + kt_Vcell * wy * l.z * wy * l.x;  // 7
+    L[y][z][z][x] +=
+        kn_Vcell * ny * l.z * nz * l.x + kt_Vcell * ty * l.z * tz * l.x + kt_Vcell * wy * l.z * wz * l.x;  // 8
+    L[y][z][z][y] +=
+        kn_Vcell * ny * l.z * nz * l.y + kt_Vcell * ty * l.z * tz * l.y + kt_Vcell * wy * l.z * wz * l.y;  // 9
+
+    // yx
+    L[y][x][x][x] +=
+        kn_Vcell * ny * l.x * nx * l.x + kt_Vcell * ty * l.x * tx * l.x + kt_Vcell * wy * l.x * wx * l.x;  // 1
+    L[y][x][y][y] +=
+        kn_Vcell * ny * l.x * ny * l.y + kt_Vcell * ty * l.x * ty * l.y + kt_Vcell * wy * l.x * wy * l.y;  // 2
+    L[y][x][z][z] +=
+        kn_Vcell * ny * l.x * nz * l.z + kt_Vcell * ty * l.x * tz * l.z + kt_Vcell * wy * l.x * wz * l.z;  // 3
+    L[y][x][x][y] +=
+        kn_Vcell * ny * l.x * nx * l.y + kt_Vcell * ty * l.x * tx * l.y + kt_Vcell * wy * l.x * wx * l.y;  // 4
+    L[y][x][x][z] +=
+        kn_Vcell * ny * l.x * nx * l.z + kt_Vcell * ty * l.x * tx * l.z + kt_Vcell * wy * l.x * wx * l.z;  // 5
+    L[y][x][y][z] +=
+        kn_Vcell * ny * l.x * ny * l.z + kt_Vcell * ty * l.x * ty * l.z + kt_Vcell * wy * l.x * wy * l.z;  // 6
+    L[y][x][y][x] +=
+        kn_Vcell * ny * l.x * ny * l.x + kt_Vcell * ty * l.x * ty * l.x + kt_Vcell * wy * l.x * wy * l.x;  // 7
+    L[y][x][z][x] +=
+        kn_Vcell * ny * l.x * nz * l.x + kt_Vcell * ty * l.x * tz * l.x + kt_Vcell * wy * l.x * wz * l.x;  // 8
+    L[y][x][z][y] +=
+        kn_Vcell * ny * l.x * nz * l.y + kt_Vcell * ty * l.x * tz * l.y + kt_Vcell * wy * l.x * wz * l.y;  // 9
+
+    // zx
+    L[z][x][x][x] +=
+        kn_Vcell * nz * l.x * nx * l.x + kt_Vcell * tz * l.x * tx * l.x + kt_Vcell * wz * l.x * wx * l.x;  // 1
+    L[z][x][y][y] +=
+        kn_Vcell * nz * l.x * ny * l.y + kt_Vcell * tz * l.x * ty * l.y + kt_Vcell * wz * l.x * wy * l.y;  // 2
+    L[z][x][z][z] +=
+        kn_Vcell * nz * l.x * nz * l.z + kt_Vcell * tz * l.x * tz * l.z + kt_Vcell * wz * l.x * wz * l.z;  // 3
+    L[z][x][x][y] +=
+        kn_Vcell * nz * l.x * nx * l.y + kt_Vcell * tz * l.x * tx * l.y + kt_Vcell * wz * l.x * wx * l.y;  // 4
+    L[z][x][x][z] +=
+        kn_Vcell * nz * l.x * nx * l.z + kt_Vcell * tz * l.x * tx * l.z + kt_Vcell * wz * l.x * wx * l.z;  // 5
+    L[z][x][y][z] +=
+        kn_Vcell * nz * l.x * ny * l.z + kt_Vcell * tz * l.x * ty * l.z + kt_Vcell * wz * l.x * wy * l.z;  // 6
+    L[z][x][y][x] +=
+        kn_Vcell * nz * l.x * ny * l.x + kt_Vcell * tz * l.x * ty * l.x + kt_Vcell * wz * l.x * wy * l.x;  // 7
+    L[z][x][z][x] +=
+        kn_Vcell * nz * l.x * nz * l.x + kt_Vcell * tz * l.x * tz * l.x + kt_Vcell * wz * l.x * wz * l.x;  // 8
+    L[z][x][z][y] +=
+        kn_Vcell * nz * l.x * nz * l.y + kt_Vcell * tz * l.x * tz * l.y + kt_Vcell * wz * l.x * wz * l.y;  // 9
+
+    // zy
+    L[z][y][x][x] +=
+        kn_Vcell * nz * l.y * nx * l.x + kt_Vcell * tz * l.y * tx * l.x + kt_Vcell * wz * l.y * wx * l.x;  // 1
+    L[z][y][y][y] +=
+        kn_Vcell * nz * l.y * ny * l.y + kt_Vcell * tz * l.y * ty * l.y + kt_Vcell * wz * l.y * wy * l.y;  // 2
+    L[z][y][z][z] +=
+        kn_Vcell * nz * l.y * nz * l.z + kt_Vcell * tz * l.y * tz * l.z + kt_Vcell * wz * l.y * wz * l.z;  // 3
+    L[z][y][x][y] +=
+        kn_Vcell * nz * l.y * nx * l.y + kt_Vcell * tz * l.y * tx * l.y + kt_Vcell * wz * l.y * wx * l.y;  // 4
+    L[z][y][x][z] +=
+        kn_Vcell * nz * l.y * nx * l.z + kt_Vcell * tz * l.y * tx * l.z + kt_Vcell * wz * l.y * wx * l.z;  // 5
+    L[z][y][y][z] +=
+        kn_Vcell * nz * l.y * ny * l.z + kt_Vcell * tz * l.y * ty * l.z + kt_Vcell * wz * l.y * wy * l.z;  // 6
+    L[z][y][y][x] +=
+        kn_Vcell * nz * l.y * ny * l.x + kt_Vcell * tz * l.y * ty * l.x + kt_Vcell * wz * l.y * wy * l.x;  // 7
+    L[z][y][z][x] +=
+        kn_Vcell * nz * l.y * nz * l.x + kt_Vcell * tz * l.y * tz * l.x + kt_Vcell * wz * l.y * wz * l.x;  // 8
+    L[z][y][z][y] +=
+        kn_Vcell * nz * l.y * nz * l.y + kt_Vcell * tz * l.y * tz * l.y + kt_Vcell * wz * l.y * wz * l.y;  // 9
   }
 }
 
@@ -2454,7 +2758,8 @@ void PBC3Dbox::runSilently() {
 }
 
 // This version is for Lagamine (fortran)
-void PBC3Dbox::transform(double dFmoinsI[3][3], double* /*I*/, int* nstep) {
+void PBC3Dbox::transform(double dFmoinsI[3][3], double* /*I*/, int* nstep, int* iana, double* pressure,
+                         double* /*sigRate*/) {
   // const double dtcFactor = 0.04; // 0.04 = 1/25
 
   double dtc = sqrt(Vmin * density / kn);
@@ -2490,7 +2795,10 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double* /*I*/, int* nstep) {
   vh.zy = fact * (Cell.h.zx * dFmoinsI[0][1] + Cell.h.zy * dFmoinsI[1][1] + Cell.h.zz * dFmoinsI[2][1]);
   vh.zz = fact * (Cell.h.zx * dFmoinsI[0][2] + Cell.h.zy * dFmoinsI[1][2] + Cell.h.zz * dFmoinsI[2][2]);
 
-  Load.VelocityControl(vh);
+  if (*iana == 2)
+    Load.VelocityControl(vh);
+  else if (*iana == 1)
+    Load.VelocityControlPlaneStress(vh, *pressure);
 
   updateNeighborList(dVerlet);
 
@@ -2511,7 +2819,7 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double* /*I*/, int* nstep) {
 /// The strain is held while all components of the stress does not vary within
 /// a given tolerance (tol) during a number of consecutive times (nstepConv).
 /// If the number of steps reaches nstepMax, the computation is stopped anyway.
-void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax) {
+void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax, int* iana, double* pressure, double* /*sigRate*/) {
   mat9r previousSig = Sig;
 
   mat9r vh;
@@ -2524,7 +2832,12 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax) {
   vh.zx = 0;
   vh.zy = 0;
   vh.zz = 0;
-  Load.VelocityControl(vh);
+
+  if (*iana == 2)
+    Load.VelocityControl(vh);
+  else if (*iana == 1)
+    Load.VelocityControlPlaneStress(vh, *pressure);
+
   // std::cout << "tolSigma " << *tol << std::endl;
   // std::cout << "nstepconv " << *nstepConv << std::endl;
   // std::cout << "nstepmax " << *nstepMax << std::endl;
@@ -2546,11 +2859,14 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax) {
     if (nstepOK >= *nstepConv) break;
 
     if (nstepOK >= *nstepConv) break;
-    if (nstep == *nstepMax - 1) std::cout << "******************************" << std::endl;
-    if (nstep == *nstepMax - 1) std::cout << "nstepOK " << nstepOK << std::endl;
-    if (nstep == *nstepMax - 1) std::cout << "error " << Sig.xx - previousSig.xx << std::endl;
-    if (nstep == *nstepMax - 1) std::cout << "nstep " << nstep << std::endl;
-    if (nstep == *nstepMax - 1) std::cout << "tol " << *tol << std::endl;
+    if (nstep == *nstepMax - 1) {
+      std::cout << "******************************" << std::endl;
+      std::cout << "nstepOK " << nstepOK << std::endl;
+      std::cout << "error " << Sig.xx - previousSig.xx << std::endl;
+      std::cout << "nstep " << nstep << std::endl;
+      std::cout << "tol " << *tol << std::endl;
+    }
+
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
@@ -2561,7 +2877,7 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax) {
     t += dt;
     nstep++;
   }
-  if (nstep > 10000) std::cout << "large nstep " << nstep << std::endl;
+  if (nstep > 2000) std::cout << "large nstep " << nstep << std::endl;
   /*
   std::cout << "nstep " << nstep << std::endl;
   std::cout << "nstepconv " << *nstepConv << std::endl;
@@ -2578,9 +2894,9 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax) {
 
 /// @brief A function that call the function 'transform' and then the function 'hold'
 void PBC3Dbox::transform_and_hold(double dFmoinsI[3][3], double* I, double* tol, int* nstepConv, int* nstepMax,
-                                  int* nstep) {
-  transform(dFmoinsI, I, nstep);
-  hold(tol, nstepConv, nstepMax);
+                                  int* nstep, int* iana, double* pressure, double* sigRate) {
+  transform(dFmoinsI, I, nstep, iana, pressure, sigRate);
+  hold(tol, nstepConv, nstepMax, iana, pressure, sigRate);
 }
 
 /// @brief get the data back from PBC3D to Lagamine
