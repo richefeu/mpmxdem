@@ -6,9 +6,13 @@
 
 #include <fileTool.hpp>
 
-void ObstacleForces::read(std::istream& is) {
-  is >> obstacleNumber >> nrec;
+void ObstacleForces::read(std::istream& is) {  
+  std::string Filename;
+  is >> obstacleNumber >> nrec >> Filename;
   nstep = nrec;
+  filename = box->result_folder + fileTool::separator() + Filename;
+  std::cout << "ObstacleForces: filename is " << filename << std::endl;
+  file.open(filename.c_str());
 }
 
 void ObstacleForces::exec() {
@@ -29,6 +33,7 @@ void ObstacleForces::exec() {
 }
 
 void ObstacleForces::record() {
+   file << box->t << " " << box->Obstacles[obstacleNumber]->force << std::endl; 
   /*
   char filename[256];
   snprintf(filename, 256, "%s/obsForce%d.txt", box->result_folder.c_str(), box->step);

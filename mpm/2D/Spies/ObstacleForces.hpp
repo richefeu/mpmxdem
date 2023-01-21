@@ -17,6 +17,8 @@ struct ObstacleForces : public Spy {
 
  private:
   int obstacleNumber;
+  std::string filename;
+  std::ofstream file;
   std::vector<vec2r> pos, force;
 };
 

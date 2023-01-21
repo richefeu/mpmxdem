@@ -11,7 +11,7 @@ void ObstaclePosition::read(std::istream& is) {
   is >> obstacleNumber >> nrec >> Filename;
   nstep = nrec;
   filename = box->result_folder + fileTool::separator() + Filename;
-  std::cout << "Work: filename is " << filename << std::endl;
+  std::cout << "ObstaclePosition: filename is " << filename << std::endl;
   file.open(filename.c_str());
 }
 

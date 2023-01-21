@@ -130,6 +130,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "porosityini " << porosityini << '\n';
   conf << "tensfailure " << tensfailure << '\n';
   conf << "fricfailure " << fricfailure << '\n';
+  conf << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
   conf << "Particles " << Particles.size() << '\n';
   for (size_t i = 0; i < Particles.size(); i++) {
     conf << Particles[i].pos << ' ' << Particles[i].vel << ' ' << Particles[i].acc << ' ' << Particles[i].Q << ' '
