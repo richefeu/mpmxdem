@@ -82,6 +82,11 @@ void PBC3Dbox::saveConf(int i) {
 
 void PBC3Dbox::saveConf(const char* name) {
   std::ofstream conf(name);
+  
+  // From here, the written precision is increased to the maximum possible
+  // (it is necessary because of the ASCII writting)
+  conf << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  
   conf << "PBC3D 06-05-2021\n";  // format: progName version-date
   conf << "t " << t << '\n';
   conf << "tmax " << tmax << '\n';
@@ -130,7 +135,6 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "porosityini " << porosityini << '\n';
   conf << "tensfailure " << tensfailure << '\n';
   conf << "fricfailure " << fricfailure << '\n';
-  conf << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
   conf << "Particles " << Particles.size() << '\n';
   for (size_t i = 0; i < Particles.size(); i++) {
     conf << Particles[i].pos << ' ' << Particles[i].vel << ' ' << Particles[i].acc << ' ' << Particles[i].Q << ' '
@@ -409,7 +413,6 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> epsiDist;
       ActivateBonds(epsiDist, bondedState);
     } else if (token == "nodamage") {
-      // nodam = true;
       zetaMax = 1.0;
     } else if (token == "ActivateDamageableBonds") {
       double epsiDist;
