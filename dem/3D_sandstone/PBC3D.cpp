@@ -45,7 +45,7 @@ PBC3Dbox::PBC3Dbox() {
   fricfailure = 0;
   dVerlet = 1e-7;
   zetaMax = 1;
-  enableSwitch = 1;
+  // enableSwitch = 1;
   substractMeanVelocity = 1;
   limitHboxvelocity = 0;
   hboxLimitVel = 1e12;
@@ -126,7 +126,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "hvelGrad " << Cell.velGrad << '\n';
   conf << "hstrain " << Cell.strain << '\n';
   conf << "Sig " << Sig << '\n';
-  conf << "enableSwitch " << enableSwitch << '\n';
+  // conf << "enableSwitch " << enableSwitch << '\n';
   if (limitHboxvelocity > 0) conf << "limitHboxvelocity " << hboxLimitVel << '\n';
   conf << "substractMeanVelocity " << substractMeanVelocity << '\n';
   conf << "objectiveFriction " << objectiveFriction << '\n';
@@ -284,8 +284,11 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> Cell.strain;
     else if (token == "Sig")
       conf >> Sig;
-    else if (token == "enableSwitch")
-      conf >> enableSwitch;
+    else if (token == "enableSwitch") {
+      int unused;
+      conf >> unused;
+      std::cerr << "enableSwitch is not used anymore (remove it from the conf file please)\n";
+    }
     else if (token == "substractMeanVelocity")
       conf >> substractMeanVelocity;
     else if (token == "limitHboxvelocity") {
@@ -846,14 +849,14 @@ void PBC3Dbox::setSample() {
   interVerlet = 10 * dt;
   interOut = 100 * dt;
   interConf = 100 * dt;
-  enableSwitch = 1;
+  // enableSwitch = 1;
 
   std::cout << "Other parameters have been set to given values.\n"
             << "You can change it in the generated file.\n";
   std::cout << "interVerlet " << interVerlet << '\n';
   std::cout << "interOut " << interOut << '\n';
   std::cout << "interConf " << interConf << '\n';
-  std::cout << "enableSwitch " << enableSwitch << '\n';
+  // std::cout << "enableSwitch " << enableSwitch << '\n';
   return;
 }
 
@@ -878,14 +881,12 @@ void PBC3Dbox::velocityVerletStep() {
     Particles[i].vel += dt_2 * Particles[i].acc;
 
     // Periodicity in position (can be usefull in the sample preparation)
-    if (enableSwitch > 0) {  // this is default case
-      for (size_t c = 0; c < 3; c++) {
-        while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
-        while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
-      }
-      // Remark: the reduced velocities do not need to be corrected
-      //         since they are periodic
+    for (size_t c = 0; c < 3; c++) {
+      while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
+      while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
     }
+    // Remark: the reduced velocities do not need to be corrected
+    //         since they are periodic
 
     // Rotation: Q = Q + (dQ/dt) * dt + (d2Q/dt2) * dt2/2
     // It reads like this with quaternions
@@ -1228,12 +1229,13 @@ void PBC3Dbox::accelerations() {
 
   computeForcesAndMoments();
 
-  // Cundall damping
+  // Cundall damping for particles
   if (numericalDampingCoeff > 0.0) {
+    double factor = 0.0;
+    double factorMinus = 1.0 - numericalDampingCoeff;
+    double factorPlus = 1.0 + numericalDampingCoeff;
+
     for (size_t i = 0; i < Particles.size(); i++) {
-      double factor;
-      double factorMinus = 1.0 - numericalDampingCoeff;
-      double factorPlus = 1.0 + numericalDampingCoeff;
       factor = (Particles[i].force.x * Particles[i].vel.x > 0.0) ? factorMinus : factorPlus;
       Particles[i].force.x *= factor;
       factor = (Particles[i].force.y * Particles[i].vel.y > 0.0) ? factorMinus : factorPlus;
@@ -1263,6 +1265,23 @@ void PBC3Dbox::accelerations() {
           Cell.ah[c] += Vhinv[3 * row + s] * deltaSig[3 * s + col];
         }
         Cell.ah[c] *= invMass;
+      }
+    }
+  }
+
+  // Cundall damping for the periodic cell
+  if (numericalDampingCoeff > 0.0) {
+    double factor = 0.0;
+    double factorMinus = 1.0 - numericalDampingCoeff;
+    double factorPlus = 1.0 + numericalDampingCoeff;
+
+    for (size_t row = 0; row < 3; row++) {
+      for (size_t col = 0; col < 3; col++) {
+        size_t c = 3 * row + col;
+        if (Load.Drive[c] == ForceDriven) {
+          factor = (Cell.ah[c] * Cell.vh[c] > 0.0) ? factorMinus : factorPlus;
+          Cell.ah[c] *= factor;
+        }
       }
     }
   }
@@ -2679,7 +2698,7 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
 
 // Be carefull!! The density needs to be set before calling this function
 void PBC3Dbox::initLagamine(double Q[]) {
-  enableSwitch = 0;
+  // enableSwitch = 0;
 
   // Q[0] (in plane strain condition) unused here because the computation is 3D
   size_t offset = 1;

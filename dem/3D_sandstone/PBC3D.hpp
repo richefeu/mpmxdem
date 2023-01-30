@@ -84,7 +84,7 @@ class PBC3Dbox {
 
   // Other parameters
   int iconf;                     ///< Current configuration ID
-  int enableSwitch;              ///< If non-null, enable the switch of particles from one boundary to the opposite
+  //int enableSwitch;              ///< If non-null, enable the switch of particles from one boundary to the opposite
   int substractMeanVelocity;
   int limitHboxvelocity;
   double hboxLimitVel;
