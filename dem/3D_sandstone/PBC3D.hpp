@@ -79,12 +79,15 @@ class PBC3Dbox {
   double dt0;      ///< Maximum tangential displacement
   double drot0;    ///< Maximum angular rotation
   double powSurf;  ///< Power used in the breakage surface
-  double rampRatio;
-  double rampDuration;
+  double rampRatio;    
+  double rampDuration; ///< linear laoding ramp between t = 0 and t = rampDuration
 
   // Other parameters
   int iconf;                     ///< Current configuration ID
   int enableSwitch;              ///< If non-null, enable the switch of particles from one boundary to the opposite
+  int substractMeanVelocity;
+  int limitHboxvelocity;
+  double hboxLimitVel;
   int permamentGluer;            ///< If 1, contacts are permanently transformed to glued-point
   double numericalDampingCoeff;  ///< This is the so called Cundall damping
 
