@@ -45,7 +45,6 @@ PBC3Dbox::PBC3Dbox() {
   fricfailure = 0;
   dVerlet = 1e-7;
   zetaMax = 1;
-  // enableSwitch = 1;
   substractMeanVelocity = 1;
   limitHboxvelocity = 0;
   hboxLimitVel = 1e12;
@@ -126,7 +125,6 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "hvelGrad " << Cell.velGrad << '\n';
   conf << "hstrain " << Cell.strain << '\n';
   conf << "Sig " << Sig << '\n';
-  // conf << "enableSwitch " << enableSwitch << '\n';
   if (limitHboxvelocity > 0) conf << "limitHboxvelocity " << hboxLimitVel << '\n';
   conf << "substractMeanVelocity " << substractMeanVelocity << '\n';
   conf << "objectiveFriction " << objectiveFriction << '\n';
@@ -975,12 +973,19 @@ void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << "|  Res0Mean/fnMean: " << Res0Mean / fnMean << '\n';
 
   double vf = 0.0;
+  double Kin = 0.0;
+  double sqVel;
   vec3r vel;
   for (size_t i = 0; i < Particles.size(); i++) {
     vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
-    vf = std::max(vf, vel * vel);
+    sqVel = vel * vel;
+    vf = std::max(vf, sqVel);
+    Kin += Particles[i].mass * sqVel;
   }
   vf = sqrt(vf) * interVerlet;
+  Kin *= 0.5;
+
+  std::cout << "|  Kin energy (translations) : " << Kin << '\n';  
   std::cout << "|  Estimated free flight distance between Neighbor updates: " << 1.0e6 * vf << "e-6\n";
   std::cout << "|  Verlet distance: " << dVerlet << ", Rmin: " << Rmin << '\n';
 
@@ -1050,13 +1055,22 @@ void PBC3Dbox::dataOutput() {
   // Strain
   strainOut << t << ' ' << Cell.strain << std::endl;
 
-  // Resultant
+  // Other things
   double ResMean, Res0Mean, fnMin, fnMean;
   double Vcell = fabs(Cell.h.det());
+  
+  double Kin = 0.0;
+  vec3r vel;
+  for (size_t i = 0; i < Particles.size(); i++) {
+    vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+    Kin += Particles[i].mass * vel * vel;
+  }
+  Kin *= 0.5;
+  
   staticQualityData(&ResMean, &Res0Mean, &fnMin, &fnMean);
   resultantOut << t << ' ' << ResMean << ' ' << Res0Mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
                << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMax << ' ' << VelMin << ' ' << VelMean
-               << ' ' << VelVar << ReducedPartDistMean << std::endl;
+               << ' ' << VelVar << ' ' << ReducedPartDistMean << ' ' << Kin << std::endl;
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
