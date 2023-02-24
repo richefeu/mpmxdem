@@ -11,6 +11,7 @@
 #include "Commands/move_MP.hpp"
 #include "Commands/new_set_grid.hpp"
 #include "Commands/reset_model.hpp"
+#include "Commands/select_tracked_MP.hpp"
 #include "Commands/set_BC_column.hpp"
 #include "Commands/set_BC_line.hpp"
 #include "Commands/set_K0_stress.hpp"
@@ -18,13 +19,11 @@
 #include "Commands/set_MP_polygon.hpp"
 #include "Commands/set_node_grid.hpp"
 
+#include "ConstitutiveModels/CHCL_DEM.hpp"
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
 #include "ConstitutiveModels/HookeElasticity.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
 #include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
-#include "ConstitutiveModels/hnlDEM.hpp"
-#include "ConstitutiveModels/hnlDEML.hpp"
-#include "ConstitutiveModels/hnlDEMcv.hpp"
 
 #include "Obstacles/Circle.hpp"
 #include "Obstacles/Line.hpp"
@@ -41,10 +40,7 @@
 #include "ShapeFunctions/RegularQuadLinear.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 
-#include "Spies/ObstacleForces.hpp"
-#include "Spies/ObstaclePosition.hpp"
-#include "Spies/ObstacleVelAllTimes.hpp"
-#include "Spies/ObstacleVelTouching.hpp"
+#include "Spies/ObstacleTracking.hpp"
 #include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
 
@@ -58,7 +54,6 @@ MPMbox::MPMbox() {
   shapeFunction = nullptr;
   oneStep = nullptr;
   planeStrain = false;
-  DEMPeriod = 5;
   Grid.Nx = 20;
   Grid.Ny = 20;
   tolmass = 1.0e-6;
@@ -66,9 +61,9 @@ MPMbox::MPMbox() {
   gravity.set(0.0, 0.0);
   gravity_incr.set(0.0, 0.0);
   ramp = false;
-  NHL.minDEMstep = 5;
-  NHL.rateAverage = 0;
-  twinConfSave = false;
+  CHCL.minDEMstep = 5;
+  CHCL.rateAverage = 0;
+  // twinConfSave = false;
   ratioFLIP = 1;
   activePIC = false;
   timePIC = 0.0;
@@ -84,11 +79,11 @@ MPMbox::MPMbox() {
 
   dt = 0.00001;
   t = 0.0;
-  result_folder = "./RESULT";
+  result_folder = ".";
 
   securDistFactor = 2.0;
 
-  splitting = true;
+  splitting = false;
   splitCriterionValue = 2.0;
   MaxSplitNumber = 5;
 
@@ -145,14 +140,12 @@ void MPMbox::ExplicitRegistrations() {
       "set_MP_polygon", [](void) -> Command* { return new set_MP_polygon(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "set_node_grid", [](void) -> Command* { return new set_node_grid(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "select_tracked_MP", [](void) -> Command* { return new select_tracked_MP(); });
 
   // ConstitutiveModel ===============
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "hnlDEM", [](void) -> ConstitutiveModel* { return new hnlDEM(); });
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "hnlDEMcv", [](void) -> ConstitutiveModel* { return new hnlDEMcv(); });
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "hnlDEML", [](void) -> ConstitutiveModel* { return new hnlDEML(); });
+      "CHCL_DEM", [](void) -> ConstitutiveModel* { return new CHCL_DEM(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "HookeElasticity", [](void) -> ConstitutiveModel* { return new HookeElasticity(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
@@ -185,14 +178,8 @@ void MPMbox::ExplicitRegistrations() {
       "RegularQuadLinear", [](void) -> ShapeFunction* { return new RegularQuadLinear(); });
 
   // Spy ===============
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleForces",
-                                                                 [](void) -> Spy* { return new ObstacleForces(); });
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstaclePosition",
-                                                                 [](void) -> Spy* { return new ObstaclePosition(); });
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
-      "ObstacleVelAllTimes", [](void) -> Spy* { return new ObstacleVelAllTimes(); });
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction(
-      "ObstacleVelTouching", [](void) -> Spy* { return new ObstacleVelTouching(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleTracking",
+                                                                 [](void) -> Spy* { return new ObstacleTracking(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy* { return new Work(); });
 }
 
@@ -289,9 +276,10 @@ void MPMbox::read(const char* name) {
       file >> confPeriod;
     } else if (token == "proxPeriod") {
       file >> proxPeriod;
-    } else if (token == "DEMPeriod") {
+    } /*else if (token == "DEMPeriod") {
       file >> DEMPeriod;
-    } else if (token == "dt") {
+    } */
+    else if (token == "dt") {
       file >> dt;
     } else if (token == "t") {
       file >> t;
@@ -309,10 +297,11 @@ void MPMbox::read(const char* name) {
       file >> ratioFLIP >> timePIC;
       activePIC = true;
     } else if (token == "demavg") {
-      file >> NHL.minDEMstep >> NHL.rateAverage;
-    } else if (token == "twinConfSave") {
+      file >> CHCL.minDEMstep >> CHCL.rateAverage;
+    } /*else if (token == "twinConfSave") {
       twinConfSave = true;
-    } else if (token == "ramp") {
+    } */
+    else if (token == "ramp") {
       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
       ramp = true;
     } else if (token == "gravitySwitch") {
@@ -369,7 +358,7 @@ void MPMbox::read(const char* name) {
     } else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
       file >> ObstaclePlannedRemoval.groupNumber >> ObstaclePlannedRemoval.time;
     } else if (token == "MPPlannedRemoval") {
-      MPlannedRemoval MPL;
+      MPPlannedRemoval_t MPL;
       file >> MPL.key >> MPL.time;
       MPPlannedRemoval.push_back(MPL);
     } else if (token == "BoundaryForceLaw") {
@@ -469,10 +458,10 @@ void MPMbox::read(const char* name) {
   }
   dtInitial = dt;
 
-  NHL.hasDoubleScale = false;
+  CHCL.hasDoubleScale = false;
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].isDoubleScale == true) {
-      NHL.hasDoubleScale = true;
+      CHCL.hasDoubleScale = true;
       break;
     }
   }
@@ -487,16 +476,16 @@ void MPMbox::read(int num) {
 }
 
 void MPMbox::save(const char* name) {
-  char name_micro[256];
-  snprintf(name_micro, 256, "%s_micro", name);
-  // std::cout << name_micro << std::endl;
   std::ofstream file(name);
-  std::ofstream file_micro(name_micro);
+
+  // char name_micro[256];
+  // snprintf(name_micro, 256, "%s_micro", name);
+  // std::ofstream file_micro(name_micro);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
-  file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy "
-                "ReducedPartDistMean"
-             << std::endl;
+  // file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy
+  // "
+  //               "ReducedPartDistMean" << std::endl;
   if (planeStrain == true) {
     file << "planeStrain\n";
   }
@@ -511,10 +500,10 @@ void MPMbox::save(const char* name) {
     file << "gravitySwitch " << switchGravTime << " " << planned_grav.x << " " << planned_grav.y << '\n';
   }
   file << "verletCoef " << boundary_layer << '\n';
-  file << "demavg " << NHL.minDEMstep << " " << NHL.rateAverage << '\n';
-  if (twinConfSave) {
+  file << "demavg " << CHCL.minDEMstep << " " << CHCL.rateAverage << '\n';
+  /*if (twinConfSave) {
     file << "twinConfSave" << '\n';
-  }
+  }*/
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
   file << "confPeriod " << confPeriod << '\n';
@@ -594,6 +583,7 @@ void MPMbox::save(const char* name) {
          << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
          << '\n';
 
+    /*
     if (MP[iMP].isDoubleScale) {
       MP[iMP].PBC->computeSampleData();
       file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << MP[iMP].PBC->nbActiveInteractions << " "
@@ -609,6 +599,7 @@ void MPMbox::save(const char* name) {
                  << 1.0 << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << " "
                  << " " << 0.0 << std::endl;
     }
+    */
   }
 }
 
@@ -622,7 +613,16 @@ void MPMbox::save(int num) {
 
 void MPMbox::init() {
   // If the result folder does not exist, it is created
-  fileTool::create_folder(result_folder);
+  if (result_folder != "" && result_folder != "." && result_folder != "./") fileTool::create_folder(result_folder);
+
+  // create folders for the tracked MP (double scale simulations)
+  for (size_t iMP = 0; iMP < MP.size(); iMP++) {
+    if (MP[iMP].isTracked == true) {
+      char fname[256];
+      snprintf(fname, 256, "%s/DEM_MP%zu", result_folder.c_str(), iMP);
+      fileTool::create_folder(fname);
+    }
+  }
 
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_pos = MP[p].pos;
@@ -653,10 +653,12 @@ void MPMbox::run() {
         ramp = false;
       }
     }
+
     if (switchGravity && switchGravTime <= t) {
       gravity_max.set(planned_grav.x, planned_grav.y);
       switchGravity = false;
     }
+
     // checking convergence requirements
     convergenceConditions();
 
@@ -665,6 +667,7 @@ void MPMbox::run() {
       iconf++;
     }
 
+    /*
     if (twinConfSave) {
       if (step % confPeriod == 1) {  // FIXME: c'est bizarre ce truc (à voir ensemble)
         char name[256];
@@ -672,8 +675,10 @@ void MPMbox::run() {
         save(name);
       }
     }
+    */
 
-    if (step % proxPeriod == 0 || MP.size() != number_MP) {  // second condition is needed because of the splitting
+    if (step % proxPeriod == 0 ||
+        MP.size() != number_MP_before_any_split) {  // second condition is needed because of the splitting
       checkProximity();
     }
 
@@ -737,7 +742,6 @@ void MPMbox::convergenceConditions() {
   double rayMin = inf;
   double knMax = -inf;
   double massMin = inf;
-  // double eps = 1e-6;
   double velMax = -inf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;
@@ -849,7 +853,7 @@ void MPMbox::limitTimeStepForDEM() {
 void MPMbox::updateTransformationGradient() {
   START_TIMER("updateTransformationGradient");
   updateVelocityGradient();
-  if (NHL.hasDoubleScale == true) limitTimeStepForDEM();
+  if (CHCL.hasDoubleScale == true) limitTimeStepForDEM();
 
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_F = MP[p].F;
@@ -860,6 +864,7 @@ void MPMbox::updateTransformationGradient() {
 void MPMbox::plannedRemovalObstacle() {
   START_TIMER("plannedRemovalObstacle");
   if (ObstaclePlannedRemoval.time >= t && ObstaclePlannedRemoval.time <= t + dt) {
+    std::vector<Obstacle*> Obs_swap;
     for (size_t i = 0; i < Obstacles.size(); i++) {
       if (Obstacles[i]->group == ObstaclePlannedRemoval.groupNumber) {
         delete (Obstacles[i]);
@@ -874,6 +879,7 @@ void MPMbox::plannedRemovalObstacle() {
 
 void MPMbox::plannedRemovalMP() {
   START_TIMER("plannedRemovalMP");
+  std::vector<MaterialPoint> MP_swap;
   for (size_t j = 0; j < MPPlannedRemoval.size(); j++) {
     if (MPPlannedRemoval[j].time >= t && MPPlannedRemoval[j].time <= t + dt) {
       for (size_t i = 0; i < MP.size(); i++) {

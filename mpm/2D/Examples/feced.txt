@@ -19,7 +19,7 @@ shearLimit 1.0
 # Materials
 #     modelID          modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle (FrictionAngle -30°)
 model MohrCoulomb      MC        80.0e4    0.42       0.5            1e0      0.00
-model hnlDEM DE hc125.txt
+model CHCL_DEM DE hc125.txt
 #              lengthX   lengthY   spacing
 set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
 #            		setObject# 	modelName       mass_density(kg/m3)    	x0   		y0   		x1   		y1   	size of boxes

@@ -1,0 +1,58 @@
+oneStepType ModifiedLagrangian
+result_folder .
+# Mass tolerance
+tolmass 1.e-6
+# Gravity    gx   gy
+gravity      0.0  0.0
+finalTime 2.5
+# Period of storing (in number of steps)
+confPeriod 2500
+proxPeriod 50 # at the MPM scale for interactions with boundaries
+# Time increment
+dt 1e-5
+# Current time
+t 0.0
+# shape function can be Linear or GIMP (not yet implemented)
+ShapeFunction BSpline
+
+# PICDissipation 0.98 0.1
+
+splitting 0
+shearLimit 1.0
+
+# ramp 0 -9.81 0 -0.0005 
+demavg 50 0.2
+
+# Materials
+#     modelID          modelName  Young    Poisson  FrictionAngle  Cohesion  DilatancyAngle
+model MohrCoulomb      M0         2.14e+5  0.498    0.4            82.6      -0.18
+
+#                                 PBC3D-file   reactivationTime  reactivationDistance  numericalDamping
+model CHCL_DEM           DE         dem_conf0    1                 1e-6                  0.0
+
+set_node_grid  W.H.lx.ly  0.6  0.6  0.1 0.1
+
+#                   group       modelName     mass_density(kg/m3)    x0    y0     x1     y1      size of boxes
+set_MP_grid         0           M0            550.0                  0.2   0.2    0.4    0.4     0.05
+
+# NONE, ALL, LIST NB [...NB x ID], GRID X0 Y0 LX LY TOL, BOX X0 Y0 X1 Y1
+select_tracked_MP ALL
+
+
+BoundaryForceLaw frictionalViscoElastic 2
+
+#ObstaclePlannedRemoval 1 1
+
+#                group  x0    y0     x1    y1   driveMode
+Obstacle Line    2      0.4   0.4    0.4   0.2  freeze    # right
+Obstacle Line    2      0.4   0.2    0.2   0.2  freeze    # bottom
+Obstacle Line    2      0.2   0.2    0.2   0.4  freeze    # left
+Obstacle Line    2      0.2   0.4    0.4   0.4  velocity 0.0 -0.01  # top
+
+Spy ObstacleTracking 3 100 topWall.txt
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         2          0.2
+set              kn         0         2          1e7
+set              kt         0         2          1e7
+set              viscRate   0         2          0

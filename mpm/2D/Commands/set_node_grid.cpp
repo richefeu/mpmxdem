@@ -6,9 +6,6 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
-//#include "factory.hpp"
-//static Registrar<Command, set_node_grid> registrar("set_node_grid");
-
 void set_node_grid::read(std::istream& is) {
 
   //   +---+---+---+
@@ -31,8 +28,8 @@ void set_node_grid::read(std::istream& is) {
   } else if (inputChoice == "W.H.lx.ly") {
     double W, H;
     is >> W >> H >> lx >> ly;
-    nbElemX = static_cast<size_t>(fabs(floor(W / lx)));
-    nbElemY = static_cast<size_t>(fabs(floor(H / ly)));
+    nbElemX = static_cast<size_t>(fabs(round(W / lx)));
+    nbElemY = static_cast<size_t>(fabs(round(H / ly)));
   } else if (inputChoice == "W.H.Nx.Ny") {
     double W, H;
     is >> W >> H >> nbElemX >> nbElemX;

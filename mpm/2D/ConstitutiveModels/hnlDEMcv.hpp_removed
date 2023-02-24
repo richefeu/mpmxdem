@@ -6,8 +6,8 @@
 #include "ConstitutiveModel.hpp"
 #include "PBC3D.hpp"
 
-struct hnlDEMcv : public ConstitutiveModel {
-  hnlDEMcv();
+struct CHCL_DEMcv : public ConstitutiveModel {
+  CHCL_DEMcv();
   std::string fileName;  // file name of the initial configuration
   
   double timeBondchange;

@@ -1,29 +1,29 @@
-#include "hnlDEML.hpp"
+#include "CHCL_DEML.hpp"
 
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
 #include "PBC3D.hpp"
 
-std::string hnlDEML::getRegistrationName() { return std::string("hnlDEML"); }
+std::string CHCL_DEML::getRegistrationName() { return std::string("CHCL_DEML"); }
 
-hnlDEML::hnlDEML() {}
+CHCL_DEML::CHCL_DEML() {}
 
-void hnlDEML::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingFactor; }
+void CHCL_DEML::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingFactor; }
 
-void hnlDEML::write(std::ostream& os) { os << fileName << ' ' << timeBondReactivation << ' ' << bondingFactor << '\n'; }
+void CHCL_DEML::write(std::ostream& os) { os << fileName << ' ' << timeBondReactivation << ' ' << bondingFactor << '\n'; }
 
 // The elastic properties cannot be get that way, so, as a convention, -1 is returned
-double hnlDEML::getYoung() { return -1.0; }
-double hnlDEML::getPoisson() { return -1.0; }
+double CHCL_DEML::getYoung() { return -1.0; }
+double CHCL_DEML::getPoisson() { return -1.0; }
 
-void hnlDEML::init(MaterialPoint& MP) {
+void CHCL_DEML::init(MaterialPoint& MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
   MP.isDoubleScale = true;
 }
 
-void hnlDEML::updateStrainAndStress(MPMbox& MPM, size_t p) {
+void CHCL_DEML::updateStrainAndStress(MPMbox& MPM, size_t p) {
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
   // Get the total strain increment from node velocities
   vec2r vn;
@@ -55,7 +55,7 @@ void hnlDEML::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.zz = 1.0;  // assuming plane strain
 
   mat9r SigAvg;
-  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.NHL.minDEMstep, MPM.NHL.rateAverage, SigAvg);
+  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.CHCL.minDEMstep, MPM.CHCL.rateAverage, SigAvg);
 
   col_i = static_cast<size_t>(p % MPM.Grid.Nx);
   row_i = static_cast<size_t>(floor((double)p / (double)MPM.Grid.Nx));

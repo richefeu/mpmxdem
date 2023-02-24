@@ -45,10 +45,12 @@ PBC3Dbox::PBC3Dbox() {
   fricfailure = 0;
   dVerlet = 1e-7;
   zetaMax = 1;
-  enableSwitch = 1;
+  substractMeanVelocity = 1;
+  limitHboxvelocity = 0;
+  hboxLimitVel = 1e12;
   objectiveFriction = 1;
-  rampRatio = 1;
-  rampDuration = 0;
+  rampRatio = 1.0;
+  rampDuration = 0.0;
 }
 
 /// @brief Print a banner related with the current code
@@ -82,6 +84,11 @@ void PBC3Dbox::saveConf(int i) {
 
 void PBC3Dbox::saveConf(const char* name) {
   std::ofstream conf(name);
+
+  // From here, the written precision is increased to the maximum possible
+  // (it is necessary because of the ASCII writting)
+  conf << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+
   conf << "PBC3D 06-05-2021\n";  // format: progName version-date
   conf << "t " << t << '\n';
   conf << "tmax " << tmax << '\n';
@@ -118,7 +125,8 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "hvelGrad " << Cell.velGrad << '\n';
   conf << "hstrain " << Cell.strain << '\n';
   conf << "Sig " << Sig << '\n';
-  conf << "enableSwitch " << enableSwitch << '\n';
+  if (limitHboxvelocity > 0) conf << "limitHboxvelocity " << hboxLimitVel << '\n';
+  conf << "substractMeanVelocity " << substractMeanVelocity << '\n';
   conf << "objectiveFriction " << objectiveFriction << '\n';
   conf << "Load " << Load.StoredCommand << '\n';
   conf << "interVerletC " << interVerletC << '\n';
@@ -153,13 +161,12 @@ void PBC3Dbox::saveConf(const char* name) {
       conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
            << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
            << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
-           << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' ' 
-           << Interactions[i].drot_fric << ' ' << Interactions[i].mom << ' ' << Interactions[i].mom_bond << ' ' 
+           << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' '
+           << Interactions[i].drot_fric << ' ' << Interactions[i].mom << ' ' << Interactions[i].mom_bond << ' '
            << Interactions[i].mom_fric << ' ' << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' '
            << Interactions[i].state << ' ' << Interactions[i].D << '\n';
     }
   }
-  
 }
 
 /// @brief Load the configuration
@@ -253,9 +260,9 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> zetaMax;
     else if (token == "permamentGluer")
       conf >> permamentGluer;
-    else if (token == "rampDuration")
+    else if (token == "rampDuration") {
       conf >> rampDuration;
-    else if (token == "numericalDampingCoeff")
+    } else if (token == "numericalDampingCoeff")
       conf >> numericalDampingCoeff;
     else if (token == "Kratio")
       conf >> Kratio;
@@ -275,9 +282,17 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> Cell.strain;
     else if (token == "Sig")
       conf >> Sig;
-    else if (token == "enableSwitch")
-      conf >> enableSwitch;
-    else if (token == "objectiveFriction")
+    else if (token == "enableSwitch") {
+      int unused;
+      conf >> unused;
+      std::cerr << "enableSwitch is not used anymore (remove it from the conf file please)\n";
+    }
+    else if (token == "substractMeanVelocity")
+      conf >> substractMeanVelocity;
+    else if (token == "limitHboxvelocity") {
+      conf >> hboxLimitVel;
+      limitHboxvelocity = 1;
+    } else if (token == "objectiveFriction")
       conf >> objectiveFriction;
     else if (token == "Load") {
       std::string command;
@@ -408,7 +423,6 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> epsiDist;
       ActivateBonds(epsiDist, bondedState);
     } else if (token == "nodamage") {
-      // nodam = true;
       zetaMax = 1.0;
     } else if (token == "ActivateDamageableBonds") {
       double epsiDist;
@@ -833,14 +847,14 @@ void PBC3Dbox::setSample() {
   interVerlet = 10 * dt;
   interOut = 100 * dt;
   interConf = 100 * dt;
-  enableSwitch = 1;
+  // enableSwitch = 1;
 
   std::cout << "Other parameters have been set to given values.\n"
             << "You can change it in the generated file.\n";
   std::cout << "interVerlet " << interVerlet << '\n';
   std::cout << "interOut " << interOut << '\n';
   std::cout << "interConf " << interConf << '\n';
-  std::cout << "enableSwitch " << enableSwitch << '\n';
+  // std::cout << "enableSwitch " << enableSwitch << '\n';
   return;
 }
 
@@ -865,14 +879,12 @@ void PBC3Dbox::velocityVerletStep() {
     Particles[i].vel += dt_2 * Particles[i].acc;
 
     // Periodicity in position (can be usefull in the sample preparation)
-    if (enableSwitch > 0) {
-      for (size_t c = 0; c < 3; c++) {
-        while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
-        while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
-      }
-      // Remark: the reduced velocities do not need to be corrected
-      //         since they are periodic
+    for (size_t c = 0; c < 3; c++) {
+      while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
+      while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
     }
+    // Remark: the reduced velocities do not need to be corrected
+    //         since they are periodic
 
     // Rotation: Q = Q + (dQ/dt) * dt + (d2Q/dt2) * dt2/2
     // It reads like this with quaternions
@@ -906,18 +918,26 @@ void PBC3Dbox::velocityVerletStep() {
     vmean += Particles[i].vel;
     Particles[i].vrot += dt_2 * Particles[i].arot;
   }
-  vmean /= (double)(Particles.size());
-  for (size_t i = 0; i < Particles.size(); i++) {
-    Particles[i].vel -= vmean;
+
+  if (substractMeanVelocity > 0) {
+    vmean /= (double)(Particles.size());
+    for (size_t i = 0; i < Particles.size(); i++) {
+      Particles[i].vel -= vmean;
+    }
   }
 
-  if (rampDuration - t > 0) {
+  if (rampDuration - t > 0.0) {
     rampRatio = t / rampDuration;
   } else {
-    rampRatio = 1;
+    rampRatio = 1.0;
   }
   for (size_t c = 0; c < 9; c++) {
-    if (Load.Drive[c] == ForceDriven) Cell.vh[c] += rampRatio * dt_2 * Cell.ah[c];
+    if (Load.Drive[c] == ForceDriven) {
+      Cell.vh[c] += rampRatio * dt_2 * Cell.ah[c];
+      if (limitHboxvelocity > 0 && std::fabs(Cell.vh[c]) > hboxLimitVel) {
+        Cell.vh[c] = std::copysign(hboxLimitVel, Cell.vh[c]);
+      }
+    }
   }
   Cell.update(dt);
 }
@@ -953,12 +973,19 @@ void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << "|  Res0Mean/fnMean: " << Res0Mean / fnMean << '\n';
 
   double vf = 0.0;
+  double Kin = 0.0;
+  double sqVel;
   vec3r vel;
   for (size_t i = 0; i < Particles.size(); i++) {
     vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
-    vf = std::max(vf, vel * vel);
+    sqVel = vel * vel;
+    vf = std::max(vf, sqVel);
+    Kin += Particles[i].mass * sqVel;
   }
   vf = sqrt(vf) * interVerlet;
+  Kin *= 0.5;
+
+  std::cout << "|  Kin energy (translations) : " << Kin << '\n';  
   std::cout << "|  Estimated free flight distance between Neighbor updates: " << 1.0e6 * vf << "e-6\n";
   std::cout << "|  Verlet distance: " << dVerlet << ", Rmin: " << Rmin << '\n';
 
@@ -1028,13 +1055,22 @@ void PBC3Dbox::dataOutput() {
   // Strain
   strainOut << t << ' ' << Cell.strain << std::endl;
 
-  // Resultant
+  // Other things
   double ResMean, Res0Mean, fnMin, fnMean;
   double Vcell = fabs(Cell.h.det());
+  
+  double Kin = 0.0;
+  vec3r vel;
+  for (size_t i = 0; i < Particles.size(); i++) {
+    vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+    Kin += Particles[i].mass * vel * vel;
+  }
+  Kin *= 0.5;
+  
   staticQualityData(&ResMean, &Res0Mean, &fnMin, &fnMean);
   resultantOut << t << ' ' << ResMean << ' ' << Res0Mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
                << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMax << ' ' << VelMin << ' ' << VelMean
-               << ' ' << VelVar << ReducedPartDistMean << std::endl;
+               << ' ' << VelVar << ' ' << ReducedPartDistMean << ' ' << Kin << std::endl;
 }
 
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
@@ -1209,12 +1245,13 @@ void PBC3Dbox::accelerations() {
 
   computeForcesAndMoments();
 
-  // Cundall damping
+  // Cundall damping for particles
   if (numericalDampingCoeff > 0.0) {
+    double factor = 0.0;
+    double factorMinus = 1.0 - numericalDampingCoeff;
+    double factorPlus = 1.0 + numericalDampingCoeff;
+
     for (size_t i = 0; i < Particles.size(); i++) {
-      double factor;
-      double factorMinus = 1.0 - numericalDampingCoeff;
-      double factorPlus = 1.0 + numericalDampingCoeff;
       factor = (Particles[i].force.x * Particles[i].vel.x > 0.0) ? factorMinus : factorPlus;
       Particles[i].force.x *= factor;
       factor = (Particles[i].force.y * Particles[i].vel.y > 0.0) ? factorMinus : factorPlus;
@@ -1244,6 +1281,23 @@ void PBC3Dbox::accelerations() {
           Cell.ah[c] += Vhinv[3 * row + s] * deltaSig[3 * s + col];
         }
         Cell.ah[c] *= invMass;
+      }
+    }
+  }
+
+  // Cundall damping for the periodic cell
+  if (numericalDampingCoeff > 0.0) {
+    double factor = 0.0;
+    double factorMinus = 1.0 - numericalDampingCoeff;
+    double factorPlus = 1.0 + numericalDampingCoeff;
+
+    for (size_t row = 0; row < 3; row++) {
+      for (size_t col = 0; col < 3; col++) {
+        size_t c = 3 * row + col;
+        if (Load.Drive[c] == ForceDriven) {
+          factor = (Cell.ah[c] * Cell.vh[c] > 0.0) ? factorMinus : factorPlus;
+          Cell.ah[c] *= factor;
+        }
       }
     }
   }
@@ -2072,8 +2126,8 @@ void PBC3Dbox::getOperatorKruyt2b(double L[3][3][3][3]) {
     vec3r l = Cell.h * sij;
     vec3r n = l;
     n.normalize();
-    //vec3r t = Interactions[k].ft;
-    //t.normalize();
+    // vec3r t = Interactions[k].ft;
+    // t.normalize();
 
     // Noraml vector n
     nx = n.x;
@@ -2660,7 +2714,7 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
 
 // Be carefull!! The density needs to be set before calling this function
 void PBC3Dbox::initLagamine(double Q[]) {
-  enableSwitch = 0;
+  // enableSwitch = 0;
 
   // Q[0] (in plane strain condition) unused here because the computation is 3D
   size_t offset = 1;

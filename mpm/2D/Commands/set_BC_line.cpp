@@ -2,9 +2,6 @@
 
 #include "Core/MPMbox.hpp"
 
-//#include "factory.hpp"
-//static Registrar<Command, set_BC_line> registrar("set_BC_line");
-
 void set_BC_line::read(std::istream& is) { is >> line_num >> column0 >> column1 >> Xfixed >> Yfixed; }
 
 void set_BC_line::exec() {
