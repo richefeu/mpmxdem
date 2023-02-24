@@ -31,8 +31,6 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Get the total strain increment from node velocities
   vec2r vn;
   mat4r dstrain;
-  //size_t col_i;
-  //size_t row_i;
   for (size_t r = 0; r < element::nbNodes; r++) {
     dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy +=
@@ -69,9 +67,9 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   //col_i = static_cast<size_t>(p % MPM.Grid.Nx);
   //row_i = static_cast<size_t>(floor((double)p / (double)MPM.Grid.Nx));
   if (MPM.MP[p].isTracked && MPM.step % MPM.confPeriod == 0) {
-    char fnamea[256];
-    snprintf(fnamea, 256, "%s/DEM_MP%zu_conf%i", MPM.result_folder.c_str(), p, MPM.iconf);
-    MPM.MP[p].PBC->saveConf(fnamea);
+    char fname[256];
+    snprintf(fname, 256, "%s/DEM_MP%zu/conf%i", MPM.result_folder.c_str(), p, MPM.iconf);
+    MPM.MP[p].PBC->saveConf(fname);
     MPM.MP[p].PBC->iconf++;
   }
 

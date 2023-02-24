@@ -6,9 +6,6 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
-//#include "factory.hpp"
-//static Registrar<Command, set_node_grid> registrar("set_node_grid");
-
 void set_node_grid::read(std::istream& is) {
 
   //   +---+---+---+

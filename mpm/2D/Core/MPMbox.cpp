@@ -11,6 +11,7 @@
 #include "Commands/move_MP.hpp"
 #include "Commands/new_set_grid.hpp"
 #include "Commands/reset_model.hpp"
+#include "Commands/select_tracked_MP.hpp"
 #include "Commands/set_BC_column.hpp"
 #include "Commands/set_BC_line.hpp"
 #include "Commands/set_K0_stress.hpp"
@@ -18,11 +19,11 @@
 #include "Commands/set_MP_polygon.hpp"
 #include "Commands/set_node_grid.hpp"
 
+#include "ConstitutiveModels/CHCL_DEM.hpp"
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
 #include "ConstitutiveModels/HookeElasticity.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
 #include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
-#include "ConstitutiveModels/CHCL_DEM.hpp"
 
 #include "Obstacles/Circle.hpp"
 #include "Obstacles/Line.hpp"
@@ -139,6 +140,8 @@ void MPMbox::ExplicitRegistrations() {
       "set_MP_polygon", [](void) -> Command* { return new set_MP_polygon(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "set_node_grid", [](void) -> Command* { return new set_node_grid(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "select_tracked_MP", [](void) -> Command* { return new select_tracked_MP(); });
 
   // ConstitutiveModel ===============
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
@@ -275,7 +278,8 @@ void MPMbox::read(const char* name) {
       file >> proxPeriod;
     } /*else if (token == "DEMPeriod") {
       file >> DEMPeriod;
-    } */ else if (token == "dt") {
+    } */
+    else if (token == "dt") {
       file >> dt;
     } else if (token == "t") {
       file >> t;
@@ -609,7 +613,16 @@ void MPMbox::save(int num) {
 
 void MPMbox::init() {
   // If the result folder does not exist, it is created
-  fileTool::create_folder(result_folder);
+  if (result_folder != "" && result_folder != "." && result_folder != "./") fileTool::create_folder(result_folder);
+
+  // create folders for the tracked MP (double scale simulations)
+  for (size_t iMP = 0; iMP < MP.size(); iMP++) {
+    if (MP[iMP].isTracked == true) {
+      char fname[256];
+      snprintf(fname, 256, "%s/DEM_MP%zu", result_folder.c_str(), iMP);
+      fileTool::create_folder(fname);
+    }
+  }
 
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_pos = MP[p].pos;
