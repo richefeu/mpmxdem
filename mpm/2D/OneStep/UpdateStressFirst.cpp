@@ -44,7 +44,8 @@ int UpdateStressFirst::advanceOneStep(MPMbox& MPM) {
     nodes[liveNodeNum[n]].vel.reset();
   }
 
-  MPM.number_MP = MPM.MP.size();
+  MPM.number_MP_before_any_split = MPM.MP.size();
+  
   // ==== Reset the resultant forces on MPs and velGrad
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].f.reset();

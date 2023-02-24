@@ -15,7 +15,7 @@ MaxSplitNumber 3
 
 #     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
 model MohrCoulomb    MC         1.0e7     0.42      0.3            5e1        0.01
-model hnlDEM         DE         REV0.txt
+model CHCL_DEM         DE         REV0.txt
 
 set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
 

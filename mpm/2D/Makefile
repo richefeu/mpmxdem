@@ -20,14 +20,14 @@ GLUTLIBS = `pkg-config --libs glut` -framework OpenGL
 else
 
 CXX = g++
-CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion -pedantic \
+CXXFLAGS = -fopenmp -O3 -std=c++17 \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
 
 OPENMP_LIB = -l gomp
 
 # Link flags for OpenGL and glut
 #GLUTFLAGS = 
-GLUTLIBS = -lGLU -lGL -L/usr/X11R6/lib -lglut -lXmu -lXext -lX11 -lXi
+GLUTLIBS = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL-lGLU -lm -lpthread
 
 endif
 

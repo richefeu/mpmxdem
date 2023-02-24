@@ -44,7 +44,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     nodes[liveNodeNum[n]].vel.reset();
   }
 
-  MPM.number_MP = MPM.MP.size();
+  MPM.number_MP_before_any_split = MPM.MP.size();
+  
   // ==== Reset the resultant forces and velGrad of MPs
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].f.reset();
@@ -183,7 +184,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // ==== Update strain and stress
   {
-    if (MPM.NHL.hasDoubleScale == true) {
+    if (MPM.CHCL.hasDoubleScale == true) {
       START_TIMER("updateStrainAndStress");
 
       std::vector<size_t> simpleScaleVector;

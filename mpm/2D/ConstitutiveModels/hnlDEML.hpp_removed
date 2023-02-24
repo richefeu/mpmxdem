@@ -1,18 +1,17 @@
-#ifndef HNLDEM_HPP
-#define HNLDEM_HPP
+#ifndef HNLDEML_HPP
+#define HNLDEML_HPP
 
-// This is Homogenised Numerical Law (HNL) with DEM
+// This is Homogenised Numerical Law (HNL) with DEM for loose structures
 
 #include "ConstitutiveModel.hpp"
 #include "PBC3D.hpp"
 
-struct hnlDEM : public ConstitutiveModel {
-  hnlDEM();
+struct CHCL_DEML : public ConstitutiveModel {
+  CHCL_DEML();
   std::string fileName;  // file name of the initial configuration
   
   double timeBondReactivation;
-  double bondingDistance;
-  double microdamping;
+  double bondingFactor;
   // Different MP can use the same initial conf,
   // but each MP holds its own simulation
 
@@ -25,4 +24,4 @@ struct hnlDEM : public ConstitutiveModel {
   void init(MaterialPoint & MP);
 };
 
-#endif /* end of include guard: HNLDEM_HPP */
+#endif /* end of include guard: HNLDEML_HPP */

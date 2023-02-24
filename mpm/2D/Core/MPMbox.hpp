@@ -58,10 +58,8 @@ class MPMbox {
   std::vector<node> nodes;        // The nodes of the Eulerian grid
   std::vector<element> Elem;      // Quad-elements of the grid
   std::vector<MaterialPoint> MP;  // Material Points
-  std::vector<MaterialPoint> MP_swap;
   std::vector<Obstacle*> Obstacles;  // List of rigid obstacles
-  std::vector<Obstacle*> Obs_swap;
-  std::vector<Spy*> Spies;  // Spies for (post-)processing
+  std::vector<Spy*> Spies;           // Spies for (post-)processing
 
   ShapeFunction* shapeFunction;                      // The shape functions
   OneStep* oneStep;                                  // Type of routine to be used
@@ -85,8 +83,9 @@ class MPMbox {
   int confPeriod;    // Number of steps between conf files
   int proxPeriod;    // Number of steps between proximity check (rebuild the neighbor list)
 
-  int DEMPeriod;  // Number of spatial steps for DEM sampling FIXME: will be replaced by something that is able to
+  //int DEMPeriod;  // Number of spatial steps for DEM sampling FIXME: will be replaced by something that is able to
                   // manage different solutions
+  
 
   double dt;         // Time increment
   double dtInitial;  // Prescribed time increment
@@ -98,12 +97,12 @@ class MPMbox {
     double time;      // time to remove an obstacle
   } ObstaclePlannedRemoval;
 
-  struct MPlannedRemoval {
-    std::string key;
-    double time;
+  // scheduled removal of material points
+  struct MPPlannedRemoval_t {
+    std::string key;  // this is the name given to a ConstitutiveModel
+    double time;      // time of removal
   };
-
-  std::vector<MPlannedRemoval> MPPlannedRemoval;
+  std::vector<MPPlannedRemoval_t> MPPlannedRemoval;
 
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
@@ -122,23 +121,24 @@ class MPMbox {
   bool activePIC;    // damping with PIC flag
   double timePIC;    // end of damping PIC
 
-  bool twinConfSave;  // activates consecutive backup of conf-files
+  // bool twinConfSave;  // activates consecutive backup of conf-files
 
   struct {
     bool hasDoubleScale;
     int minDEMstep;      // minimum number of DEM time steps for linear regression of stress
     double rateAverage;  // end-part of MPM time step used for stress averaging
-  } NHL;
+  } CHCL;
+  
   bool switchGravity;
   double switchGravTime;
   vec2r planned_grav;
 
   std::vector<size_t> liveNodeNum;  // list of node numbers being updated and used during each time step
-                                 // It holds only the number of nodes concerned by the proximity of MP
+                                    // It holds only the number of nodes concerned by the proximity of MP
 
-  size_t number_MP;  // used to check proximity if # of MP has changed
-                     // (some "unknown" points could enter the obstacle and suddenly be detected
-                     // once they are way inside)
+  size_t number_MP_before_any_split;  // used to check proximity if # of MP has changed
+                                      // (some "unknown" points could enter the obstacle and suddenly be detected
+                                      // once they are way inside)
 
   std::shared_ptr<spdlog::logger> console;
 
@@ -153,7 +153,6 @@ class MPMbox {
   void read(int num);
   void save(const char* name);
   void save(int num);
-  // void checkNumericalDissipation(double minVd, double EndNd);
   void checkProximity();
   void init();
 
@@ -168,7 +167,6 @@ class MPMbox {
   void plannedRemovalObstacle();
   void plannedRemovalMP();
   void adaptativeRefinement();
-  // void weightIncrement();
 
   // postprocessing functions
   void postProcess(std::vector<ProcessedDataMP>& MPPD);

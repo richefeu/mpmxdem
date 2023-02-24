@@ -1,33 +1,30 @@
-#include "hnlDEM.hpp"
+#include "CHCL_DEMcv.hpp"
 
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
 #include "PBC3D.hpp"
 
-std::string hnlDEM::getRegistrationName() { return std::string("hnlDEM"); }
+std::string CHCL_DEMcv::getRegistrationName() { return std::string("CHCL_DEMcv"); }
 
-hnlDEM::hnlDEM() {}
+CHCL_DEMcv::CHCL_DEMcv() {}
 
-void hnlDEM::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingDistance >> microdamping; }
+void CHCL_DEMcv::read(std::istream& is) { is >> fileName >> timeBondchange >> bondingfactor; }
 
-void hnlDEM::write(std::ostream& os) {
-  os << fileName << ' ' << timeBondReactivation << ' ' << bondingDistance << ' ' << microdamping << '\n';
-}
+void CHCL_DEMcv::write(std::ostream& os) { os << fileName << ' ' << timeBondchange << ' ' << bondingfactor << '\n'; }
 
 // The elastic properties cannot be get that way, so, as a convention, -1 is returned
-double hnlDEM::getYoung() { return -1.0; }
-double hnlDEM::getPoisson() { return -1.0; }
+double CHCL_DEMcv::getYoung() { return -1.0; }
+double CHCL_DEMcv::getPoisson() { return -1.0; }
 
-void hnlDEM::init(MaterialPoint& MP) {
+void CHCL_DEMcv::init(MaterialPoint& MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
   MP.isDoubleScale = true;
 }
 
-void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
+void CHCL_DEMcv::updateStrainAndStress(MPMbox& MPM, size_t p) {
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
-
   // Get the total strain increment from node velocities
   vec2r vn;
   mat4r dstrain;
@@ -58,15 +55,18 @@ void hnlDEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.zz = 1.0;  // assuming plane strain
 
   mat9r SigAvg;
-  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.NHL.minDEMstep, MPM.NHL.rateAverage, SigAvg);
-
-  if (MPM.t >= timeBondReactivation - MPM.dt && MPM.t <= timeBondReactivation + MPM.dt) {
-    MPM.MP[p].PBC->ActivateBonds(bondingDistance, bondedStateDam);
-    MPM.MP[p].PBC->numericalDampingCoeff = microdamping;
-  }
+  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.CHCL.minDEMstep, MPM.CHCL.rateAverage, SigAvg);
 
   col_i = static_cast<size_t>(p % MPM.Grid.Nx);
   row_i = static_cast<size_t>(floor((double)p / (double)MPM.Grid.Nx));
+  if (MPM.t >= timeBondchange - MPM.dt && MPM.t <= timeBondchange + MPM.dt) {
+    // MPM.MP[p].PBC->fn0/=bondingfactor;
+    // MPM.MP[p].PBC->ft0/=bondingfactor;
+    // MPM.MP[p].PBC->mom0/=bondingfactor;
+    MPM.MP[p].PBC->dn0 /= bondingfactor;
+    MPM.MP[p].PBC->dt0 /= bondingfactor;
+    MPM.MP[p].PBC->drot0 /= bondingfactor;
+  }
   if (MPM.step % MPM.confPeriod == 0 && col_i % MPM.DEMPeriod == 0 && row_i % MPM.DEMPeriod == 0) {
     snprintf(fnamea, 256, "%s/DEM_MP%zu_t%i", MPM.result_folder.c_str(), p, MPM.iconf);
     MPM.MP[p].PBC->saveConf(fnamea);
