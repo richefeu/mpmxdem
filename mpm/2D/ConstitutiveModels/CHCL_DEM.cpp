@@ -57,22 +57,13 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   mat9r SigAvg;
   MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.CHCL.minDEMstep, MPM.CHCL.rateAverage, SigAvg);
 
+  // FIXME: ce n'est pas la responsabilité de la loi de faire ce genre de chose
+	//        -> à déplacer dans MPMbox.cpp
   if (MPM.t >= timeBondReactivation - MPM.dt && MPM.t <= timeBondReactivation + MPM.dt) {
     MPM.MP[p].PBC->ActivateBonds(bondingDistance, bondedStateDam);
     MPM.MP[p].PBC->numericalDampingCoeff = microdamping;
   }
-
-  // TODO: preselect the MP for which the DEM-conf-files will be saved
-
-  //col_i = static_cast<size_t>(p % MPM.Grid.Nx);
-  //row_i = static_cast<size_t>(floor((double)p / (double)MPM.Grid.Nx));
-  if (MPM.MP[p].isTracked && MPM.step % MPM.confPeriod == 0) {
-    char fname[256];
-    snprintf(fname, 256, "%s/DEM_MP%zu/conf%i", MPM.result_folder.c_str(), p, MPM.iconf);
-    MPM.MP[p].PBC->saveConf(fname);
-    MPM.MP[p].PBC->iconf++;
-  }
-
+	
   // Stress
   // !!! (Sign convention is opposed) !!!
   MPM.MP[p].stress.xx = -SigAvg.xx;

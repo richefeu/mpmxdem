@@ -286,8 +286,7 @@ void PBC3Dbox::loadConf(const char* name) {
       int unused;
       conf >> unused;
       std::cerr << "enableSwitch is not used anymore (remove it from the conf file please)\n";
-    }
-    else if (token == "substractMeanVelocity")
+    } else if (token == "substractMeanVelocity")
       conf >> substractMeanVelocity;
     else if (token == "limitHboxvelocity") {
       conf >> hboxLimitVel;
@@ -474,9 +473,10 @@ void PBC3Dbox::loadConf(const char* name) {
 // Rmin, Rmax
 // VelMin, velMax, VelMean
 // Vsolid
-// Vmin, Vmax, Vmean
-// etc.
+// Vmin, Vmax, Vmean, etc.
+// 
 // remark: it is called at the end of 'loadConf' and also in 'initLagamine'
+//         or at the beginning of 'transform' for MPMxDEM
 // ==========================================================================
 void PBC3Dbox::computeSampleData() {
   // Particle related data
@@ -858,17 +858,6 @@ void PBC3Dbox::setSample() {
   return;
 }
 
-void PBC3Dbox::freezeSystem() {
-  for (size_t i = 0; i < Particles.size(); i++) {
-    Particles[i].vel.reset();
-    Particles[i].acc.reset();
-    Particles[i].vrot.reset();
-    Particles[i].arot.reset();
-  }
-  Cell.vh.reset();
-  Cell.ah.reset();
-}
-
 /// @brief Computes a single step with the velocity-Verlet algorithm
 void PBC3Dbox::velocityVerletStep() {
   START_TIMER("velocityVerletStep");
@@ -985,7 +974,7 @@ void PBC3Dbox::printScreen(double elapsedTime) {
   vf = sqrt(vf) * interVerlet;
   Kin *= 0.5;
 
-  std::cout << "|  Kin energy (translations) : " << Kin << '\n';  
+  std::cout << "|  Kin energy (translations) : " << Kin << '\n';
   std::cout << "|  Estimated free flight distance between Neighbor updates: " << 1.0e6 * vf << "e-6\n";
   std::cout << "|  Verlet distance: " << dVerlet << ", Rmin: " << Rmin << '\n';
 
@@ -1058,7 +1047,7 @@ void PBC3Dbox::dataOutput() {
   // Other things
   double ResMean, Res0Mean, fnMin, fnMean;
   double Vcell = fabs(Cell.h.det());
-  
+
   double Kin = 0.0;
   vec3r vel;
   for (size_t i = 0; i < Particles.size(); i++) {
@@ -1066,7 +1055,7 @@ void PBC3Dbox::dataOutput() {
     Kin += Particles[i].mass * vel * vel;
   }
   Kin *= 0.5;
-  
+
   staticQualityData(&ResMean, &Res0Mean, &fnMin, &fnMean);
   resultantOut << t << ' ' << ResMean << ' ' << Res0Mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
                << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMax << ' ' << VelMin << ' ' << VelMean
@@ -1077,7 +1066,7 @@ void PBC3Dbox::dataOutput() {
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
 void PBC3Dbox::updateNeighborList(double dmax) {
   START_TIMER("updateNeighborList");
-	
+
   // store ft because the list will be cleared before being rebuilt
   std::vector<Interaction> Ibak;
   Interaction I;
@@ -1184,7 +1173,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
 void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
   START_TIMER("updateNeighborList_brutForce");
-	
+
   // store ft because the list will be cleared before being rebuilt
   std::vector<Interaction> Ibak;
   Interaction I;
@@ -1703,29 +1692,38 @@ void PBC3Dbox::computeForcesAndMoments() {
 //             METHODS FOR MPMxDEM COUPLING
 // =======================================================================
 
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstepMin, double rateAverage, mat9r& SigAvg) {
-  computeSampleData();
-  double dtc = sqrt(Vmin * density / kn);
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, mat9r& SigAvg) {
+  computeSampleData();  // this will compute the smallest particle volume Vmin
+  double dtc = M_PI * sqrt(Vmin * density / kn);
   double beginavg = macro_dt * (1.0 - rateAverage);
   dt = dtc * 0.2;
 
-  double dtMax = macro_dt / nstepMin;
+  // Restrict to a minimum of nstepMin DEM-time-increments
+  double dtMax = macro_dt / (double)nstepMin;
   if (dt >= dtMax) dt = dtMax;
 
+  // Now, we've got the good time-step
   dt_2 = 0.5 * dt;
   dt2_2 = 0.5 * dt * dt;
   t = 0.0;
   tmax = macro_dt;
-  interVerlet = 5.0 * dt;  // on peut faire une meilleur estimation
-  interVerletC = 0;
 
+  // Define the transformation velocity matrix vh
   mat9r dFmI = Finc;
   dFmI.xx -= 1.0;
   dFmI.yy -= 1.0;
   dFmI.zz -= 1.0;
-  mat9r vh = (1.0f / macro_dt) * (dFmI * Cell.h);
+  Cell.vh = (1.0f / macro_dt) * (dFmI * Cell.h);
 
-  Load.VelocityControl(vh);
+  // Set the time-period for rebuilding the verlet list
+  //interVerlet = 5.0 * dt;  // on peut faire une meilleur estimation
+  double vmax = std::max({fabs(Cell.vh.xx), fabs(Cell.vh.xy), fabs(Cell.vh.xz), fabs(Cell.vh.yx), fabs(Cell.vh.yy),
+                          fabs(Cell.vh.yz), fabs(Cell.vh.zx), fabs(Cell.vh.zy), fabs(Cell.vh.zz)});
+  // vmax * interVerlet = Rmin
+  interVerlet = Rmin / vmax;
+  interVerletC = 0;
+
+  Load.VelocityControl(Cell.vh);
   updateNeighborList(dVerlet);
   accelerations();
 
@@ -1743,6 +1741,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstepMin, double r
   while (t < tmax) {
     computeSampleData();
     velocityVerletStep();
+		
     if (t >= beginavg - dt) {
       tvec.push_back(t);
       sxx.push_back(Sig.xx);
@@ -1755,6 +1754,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstepMin, double r
       szy.push_back(Sig.zy);
       szz.push_back(Sig.zz);
     }
+		
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
@@ -1787,62 +1787,6 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, double nstepMin, double r
     SigAvg.zz = Regr->orig + tlast * Regr->slope;
   } else {
     SigAvg = Sig;
-  }
-}
-void PBC3Dbox::mpmBonds(double Dist) {
-  ActivateBonds(Dist, bondedStateDam);
-  numericalDampingCoeff = 0.0;
-  freezeSystem();
-}
-
-// FIXME: à supprimer ???
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, const char* name) {
-  char fname[256];
-  double dtc = sqrt(Vmin * density / kn);
-  dt = dtc * 0.005;
-  if (dt >= macro_dt) dt = macro_dt * 0.2;
-  dt_2 = 0.5 * dt;
-  dt2_2 = 0.5 * dt * dt;
-  tmax = t + macro_dt;
-  interVerlet = 10 * dt;  // on peut faire une meilleur estimation (?)
-
-  mat9r dFmI = Finc;
-  dFmI.xx -= 1.0;
-  dFmI.yy -= 1.0;
-  dFmI.zz -= 1.0;
-  mat9r vh = (1.0 / macro_dt) * (dFmI * Cell.h);
-
-  Load.VelocityControl(vh);
-  accelerations();
-  dataOutput();
-  snprintf(fname, 256, "%s%d", name, iconf);
-  saveConf(fname);
-
-  double previousTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
-  while (t < tmax) {
-    velocityVerletStep();
-    if (interConfC >= interConf) {
-      double currentTime = (double)std::clock() / (double)CLOCKS_PER_SEC;
-      printScreen(currentTime - previousTime);
-      previousTime = currentTime;
-      snprintf(fname, 256, "%s%d", name, iconf);
-      saveConf(fname);
-      interConfC = 0.0;
-      iconf++;
-    }
-
-    if (interVerletC >= interVerlet) {
-      updateNeighborList(dVerlet);
-      interVerletC = 0.0;
-    }
-    if (interOutC >= interOut) {
-      dataOutput();
-      interOutC = 0.0;
-    }
-    interConfC += dt;
-    interOutC += dt;
-    interVerletC += dt;
-    t += dt;
   }
 }
 
