@@ -631,6 +631,7 @@ void MPMbox::init() {
 
 void MPMbox::run() {
   START_TIMER("run");
+	
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
@@ -639,7 +640,7 @@ void MPMbox::run() {
   }
   step = 0;
 
-  while (t < finalTime) {
+  while (t <= finalTime) {
 
     if (ramp) {
       if (fabs(gravity.x) < fabs(gravity_max.x)) {
@@ -664,6 +665,21 @@ void MPMbox::run() {
 
     if (step % confPeriod == 0) {
       save(iconf);
+			
+			// save DEM_MP conf-files
+			if (CHCL.hasDoubleScale == true) {
+			  for (size_t p = 0; p < MP.size(); p++) {
+				  if (MP[p].isTracked) {
+				    char fname[256];
+				    snprintf(fname, 256, "%s/DEM_MP%zu/conf%i", result_folder.c_str(), p, iconf);
+				    MP[p].PBC->iconf = iconf;
+						MP[p].PBC->t = t;
+						MP[p].PBC->tmax = t;
+						MP[p].PBC->saveConf(fname);
+				  }
+			  }
+			}
+			
       iconf++;
     }
 

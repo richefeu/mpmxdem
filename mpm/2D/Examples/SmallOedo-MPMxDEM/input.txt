@@ -33,7 +33,7 @@ model CHCL_DEM           DE         dem_conf0    1                 1e-6         
 set_node_grid  W.H.lx.ly  0.6  0.6  0.1 0.1
 
 #                   group       modelName     mass_density(kg/m3)    x0    y0     x1     y1      size of boxes
-set_MP_grid         0           M0            550.0                  0.2   0.2    0.4    0.4     0.05
+set_MP_grid         0           DE            550.0                  0.2   0.2    0.4    0.4     0.05
 
 # NONE, ALL, LIST NB [...NB x ID], GRID X0 Y0 LX LY TOL, BOX X0 Y0 X1 Y1
 select_tracked_MP ALL

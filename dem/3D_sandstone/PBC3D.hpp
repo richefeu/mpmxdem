@@ -79,12 +79,12 @@ class PBC3Dbox {
   double dt0;      ///< Maximum tangential displacement
   double drot0;    ///< Maximum angular rotation
   double powSurf;  ///< Power used in the breakage surface
-  double rampRatio;    
-  double rampDuration; ///< linear laoding ramp between t = 0 and t = rampDuration
+  double rampRatio;
+  double rampDuration;  ///< linear laoding ramp between t = 0 and t = rampDuration
 
   // Other parameters
-  int iconf;                     ///< Current configuration ID
-  //int enableSwitch;              ///< If non-null, enable the switch of particles from one boundary to the opposite
+  int iconf;  ///< Current configuration ID
+  // int enableSwitch;              ///< If non-null, enable the switch of particles from one boundary to the opposite
   int substractMeanVelocity;
   int limitHboxvelocity;
   double hboxLimitVel;
@@ -106,25 +106,21 @@ class PBC3Dbox {
   double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);
   ///< Used for interaction of type 'bondedStateDam'
 
-  void printScreen(double elapsedTime);  ///< Prints usefull data on screen during computation
-  void dataOutput();                     ///< Outputs usefull data during computation
-  void updateNeighborList(double dmax);  ///< Updates the neighbor-list
-  void updateNeighborList_brutForce(double dmax);
-  void saveConf(const char* name);
-  void saveConf(int i);             ///< Saves the current configuration in a file named confX, where X=i
-  void loadConf(const char* name);  ///< Loads a configuration from a file
-  void clearMemory();               ///< Clears the Particles and Interactions.
-  void computeSampleData();         ///< Computes a number of usefull data (Rmin, Rmax, Vsolid, etc.)
-  void ActivateBonds(double epsiDist,
-                     int state);  ///< Replace contacts by cemented bonds when dn is lower than epsiDist
-  void mpmBonds(double Dist);     ///< loads Activate Bonds from MPM
+  void printScreen(double elapsedTime);            ///< Prints usefull data on screen during computation
+  void dataOutput();                               ///< Outputs usefull data during computation
+  void updateNeighborList(double dmax);            ///< Updates the neighbor-list
+  void updateNeighborList_brutForce(double dmax);  ///< Updates the neighbor-list
+  void saveConf(const char* name);                 ///< Saves the current configuration in a file named 'name'
+  void saveConf(int i);                            ///< Saves the current configuration in a file named confX, where X=i
+  void loadConf(const char* name);                 ///< Loads a configuration from a file
+  void clearMemory();                              ///< Clears the Particles and Interactions.
+  void computeSampleData();                        ///< Computes a number of usefull data (Rmin, Rmax, Vsolid, etc.)
+  void ActivateBonds(double epsiDist, int state);  ///< Replace contacts (with dn < epsiDist) by cemented bonds
   void RemoveBonds(double percentRemove, int StrategyId);  ///< A kind of global damage
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
-  void transform(mat9r& Finc, double macro_dt, double nstep, double rateAverage,
-                 mat9r& SigAvg);                                   ///< for MPMxDEM double-scale simulation
-  void transform(mat9r& Finc, double macro_dt, const char* name);  ///< for MPMxDEM double-scale simulation
-  void freezeSystem();  ///< set particle vel and acc to zero (and also the components of vh and ah)
+  // Methods specifically written for MPMbox (MPMxDEM coupling).
+  void transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, mat9r& SigAvg);
 
   // Methods specifically written for Lagamine (FEMxDEM coupling).
   // They are compatible with fortran (it's the reason why all parameters are pointers).

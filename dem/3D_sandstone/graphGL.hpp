@@ -1,5 +1,5 @@
-#ifndef GRAPH_HPP_184DF783
-#define GRAPH_HPP_184DF783
+#ifndef GRAPHGL_HPP
+#define GRAPHGL_HPP
 
 #include <cmath>
 
@@ -205,4 +205,4 @@ class graphGL {
   }
 };
 
-#endif /* end of include guard: GRAPH_HPP_184DF783 */
+#endif /* end of include guard: GRAPHGL_HPP */
