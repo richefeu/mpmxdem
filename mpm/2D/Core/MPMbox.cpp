@@ -576,6 +576,7 @@ void MPMbox::save(const char* name) {
 
   // Material points
   file << "MPs " << MP.size() << '\n';
+	file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
   for (size_t iMP = 0; iMP < MP.size(); iMP++) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain

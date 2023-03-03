@@ -20,7 +20,14 @@ void mySigHandler(int sig) {
   for (size_t s = 0; s < SimuHandler->Spies.size(); ++s) {
     SimuHandler->Spies[s]->end();
   }
-  WRITE_TIMERS("stopped");
+
+	/*
+	std::cerr << "Timer data saved in 'stopped' file\n";
+  outputManager tmp_out("stopped");
+  tmp_out.writeFile();
+  tmp_out.printTimeTable();
+  */
+	
   // SimuHandler->save_state("data", SimuHandler->step);
   StackTracer::defaultSigHandler(sig);
 }
@@ -32,7 +39,7 @@ int main(int argc, char** argv) {
   printf("The current local time is: %s", ctime(&rawtime));
 
   std::string confFileName;
-  int nbThreads = 1; 
+  int nbThreads = 1;
   int verboseLevel = 0;
 
   try {
@@ -51,7 +58,7 @@ int main(int argc, char** argv) {
     nbThreads = nbThreadsArg.getValue();
     verboseLevel = verboseArg.getValue();
   } catch (TCLAP::ArgException& e) {
-    std::cerr << "error: " << e.error() << " for argument " << e.argId() << std::endl;
+    std::cerr << "Tclap error: " << e.error() << " for argument " << e.argId() << std::endl;
   }
 
   MPMbox Simulation;
@@ -83,4 +90,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-

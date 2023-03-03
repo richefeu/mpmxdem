@@ -85,10 +85,6 @@ void PBC3Dbox::saveConf(int i) {
 void PBC3Dbox::saveConf(const char* name) {
   std::ofstream conf(name);
 
-  // From here, the written precision is increased to the maximum possible
-  // (it is necessary because of the ASCII writting)
-  conf << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-
   conf << "PBC3D 06-05-2021\n";  // format: progName version-date
   conf << "t " << t << '\n';
   conf << "tmax " << tmax << '\n';
@@ -118,6 +114,11 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "Kratio " << Kratio << '\n';
   conf << "rampDuration " << rampDuration << '\n';
   conf << "iconf " << iconf << '\n';
+
+  // From here, the written precision is increased to the maximum possible
+  // (it is necessary because of the ASCII writting)
+  conf << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+
   conf << "h " << Cell.h << '\n';
   conf << "vh " << Cell.vh << '\n';
   conf << "ah " << Cell.ah << '\n';
@@ -474,7 +475,7 @@ void PBC3Dbox::loadConf(const char* name) {
 // VelMin, velMax, VelMean
 // Vsolid
 // Vmin, Vmax, Vmean, etc.
-// 
+//
 // remark: it is called at the end of 'loadConf' and also in 'initLagamine'
 //         or at the beginning of 'transform' for MPMxDEM
 // ==========================================================================
@@ -1489,6 +1490,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       }
       //Interactions[k].mom_bond -= w_bond * (1.0 - Interactions[k].D) * kr * drot;
       Interactions[k].mom_bond = -w_bond * (1.0 - Interactions[k].D) * kr * Interactions[k].drot_bond;
+
       Interactions[k].mom = Interactions[k].mom_fric + Interactions[k].mom_bond;
 
       // Update of the damage parameter D + Rupture criterion
@@ -1500,32 +1502,37 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       /// UPDATE THE DAMAGE PARAMETER
       if (yieldFuncMax > 0.0) {
+
         Interactions[k].D = 1.0;
+
       } else if (yieldFunc0 > 0) {
+
         double zeta1 = currentZeta;  // set the previous zeta as the first bound
         double zeta2 = zetaMax;      // set the max zeta as the second bound
-        double tol = 0.001;//0.005 * yieldFunc0;
-        double df = yieldFunc0;
+        double tol = 0.001;
+        double surfFunc = yieldFunc0;
         double zetaTest;  // the trial variable
+
+        // dichotomy to find zetaTest that corresponds to |yieldFunc| < tol
+        // maximum number of iterations is 20
         for (int p = 0; p < 20; p++) {
           zetaTest = 0.5 * (zeta1 + zeta2);
-          df = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond);
-          if (df < 0.0)
+          surfFunc = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond);
+          if (surfFunc < 0.0)
             zeta2 = zetaTest;
-          else if (df > 0.0)
+          else if (surfFunc > 0.0)
             zeta1 = zetaTest;
-          if (fabs(df) < tol) {
+          if (fabs(surfFunc) < tol) {
             break;
           }
         }
-        
+
         if (zetaMax > 1.0) {
           Interactions[k].D = (zetaTest - 1.0) / (zetaMax - 1.0);
         } else {
           Interactions[k].D = 1.0;
         }
         
-        //std::cerr << zetaTest << ' ' <<Interactions[k].D << '\n';
       }
 
       // RUPTURE
@@ -1716,7 +1723,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rate
   Cell.vh = (1.0f / macro_dt) * (dFmI * Cell.h);
 
   // Set the time-period for rebuilding the verlet list
-  //interVerlet = 5.0 * dt;  // on peut faire une meilleur estimation
+  // interVerlet = 5.0 * dt;  // on peut faire une meilleur estimation
   double vmax = std::max({fabs(Cell.vh.xx), fabs(Cell.vh.xy), fabs(Cell.vh.xz), fabs(Cell.vh.yx), fabs(Cell.vh.yy),
                           fabs(Cell.vh.yz), fabs(Cell.vh.zx), fabs(Cell.vh.zy), fabs(Cell.vh.zz)});
   // vmax * interVerlet = Rmin
@@ -1741,7 +1748,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rate
   while (t < tmax) {
     computeSampleData();
     velocityVerletStep();
-		
+
     if (t >= beginavg - dt) {
       tvec.push_back(t);
       sxx.push_back(Sig.xx);
@@ -1754,7 +1761,7 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rate
       szy.push_back(Sig.zy);
       szz.push_back(Sig.zz);
     }
-		
+
     if (interVerletC >= interVerlet) {
       updateNeighborList(dVerlet);
       interVerletC = 0.0;
