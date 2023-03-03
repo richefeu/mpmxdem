@@ -9,7 +9,7 @@ finalTime 2.5
 confPeriod 2500
 proxPeriod 50 # at the MPM scale for interactions with boundaries
 # Time increment
-dt 1e-5
+dt 1e-6
 # Current time
 t 0.0
 # shape function can be Linear or GIMP (not yet implemented)
@@ -21,14 +21,14 @@ splitting 0
 shearLimit 1.0
 
 # ramp 0 -9.81 0 -0.0005 
-demavg 50 0.2
+demavg 50 1.0
 
 # Materials
 #     modelID          modelName  Young    Poisson  FrictionAngle  Cohesion  DilatancyAngle
 model MohrCoulomb      M0         2.14e+5  0.498    0.4            82.6      -0.18
 
-#                                 PBC3D-file   reactivationTime  reactivationDistance  numericalDamping
-model CHCL_DEM           DE         dem_conf0    1                 1e-6                  0.0
+#                                 PBC3D-file            reactivationTime  reactivationDistance  numericalDamping
+model CHCL_DEM         DE         27shells_1000Pa.txt    1                 1e-6                  0.0
 
 set_node_grid  W.H.lx.ly  0.6  0.6  0.1 0.1
 
@@ -47,12 +47,12 @@ BoundaryForceLaw frictionalViscoElastic 2
 Obstacle Line    2      0.4   0.4    0.4   0.2  freeze    # right
 Obstacle Line    2      0.4   0.2    0.2   0.2  freeze    # bottom
 Obstacle Line    2      0.2   0.2    0.2   0.4  freeze    # left
-Obstacle Line    2      0.2   0.4    0.4   0.4  velocity 0.0 -0.01  # top
+Obstacle Line    2      0.2   0.4    0.4   0.4  velocity 0.0 -0.005  # top
 
 Spy ObstacleTracking 3 100 topWall.txt
 
 #properties      parameter  groupMP   groupObst  value
-set              mu         0         2          0.2
+set              mu         0         2          0.0
 set              kn         0         2          1e7
 set              kt         0         2          1e7
 set              viscRate   0         2          0

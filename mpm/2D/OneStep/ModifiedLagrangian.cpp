@@ -119,6 +119,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
+	
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM2(Obstacles[o], dt);
   }
@@ -187,6 +188,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     if (MPM.CHCL.hasDoubleScale == true) {
       START_TIMER("updateStrainAndStress");
 
+      // For parallel computing with openMP, we first identify the MPs that do or do not hold a CHCL
       std::vector<size_t> simpleScaleVector;
       std::vector<size_t> doubleScaleVector;
       for (size_t p = 0; p < MP.size(); p++) {
@@ -196,9 +198,13 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
           simpleScaleVector.push_back(p);
         }
       }
+			
+			// Single-scale MPs
       for (size_t q = 0; q < simpleScaleVector.size(); q++) {
         MP[simpleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, simpleScaleVector[q]);
       }
+			
+			// Two-scale MPs
 #pragma omp parallel for default(shared)
       for (size_t q = 0; q < doubleScaleVector.size(); q++) {
         MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
@@ -206,12 +212,17 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
                                       MP[doubleScaleVector[q]].stress.xx, MP[doubleScaleVector[q]].stress.xy,
                                       MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
       }
+			
     } else {
+			
+			// Every MPs are single-scale
       for (size_t p = 0; p < MP.size(); p++) {
         MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
+			
     }
   }
+	
   // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
