@@ -51,14 +51,19 @@ lib: $(OBJECTS)
 	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	ar rs libPBC3D.a $(OBJECTS)
 
+testLaw: testLaw.cpp lib
+	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
+	$(CXX) $(CXXFLAGS) -c testLaw.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $@.o libPBC3D.a
+	
 # The application that runs a simulation
-run: run.cpp $(OBJECTS)
+run: run.cpp lib
 	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c run.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $@.o libPBC3D.a
 
 # The application that visualizes the conf files
-see: see.cpp $(OBJECTS)
+see: see.cpp lib
 	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c see.cpp -Wno-deprecated $(GLFLAGS)
 	$(CXX) $(CXXFLAGS) -o $@ $@.o libPBC3D.a $(GLLINK) 

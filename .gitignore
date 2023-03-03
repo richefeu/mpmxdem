@@ -7,6 +7,8 @@ dem/*/libPBC3D.a
 dem/*/*/conf*
 *.DS_Store
 mpm/2D/build/*
+mpm/**/*.o
+mpm/**/conf*
 dem/3D_snow/CONVERT/
 dem/3D_snow/CONVERT_OLD_I23/
 dem/3D_snow/I23_sim/
