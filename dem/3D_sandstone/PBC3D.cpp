@@ -1468,30 +1468,27 @@ void PBC3Dbox::computeForcesAndMoments() {
         Interactions[k].ft_fric.reset();
         Interactions[k].dt_fric.reset();
       }
-      Interactions[k].ft_bond -= w_bond * (1.0 - Interactions[k].D) * kt * deltat;
+      //Interactions[k].ft_bond -= w_bond * (1.0 - Interactions[k].D) * kt * deltat;
+      Interactions[k].ft_bond = -w_bond * (1.0 - Interactions[k].D) * kt * Interactions[k].dt_bond;
       Interactions[k].ft = Interactions[k].ft_fric + Interactions[k].ft_bond;
-
-      // Torque (elastic without viscuous damping)
-      // vec3r drot = (Particles[j].vrot - Particles[i].vrot) * dt;
-      // Interactions[k].drot_bond += drot;
-      // Interactions[k].mom -= (1.0 - Interactions[k].D) * kr * drot;
 
       // Torque (elastic-plastic without viscuous damping)
       vec3r drot = (Particles[j].vrot - Particles[i].vrot) * dt;
-      Interactions[k].drot_bond += drot;
-      Interactions[k].mom_bond -= (1.0 - Interactions[k].D) * kr * drot;
+      Interactions[k].drot_bond += drot;    
       if (dn < 0.0) {
         Interactions[k].drot_fric += drot;
-        Interactions[k].mom_fric -= kr * drot;
+        Interactions[k].mom_fric -= w_particle * kr * drot;
         double thresholdr = fabs(mur * Interactions[k].fn);
         double mom_square = Interactions[k].mom_fric * Interactions[k].mom_fric;
         if (mom_square > 0.0 && mom_square >= thresholdr * thresholdr) {
-          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));  //??
+          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));
         }
       } else {
         Interactions[k].drot_fric.reset();
         Interactions[k].mom_fric.reset();
       }
+      //Interactions[k].mom_bond -= w_bond * (1.0 - Interactions[k].D) * kr * drot;
+      Interactions[k].mom_bond = -w_bond * (1.0 - Interactions[k].D) * kr * Interactions[k].drot_bond;
       Interactions[k].mom = Interactions[k].mom_fric + Interactions[k].mom_bond;
 
       // Update of the damage parameter D + Rupture criterion
@@ -1507,7 +1504,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       } else if (yieldFunc0 > 0) {
         double zeta1 = currentZeta;  // set the previous zeta as the first bound
         double zeta2 = zetaMax;      // set the max zeta as the second bound
-        double tol = 0.005 * yieldFunc0;
+        double tol = 0.001;//0.005 * yieldFunc0;
         double df = yieldFunc0;
         double zetaTest;  // the trial variable
         for (int p = 0; p < 20; p++) {
@@ -1521,11 +1518,14 @@ void PBC3Dbox::computeForcesAndMoments() {
             break;
           }
         }
+        
         if (zetaMax > 1.0) {
           Interactions[k].D = (zetaTest - 1.0) / (zetaMax - 1.0);
         } else {
           Interactions[k].D = 1.0;
         }
+        
+        //std::cerr << zetaTest << ' ' <<Interactions[k].D << '\n';
       }
 
       // RUPTURE
