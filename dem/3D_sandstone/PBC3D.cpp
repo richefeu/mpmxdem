@@ -44,13 +44,17 @@ PBC3Dbox::PBC3Dbox() {
   tensfailure = 0;
   fricfailure = 0;
   dVerlet = 1e-7;
-  zetaMax = 1;
+  zetaMax = 1.0;
+  zetaInter = 1.0;
   substractMeanVelocity = 1;
   limitHboxvelocity = 0;
   hboxLimitVel = 1e12;
   objectiveFriction = 1;
   rampRatio = 1.0;
   rampDuration = 0.0;
+
+  modelSoftening = "trainee";
+  setTraineeSoftening();
 }
 
 /// @brief Print a banner related with the current code
@@ -109,6 +113,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "drot0 " << drot0 << '\n';
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
+  conf << "zetaInter " << zetaInter << '\n';
   conf << "permamentGluer " << permamentGluer << '\n';
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
@@ -259,7 +264,18 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> powSurf;
     else if (token == "zetaMax")
       conf >> zetaMax;
-    else if (token == "permamentGluer")
+    else if (token == "zetaInter")
+      conf >> zetaInter;
+    else if (token == "softening") {
+      conf >> modelSoftening;
+      if (modelSoftening == "linear") {
+        setLinearSoftening();
+      } else if (modelSoftening == "gate") {
+        setGateSoftening();
+      } else {
+        setTraineeSoftening();
+      }
+    } else if (token == "permamentGluer")
       conf >> permamentGluer;
     else if (token == "rampDuration") {
       conf >> rampDuration;
@@ -1312,6 +1328,33 @@ void PBC3Dbox::accelerations() {
   }
 }
 
+void PBC3Dbox::setTraineeSoftening() {
+  modelSoftening = "trainee";
+  DzetaModel = [this](double zeta) -> double { return (zeta - 1.0) / (this->zetaMax - 1.0); };
+  zetaDModel = [this](double D) -> double { return D * (this->zetaMax - 1.0) + 1.0; };
+}
+
+void PBC3Dbox::setLinearSoftening() {
+  modelSoftening = "linear";
+  DzetaModel = [this](double zeta) -> double {
+    return (this->zetaMax * (zeta - 1.0)) / ((this->zetaMax - 1.0) * zeta);
+  };
+  zetaDModel = [this](double D) -> double { return this->zetaMax / (this->zetaMax - D * (this->zetaMax - 1.0)); };
+}
+
+void PBC3Dbox::setGateSoftening() {
+  modelSoftening = "gate";
+  DzetaModel = [this](double zeta) -> double {
+    if (zeta <= this->zetaInter) return (zeta - 1.0) / zeta;
+    return 1.0 - (this->zetaMax - zeta) / ((this->zetaMax - this->zetaInter) * zeta);
+  };
+  zetaDModel = [this](double D) -> double {
+    double Dinter = (this->zetaInter - 1.0) / this->zetaInter;
+    if (D <= Dinter) return 1.0 / (1.0 - D);
+    return this->zetaMax / (1.0 + (1.0 - D) * (this->zetaMax - this->zetaInter));
+  };
+}
+
 double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm) {
   START_TIMER("YieldFuncDam");
   double yieldFunc;
@@ -1469,13 +1512,12 @@ void PBC3Dbox::computeForcesAndMoments() {
         Interactions[k].ft_fric.reset();
         Interactions[k].dt_fric.reset();
       }
-      //Interactions[k].ft_bond -= w_bond * (1.0 - Interactions[k].D) * kt * deltat;
       Interactions[k].ft_bond = -w_bond * (1.0 - Interactions[k].D) * kt * Interactions[k].dt_bond;
       Interactions[k].ft = Interactions[k].ft_fric + Interactions[k].ft_bond;
 
       // Torque (elastic-plastic without viscuous damping)
       vec3r drot = (Particles[j].vrot - Particles[i].vrot) * dt;
-      Interactions[k].drot_bond += drot;    
+      Interactions[k].drot_bond += drot;
       if (dn < 0.0) {
         Interactions[k].drot_fric += drot;
         Interactions[k].mom_fric -= w_particle * kr * drot;
@@ -1488,7 +1530,6 @@ void PBC3Dbox::computeForcesAndMoments() {
         Interactions[k].drot_fric.reset();
         Interactions[k].mom_fric.reset();
       }
-      //Interactions[k].mom_bond -= w_bond * (1.0 - Interactions[k].D) * kr * drot;
       Interactions[k].mom_bond = -w_bond * (1.0 - Interactions[k].D) * kr * Interactions[k].drot_bond;
 
       Interactions[k].mom = Interactions[k].mom_fric + Interactions[k].mom_bond;
@@ -1496,7 +1537,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       // Update of the damage parameter D + Rupture criterion
       double norm_dt_bond = norm(Interactions[k].dt_bond);
       double norm_drot_bond = norm(Interactions[k].drot_bond);
-      double currentZeta = Interactions[k].D * (zetaMax - 1.0) + 1.0;
+      double currentZeta = zetaDModel(Interactions[k].D);  // Interactions[k].D * (zetaMax - 1.0) + 1.0;
       double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond);
       double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond);
 
@@ -1509,7 +1550,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
         double zeta1 = currentZeta;  // set the previous zeta as the first bound
         double zeta2 = zetaMax;      // set the max zeta as the second bound
-        double tol = 0.001;
+        double tol = 1.0e-3;
         double surfFunc = yieldFunc0;
         double zetaTest;  // the trial variable
 
@@ -1528,11 +1569,10 @@ void PBC3Dbox::computeForcesAndMoments() {
         }
 
         if (zetaMax > 1.0) {
-          Interactions[k].D = (zetaTest - 1.0) / (zetaMax - 1.0);
+          Interactions[k].D = DzetaModel(zetaTest);  //(zetaTest - 1.0) / (zetaMax - 1.0);
         } else {
           Interactions[k].D = 1.0;
         }
-        
       }
 
       // RUPTURE

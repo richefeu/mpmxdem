@@ -25,11 +25,12 @@ int main(/*int argc, char const* argv[]*/) {
   // set the law parameters
   box.kn = 1.0e5;     ///< Normal stiffness (for compression/tension, bonded or not)
   box.kt = 1.0e5;     ///< Tangential stiffness (bonded or not)
-  box.kr = 10.0;        ///< Angular stiffness (only for bonded links)
+  box.kr = 10.0;      ///< Angular stiffness (only for bonded links)
   box.mu = 0.5;       ///< Coefficent of friction
   box.mur = 0.4;      ///< Coefficient of "angular-friction"
   box.fcoh = 0.0;     ///< Cohesion force (strictly negative)
-  box.zetaMax = 1.5;  ///< Can be seen as "dn_rupture / dn_dammage_starts"
+  box.zetaMax = 2.0;  ///< Can be seen as "dn_rupture / dn_dammage_starts"
+  box.zetaInter = 1.5;
   box.Kratio = 1;     ///< Ratio of particle stiffness over bond stiffness
   double w_bond = 1.0 / (box.Kratio + 1.0);
 
@@ -44,11 +45,14 @@ int main(/*int argc, char const* argv[]*/) {
   box.drot0 = box.mom0 / (w_bond * box.kr);  ///< Maximum angular rotation
 
   // set the loading
-  double theta_tn = M_PI*0.5;  // rad
+  //box.setTraineeSoftening();
+  //box.setLinearSoftening();
+  box.setGateSoftening();
+  double theta_tn = 0.0;  // M_PI*0.5;  // rad
   vec3r axisRot(0.0, 0.0, 1.0);
   axisRot.normalize();
   double deplMax = P1.radius * 0.01;
-  double rotMax = 0.25;
+  double rotMax = 0.0;  // 0.25;
   int nsteps = 1000;
 
   double vtrans = deplMax / (double)nsteps;  // vtrans * nsteps * (dt=1) = deplMax
@@ -71,8 +75,9 @@ int main(/*int argc, char const* argv[]*/) {
     box.Particles[0].Q.set_axis_angle(axisRot, -0.5 * step * vrot);
 
     box.computeForcesAndMoments();
-    std::cout << box.Particles[1].pos - posIni << ' ' << step * vrot << ' ' << ' ' << box.Interactions[0].fn_bond << ' '
-              << norm(box.Interactions[0].ft_bond) << ' ' << norm(box.Interactions[0].mom_bond) << '\n';
+    std::cout << box.Particles[1].pos - posIni << ' ' << step * vrot << ' ' << box.Interactions[0].fn_bond << ' '
+              << norm(box.Interactions[0].ft_bond) << ' ' << norm(box.Interactions[0].mom_bond) << ' '
+              << box.Interactions[0].D << '\n';
   }
 
   return 0;

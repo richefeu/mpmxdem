@@ -11,6 +11,7 @@
 #include <random>
 #include <utility>
 #include <vector>
+#include <functional>
 
 #include "Interaction.hpp"
 #include "Loading.hpp"
@@ -69,6 +70,7 @@ class PBC3Dbox {
   double mur;       ///< Coefficient of "angular-friction"
   double fcoh;      ///< Cohesion force (strictly negative)
   double zetaMax;   ///< Can be seen as "dn_rupture / dn_dammage_starts"
+  double zetaInter; ///< This is used for gate softening
   double Kratio;    ///< Ratio of particle stiffness over bond stiffness
 
   // Solid cohesion
@@ -81,6 +83,10 @@ class PBC3Dbox {
   double powSurf;  ///< Power used in the breakage surface
   double rampRatio;
   double rampDuration;  ///< linear laoding ramp between t = 0 and t = rampDuration
+  
+  std::string modelSoftening; ///< Can be "linear", "gate" or "trainee"(default)
+  std::function<double(double)> DzetaModel; ///< Compute D as a function of zeta
+  std::function<double(double)> zetaDModel; ///< Compute zeta as a function of D
 
   // Other parameters
   int iconf;  ///< Current configuration ID
@@ -103,9 +109,13 @@ class PBC3Dbox {
                                    ///< (iteratively make a time increment and check for updates or saving)
   void accelerations();            ///< Computes accelerations (both for particles and the periodic-cell)
   void computeForcesAndMoments();  ///< Computes forces and moments (and cell-stress)
+  
+  // Methods used for interaction of type 'bondedStateDam'
   double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);
-  ///< Used for interaction of type 'bondedStateDam'
-
+  void setTraineeSoftening();
+  void setLinearSoftening();
+  void setGateSoftening();
+  
   void printScreen(double elapsedTime);            ///< Prints usefull data on screen during computation
   void dataOutput();                               ///< Outputs usefull data during computation
   void updateNeighborList(double dmax);            ///< Updates the neighbor-list
