@@ -96,6 +96,7 @@ class PBC3Dbox {
   double hboxLimitVel;
   int permamentGluer;            ///< If 1, contacts are permanently transformed to glued-point
   double numericalDampingCoeff;  ///< This is the so called Cundall damping
+  int continuumContact;
 
   // Ctor
   PBC3Dbox();

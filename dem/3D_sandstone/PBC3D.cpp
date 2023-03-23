@@ -52,6 +52,7 @@ PBC3Dbox::PBC3Dbox() {
   objectiveFriction = 1;
   rampRatio = 1.0;
   rampDuration = 0.0;
+  continuumContact = 0;
 
   modelSoftening = "trainee";
   setTraineeSoftening();
@@ -115,6 +116,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "zetaMax " << zetaMax << '\n';
   conf << "zetaInter " << zetaInter << '\n';
   conf << "permamentGluer " << permamentGluer << '\n';
+  conf << "continuumContact " << continuumContact << '\n';
   conf << "numericalDampingCoeff " << numericalDampingCoeff << '\n';
   conf << "Kratio " << Kratio << '\n';
   conf << "rampDuration " << rampDuration << '\n';
@@ -277,6 +279,8 @@ void PBC3Dbox::loadConf(const char* name) {
       }
     } else if (token == "permamentGluer")
       conf >> permamentGluer;
+    else if (token == "continuumContact")
+      conf >> continuumContact;
     else if (token == "rampDuration") {
       conf >> rampDuration;
     } else if (token == "numericalDampingCoeff")
@@ -734,7 +738,7 @@ void PBC3Dbox::setSample() {
                       radius,           // rmax
                       200,              // no of trials
                       0.0, cellSize, 0.0, cellSize, 0.0, cellSize, cellSize - (2.0 * ngw * radius),
-                      ngw * ngw * ngw  // The periodic cell
+                      ngw * ngw * ngw   // The periodic cell
     );
     packing.seedTime();
     // MORE PARAMETRIZATION HERE ........ TODO
@@ -1407,9 +1411,9 @@ void PBC3Dbox::computeForcesAndMoments() {
       Interactions[k].fn = fne + fnv;            // normal force component
 
       // Tangential force (elastic without viscuous damping)
-      vec3r ft_corr = Interactions[k].ft;  // force that will be corrected
+      vec3r ft_corr = Interactions[k].ft;                        // force that will be corrected
       if (objectiveFriction == 1) {
-        ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));                               // 1st correction
+        ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));  // 1st correction
         ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
       }
       vec3r vt = realVel - (vn * n);                // relative velocity projected on the tangential plan
@@ -1489,8 +1493,9 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
       double dn = len - (Particles[i].radius + Particles[j].radius);  // a negative value is an overlap
-      double dn_bond = len - (Particles[i].radius + Particles[j].radius) - Interactions[k].gap0;
-      double vn = realVel * n;  // normal relative (j/i) velocity
+      double dn_bond = dn - Interactions[k].gap0;
+      if (continuumContact == 1) dn -= Interactions[k].gap0;
+      double vn = realVel * n;                                                       // normal relative (j/i) velocity
       Interactions[k].fn_elas = 0.0;
       if (dn < 0.0) Interactions[k].fn_elas = -w_particle * kn * dn;                 // elastic normal contact-force
       Interactions[k].fn_bond = -w_bond * (1.0 - Interactions[k].D) * kn * dn_bond;  // elastic normal bond-force
@@ -1537,7 +1542,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       // Update of the damage parameter D + Rupture criterion
       double norm_dt_bond = norm(Interactions[k].dt_bond);
       double norm_drot_bond = norm(Interactions[k].drot_bond);
-      double currentZeta = zetaDModel(Interactions[k].D);  // Interactions[k].D * (zetaMax - 1.0) + 1.0;
+      double currentZeta = zetaDModel(Interactions[k].D); // Interactions[k].D * (zetaMax - 1.0) + 1.0;
       double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond);
       double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond);
 
@@ -1577,7 +1582,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // RUPTURE
       if (Interactions[k].D >= 1.0) {
-        if (Interactions[k].fn_elas == 0.0) {  // in case of absence of contact
+        if (Interactions[k].fn_elas == 0.0) { // in case of absence of contact
           Interactions[k].state = noContactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
@@ -1591,7 +1596,7 @@ void PBC3Dbox::computeForcesAndMoments() {
           Interactions[k].mom.reset();
 
           tensfailure++;
-        } else if (Interactions[k].fn_elas > 0.0) {  // in case the particles were in contact
+        } else if (Interactions[k].fn_elas > 0.0) { // in case the particles were in contact
           Interactions[k].state = contactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
@@ -1660,9 +1665,9 @@ void PBC3Dbox::computeForcesAndMoments() {
         if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
         Interactions[k].fn_elas = Interactions[k].fn;
 
-        vec3r ft_corr = Interactions[k].ft;  // force that will be corrected
+        vec3r ft_corr = Interactions[k].ft;                        // force that will be corrected
         if (objectiveFriction == 1) {
-          ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));                               // 1st correction
+          ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));  // 1st correction
           ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
         }
         vec3r vt = realVel - (vn * n);  // relative velocity projected on the tangential plan
@@ -1732,7 +1737,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       }
     }  // ====== end if non-bonded interactions
 
-  }  // Loop over interactions
+  }    // Loop over interactions
 }
 
 // =======================================================================
