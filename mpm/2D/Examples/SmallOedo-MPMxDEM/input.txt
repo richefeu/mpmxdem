@@ -28,7 +28,7 @@ demavg 50 1.0
 model MohrCoulomb      M0         2.14e+5  0.498    0.4            82.6      -0.18
 
 #                                 PBC3D-file            reactivationTime  reactivationDistance  numericalDamping
-model CHCL_DEM         DE         27shells_1000Pa.txt    1                 1e-6                  0.0
+model CHCL_DEM         DE         27shells_1000Pa.txt   1                 1e-6                  0.0
 
 set_node_grid  W.H.lx.ly  0.6  0.6  0.1 0.1
 

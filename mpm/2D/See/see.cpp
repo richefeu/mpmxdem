@@ -311,7 +311,7 @@ void motion(int x, int y) {
 
 void display() {
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -765,14 +765,15 @@ void buildMenu() {
 
 int main(int argc, char* argv[]) {
 
-  unsigned char Key;
+  //unsigned char Key;
 
   confNum = (argc > 1) ? atoi(argv[1]) : 0;
-  Key = (argc > 2) ? *argv[2] : '2';
+  //Key = (argc > 2) ? *argv[2] : '2';
   // color_option=atoi(Key);
 
   std::cout << "Current Configuration: ";
   try_to_readConf(confNum, Conf, confNum);
+  
   // ==== Init GLUT and create window
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
@@ -798,7 +799,7 @@ int main(int argc, char* argv[]) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   std::cout << "definig color options ";
 
-  keyboard(Key, 0, 0);
+  //keyboard(Key, 0, 0);
 
   // ==== Enter GLUT event processing cycle
   fit_view();

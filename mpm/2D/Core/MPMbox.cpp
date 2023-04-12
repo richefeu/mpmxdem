@@ -276,10 +276,7 @@ void MPMbox::read(const char* name) {
       file >> confPeriod;
     } else if (token == "proxPeriod") {
       file >> proxPeriod;
-    } /*else if (token == "DEMPeriod") {
-      file >> DEMPeriod;
-    } */
-    else if (token == "dt") {
+    } else if (token == "dt") {
       file >> dt;
     } else if (token == "t") {
       file >> t;
@@ -296,12 +293,13 @@ void MPMbox::read(const char* name) {
     } else if (token == "PICDissipation") {
       file >> ratioFLIP >> timePIC;
       activePIC = true;
-    } else if (token == "demavg") {
+    } else if (token == "demavg") { 
       file >> CHCL.minDEMstep >> CHCL.rateAverage;
-    } /*else if (token == "twinConfSave") {
-      twinConfSave = true;
-    } */
-    else if (token == "ramp") {
+    } else if (token == "CHCL.minDEMstep") {
+      file >> CHCL.minDEMstep;
+    } else if (token == "CHCL.rateAverage") {
+      file >> CHCL.rateAverage;
+    } else if (token == "ramp") {
       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
       ramp = true;
     } else if (token == "gravitySwitch") {
@@ -478,14 +476,8 @@ void MPMbox::read(int num) {
 void MPMbox::save(const char* name) {
   std::ofstream file(name);
 
-  // char name_micro[256];
-  // snprintf(name_micro, 256, "%s_micro", name);
-  // std::ofstream file_micro(name_micro);
-
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
-  // file_micro << "# MP.x MP.y NInt NB TF FF Rmean Vmean VelMean VelMin VelMax VelVar Vsolid Vcell h_xx h_xy h_yx h_yy
-  // "
-  //               "ReducedPartDistMean" << std::endl;
+
   if (planeStrain == true) {
     file << "planeStrain\n";
   }
@@ -500,10 +492,10 @@ void MPMbox::save(const char* name) {
     file << "gravitySwitch " << switchGravTime << " " << planned_grav.x << " " << planned_grav.y << '\n';
   }
   file << "verletCoef " << boundary_layer << '\n';
-  file << "demavg " << CHCL.minDEMstep << " " << CHCL.rateAverage << '\n';
-  /*if (twinConfSave) {
-    file << "twinConfSave" << '\n';
-  }*/
+  //file << "demavg " << CHCL.minDEMstep << " " << CHCL.rateAverage << '\n';
+  file << "CHCL.minDEMstep " << CHCL.minDEMstep << '\n';
+  file << "CHCL.rateAverage " << CHCL.rateAverage << '\n'; 
+ 
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
   file << "confPeriod " << confPeriod << '\n';
@@ -550,23 +542,6 @@ void MPMbox::save(const char* name) {
 
   // fixe-grid
   file << "set_node_grid Nx.Ny.lx.ly " << Grid.Nx << ' ' << Grid.Ny << ' ' << Grid.lx << ' ' << Grid.ly << '\n';
-  /*
-  file << "node " << nodes.size() << '\n';
-  for (size_t inode = 0; inode < nodes.size(); inode++) {
-    file << nodes[inode].number << ' ' << nodes[inode].pos << '\n';
-  }
-
-  file << "Elem " << element::nbNodes << ' ' << Elem.size() << '\n';
-  for (size_t iElem = 0; iElem < Elem.size(); iElem++) {
-    for (size_t e = 0; e < (size_t)element::nbNodes; e++) {
-      file << Elem[iElem].I[e];
-      if (e == (size_t)element::nbNodes - 1)
-        file << '\n';
-      else
-        file << ' ';
-    }
-  }
-  */
 
   // Obstacles
   for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
@@ -583,29 +558,10 @@ void MPMbox::save(const char* name) {
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
          << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
          << '\n';
-
-    /*
-    if (MP[iMP].isDoubleScale) {
-      MP[iMP].PBC->computeSampleData();
-      file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << MP[iMP].PBC->nbActiveInteractions << " "
-                 << MP[iMP].PBC->nbBonds << " " << MP[iMP].PBC->tensfailure << " " << MP[iMP].PBC->fricfailure << " "
-                 << MP[iMP].PBC->Rmean << " " << MP[iMP].PBC->Vmean << " " << MP[iMP].PBC->VelMean << " "
-                 << MP[iMP].PBC->VelMin << " " << MP[iMP].PBC->VelMax << " " << MP[iMP].PBC->VelVar << " "
-                 << MP[iMP].PBC->Vsolid << " " << fabs(MP[iMP].PBC->Cell.h.det()) << " " << MP[iMP].PBC->Cell.h.xx
-                 << " " << MP[iMP].PBC->Cell.h.xy << " " << MP[iMP].PBC->Cell.h.yx << " " << MP[iMP].PBC->Cell.h.yy
-                 << " " << MP[iMP].PBC->ReducedPartDistMean << std::endl;
-    } else {
-      file_micro << MP[iMP].pos.x << " " << MP[iMP].pos.y << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-                 << 1.0 << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " " << 0.0 << " "
-                 << 1.0 << " " << 1.0 << " " << 0.0 << " " << 0.0 << " " << 1.0 << " "
-                 << " " << 0.0 << std::endl;
-    }
-    */
   }
 }
 
 void MPMbox::save(int num) {
-  // Open file
   char name[256];
   snprintf(name, 256, "%s/conf%d.txt", result_folder.c_str(), num);
   console->info("Save {}, #MP: {}, Time: {:.6f}", name, MP.size(), t);
@@ -684,18 +640,8 @@ void MPMbox::run() {
       iconf++;
     }
 
-    /*
-    if (twinConfSave) {
-      if (step % confPeriod == 1) {  // FIXME: c'est bizarre ce truc (à voir ensemble)
-        char name[256];
-        snprintf(name, 256, "%s/acc%d.txt", result_folder.c_str(), iconf);
-        save(name);
-      }
-    }
-    */
-
     if (step % proxPeriod == 0 ||
-        MP.size() != number_MP_before_any_split) {  // second condition is needed because of the splitting
+        MP.size() != number_MP_before_any_split) { // second condition is needed because of the splitting
       checkProximity();
     }
 
