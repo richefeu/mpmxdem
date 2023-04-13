@@ -12,8 +12,10 @@ CXX = g++-12
 # The list of flags passed to the compiler
 CXXFLAGS = -O3 -Wall -Wextra -Wshadow -Wconversion -pedantic -std=c++17 -I ~/toofus -I /usr/include
 # Link flags for OpenGL and glut
-GLFLAGS = `pkg-config --cflags glut`
-GLLINK = `pkg-config --libs glut` -framework OpenGL
+#GLFLAGS = `pkg-config --cflags glut`
+#GLLINK = `pkg-config --libs glut` -framework OpenGL
+GLFLAGS = -I /usr/include
+GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -framework OpenGL
 
 else # ==============================================================
 

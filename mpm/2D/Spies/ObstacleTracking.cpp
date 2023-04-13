@@ -11,7 +11,6 @@ void ObstacleTracking::read(std::istream& is) {
   is >> obstacleNumber >> nrec >> Filename;
   nstep = nrec;
   filename = box->result_folder + fileTool::separator() + Filename;
-  //std::cout << "ObstacleTracking: filename is " << filename << std::endl;
   file.open(filename.c_str());
 }
 

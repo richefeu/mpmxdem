@@ -63,7 +63,8 @@ MPMbox::MPMbox() {
   ramp = false;
   CHCL.minDEMstep = 5;
   CHCL.rateAverage = 0;
-  // twinConfSave = false;
+	CHCL.limitTimeStepFactor = 1e-3;
+	CHCL.criticalDEMTimeStepFactor = 0.01;
   ratioFLIP = 1;
   activePIC = false;
   timePIC = 0.0;
@@ -293,12 +294,16 @@ void MPMbox::read(const char* name) {
     } else if (token == "PICDissipation") {
       file >> ratioFLIP >> timePIC;
       activePIC = true;
-    } else if (token == "demavg") { 
+    } else if (token == "demavg") {
       file >> CHCL.minDEMstep >> CHCL.rateAverage;
     } else if (token == "CHCL.minDEMstep") {
       file >> CHCL.minDEMstep;
     } else if (token == "CHCL.rateAverage") {
       file >> CHCL.rateAverage;
+    } else if (token == "CHCL.limitTimeStepFactor") {
+      file >> CHCL.limitTimeStepFactor;
+    } else if (token == "CHCL.criticalDEMTimeStepFactor") {
+      file >> CHCL.criticalDEMTimeStepFactor;
     } else if (token == "ramp") {
       file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
       ramp = true;
@@ -492,10 +497,12 @@ void MPMbox::save(const char* name) {
     file << "gravitySwitch " << switchGravTime << " " << planned_grav.x << " " << planned_grav.y << '\n';
   }
   file << "verletCoef " << boundary_layer << '\n';
-  //file << "demavg " << CHCL.minDEMstep << " " << CHCL.rateAverage << '\n';
+
   file << "CHCL.minDEMstep " << CHCL.minDEMstep << '\n';
-  file << "CHCL.rateAverage " << CHCL.rateAverage << '\n'; 
- 
+  file << "CHCL.rateAverage " << CHCL.rateAverage << '\n';
+	file << "CHCL.limitTimeStepFactor " << CHCL.limitTimeStepFactor << '\n';
+	file << "CHCL.criticalDEMTimeStepFactor " << CHCL.criticalDEMTimeStepFactor << '\n';
+
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
   file << "confPeriod " << confPeriod << '\n';
@@ -551,7 +558,7 @@ void MPMbox::save(const char* name) {
 
   // Material points
   file << "MPs " << MP.size() << '\n';
-	file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
   for (size_t iMP = 0; iMP < MP.size(); iMP++) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
@@ -588,7 +595,7 @@ void MPMbox::init() {
 
 void MPMbox::run() {
   START_TIMER("run");
-	
+
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
@@ -622,26 +629,26 @@ void MPMbox::run() {
 
     if (step % confPeriod == 0) {
       save(iconf);
-			
-			// save DEM_MP conf-files
-			if (CHCL.hasDoubleScale == true) {
-			  for (size_t p = 0; p < MP.size(); p++) {
-				  if (MP[p].isTracked) {
-				    char fname[256];
-				    snprintf(fname, 256, "%s/DEM_MP%zu/conf%i", result_folder.c_str(), p, iconf);
-				    MP[p].PBC->iconf = iconf;
-						MP[p].PBC->t = t;
-						MP[p].PBC->tmax = t;
-						MP[p].PBC->saveConf(fname);
-				  }
-			  }
-			}
-			
+
+      // save DEM_MP conf-files
+      if (CHCL.hasDoubleScale == true) {
+        for (size_t p = 0; p < MP.size(); p++) {
+          if (MP[p].isTracked) {
+            char fname[256];
+            snprintf(fname, 256, "%s/DEM_MP%zu/conf%i", result_folder.c_str(), p, iconf);
+            MP[p].PBC->iconf = iconf;
+            MP[p].PBC->t = t;
+            MP[p].PBC->tmax = t;
+            MP[p].PBC->saveConf(fname);
+          }
+        }
+      }
+
       iconf++;
     }
 
     if (step % proxPeriod == 0 ||
-        MP.size() != number_MP_before_any_split) { // second condition is needed because of the splitting
+        MP.size() != number_MP_before_any_split) {  // second condition is needed because of the splitting
       checkProximity();
     }
 
@@ -788,6 +795,8 @@ void MPMbox::updateVelocityGradient() {
 
 void MPMbox::limitTimeStepForDEM() {
   START_TIMER("limitTimeStepForDEM");
+	if (CHCL.limitTimeStepFactor <= 0.0) return;
+	
   dt = dtInitial;
   double dtmax = 0.0;
 
@@ -798,19 +807,24 @@ void MPMbox::limitTimeStepForDEM() {
       VG3D.xy = MP[p].velGrad.xy;
       VG3D.yx = MP[p].velGrad.yx;
       VG3D.yy = MP[p].velGrad.yy;
-      VG3D.zz = 1.0;  // assuming plane strain
+      // VG3D.zz = 0.0;  // assuming plane strain
       VG3D = VG3D * MP[p].PBC->Cell.h;
-      double maxi = std::max({fabs(VG3D.xx), fabs(VG3D.xy), fabs(VG3D.xz), fabs(VG3D.yx), fabs(VG3D.yy), fabs(VG3D.yz),
+      // clang-format off
+      double maxi = std::max({fabs(VG3D.xx), fabs(VG3D.xy), fabs(VG3D.xz), 
+				                      fabs(VG3D.yx), fabs(VG3D.yy), fabs(VG3D.yz),
                               fabs(VG3D.zx), fabs(VG3D.zy), fabs(VG3D.zz)});
+      // clang-format on
+
       if (maxi < 1e-12)
         dtmax = dt;
       else
-        dtmax = 1.0e-3 * MP[p].PBC->Rmin / maxi;
+        dtmax = CHCL.limitTimeStepFactor * MP[p].PBC->Rmin / maxi;
+
       dt = (dtmax <= dt) ? dtmax : dt;
     }
   }
 
-  console->trace("DEM time-step dt = {} at the end limitTimeStepForDEM", dt);
+  console->trace("MPM time-step dt = {} at the end limitTimeStepForDEM", dt);
 }
 
 void MPMbox::updateTransformationGradient() {
@@ -855,6 +869,7 @@ void MPMbox::plannedRemovalMP() {
     }
   }
 }
+
 void MPMbox::adaptativeRefinement() {
   START_TIMER("adaptativeRefinement");
   for (size_t p = 0; p < MP.size(); p++) {

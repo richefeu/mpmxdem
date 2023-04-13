@@ -5,9 +5,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<BoundaryForceLaw, frictionalViscoElastic> registrar("frictionalViscoElastic");
-
 void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 
   double kn, kt, mu, viscRate;
@@ -40,24 +37,28 @@ void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
       MPM.Obstacles[o]->Neighbors[nn].ft += -kt * delta_dt;
       
       // === Friction force
-      //double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
-      double threshold = mu *MPM.Obstacles[o]->Neighbors[nn].sigma_n*MPM.MP[pn].vol0;
+      double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].fn;
+      //double threshold = mu * MPM.Obstacles[o]->Neighbors[nn].sigma_n * MPM.MP[pn].vol0;
       if (MPM.Obstacles[o]->Neighbors[nn].ft > threshold) MPM.Obstacles[o]->Neighbors[nn].ft = threshold;
       if (MPM.Obstacles[o]->Neighbors[nn].ft < -threshold) MPM.Obstacles[o]->Neighbors[nn].ft = -threshold;
       double visc = viscRate * 2.0 * sqrt(MPM.MP[pn].mass * kn);
       if (dn < 0) {  // Check if there is contact
+				
         MPM.Obstacles[o]->Neighbors[nn].fn = -kn * dn - visc * normalVel;
         MPM.Obstacles[o]->Neighbors[nn].dn = dn;
         vec2r lever = MPM.MP[pn].pos - MPM.Obstacles[o]->pos;
-        // === Resultant force
+        
+				// === Resultant force
         vec2r f = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
         MPM.MP[pn].contactf = -f;  // useful for display
         MPM.MP[pn].f += f;
         MPM.Obstacles[o]->force -= f;
-        // === Resultant moment (only on the obstacle)
+        
+				// === Resultant moment (only on the obstacle)
         MPM.Obstacles[o]->mom += cross(lever, -f);
-      } else {
-        MPM.Obstacles[o]->Neighbors[nn].fn = -visc * normalVel;
+      
+			} else {
+        MPM.Obstacles[o]->Neighbors[nn].fn = 0.0; // -visc * normalVel;
         MPM.Obstacles[o]->Neighbors[nn].dn = 0.0;
         vec2r f = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
         MPM.MP[pn].f += f;

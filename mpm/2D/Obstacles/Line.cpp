@@ -2,8 +2,6 @@
 #include <Core/MPMbox.hpp>
 #include <Core/MaterialPoint.hpp>
 
-//#include <factory.hpp>
-//static Registrar<Obstacle, Line> registrar("Line");
 std::string Line::getRegistrationName() { return std::string("Line"); }
 
 void Line::read(std::istream& is) {
@@ -58,7 +56,7 @@ void Line::checkProximity(MPMbox& MPM) {
   Neighbor N;
   vec2r c;
   for (size_t p = 0; p < MPM.MP.size(); p++) {
-    double sumSecurDistMin = MPM.MP[p].size;
+    double sumSecurDistMin = 2 * MPM.MP[p].size;
     double sumSecurDist = MPM.MP[p].securDist + securDist;
     if (sumSecurDist < sumSecurDistMin) sumSecurDist = sumSecurDistMin;
     c = MPM.MP[p].pos - pos;
@@ -79,8 +77,9 @@ void Line::checkProximity(MPMbox& MPM) {
     if (istore == Store.size()) break;
 
     if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
-      Neighbors[inew].fn = Store[istore].fn;
-      Neighbors[inew].ft = Store[istore].ft;
+      //Neighbors[inew].fn = Store[istore].fn;
+      //Neighbors[inew].ft = Store[istore].ft;
+      Neighbors[inew] = Store[istore];
 
       ++istore;
     }

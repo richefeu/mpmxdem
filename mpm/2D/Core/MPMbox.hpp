@@ -127,6 +127,8 @@ class MPMbox {
     bool hasDoubleScale; // to know if the computation involves CHCLs
     int minDEMstep;      // minimum number of DEM time steps for linear regression of stress
     double rateAverage;  // end-part of MPM time step used for stress averaging
+		double limitTimeStepFactor;
+		double criticalDEMTimeStepFactor;
   } CHCL;
   
   bool switchGravity;

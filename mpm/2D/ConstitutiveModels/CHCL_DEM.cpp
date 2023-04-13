@@ -9,10 +9,11 @@ std::string CHCL_DEM::getRegistrationName() { return std::string("CHCL_DEM"); }
 
 CHCL_DEM::CHCL_DEM() {}
 
-void CHCL_DEM::read(std::istream& is) { is >> fileName >> timeBondReactivation >> bondingDistance >> microdamping; }
+void CHCL_DEM::read(std::istream& is) { is >> fileName;// >> timeBondReactivation >> bondingDistance >> microdamping;
+ }
 
 void CHCL_DEM::write(std::ostream& os) {
-  os << fileName << ' ' << timeBondReactivation << ' ' << bondingDistance << ' ' << microdamping << '\n';
+  os << fileName << '\n';// << timeBondReactivation << ' ' << bondingDistance << ' ' << microdamping << '\n';
 }
 
 // The elastic properties cannot be get that way, so, as a convention, -1 is returned
@@ -23,6 +24,14 @@ void CHCL_DEM::init(MaterialPoint& MP) {
   MP.PBC = new PBC3Dbox;
   MP.PBC->loadConf(fileName.c_str());
   MP.isDoubleScale = true;
+	
+	// transfert the current stress
+  // !!! (Sign convention is opposed) !!!
+  MP.stress.xx = -MP.PBC->Sig.xx;
+  MP.stress.xy = -MP.PBC->Sig.xy;
+  MP.stress.yx = -MP.PBC->Sig.yx;
+  MP.stress.yy = -MP.PBC->Sig.yy;
+  MP.outOfPlaneStress = -MP.PBC->Sig.zz;
 }
 
 void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
@@ -55,15 +64,22 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Finc3D.zz = 1.0;  // assuming plane strain
 
   mat9r SigAvg;
-  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, MPM.CHCL.minDEMstep, MPM.CHCL.rateAverage, SigAvg);
+
+  // clang-format off
+  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, 
+	                         MPM.CHCL.minDEMstep, MPM.CHCL.rateAverage, MPM.CHCL.criticalDEMTimeStepFactor, 
+													 SigAvg);
+  // clang-format on
 
   // FIXME: ce n'est pas la responsabilité de la loi de faire ce genre de chose
-	//        -> à déplacer dans MPMbox.cpp
+  //        -> à déplacer dans MPMbox.cpp
+													 /*
   if (MPM.t >= timeBondReactivation - MPM.dt && MPM.t <= timeBondReactivation + MPM.dt) {
     MPM.MP[p].PBC->ActivateBonds(bondingDistance, bondedStateDam);
     MPM.MP[p].PBC->numericalDampingCoeff = microdamping;
   }
-	
+													 */
+
   // Stress
   // !!! (Sign convention is opposed) !!!
   MPM.MP[p].stress.xx = -SigAvg.xx;

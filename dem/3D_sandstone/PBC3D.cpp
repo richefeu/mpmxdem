@@ -1542,7 +1542,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       // Update of the damage parameter D + Rupture criterion
       double norm_dt_bond = norm(Interactions[k].dt_bond);
       double norm_drot_bond = norm(Interactions[k].drot_bond);
-      double currentZeta = zetaDModel(Interactions[k].D); // Interactions[k].D * (zetaMax - 1.0) + 1.0;
+      double currentZeta = zetaDModel(Interactions[k].D);  // Interactions[k].D * (zetaMax - 1.0) + 1.0;
       double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond);
       double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond);
 
@@ -1582,7 +1582,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // RUPTURE
       if (Interactions[k].D >= 1.0) {
-        if (Interactions[k].fn_elas == 0.0) { // in case of absence of contact
+        if (Interactions[k].fn_elas == 0.0) {  // in case of absence of contact
           Interactions[k].state = noContactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
@@ -1596,7 +1596,7 @@ void PBC3Dbox::computeForcesAndMoments() {
           Interactions[k].mom.reset();
 
           tensfailure++;
-        } else if (Interactions[k].fn_elas > 0.0) { // in case the particles were in contact
+        } else if (Interactions[k].fn_elas > 0.0) {  // in case the particles were in contact
           Interactions[k].state = contactState;
           Interactions[k].fn_bond = 0.0;
           Interactions[k].ft_bond.reset();
@@ -1744,11 +1744,12 @@ void PBC3Dbox::computeForcesAndMoments() {
 //             METHODS FOR MPMxDEM COUPLING
 // =======================================================================
 
-void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, mat9r& SigAvg) {
+void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, double rateCriticalTimeStep,
+                         mat9r& SigAvg) {
   computeSampleData();  // this will compute the smallest particle volume Vmin
   double dtc = M_PI * sqrt(Vmin * density / kn);
   double beginavg = macro_dt * (1.0 - rateAverage);
-  dt = dtc * 0.2;
+  dt = dtc * rateCriticalTimeStep;
 
   // Restrict to a minimum of nstepMin DEM-time-increments
   double dtMax = macro_dt / (double)nstepMin;

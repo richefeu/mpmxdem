@@ -6,12 +6,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <random>
 #include <utility>
 #include <vector>
-#include <functional>
 
 #include "Interaction.hpp"
 #include "Loading.hpp"
@@ -61,32 +61,32 @@ class PBC3Dbox {
   double dVerlet;  ///< Distance of Verlet
 
   // Properties
-  double density;   ///< Density of all particles
-  double kn;        ///< Normal stiffness (for compression/tension, bonded or not)
-  double kt;        ///< Tangential stiffness (bonded or not)
-  double kr;        ///< Angular stiffness (only for bonded links)
-  double dampRate;  ///< Viscous damping Rate -- in the range [0, 1[
-  double mu;        ///< Coefficent of friction
-  double mur;       ///< Coefficient of "angular-friction"
-  double fcoh;      ///< Cohesion force (strictly negative)
-  double zetaMax;   ///< Can be seen as "dn_rupture / dn_dammage_starts"
-  double zetaInter; ///< This is used for gate softening
-  double Kratio;    ///< Ratio of particle stiffness over bond stiffness
+  double density;    ///< Density of all particles
+  double kn;         ///< Normal stiffness (for compression/tension, bonded or not)
+  double kt;         ///< Tangential stiffness (bonded or not)
+  double kr;         ///< Angular stiffness (only for bonded links)
+  double dampRate;   ///< Viscous damping Rate -- in the range [0, 1[
+  double mu;         ///< Coefficent of friction
+  double mur;        ///< Coefficient of "angular-friction"
+  double fcoh;       ///< Cohesion force (strictly negative)
+  double zetaMax;    ///< Can be seen as "dn_rupture / dn_dammage_starts"
+  double zetaInter;  ///< This is used for gate softening
+  double Kratio;     ///< Ratio of particle stiffness over bond stiffness
 
   // Solid cohesion
-  double fn0;      ///< Maximum normal force
-  double ft0;      ///< Maximum tangential force
-  double mom0;     ///< Maximum Torque
-  double dn0;      ///< Maximum normal displacement
-  double dt0;      ///< Maximum tangential displacement
-  double drot0;    ///< Maximum angular rotation
-  double powSurf;  ///< Power used in the breakage surface
+  double fn0;                                ///< Maximum normal force
+  double ft0;                                ///< Maximum tangential force
+  double mom0;                               ///< Maximum Torque
+  double dn0;                                ///< Maximum normal displacement
+  double dt0;                                ///< Maximum tangential displacement
+  double drot0;                              ///< Maximum angular rotation
+  double powSurf;                            ///< Power used in the breakage surface
   double rampRatio;
-  double rampDuration;  ///< linear laoding ramp between t = 0 and t = rampDuration
-  
-  std::string modelSoftening; ///< Can be "linear", "gate" or "trainee"(default)
-  std::function<double(double)> DzetaModel; ///< Compute D as a function of zeta
-  std::function<double(double)> zetaDModel; ///< Compute zeta as a function of D
+  double rampDuration;                       ///< linear laoding ramp between t = 0 and t = rampDuration
+
+  std::string modelSoftening;                ///< Can be "linear", "gate" or "trainee"(default)
+  std::function<double(double)> DzetaModel;  ///< Compute D as a function of zeta
+  std::function<double(double)> zetaDModel;  ///< Compute zeta as a function of D
 
   // Other parameters
   int iconf;  ///< Current configuration ID
@@ -110,13 +110,13 @@ class PBC3Dbox {
                                    ///< (iteratively make a time increment and check for updates or saving)
   void accelerations();            ///< Computes accelerations (both for particles and the periodic-cell)
   void computeForcesAndMoments();  ///< Computes forces and moments (and cell-stress)
-  
+
   // Methods used for interaction of type 'bondedStateDam'
   double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);
   void setTraineeSoftening();
   void setLinearSoftening();
   void setGateSoftening();
-  
+
   void printScreen(double elapsedTime);            ///< Prints usefull data on screen during computation
   void dataOutput();                               ///< Outputs usefull data during computation
   void updateNeighborList(double dmax);            ///< Updates the neighbor-list
@@ -131,7 +131,8 @@ class PBC3Dbox {
   void freeze();                                           ///< Set all velocities (and accelerations) to zero
 
   // Methods specifically written for MPMbox (MPMxDEM coupling).
-  void transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, mat9r& SigAvg);
+  void transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, double rateCriticalTimeStep,
+                 mat9r& SigAvg);
 
   // Methods specifically written for Lagamine (FEMxDEM coupling).
   // They are compatible with fortran (it's the reason why all parameters are pointers).
@@ -147,7 +148,7 @@ class PBC3Dbox {
   void getOperatorKruyt(double L[6][6]);                    ///< Gets the operator proposed by Kruyt
   void getOperatorKruyt2(double L[9][9]);                   ///< Gets the operator proposed by Kruyt (version Kien)
   void getOperatorKruyt2b(double L[3][3][3][3]);
-  void getOperatorKruyt3(double L[9][9]);  ///< Gets the operator proposed by Kruyt
+  void getOperatorKruyt3(double L[9][9]);                   ///< Gets the operator proposed by Kruyt
   ///< (version Kien avec sliding-contacts)
 
   void staticQualityData(double* ResMean, double* Res0Mean, double* fnMin,

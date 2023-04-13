@@ -10,9 +10,10 @@ struct CHCL_DEM : public ConstitutiveModel {
   CHCL_DEM();
   std::string fileName;  // file name of the initial configuration
   
-  double timeBondReactivation;
+  /*double timeBondReactivation;
   double bondingDistance;
-  double microdamping;
+  double microdamping;*/
+	
   // Different MP can use the same initial conf,
   // but each MP holds its own simulation
 
