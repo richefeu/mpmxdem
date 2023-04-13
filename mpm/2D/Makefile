@@ -14,9 +14,11 @@ CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion -pedantic
 OPENMP_LIB = -l gomp
 
 # Link flags for OpenGL and glut
-GLUTFLAGS = `pkg-config --cflags glut`
-GLUTLIBS = `pkg-config --libs glut` -framework OpenGL
-	
+#GLUTFLAGS = `pkg-config --cflags glut`
+#GLUTLIBS = `pkg-config --libs glut` -framework OpenGL
+GLUTFLAGS = -I/usr/include
+GLUTLIBS = -L/usr/X11R6/lib -lX11 -lXi -lglut -framework OpenGL
+
 else
 
 CXX = g++
@@ -26,8 +28,8 @@ CXXFLAGS = -fopenmp -O3 -std=c++17 \
 OPENMP_LIB = -l gomp
 
 # Link flags for OpenGL and glut
-#GLUTFLAGS = 
-GLUTLIBS = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL-lGLU -lm -lpthread
+GLUTFLAGS = -I/usr/include
+GLUTLIBS = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread
 
 endif
 
