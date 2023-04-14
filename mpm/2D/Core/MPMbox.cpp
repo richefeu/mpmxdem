@@ -75,6 +75,7 @@ MPMbox::MPMbox() {
   confPeriod = 5000;
 
   dt = 0.00001;
+	dtInitial = dt;
   t = 0.0;
   result_folder = ".";
 
@@ -293,11 +294,7 @@ void MPMbox::read(const char* name) {
       file >> shearLimit;
     } else if (token == "MaxSplitNumber") {
       file >> MaxSplitNumber;
-    } /*else if (token == "PICDissipation") {
-      file >> ratioFLIP >> timePIC;
-      activePIC = true;
-    } */
-    else if (token == "demavg") {
+    } else if (token == "demavg") {
       file >> CHCL.minDEMstep >> CHCL.rateAverage;
     } else if (token == "CHCL.minDEMstep") {
       file >> CHCL.minDEMstep;
@@ -343,9 +340,7 @@ void MPMbox::read(const char* name) {
       } else {
         console->warn("mode {} is unknown!", modelID);
       }
-    }
-
-    else if (token == "Obstacle") {
+    } else if (token == "Obstacle") {
       std::string obsName;
       file >> obsName;
       Obstacle* obs = Factory<Obstacle>::Instance()->Create(obsName);
@@ -510,7 +505,6 @@ void MPMbox::save(const char* name) {
   file << "t " << t << '\n';
   file << "splitting " << splitting << '\n';
   file << "ShapeFunction " << shapeFunction->getRegistrationName() << '\n';
-  // file << "PICDissipation " << ratioFLIP << " " << timePIC << '\n';
 
   for (size_t sc = 0; sc < Scheduled.size(); sc++) {
     file << "Scheduler ";
@@ -604,37 +598,9 @@ void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
-  /*
-        if (!ramp) {
-    gravity.set(gravity_max.x, gravity_max.y);
-  }
-        */
-
   step = 0;
 
   while (t <= finalTime) {
-
-    /*
-                if (ramp) {
-      if (fabs(gravity.x) < fabs(gravity_max.x)) {
-        gravity.x += gravity_incr.x;
-      }
-      if (fabs(gravity.y) < fabs(gravity_max.y)) {
-        gravity.y += gravity_incr.y;
-      }
-      if ((fabs(gravity.x) >= fabs(gravity_max.x)) && (fabs(gravity.y) >= fabs(gravity_max.y))) {
-        gravity.set(gravity_max.x, gravity_max.y);
-        ramp = false;
-      }
-    }
-                */
-
-    /*
-if (switchGravity && switchGravTime <= t) {
-gravity_max.set(planned_grav.x, planned_grav.y);
-switchGravity = false;
-}
-    */
 
     // checking convergence requirements
     convergenceConditions();
@@ -664,17 +630,8 @@ switchGravity = false;
       checkProximity();
     }
 
-    /*
-if (activePIC == true) {
-activePIC = timePIC > t;
-if (activePIC == false) {
-console->info("End of PIC damping at time {}", t);
-}
-}
-*/
-
-    plannedRemovalObstacle();
-    plannedRemovalMP();
+    plannedRemovalObstacle(); // TODO: move it as a Scheduler
+    plannedRemovalMP(); // TODO: move it as a Scheduler
 
     for (size_t s = 0; s < Scheduled.size(); ++s) {
       Scheduled[s]->check();

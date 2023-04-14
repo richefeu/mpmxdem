@@ -80,10 +80,13 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // ==== Getting material point mass (something we were not doing before)
   // FIXME: je ne crois pas qu'on devrait faire ça !!!!!!!!!!!
+	//        c'est pas utile car la masse n'est pas supposée varier   
+	/*
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].mass = MP[p].density * MP[p].vol;
   }
-
+  */
+	
   // ==== Initialize grid state (mass and momentum)
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);

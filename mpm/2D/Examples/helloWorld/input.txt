@@ -1,0 +1,39 @@
+oneStepType ModifiedLagrangian
+result_folder .
+tolmass 1.e-5
+gravity 0.0  -9.81
+finalTime 0.5
+confPeriod 1000
+proxPeriod 10
+dt 1e-5
+t 0.0
+ShapeFunction BSpline
+splitting 0
+shearLimit 1.0
+splitCriterionValue 3.0
+MaxSplitNumber 3
+
+#     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
+model MohrCoulomb    MC         1.0e7     0.42      0.3            5e2        0.01
+
+set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
+
+#            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
+set_MP_grid  0       MC            3000.0        0.04   0.04    0.1    0.20    0.005
+
+BoundaryForceLaw frictionalViscoElastic 1
+
+#                group  x0    y0     x1     y1    driveMode
+Obstacle Line    1      0.36  0.26   0.36   0.04  freeze
+Obstacle Line    1      0.36  0.04   0.04   0.04  freeze
+Obstacle Line    1      0.04  0.04   0.04   0.26  freeze
+
+#Obstacle Circle  1      0.14 0.3 0.04 free 300  0 0 0  0 0 0
+
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0.4
+set              kn         0         1          1e7
+set              kt         0         1          1e7
+set              viscRate   0         1          0.98
+
+
