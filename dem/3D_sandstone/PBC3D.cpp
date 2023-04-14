@@ -1767,17 +1767,26 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rate
   dFmI.yy -= 1.0;
   dFmI.zz -= 1.0;
   Cell.vh = (1.0f / macro_dt) * (dFmI * Cell.h);
+  Load.VelocityControl(Cell.vh);
 
   // Set the time-period for rebuilding the verlet list
   // interVerlet = 5.0 * dt;  // on peut faire une meilleur estimation
-  double vmax = std::max({fabs(Cell.vh.xx), fabs(Cell.vh.xy), fabs(Cell.vh.xz), fabs(Cell.vh.yx), fabs(Cell.vh.yy),
-                          fabs(Cell.vh.yz), fabs(Cell.vh.zx), fabs(Cell.vh.zy), fabs(Cell.vh.zz)});
-  // vmax * interVerlet = Rmin
-  interVerlet = Rmin / vmax;
+  // clang-format off
+  double vmax = std::max({fabs(Cell.vh.xx), fabs(Cell.vh.xy), fabs(Cell.vh.xz), 
+		                      fabs(Cell.vh.yx), fabs(Cell.vh.yy), fabs(Cell.vh.yz), 
+													fabs(Cell.vh.zx), fabs(Cell.vh.zy), fabs(Cell.vh.zz)});
+  // clang-format on
+
+  // vmax * interVerlet = 0.5 * Rmin
+  interVerlet = 0.5 * Rmin / vmax;
+  if (interVerlet > macro_dt)
+    interVerlet = macro_dt;
+  else if (interVerlet < dt)
+    interVerlet = dt;
+
+  updateNeighborList(dVerlet);
   interVerletC = 0;
 
-  Load.VelocityControl(Cell.vh);
-  updateNeighborList(dVerlet);
   accelerations();
 
   std::vector<double> sxx;

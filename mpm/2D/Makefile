@@ -43,6 +43,7 @@ $(wildcard ConstitutiveModels/*.cpp) \
 $(wildcard Obstacles/*.cpp) \
 $(wildcard OneStep/*.cpp) \
 $(wildcard ShapeFunctions/*.cpp) \
+$(wildcard Schedulers/*.cpp) \
 $(wildcard Spies/*.cpp)
 
 OBJS = $(SRCS:.cpp=.o)

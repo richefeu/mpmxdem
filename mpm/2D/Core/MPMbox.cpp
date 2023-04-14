@@ -44,6 +44,9 @@
 #include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
 
+#include "Schedulers/GravityRamp.hpp"
+#include "Schedulers/PICDissipation.hpp"
+
 #include "Core/MaterialPoint.hpp"
 
 #include "Mth.hpp"
@@ -57,23 +60,16 @@ MPMbox::MPMbox() {
   Grid.Nx = 20;
   Grid.Ny = 20;
   tolmass = 1.0e-6;
-  gravity_max.set(0.0, -9.81);
   gravity.set(0.0, 0.0);
-  gravity_incr.set(0.0, 0.0);
-  ramp = false;
   CHCL.minDEMstep = 5;
   CHCL.rateAverage = 0;
-	CHCL.limitTimeStepFactor = 1e-3;
-	CHCL.criticalDEMTimeStepFactor = 0.01;
-  ratioFLIP = 1;
+  CHCL.limitTimeStepFactor = 1e-3;
+  CHCL.criticalDEMTimeStepFactor = 0.01;
+  ratioFLIP = 1.0;
   activePIC = false;
-  timePIC = 0.0;
   boundary_layer = 0.0;
   ObstaclePlannedRemoval.time = -1.0;
   ObstaclePlannedRemoval.groupNumber = -1;
-  switchGravity = false;
-  switchGravTime = -1;
-  planned_grav.set(0.0, 0.0);
 
   iconf = 0;
   confPeriod = 5000;
@@ -114,13 +110,13 @@ void MPMbox::showAppBanner() {
 
 void MPMbox::ExplicitRegistrations() {
 
-  // BoundaryForceLaw ===============
+  // BoundaryForceLaw ==========
   Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
       "frictionalNormalRestitution", [](void) -> BoundaryForceLaw* { return new frictionalNormalRestitution(); });
   Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
       "frictionalViscoElastic", [](void) -> BoundaryForceLaw* { return new frictionalViscoElastic(); });
 
-  // Command ===============
+  // Command ===================
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "add_MP_ShallowPath", [](void) -> Command* { return new add_MP_ShallowPath(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction("move_MP",
@@ -144,7 +140,7 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "select_tracked_MP", [](void) -> Command* { return new select_tracked_MP(); });
 
-  // ConstitutiveModel ===============
+  // ConstitutiveModel =========
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "CHCL_DEM", [](void) -> ConstitutiveModel* { return new CHCL_DEM(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
@@ -154,7 +150,7 @@ void MPMbox::ExplicitRegistrations() {
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel* { return new VonMisesElastoPlasticity(); });
 
-  // Obstacle ===============
+  // Obstacle ==================
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
                                                                       [](void) -> Obstacle* { return new Circle(); });
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Line",
@@ -162,7 +158,7 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Polygon",
                                                                       [](void) -> Obstacle* { return new Polygon(); });
 
-  // OneStep ===============
+  // OneStep ===================
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
       "ModifiedLagrangian", [](void) -> OneStep* { return new ModifiedLagrangian(); });
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
@@ -170,7 +166,7 @@ void MPMbox::ExplicitRegistrations() {
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
       "UpdateStressLast", [](void) -> OneStep* { return new UpdateStressLast(); });
 
-  // ShapeFunction ===============
+  // ShapeFunction =============
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
       "BSpline", [](void) -> ShapeFunction* { return new BSpline(); });
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
@@ -178,7 +174,13 @@ void MPMbox::ExplicitRegistrations() {
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
       "RegularQuadLinear", [](void) -> ShapeFunction* { return new RegularQuadLinear(); });
 
-  // Spy ===============
+  // Scheduler ==================
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "GravityRamp", [](void) -> Scheduler* { return new GravityRamp(); });
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "PICDissipation", [](void) -> Scheduler* { return new PICDissipation(); });
+
+  // Spy ========================
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleTracking",
                                                                  [](void) -> Spy* { return new ObstacleTracking(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy* { return new Work(); });
@@ -270,7 +272,7 @@ void MPMbox::read(const char* name) {
     } else if (token == "tolmass") {
       file >> tolmass;
     } else if (token == "gravity") {
-      file >> gravity_max;
+      file >> gravity;
     } else if (token == "finalTime") {
       file >> finalTime;
     } else if (token == "confPeriod") {
@@ -291,10 +293,11 @@ void MPMbox::read(const char* name) {
       file >> shearLimit;
     } else if (token == "MaxSplitNumber") {
       file >> MaxSplitNumber;
-    } else if (token == "PICDissipation") {
+    } /*else if (token == "PICDissipation") {
       file >> ratioFLIP >> timePIC;
       activePIC = true;
-    } else if (token == "demavg") {
+    } */
+    else if (token == "demavg") {
       file >> CHCL.minDEMstep >> CHCL.rateAverage;
     } else if (token == "CHCL.minDEMstep") {
       file >> CHCL.minDEMstep;
@@ -304,12 +307,6 @@ void MPMbox::read(const char* name) {
       file >> CHCL.limitTimeStepFactor;
     } else if (token == "CHCL.criticalDEMTimeStepFactor") {
       file >> CHCL.criticalDEMTimeStepFactor;
-    } else if (token == "ramp") {
-      file >> gravity.x >> gravity.y >> gravity_incr.x >> gravity_incr.y;
-      ramp = true;
-    } else if (token == "gravitySwitch") {
-      file >> switchGravTime >> planned_grav.x >> planned_grav.y;
-      switchGravity = true;
     } else if (token == "verletCoef") {
       file >> boundary_layer;
     } else if (token == "set") {
@@ -375,9 +372,18 @@ void MPMbox::read(const char* name) {
           Obstacles[o]->boundaryForceLaw = bType;
         }
       }
-    }
-
-    else if (token == "Spy") {
+    } else if (token == "Scheduled") {
+      std::string scheduledName;
+      file >> scheduledName;
+      Scheduler* sch = Factory<Scheduler>::Instance()->Create(scheduledName);
+      if (sch != nullptr) {
+        sch->plug(this);
+        sch->read(file);
+        Scheduled.push_back(sch);
+      } else {
+        console->warn("Scheduler {} is unknown!", scheduledName);
+      }
+    } else if (token == "Spy") {
       std::string spyName;
       file >> spyName;
       Spy* spy = Factory<Spy>::Instance()->Create(spyName);
@@ -489,19 +495,13 @@ void MPMbox::save(const char* name) {
   file << "oneStepType " << oneStep->getRegistrationName() << '\n';
   file << "result_folder .\n";
   file << "tolmass " << tolmass << '\n';
-  file << "gravity " << gravity_max << '\n';
-  if (ramp) {
-    file << "ramp " << gravity.x << " " << gravity.y << " " << gravity_incr.x << " " << gravity_incr.y << '\n';
-  }
-  if (switchGravity) {
-    file << "gravitySwitch " << switchGravTime << " " << planned_grav.x << " " << planned_grav.y << '\n';
-  }
+  file << "gravity " << gravity << '\n';
   file << "verletCoef " << boundary_layer << '\n';
 
   file << "CHCL.minDEMstep " << CHCL.minDEMstep << '\n';
   file << "CHCL.rateAverage " << CHCL.rateAverage << '\n';
-	file << "CHCL.limitTimeStepFactor " << CHCL.limitTimeStepFactor << '\n';
-	file << "CHCL.criticalDEMTimeStepFactor " << CHCL.criticalDEMTimeStepFactor << '\n';
+  file << "CHCL.limitTimeStepFactor " << CHCL.limitTimeStepFactor << '\n';
+  file << "CHCL.criticalDEMTimeStepFactor " << CHCL.criticalDEMTimeStepFactor << '\n';
 
   file << "finalTime " << finalTime << '\n';
   file << "proxPeriod " << proxPeriod << '\n';
@@ -510,7 +510,12 @@ void MPMbox::save(const char* name) {
   file << "t " << t << '\n';
   file << "splitting " << splitting << '\n';
   file << "ShapeFunction " << shapeFunction->getRegistrationName() << '\n';
-  file << "PICDissipation " << ratioFLIP << " " << timePIC << '\n';
+  // file << "PICDissipation " << ratioFLIP << " " << timePIC << '\n';
+
+  for (size_t sc = 0; sc < Scheduled.size(); sc++) {
+    file << "Scheduler ";
+    Scheduled[sc]->write(file);
+  }
 
   std::map<std::string, ConstitutiveModel*>::iterator itModel;
   for (itModel = models.begin(); itModel != models.end(); ++itModel) {
@@ -599,14 +604,18 @@ void MPMbox::run() {
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
-  if (!ramp) {
+  /*
+        if (!ramp) {
     gravity.set(gravity_max.x, gravity_max.y);
   }
+        */
+
   step = 0;
 
   while (t <= finalTime) {
 
-    if (ramp) {
+    /*
+                if (ramp) {
       if (fabs(gravity.x) < fabs(gravity_max.x)) {
         gravity.x += gravity_incr.x;
       }
@@ -618,11 +627,14 @@ void MPMbox::run() {
         ramp = false;
       }
     }
+                */
 
-    if (switchGravity && switchGravTime <= t) {
-      gravity_max.set(planned_grav.x, planned_grav.y);
-      switchGravity = false;
-    }
+    /*
+if (switchGravity && switchGravTime <= t) {
+gravity_max.set(planned_grav.x, planned_grav.y);
+switchGravity = false;
+}
+    */
 
     // checking convergence requirements
     convergenceConditions();
@@ -652,16 +664,23 @@ void MPMbox::run() {
       checkProximity();
     }
 
-    if (activePIC == true) {
-      activePIC = timePIC > t;
-      if (activePIC == false) {
-        console->info("End of PIC damping at time {}", t);
-      }
+    /*
+if (activePIC == true) {
+activePIC = timePIC > t;
+if (activePIC == false) {
+console->info("End of PIC damping at time {}", t);
+}
+}
+*/
+
+    plannedRemovalObstacle();
+    plannedRemovalMP();
+
+    for (size_t s = 0; s < Scheduled.size(); ++s) {
+      Scheduled[s]->check();
     }
 
     // run onestep!
-    plannedRemovalObstacle();
-    plannedRemovalMP();
     int ret = oneStep->advanceOneStep(*this);
     if (ret == 1) break;  // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
 
@@ -695,7 +714,6 @@ void MPMbox::MPinGridCheck() {
         MP[p].pos.y < 0.0) {
       console->warn("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
                     MP[p].pos.x, MP[p].pos.y);
-      // exit(0);
     }
   }
 }
@@ -795,8 +813,8 @@ void MPMbox::updateVelocityGradient() {
 
 void MPMbox::limitTimeStepForDEM() {
   START_TIMER("limitTimeStepForDEM");
-	if (CHCL.limitTimeStepFactor <= 0.0) return;
-	
+  if (CHCL.limitTimeStepFactor <= 0.0) return;
+
   dt = dtInitial;
   double dtmax = 0.0;
 

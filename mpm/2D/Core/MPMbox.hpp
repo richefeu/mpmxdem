@@ -51,6 +51,8 @@ struct VtkOutput;
 struct ShapeFunction;
 struct OneStep;
 struct ConstitutiveModel;
+struct Scheduler;
+
 class PBC3Dbox;
 
 class MPMbox {
@@ -65,15 +67,14 @@ class MPMbox {
   OneStep* oneStep;                                  // Type of routine to be used
   std::map<std::string, ConstitutiveModel*> models;  // The models
 
+  std::vector<Scheduler*> Scheduled;
+
   std::string result_folder;  // The folder into which the result files will be saved
   bool planeStrain;           // Plane strain assumption (default value is false)
   grid Grid;                  // The fixed grid
   double tolmass;             // Tolerance for the mass of a MaterialPoint
 
   vec2r gravity;       // The gravity acceleration vector
-  vec2r gravity_max;   // ramp gravity acceleration vector
-  vec2r gravity_incr;  // increment gravity acceleration vector
-  bool ramp;           // ramp boolean
 
   double boundary_layer;  // enlarge the contact zone
 
@@ -82,10 +83,6 @@ class MPMbox {
   int iconf;         // File number of the comming save
   int confPeriod;    // Number of steps between conf files
   int proxPeriod;    // Number of steps between proximity check (rebuild the neighbor list)
-
-  //int DEMPeriod;  // Number of spatial steps for DEM sampling FIXME: will be replaced by something that is able to
-                  // manage different solutions
-  
 
   double dt;         // Time increment
   double dtInitial;  // Prescribed time increment
@@ -121,8 +118,6 @@ class MPMbox {
   bool activePIC;    // damping with PIC flag
   double timePIC;    // end of damping PIC
 
-  // bool twinConfSave;  // activates consecutive backup of conf-files
-
   struct {
     bool hasDoubleScale; // to know if the computation involves CHCLs
     int minDEMstep;      // minimum number of DEM time steps for linear regression of stress
@@ -130,10 +125,6 @@ class MPMbox {
 		double limitTimeStepFactor;
 		double criticalDEMTimeStepFactor;
   } CHCL;
-  
-  bool switchGravity;
-  double switchGravTime;
-  vec2r planned_grav;
 
   std::vector<size_t> liveNodeNum;  // list of node numbers being updated and used during each time step
                                     // It holds only the number of nodes concerned by the proximity of MP

@@ -72,7 +72,7 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // clang-format on
 
   // FIXME: ce n'est pas la responsabilité de la loi de faire ce genre de chose
-  //        -> à déplacer dans MPMbox.cpp
+  //        -> à déplacer dans MPMbox.cpp (dans un Scheduler)
 													 /*
   if (MPM.t >= timeBondReactivation - MPM.dt && MPM.t <= timeBondReactivation + MPM.dt) {
     MPM.MP[p].PBC->ActivateBonds(bondingDistance, bondedStateDam);

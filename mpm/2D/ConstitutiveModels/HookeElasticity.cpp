@@ -3,8 +3,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<ConstitutiveModel, HookeElasticity> registrar("HookeElasticity");
 std::string HookeElasticity::getRegistrationName() { return std::string("HookeElasticity"); }
 
 HookeElasticity::HookeElasticity(double young, double poisson) : Young(young), Poisson(poisson) {}
