@@ -23,7 +23,7 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
-  std::vector<Spy*>& Spies = MPM.Spies;
+  //std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
   vec2r& gravity = MPM.gravity;
@@ -177,6 +177,7 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
     MP[p].updateCornersFromF();
   }
 
+	/*
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
   //if (MPM.splittingMore) MPM.adaptativeRefinementMore();
@@ -186,6 +187,7 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
     if (MPM.step % (Spies[s]->nstep) == 0) Spies[s]->exec();
     if (MPM.step % (Spies[s]->nrec) == 0) Spies[s]->record();
   }
-
+*/
+	
   return 0;
 }

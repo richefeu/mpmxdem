@@ -5,7 +5,8 @@
 
 struct Line : public Obstacle {
   double len;
-  vec2r n, t;
+  vec2r n; // unit normal oriented "towards the left" 
+	vec2r t; // rename udir
   
   std::string getRegistrationName();
   virtual void read(std::istream& is);

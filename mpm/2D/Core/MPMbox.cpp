@@ -40,12 +40,15 @@
 #include "ShapeFunctions/RegularQuadLinear.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 
+#include "Spies/MeanStress.hpp"
 #include "Spies/ObstacleTracking.hpp"
 #include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/PICDissipation.hpp"
+#include "Schedulers/RemoveMaterialPoint.hpp"
+#include "Schedulers/RemoveObstacle.hpp"
 
 #include "Core/MaterialPoint.hpp"
 
@@ -68,14 +71,14 @@ MPMbox::MPMbox() {
   ratioFLIP = 1.0;
   activePIC = false;
   boundary_layer = 0.0;
-  ObstaclePlannedRemoval.time = -1.0;
-  ObstaclePlannedRemoval.groupNumber = -1;
+  // ObstaclePlannedRemoval.time = -1.0;
+  // ObstaclePlannedRemoval.groupNumber = -1;
 
   iconf = 0;
   confPeriod = 5000;
 
   dt = 0.00001;
-	dtInitial = dt;
+  dtInitial = dt;
   t = 0.0;
   result_folder = ".";
 
@@ -180,11 +183,17 @@ void MPMbox::ExplicitRegistrations() {
       "GravityRamp", [](void) -> Scheduler* { return new GravityRamp(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "PICDissipation", [](void) -> Scheduler* { return new PICDissipation(); });
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "RemoveObstacle", [](void) -> Scheduler* { return new RemoveObstacle(); });
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "RemoveMaterialPoint", [](void) -> Scheduler* { return new RemoveMaterialPoint(); });
 
   // Spy ========================
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleTracking",
                                                                  [](void) -> Spy* { return new ObstacleTracking(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy* { return new Work(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MeanStress",
+                                                                 [](void) -> Spy* { return new MeanStress(); });
 }
 
 /*
@@ -350,13 +359,14 @@ void MPMbox::read(const char* name) {
       } else {
         console->warn("Obstacle {} is unknown!", obsName);
       }
-    } else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
+    } /*else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
       file >> ObstaclePlannedRemoval.groupNumber >> ObstaclePlannedRemoval.time;
     } else if (token == "MPPlannedRemoval") {
       MPPlannedRemoval_t MPL;
       file >> MPL.key >> MPL.time;
       MPPlannedRemoval.push_back(MPL);
-    } else if (token == "BoundaryForceLaw") {
+    } */
+    else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
       std::string boundaryName;
       int obstacleGroup;
@@ -630,16 +640,22 @@ void MPMbox::run() {
       checkProximity();
     }
 
-    plannedRemovalObstacle(); // TODO: move it as a Scheduler
-    plannedRemovalMP(); // TODO: move it as a Scheduler
-
     for (size_t s = 0; s < Scheduled.size(); ++s) {
       Scheduled[s]->check();
     }
 
-    // run onestep!
+    // run a step!
     int ret = oneStep->advanceOneStep(*this);
     if (ret == 1) break;  // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
+
+	  // Split MPs
+	  if (splitting) adaptativeRefinement();
+
+	  // Execute/Record the spies
+	  for (size_t s = 0; s < Spies.size(); ++s) {
+	    if ((step % Spies[s]->nstep) == 0) Spies[s]->exec();
+	    if ((step % Spies[s]->nrec) == 0) Spies[s]->record();
+	  }
 
     t += dt;
     step++;
@@ -813,6 +829,7 @@ void MPMbox::updateTransformationGradient() {
   }
 }
 
+/*
 void MPMbox::plannedRemovalObstacle() {
   START_TIMER("plannedRemovalObstacle");
   if (ObstaclePlannedRemoval.time >= t && ObstaclePlannedRemoval.time <= t + dt) {
@@ -829,6 +846,7 @@ void MPMbox::plannedRemovalObstacle() {
   }
 }
 
+
 void MPMbox::plannedRemovalMP() {
   START_TIMER("plannedRemovalMP");
   std::vector<MaterialPoint> MP_swap;
@@ -844,6 +862,7 @@ void MPMbox::plannedRemovalMP() {
     }
   }
 }
+*/
 
 void MPMbox::adaptativeRefinement() {
   START_TIMER("adaptativeRefinement");

@@ -32,7 +32,7 @@ void Line::write(std::ostream& os) {
 int Line::touch(MaterialPoint& MP, double& dn) {
   int Touch = -1;
   vec2r c = MP.pos - pos;
-  double radiusMP = 0.5 * sqrt(MP.vol0);
+  double radiusMP = 0.5 * MP.size;
   dn = c * n - radiusMP;
   if (dn < 0.0) {
     double proj = c * t;

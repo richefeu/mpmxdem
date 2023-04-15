@@ -89,18 +89,22 @@ class MPMbox {
   double t;          // Current time
 
   // scheduled removal of an obstacle:
+	/*
   struct {
     int groupNumber;  // osbsacle number to be deleted
     double time;      // time to remove an obstacle
   } ObstaclePlannedRemoval;
-
+*/
+	
   // scheduled removal of material points
+	/*
   struct MPPlannedRemoval_t {
     std::string key;  // this is the name given to a ConstitutiveModel
     double time;      // time of removal
   };
   std::vector<MPPlannedRemoval_t> MPPlannedRemoval;
-
+*/
+	
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
   DataTable dataTable;
@@ -116,7 +120,7 @@ class MPMbox {
   // integration scheme dissipation
   double ratioFLIP;  // barycenter coef for using PIC as damping
   bool activePIC;    // damping with PIC flag
-  double timePIC;    // end of damping PIC
+  //double timePIC;    // end of damping PIC
 
   struct {
     bool hasDoubleScale; // to know if the computation involves CHCLs

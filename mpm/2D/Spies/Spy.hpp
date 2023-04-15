@@ -3,7 +3,6 @@
 
 class MPMbox;
 #include <fstream>
-//#include <string>
 
 struct Spy {
   MPMbox* box;

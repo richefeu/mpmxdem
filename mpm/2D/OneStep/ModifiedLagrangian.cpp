@@ -27,7 +27,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
-  std::vector<Spy*>& Spies = MPM.Spies;
+  //std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
   // End of aliases ========================================
 
@@ -148,13 +148,12 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     nodes[liveNodeNum[n]].q += dt * nodes[liveNodeNum[n]].qdot;
   }
 
-  // ==== Calculate velocity in MP (to then update q). sort of smoothing?
+  // ==== Calculate velocity in MP (to then update q). sort of smoothing
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
     double invmass;
     vec2r PICvelo;
-    PICvelo.reset();
 
     for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
@@ -245,6 +244,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].density /= (1.0 + volumetricdStrain);
   }
 
+	/*
   // ==== Split MPs
   if (MPM.splitting) MPM.adaptativeRefinement();
 
@@ -253,6 +253,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     if ((MPM.step % Spies[s]->nstep) == 0) Spies[s]->exec();
     if ((MPM.step % Spies[s]->nrec) == 0) Spies[s]->record();
   }
+	*/
 
   return 0;
 }
