@@ -2,8 +2,8 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<Obstacle, Circle> registrar("Circle");
+#include <cmath>
+
 std::string Circle::getRegistrationName() { return std::string("Circle"); }
 
 void Circle::read(std::istream& is) {
@@ -20,7 +20,7 @@ void Circle::read(std::istream& is) {
     isFree = true;
     double density;
     is >> density;
-    mass = Mth::pi * R * R * density;
+    mass = M_PI * R * R * density;
     I = 0.5 * mass * R * R;
     is >> vel >> vrot;
   } else {
@@ -33,7 +33,7 @@ void Circle::write(std::ostream& os) {
   if (isFree == false) {
     os << "velocity " << vel << '\n';
   } else {
-    double density = mass / (Mth::pi * R * R);
+    double density = mass / (M_PI * R * R);
     os << "free " << density << ' ' << vel << ' ' << vrot << '\n';
   }
 }

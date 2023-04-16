@@ -3,10 +3,7 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<Obstacle, Polygon> registrar("Polygon");
 std::string Polygon::getRegistrationName() { return std::string("Polygon"); }
-
 
 // UPDATE March 2018: It doesnt work with corners anymore.
 // The way we find the edge of the MP should prob be improved, although i think is not "that" speculative

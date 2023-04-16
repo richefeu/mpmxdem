@@ -41,7 +41,8 @@ void set_MP_grid::exec() {
       CM->init(P);
       if (P.isDoubleScale == true) {
         double Vcell = fabs(P.PBC->Cell.h.det());
-        P.density = P.PBC->Cell.mass / Vcell;        
+        //P.density = P.PBC->Cell.mass / Vcell; 
+				P.density = P.PBC->density * P.PBC->Vsolid / Vcell;        
       }
       P.pos.set(x0 + halfSizeMP + size * j, y0 + halfSizeMP + size * i);
       P.nb = counter;

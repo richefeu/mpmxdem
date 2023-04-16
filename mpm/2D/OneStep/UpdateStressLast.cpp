@@ -11,9 +11,6 @@
 
 #include "PBC3D.hpp"
 
-//#include "factory.hpp"
-//static Registrar<OneStep, UpdateStressLast> registrar("UpdateStressLast");
-
 std::string UpdateStressLast::getRegistrationName() { return std::string("UpdateStressLast"); }
 
 int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
@@ -23,7 +20,6 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
-  //std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
   double& tolmass = MPM.tolmass;
   vec2r& gravity = MPM.gravity;
@@ -176,18 +172,6 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].updateCornersFromF();
   }
-
-	/*
-  // ==== Split MPs
-  if (MPM.splitting) MPM.adaptativeRefinement();
-  //if (MPM.splittingMore) MPM.adaptativeRefinementMore();
-
-  // ==== Execute the spies
-  for (size_t s = 0; s < Spies.size(); ++s) {
-    if (MPM.step % (Spies[s]->nstep) == 0) Spies[s]->exec();
-    if (MPM.step % (Spies[s]->nrec) == 0) Spies[s]->record();
-  }
-*/
 	
   return 0;
 }

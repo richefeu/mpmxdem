@@ -12,6 +12,7 @@
 #include "Commands/new_set_grid.hpp"
 #include "Commands/reset_model.hpp"
 #include "Commands/select_tracked_MP.hpp"
+#include "Commands/select_controlled_MP.hpp"
 #include "Commands/set_BC_column.hpp"
 #include "Commands/set_BC_line.hpp"
 #include "Commands/set_K0_stress.hpp"
@@ -70,10 +71,7 @@ MPMbox::MPMbox() {
   CHCL.criticalDEMTimeStepFactor = 0.01;
   ratioFLIP = 1.0;
   activePIC = false;
-  boundary_layer = 0.0;
-  // ObstaclePlannedRemoval.time = -1.0;
-  // ObstaclePlannedRemoval.groupNumber = -1;
-
+  
   iconf = 0;
   confPeriod = 5000;
 
@@ -143,6 +141,8 @@ void MPMbox::ExplicitRegistrations() {
       "set_node_grid", [](void) -> Command* { return new set_node_grid(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "select_tracked_MP", [](void) -> Command* { return new select_tracked_MP(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "select_controlled_MP", [](void) -> Command* { return new select_controlled_MP(); });
 
   // ConstitutiveModel =========
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
@@ -313,9 +313,9 @@ void MPMbox::read(const char* name) {
       file >> CHCL.limitTimeStepFactor;
     } else if (token == "CHCL.criticalDEMTimeStepFactor") {
       file >> CHCL.criticalDEMTimeStepFactor;
-    } else if (token == "verletCoef") {
+    } /*else if (token == "verletCoef") {
       file >> boundary_layer;
-    } else if (token == "set") {
+    } */ else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
       double value;
@@ -359,15 +359,11 @@ void MPMbox::read(const char* name) {
       } else {
         console->warn("Obstacle {} is unknown!", obsName);
       }
-    } /*else if (token == "DelObst" || token == "ObstaclePlannedRemoval") {
-      file >> ObstaclePlannedRemoval.groupNumber >> ObstaclePlannedRemoval.time;
-    } else if (token == "MPPlannedRemoval") {
-      MPPlannedRemoval_t MPL;
-      file >> MPL.key >> MPL.time;
-      MPPlannedRemoval.push_back(MPL);
-    } */
-    else if (token == "BoundaryForceLaw") {
+    } else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
+			if (Obstacles.empty()) {
+				console->warn("You try to define BoundaryForceLaw BEFORE any Obstacle is set!");
+			}
       std::string boundaryName;
       int obstacleGroup;
       file >> boundaryName >> obstacleGroup;
@@ -501,7 +497,6 @@ void MPMbox::save(const char* name) {
   file << "result_folder .\n";
   file << "tolmass " << tolmass << '\n';
   file << "gravity " << gravity << '\n';
-  file << "verletCoef " << boundary_layer << '\n';
 
   file << "CHCL.minDEMstep " << CHCL.minDEMstep << '\n';
   file << "CHCL.rateAverage " << CHCL.rateAverage << '\n';
@@ -942,7 +937,7 @@ void MPMbox::adaptativeRefinement() {
 
         MP.push_back(MP2);
       }
-    }  // if crit
+    }  // end if if ((critX || critY) == true)
 
     // checking extremeShearing after checking the above criteria
     if (extremeShearing) {
@@ -953,7 +948,7 @@ void MPMbox::adaptativeRefinement() {
       }
     }
 
-  }  // for
+  }  // end for loop over MPs
 }
 
 void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
@@ -995,6 +990,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   }
 
   // smooth procedure
+	// MP -> nodes
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     for (size_t r = 0; r < element::nbNodes; r++) {
@@ -1002,6 +998,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       nodes[I[r]].stress += MP[p].N[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
     }
   }
+	// nodes -> MPs
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     for (size_t r = 0; r < element::nbNodes; r++) {

@@ -27,6 +27,7 @@ void MeanStress::exec() {
 }
 
 void MeanStress::record() {
+	file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
   file << box->t << ' ' << meanStress << std::endl;
 }
 

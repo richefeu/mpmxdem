@@ -8,15 +8,16 @@
 void frictionalViscoElastic::computeForces(MPMbox& MPM, size_t o) {
 
   double kn, kt, mu, viscRate;
-  double gap;
-  double VerletCoef = MPM.boundary_layer;
+  //double gap;
+
   size_t g1, g2;
   for (size_t nn = 0; nn < MPM.Obstacles[o]->Neighbors.size(); ++nn) {
     size_t pn = MPM.Obstacles[o]->Neighbors[nn].PointNumber;
     double dn;
-    gap = 0.5 * sqrt(MPM.MP[pn].vol0) * VerletCoef;
+    //gap = 0.5 * sqrt(MPM.MP[pn].vol0);
     MPM.Obstacles[o]->touch(MPM.MP[pn], dn);
-    if (dn <= gap) {
+		
+    if (dn <= /*gap*/ 0.0) {
       g1 = (size_t)(MPM.MP[pn].groupNb);
       g2 = MPM.Obstacles[o]->group;
       kn = MPM.dataTable.get(MPM.id_kn, g1, g2);

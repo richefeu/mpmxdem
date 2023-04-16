@@ -9,7 +9,7 @@ finalTime 2.5
 confPeriod 2500
 proxPeriod 50 # at the MPM scale for interactions with boundaries
 # Time increment
-dt 1e-6
+dt 1e-5
 # Current time
 t 0.0
 # shape function can be Linear or GIMP (not yet implemented)
@@ -33,7 +33,7 @@ CHCL.criticalDEMTimeStepFactor 0.01
 model MohrCoulomb      M0         2.14e+5  0.498    0.4            82.6      -0.18
 
 #                                 PBC3D-file            
-model CHCL_DEM         DE         27shells_1000Pa.txt
+model CHCL_DEM         DE         8shells_1000Pa.txt
 
 set_node_grid  W.H.lx.ly  0.6  0.6  0.1 0.1
 
@@ -43,21 +43,20 @@ set_MP_grid         0           DE            550.0                  0.2   0.2  
 # NONE, ALL, LIST NB [...NB x ID], GRID X0 Y0 LX LY TOL, BOX X0 Y0 X1 Y1
 select_tracked_MP ALL
 
-
-BoundaryForceLaw frictionalViscoElastic 2
-
-#ObstaclePlannedRemoval 1 1
-
 #                group  x0    y0     x1    y1   driveMode
 Obstacle Line    2      0.4   0.4    0.4   0.2  freeze    # right
 Obstacle Line    2      0.4   0.2    0.2   0.2  freeze    # bottom
 Obstacle Line    2      0.2   0.2    0.2   0.4  freeze    # left
 Obstacle Line    2      0.2   0.4    0.4   0.4  velocity 0.0 -0.01  # top
 
+BoundaryForceLaw frictionalViscoElastic 2
+
 Spy ObstacleTracking 3 100 topWall.txt
+Spy ObstacleTracking 3 100 bottomWall.txt
+Spy MeanStress 100 meanStress.txt
 
 #properties      parameter  groupMP   groupObst  value
 set              mu         0         2          0.0
 set              kn         0         2          1e7
 set              kt         0         2          1e7
-set              viscRate   0         2          0
+set              viscRate   0         2          0.95

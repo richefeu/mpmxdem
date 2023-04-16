@@ -27,7 +27,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   std::vector<element>& Elem = MPM.Elem;
   std::vector<MaterialPoint>& MP = MPM.MP;
   std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
-  //std::vector<Spy*>& Spies = MPM.Spies;
   double& dt = MPM.dt;
   // End of aliases ========================================
 
@@ -77,15 +76,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM1(Obstacles[o], dt);
   }
-
-  // ==== Getting material point mass (something we were not doing before)
-  // FIXME: je ne crois pas qu'on devrait faire ça !!!!!!!!!!!
-	//        c'est pas utile car la masse n'est pas supposée varier   
-	/*
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].mass = MP[p].density * MP[p].vol;
-  }
-  */
 	
   // ==== Initialize grid state (mass and momentum)
   for (size_t p = 0; p < MP.size(); p++) {
@@ -117,6 +107,9 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       nodes[I[r]].f += MP[p].mass * MPM.gravity * MP[p].N[r];
     }
   }
+
+  // Forces imposed to MP
+	// TODO !!!!!!
 
   // Updating free boundary conditions
   for (size_t o = 0; o < Obstacles.size(); ++o) {
@@ -167,6 +160,16 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelo;
     }
   }
+	
+	// ==== We may impose x- or y-velocity of some MP (it will overwrite those just computed)
+	for (size_t cMP = 0; cMP < MPM.controlledMP.size(); cMP++) {
+		if (MPM.controlledMP[cMP].xcontrol == VEL_CONTROL) {
+			MP[MPM.controlledMP[cMP].PointNumber].vel.x = MPM.controlledMP[cMP].xvalue;
+		}
+		if (MPM.controlledMP[cMP].ycontrol == VEL_CONTROL) {
+			MP[MPM.controlledMP[cMP].PointNumber].vel.y = MPM.controlledMP[cMP].yvalue;
+		}
+	}
 
   // ==== Calculate updated velocity in nodes to compute deformation
   for (size_t p = 0; p < MP.size(); p++) {
@@ -210,7 +213,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 #pragma omp parallel for default(shared)
       for (size_t q = 0; q < doubleScaleVector.size(); q++) {
         MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
-        spdlog::get("console")->trace("Stress for MP #{} = xx {} / xy {} / yx {} / yy {}", doubleScaleVector[q],
+        spdlog::get("console")->trace("Stress for MP #{} = xx={} / xy={} / yx={} / yy={}", doubleScaleVector[q],
                                       MP[doubleScaleVector[q]].stress.xx, MP[doubleScaleVector[q]].stress.xy,
                                       MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
       }
@@ -243,17 +246,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].vol *= (1.0 + volumetricdStrain);
     MP[p].density /= (1.0 + volumetricdStrain);
   }
-
-	/*
-  // ==== Split MPs
-  if (MPM.splitting) MPM.adaptativeRefinement();
-
-  // ==== Execute the spies
-  for (size_t s = 0; s < Spies.size(); ++s) {
-    if ((MPM.step % Spies[s]->nstep) == 0) Spies[s]->exec();
-    if ((MPM.step % Spies[s]->nrec) == 0) Spies[s]->record();
-  }
-	*/
 
   return 0;
 }

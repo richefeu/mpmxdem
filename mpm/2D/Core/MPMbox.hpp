@@ -42,6 +42,7 @@
 #include "Neighbor.hpp"
 #include "Node.hpp"
 #include "ProcessedDataMP.hpp"
+#include "ControlMP.hpp"
 
 struct MaterialPoint;
 struct Obstacle;
@@ -67,7 +68,8 @@ class MPMbox {
   OneStep* oneStep;                                  // Type of routine to be used
   std::map<std::string, ConstitutiveModel*> models;  // The models
 
-  std::vector<Scheduler*> Scheduled;
+  std::vector<Scheduler*> Scheduled; // the schedulled action to do
+	std::vector<ControlMP> controlledMP; // force or velocity controls on some MP
 
   std::string result_folder;  // The folder into which the result files will be saved
   bool planeStrain;           // Plane strain assumption (default value is false)
@@ -76,7 +78,7 @@ class MPMbox {
 
   vec2r gravity;       // The gravity acceleration vector
 
-  double boundary_layer;  // enlarge the contact zone
+  //double boundary_layer;  // enlarge the contact zone
 
   double finalTime;  // Time in seconds at which the simulation ends
   int step;          // The current step number
@@ -87,23 +89,6 @@ class MPMbox {
   double dt;         // Time increment
   double dtInitial;  // Prescribed time increment
   double t;          // Current time
-
-  // scheduled removal of an obstacle:
-	/*
-  struct {
-    int groupNumber;  // osbsacle number to be deleted
-    double time;      // time to remove an obstacle
-  } ObstaclePlannedRemoval;
-*/
-	
-  // scheduled removal of material points
-	/*
-  struct MPPlannedRemoval_t {
-    std::string key;  // this is the name given to a ConstitutiveModel
-    double time;      // time of removal
-  };
-  std::vector<MPPlannedRemoval_t> MPPlannedRemoval;
-*/
 	
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
@@ -120,7 +105,6 @@ class MPMbox {
   // integration scheme dissipation
   double ratioFLIP;  // barycenter coef for using PIC as damping
   bool activePIC;    // damping with PIC flag
-  //double timePIC;    // end of damping PIC
 
   struct {
     bool hasDoubleScale; // to know if the computation involves CHCLs

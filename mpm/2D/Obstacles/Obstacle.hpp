@@ -31,7 +31,7 @@ struct Obstacle {
   double mom;
   BoundaryForceLaw* boundaryForceLaw;
 
-  std::vector<Neighbor> Neighbors;
+  std::vector<Neighbor> Neighbors; // MP neighbors
 
   virtual std::string getRegistrationName() = 0;
   virtual void read(std::istream& is) = 0;

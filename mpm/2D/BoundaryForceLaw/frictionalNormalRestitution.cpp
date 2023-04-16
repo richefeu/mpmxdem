@@ -5,9 +5,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include <factory.hpp>
-//static Registrar<BoundaryForceLaw, frictionalNormalRestitution> registrar("frictionalNormalRestitution");
-
 void frictionalNormalRestitution::computeForces(MPMbox & MPM, size_t o) {
   double kn, kt, en2, mu;
   size_t g1, g2;
