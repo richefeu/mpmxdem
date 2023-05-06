@@ -74,7 +74,7 @@ splitCriterionValue 4.0               0                   3.0
 VtkOutput plastic
 VtkOutput smoothed_velocity
 VtkOutput forcesContact
-VtkOutput plasticStressNorm
+VtkOutput stressCorrectionNorm
 
 #Spy Work  100  Work.txt  0.0  19.0  100
 Spy ObstaclePosition  0  200 obstaclePos.txt

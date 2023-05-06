@@ -3,8 +3,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<ConstitutiveModel, VonMisesElastoPlasticity> registrar("VonMisesElastoPlasticity");
 std::string VonMisesElastoPlasticity::getRegistrationName() { return std::string("VonMisesElastoPlasticity"); }
 
 // ==== VonMisesElastoPlasticity =================================================
@@ -50,7 +48,7 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   mat4r gradg;
   mat4r gradf;
-  mat4r plasticStress;
+  mat4r stressCorrection;
   double yieldF;
 
   for (int i = 1; i <= N; ++i) {
@@ -97,15 +95,15 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
       MPM.MP[p].plasticStrain.xy = lambdadot * gradf.xy;
       MPM.MP[p].plasticStrain.yx = MPM.MP[p].plasticStrain.xy;
 
-      plasticStress.xx = f * (MPM.MP[p].plasticStrain.xx * (1.0 - Poisson) + MPM.MP[p].plasticStrain.yy * Poisson);
-      plasticStress.yy = f * (MPM.MP[p].plasticStrain.xx * Poisson + MPM.MP[p].plasticStrain.yy * (1.0 - Poisson));
-      plasticStress.xy = f * (MPM.MP[p].plasticStrain.xy * (1.0 - 2.0 * Poisson));
-      plasticStress.yx = plasticStress.xy;
+      stressCorrection.xx = f * (MPM.MP[p].plasticStrain.xx * (1.0 - Poisson) + MPM.MP[p].plasticStrain.yy * Poisson);
+      stressCorrection.yy = f * (MPM.MP[p].plasticStrain.xx * Poisson + MPM.MP[p].plasticStrain.yy * (1.0 - Poisson));
+      stressCorrection.xy = f * (MPM.MP[p].plasticStrain.xy * (1.0 - 2.0 * Poisson));
+      stressCorrection.yx = stressCorrection.xy;
 
-      MPM.MP[p].stress.xx = MPM.MP[p].stress.xx - plasticStress.xx;
-      MPM.MP[p].stress.yy = MPM.MP[p].stress.yy - plasticStress.yy;
-      MPM.MP[p].stress.xy = MPM.MP[p].stress.xy - plasticStress.xy;
-      MPM.MP[p].stress.yx = MPM.MP[p].stress.yx - plasticStress.yx;
+      MPM.MP[p].stress.xx = MPM.MP[p].stress.xx - stressCorrection.xx;
+      MPM.MP[p].stress.yy = MPM.MP[p].stress.yy - stressCorrection.yy;
+      MPM.MP[p].stress.xy = MPM.MP[p].stress.xy - stressCorrection.xy;
+      MPM.MP[p].stress.yx = MPM.MP[p].stress.yx - stressCorrection.yx;
 
       yieldF =
           sqrt((3.0 * (MPM.MP[p].stress.xx - MPM.MP[p].stress.yy) * (MPM.MP[p].stress.xx - MPM.MP[p].stress.yy)) / 4.0 +
@@ -117,4 +115,3 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 double VonMisesElastoPlasticity::getYoung() { return Young; }
 
 double VonMisesElastoPlasticity::getPoisson() { return Poisson; }
-

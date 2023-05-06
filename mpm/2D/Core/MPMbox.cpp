@@ -11,8 +11,8 @@
 #include "Commands/move_MP.hpp"
 #include "Commands/new_set_grid.hpp"
 #include "Commands/reset_model.hpp"
-#include "Commands/select_tracked_MP.hpp"
 #include "Commands/select_controlled_MP.hpp"
+#include "Commands/select_tracked_MP.hpp"
 #include "Commands/set_BC_column.hpp"
 #include "Commands/set_BC_line.hpp"
 #include "Commands/set_K0_stress.hpp"
@@ -24,6 +24,7 @@
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
 #include "ConstitutiveModels/HookeElasticity.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
+#include "ConstitutiveModels/SinfoniettaClassica.hpp"
 #include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
 
 #include "Obstacles/Circle.hpp"
@@ -48,6 +49,7 @@
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/PICDissipation.hpp"
+#include "Schedulers/ReactivateCHCLBonds.hpp"
 #include "Schedulers/RemoveMaterialPoint.hpp"
 #include "Schedulers/RemoveObstacle.hpp"
 
@@ -71,7 +73,7 @@ MPMbox::MPMbox() {
   CHCL.criticalDEMTimeStepFactor = 0.01;
   ratioFLIP = 1.0;
   activePIC = false;
-  
+
   iconf = 0;
   confPeriod = 5000;
 
@@ -153,6 +155,8 @@ void MPMbox::ExplicitRegistrations() {
       "MohrCoulomb", [](void) -> ConstitutiveModel* { return new MohrCoulomb(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel* { return new VonMisesElastoPlasticity(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "SinfoniettaClassica", [](void) -> ConstitutiveModel* { return new SinfoniettaClassica(); });
 
   // Obstacle ==================
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
@@ -187,6 +191,8 @@ void MPMbox::ExplicitRegistrations() {
       "RemoveObstacle", [](void) -> Scheduler* { return new RemoveObstacle(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "RemoveMaterialPoint", [](void) -> Scheduler* { return new RemoveMaterialPoint(); });
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "ReactivateCHCLBonds", [](void) -> Scheduler* { return new ReactivateCHCLBonds(); });
 
   // Spy ========================
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleTracking",
@@ -315,7 +321,8 @@ void MPMbox::read(const char* name) {
       file >> CHCL.criticalDEMTimeStepFactor;
     } /*else if (token == "verletCoef") {
       file >> boundary_layer;
-    } */ else if (token == "set") {
+    } */
+    else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
       double value;
@@ -361,9 +368,9 @@ void MPMbox::read(const char* name) {
       }
     } else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
-			if (Obstacles.empty()) {
-				console->warn("You try to define BoundaryForceLaw BEFORE any Obstacle is set!");
-			}
+      if (Obstacles.empty()) {
+        console->warn("You try to define BoundaryForceLaw BEFORE any Obstacle is set!");
+      }
       std::string boundaryName;
       int obstacleGroup;
       file >> boundaryName >> obstacleGroup;
@@ -424,7 +431,7 @@ void MPMbox::read(const char* name) {
       std::string modelName;
       for (size_t iMP = 0; iMP < nb; iMP++) {
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
-            P.plasticStrain >> P.stress >> P.plasticStress >> P.splitCount >> P.F >> P.outOfPlaneStress >> P.contactf;
+            P.plasticStrain >> P.stress >> P.stressCorrection >> P.splitCount >> P.F >> P.outOfPlaneStress >> P.contactf;
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
@@ -566,7 +573,7 @@ void MPMbox::save(const char* name) {
   for (size_t iMP = 0; iMP < MP.size(); iMP++) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
-         << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].plasticStress << ' '
+         << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].stressCorrection << ' '
          << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
          << '\n';
   }
@@ -643,14 +650,14 @@ void MPMbox::run() {
     int ret = oneStep->advanceOneStep(*this);
     if (ret == 1) break;  // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
 
-	  // Split MPs
-	  if (splitting) adaptativeRefinement();
+    // Split MPs
+    if (splitting) adaptativeRefinement();
 
-	  // Execute/Record the spies
-	  for (size_t s = 0; s < Spies.size(); ++s) {
-	    if ((step % Spies[s]->nstep) == 0) Spies[s]->exec();
-	    if ((step % Spies[s]->nrec) == 0) Spies[s]->record();
-	  }
+    // Execute/Record the spies
+    for (size_t s = 0; s < Spies.size(); ++s) {
+      if ((step % Spies[s]->nstep) == 0) Spies[s]->exec();
+      if ((step % Spies[s]->nrec) == 0) Spies[s]->record();
+    }
 
     t += dt;
     step++;
@@ -824,41 +831,6 @@ void MPMbox::updateTransformationGradient() {
   }
 }
 
-/*
-void MPMbox::plannedRemovalObstacle() {
-  START_TIMER("plannedRemovalObstacle");
-  if (ObstaclePlannedRemoval.time >= t && ObstaclePlannedRemoval.time <= t + dt) {
-    std::vector<Obstacle*> Obs_swap;
-    for (size_t i = 0; i < Obstacles.size(); i++) {
-      if (Obstacles[i]->group == ObstaclePlannedRemoval.groupNumber) {
-        delete (Obstacles[i]);
-      } else {
-        Obs_swap.push_back(Obstacles[i]);
-      }
-    }
-    Obs_swap.swap(Obstacles);
-    Obs_swap.clear();
-  }
-}
-
-
-void MPMbox::plannedRemovalMP() {
-  START_TIMER("plannedRemovalMP");
-  std::vector<MaterialPoint> MP_swap;
-  for (size_t j = 0; j < MPPlannedRemoval.size(); j++) {
-    if (MPPlannedRemoval[j].time >= t && MPPlannedRemoval[j].time <= t + dt) {
-      for (size_t i = 0; i < MP.size(); i++) {
-        if (MP[i].constitutiveModel->key != MPPlannedRemoval[j].key) {
-          MP_swap.push_back(MP[i]);
-        }
-      }
-      MP_swap.swap(MP);
-      MP_swap.clear();
-    }
-  }
-}
-*/
-
 void MPMbox::adaptativeRefinement() {
   START_TIMER("adaptativeRefinement");
   for (size_t p = 0; p < MP.size(); p++) {
@@ -990,7 +962,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   }
 
   // smooth procedure
-	// MP -> nodes
+  // MP -> nodes
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     for (size_t r = 0; r < element::nbNodes; r++) {
@@ -998,7 +970,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       nodes[I[r]].stress += MP[p].N[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
     }
   }
-	// nodes -> MPs
+  // nodes -> MPs
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     for (size_t r = 0; r < element::nbNodes; r++) {

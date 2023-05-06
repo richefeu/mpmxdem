@@ -100,7 +100,7 @@ splitCriterionValue 4.0               0                   3.0
 
 VtkOutput plastic
 VtkOutput smoothed_velocity
-VtkOutput plasticStressNorm
+VtkOutput stressCorrectionNorm
 VtkOutput smoothed_totalStress
 VtkOutput forcesContact
 

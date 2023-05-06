@@ -1,5 +1,5 @@
-#ifndef PLASTICSTRESSNORM_HPP_5345A7C8
-#define PLASTICSTRESSNORM_HPP_5345A7C8
+#ifndef stressCorrectionNORM_HPP_5345A7C8
+#define stressCorrectionNORM_HPP_5345A7C8
 
 #include "VtkOutput.hpp"
 

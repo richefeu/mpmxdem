@@ -23,7 +23,7 @@ void CHCL_DEM::init(MaterialPoint& MP) {
   MP.isDoubleScale = true;
 
   // transfert the current stress
-  // !!! (Sign convention is opposed) !!!
+  // !!! (Sign convention is opposed between PBC3D and MPMbox) !!!
   MP.stress.xx = -MP.PBC->Sig.xx;
   MP.stress.xy = -MP.PBC->Sig.xy;
   MP.stress.yx = -MP.PBC->Sig.yx;
@@ -43,8 +43,8 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
         0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;
   }
-
-  dstrain.yx = dstrain.xy;
+  dstrain.yx = dstrain.xy; // symmetic tensor
+	
   MPM.MP[p].strain += dstrain;
   MPM.MP[p].deltaStrain = dstrain;
 
@@ -69,7 +69,7 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // clang-format on
 
   // Stress
-  // !!! (Sign convention is opposed) !!!
+  // !!! (Sign convention is opposed between PBC3D and MPMbox) !!!
   MPM.MP[p].stress.xx = -SigAvg.xx;
   MPM.MP[p].stress.xy = -SigAvg.xy;
   MPM.MP[p].stress.yx = -SigAvg.yx;

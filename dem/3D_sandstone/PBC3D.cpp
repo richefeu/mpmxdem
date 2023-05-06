@@ -633,7 +633,9 @@ void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
     }
   }
   if (StrategyId == 0) {
-    std::random_shuffle(indices.begin(), indices.end());
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(indices.begin(), indices.end(), g);
   } else if (StrategyId == 1) {
     sort(indices.begin(), indices.end(), [&](const size_t& a, const size_t& b) {
       double a_rmean = Particles[Interactions[a].i].radius + Particles[Interactions[a].j].radius;
@@ -1491,28 +1493,29 @@ void PBC3Dbox::computeForcesAndMoments() {
       vec3r realVel = Cell.h * vel + Cell.vh * sij;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
-      // Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
+      // === Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
       double dn = len - (Particles[i].radius + Particles[j].radius);  // a negative value is an overlap
-      double dn_bond = dn - Interactions[k].gap0;
-      if (continuumContact == 1) dn -= Interactions[k].gap0;
-      double vn = realVel * n;                                                       // normal relative (j/i) velocity
+      double dn_bond = dn - Interactions[k].gap0;  // for a bond, the gap-at-creation is the normal distance reference
+      if (continuumContact == 1) dn -= Interactions[k].gap0;          // this gap0 is accounted for only for fake grains
+      double vn = realVel * n;                                        // normal relative (j/i) velocity
       Interactions[k].fn_elas = 0.0;
-      if (dn < 0.0) Interactions[k].fn_elas = -w_particle * kn * dn;                 // elastic normal contact-force
+      if (dn < 0.0) Interactions[k].fn_elas = -w_particle * kn * dn;  // elastic normal contact-force
       Interactions[k].fn_bond = -w_bond * (1.0 - Interactions[k].D) * kn * dn_bond;  // elastic normal bond-force
-      double fnv = -Interactions[k].dampn * vn;                                      // viscuous normal force
+      double fnv = -Interactions[k].dampn * vn;  // viscuous normal force (not stored)
       Interactions[k].fn = Interactions[k].fn_elas + Interactions[k].fn_bond + fnv;
+      double fnUsedForThresholds = Mth::keepPositive(Interactions[k].fn); // this fn is cut to zero
 
-      // Tangential force
-      vec3r vt = realVel - (vn * n);  // relative velocity projected on the tangential plan
-      vec3r deltat = vt * dt;
-      Interactions[k].dt_bond += deltat;
-      if (dn < 0.0) {
-        Interactions[k].dt_fric += deltat;
-        Interactions[k].ft_fric -= w_particle * kt * deltat;
-        double threshold = fabs(mu * Interactions[k].fn);
+      // === Tangential force
+      vec3r vt = realVel - (vn * n);        // relative velocity projected on the tangential plan
+      vec3r deltat = vt * dt;               // increment of tangent relative displacement in the current time-step
+      Interactions[k].dt_bond += deltat;    // update the total tangent relative displacement for the bond
+      if (dn < 0.0) {                       // if the grains touch each other
+        Interactions[k].dt_fric += deltat;  // update the total tangent relative displacement for the friction
+        Interactions[k].ft_fric -= w_particle * kt * deltat;  // update the friction force with elastic increment
+        double threshold = mu * fnUsedForThresholds;          // could be mu * Interactions[k].fn_elas
         double ft_square = Interactions[k].ft_fric * Interactions[k].ft_fric;
         if (ft_square > 0.0 && ft_square >= threshold * threshold)
-          Interactions[k].ft_fric = threshold * Interactions[k].ft_fric * (1.0f / sqrt(ft_square));
+          Interactions[k].ft_fric = threshold * Interactions[k].ft_fric * (1.0 / sqrt(ft_square));
       } else {
         Interactions[k].ft_fric.reset();
         Interactions[k].dt_fric.reset();
@@ -1520,16 +1523,16 @@ void PBC3Dbox::computeForcesAndMoments() {
       Interactions[k].ft_bond = -w_bond * (1.0 - Interactions[k].D) * kt * Interactions[k].dt_bond;
       Interactions[k].ft = Interactions[k].ft_fric + Interactions[k].ft_bond;
 
-      // Torque (elastic-plastic without viscuous damping)
+      // === Torque (elastic-plastic without viscuous damping)
       vec3r drot = (Particles[j].vrot - Particles[i].vrot) * dt;
       Interactions[k].drot_bond += drot;
       if (dn < 0.0) {
         Interactions[k].drot_fric += drot;
         Interactions[k].mom_fric -= w_particle * kr * drot;
-        double thresholdr = fabs(mur * Interactions[k].fn);
+        double thresholdr = mur * fnUsedForThresholds;
         double mom_square = Interactions[k].mom_fric * Interactions[k].mom_fric;
         if (mom_square > 0.0 && mom_square >= thresholdr * thresholdr) {
-          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));
+          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0 / sqrt(mom_square));
         }
       } else {
         Interactions[k].drot_fric.reset();
@@ -1539,10 +1542,10 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       Interactions[k].mom = Interactions[k].mom_fric + Interactions[k].mom_bond;
 
-      // Update of the damage parameter D + Rupture criterion
+      // === Update of the damage parameter D + Rupture criterion
       double norm_dt_bond = norm(Interactions[k].dt_bond);
       double norm_drot_bond = norm(Interactions[k].drot_bond);
-      double currentZeta = zetaDModel(Interactions[k].D);  // Interactions[k].D * (zetaMax - 1.0) + 1.0;
+      double currentZeta = zetaDModel(Interactions[k].D);
       double yieldFunc0 = YieldFuncDam(currentZeta, dn_bond, norm_dt_bond, norm_drot_bond);
       double yieldFuncMax = YieldFuncDam(zetaMax, dn_bond, norm_dt_bond, norm_drot_bond);
 
@@ -1574,7 +1577,7 @@ void PBC3Dbox::computeForcesAndMoments() {
         }
 
         if (zetaMax > 1.0) {
-          Interactions[k].D = DzetaModel(zetaTest);  //(zetaTest - 1.0) / (zetaMax - 1.0);
+          Interactions[k].D = DzetaModel(zetaTest);
         } else {
           Interactions[k].D = 1.0;
         }
@@ -1610,18 +1613,18 @@ void PBC3Dbox::computeForcesAndMoments() {
         }
       }
 
-      // Resultant forces
+      // === Resultant forces
       vec3r f = Interactions[k].fn * n + Interactions[k].ft;
       Particles[i].force -= f;
       Particles[j].force += f;
 
-      // Resultant moments
+      // === Resultant moments
       vec3r Ci = (Particles[i].radius + 0.5 * dn) * n;
       vec3r Cj = -(Particles[j].radius + 0.5 * dn) * n;
       Particles[i].moment += cross(Ci, f) - Interactions[k].mom;
       Particles[j].moment += cross(Cj, -f) + Interactions[k].mom;
 
-      // Internal stress
+      // === Internal stress
       Sig.xx += f.x * branch.x;
       Sig.xy += f.x * branch.y;
       Sig.xz += f.x * branch.z;
@@ -1850,6 +1853,56 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rate
   } else {
     SigAvg = Sig;
   }
+}
+
+// P transformation is supposed to be a rotation where the result frame is still direct
+// Pas si facile à écrire ce genre de fonction...
+void PBC3Dbox::applySwitchMatrix(mat9r& P) {
+  // Switch the particles
+  for (size_t i = 0; i < Particles.size(); i++) {
+    Particles[i].pos = P * Particles[i].pos;
+    for (size_t c = 0; c < 3; c++) {
+      while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
+      while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
+    }
+
+    Particles[i].vel = P * Particles[i].vel;
+    Particles[i].acc = P * Particles[i].acc;
+
+    // Q ???
+    Particles[i].vrot = P * Particles[i].vrot;
+    Particles[i].arot = P * Particles[i].arot;
+  }
+
+  // Switch the interactions
+  // TODO
+
+  // Switch the periodic cell
+  // TODO
+}
+
+// dirNum = 0, 1 or 2 for resp. the first, second and third column of the h matrix
+void PBC3Dbox::ModularTransformation() {
+  /*
+  vec3r translate;
+  switch (dirNum) {
+          case 0: {
+                  translate = h.get_xcol();
+          } break;
+          case 1: {
+                  translate = h.get_ycol();
+          } break;
+          case 2: {
+                  translate = h.get_zcol();
+          } break;
+          default:{
+                  std::cerr << "@ModularTransformation, dirNum = 0, 1 or 2\n";
+          }
+  }
+  */
+
+  mat9r new_h;
+  mat9r new_vh;
 }
 
 // =======================================================================

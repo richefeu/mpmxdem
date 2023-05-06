@@ -17,6 +17,9 @@
 #include "Loading.hpp"
 #include "Particle.hpp"
 #include "PeriodicCell.hpp"
+
+// from toofus
+#include "Mth.hpp"
 #include "fileTool.hpp"
 #include "geoPack3D.hpp"
 #include "linreg.hpp"
@@ -74,13 +77,14 @@ class PBC3Dbox {
   double Kratio;     ///< Ratio of particle stiffness over bond stiffness
 
   // Solid cohesion
-  double fn0;                                ///< Maximum normal force
-  double ft0;                                ///< Maximum tangential force
-  double mom0;                               ///< Maximum Torque
-  double dn0;                                ///< Maximum normal displacement
-  double dt0;                                ///< Maximum tangential displacement
-  double drot0;                              ///< Maximum angular rotation
-  double powSurf;                            ///< Power used in the breakage surface
+  double fn0;      ///< Maximum normal force
+  double ft0;      ///< Maximum tangential force
+  double mom0;     ///< Maximum Torque
+  double dn0;      ///< Maximum normal displacement
+  double dt0;      ///< Maximum tangential displacement
+  double drot0;    ///< Maximum angular rotation
+  double powSurf;  ///< Power used in the breakage surface
+
   double rampRatio;
   double rampDuration;                       ///< linear laoding ramp between t = 0 and t = rampDuration
 
@@ -133,6 +137,8 @@ class PBC3Dbox {
   // Methods specifically written for MPMbox (MPMxDEM coupling).
   void transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, double rateCriticalTimeStep,
                  mat9r& SigAvg);
+  void applySwitchMatrix(mat9r& P);
+  void ModularTransformation();
 
   // Methods specifically written for Lagamine (FEMxDEM coupling).
   // They are compatible with fortran (it's the reason why all parameters are pointers).
@@ -155,6 +161,8 @@ class PBC3Dbox {
                          double* fnMean) const;  ///< Methods to evaluate the quality of static state
 
  private:
+  // TODO: add m_ before any private data
+
   // Files
   std::ofstream stressOut;     ///< File to store stress
   std::ofstream cellOut;       ///< File to store cell data
@@ -171,40 +179,43 @@ class PBC3Dbox {
   double dt2_2;  ///< Half the squared time-step
 
   // balancing of stiffnesses
-  double w_bond;
-  double w_particle;
+  double w_bond{0.5};
+  double w_particle{0.5};
 
-  int objectiveFriction;  //< activation of the objectivity for friction forces
+  int objectiveFriction{0};  //< activation of the objectivity for friction forces
 
  public:
+  // Notice that these variables are publicly accessible,
+  // but you need to ask for there pre-computation first.
+
   // Sample
-  double Vsolid;  ///< Total volume of the particles
-  double Vmin;    ///< Minimum volume of the particles
-  double Vmax;    ///< Maximum volume of the particles
-  double Vmean;   ///< Mean volume of the particles
+  double Vsolid{0.0};  ///< Total volume of the particles
+  double Vmin{0.0};    ///< Minimum volume of the particles
+  double Vmax{0.0};    ///< Maximum volume of the particles
+  double Vmean{0.0};   ///< Mean volume of the particles
 
   // Radii
-  double Rmin;   ///< Minimum radius of the particles
-  double Rmax;   ///< Maximum radius of the particles
-  double Rmean;  ///< Mean radius of the particles
+  double Rmin{0.0};   ///< Minimum radius of the particles
+  double Rmax{0.0};   ///< Maximum radius of the particles
+  double Rmean{0.0};  ///< Mean radius of the particles
 
   // Normal forces
-  double FnMin;   ///< Minimum normal force in the system
-  double FnMax;   ///< Maximum normal force in the system
-  double FnMean;  ///< Mean normal force in the system
-  double ReducedPartDistMean;
+  double FnMin{0.0};   ///< Minimum normal force in the system
+  double FnMax{0.0};   ///< Maximum normal force in the system
+  double FnMean{0.0};  ///< Mean normal force in the system
+  double ReducedPartDistMean{0.0};
 
   // Particle velocities
-  double VelMin;   ///< Minimum velocity magnitude of the particles
-  double VelMax;   ///< Maximum velocity magnitude of the particles
-  double VelMean;  ///< Mean velocity magnitude of the particles
-  double VelVar;   ///< Variance of velocity
+  double VelMin{0.0};   ///< Minimum velocity magnitude of the particles
+  double VelMax{0.0};   ///< Maximum velocity magnitude of the particles
+  double VelMean{0.0};  ///< Mean velocity magnitude of the particles
+  double VelVar{0.0};   ///< Variance of velocity
 
   // Particles accelerations
-  double AccMin;   ///< Minimum acceleration magnitude of the particles
-  double AccMax;   ///< Maximum acceleration magnitude of the particles
-  double AccMean;  ///< Mean acceleration magnitude of the particles
-  double AccVar;   ///< Variance of acceleration
+  double AccMin{0.0};   ///< Minimum acceleration magnitude of the particles
+  double AccMax{0.0};   ///< Maximum acceleration magnitude of the particles
+  double AccMean{0.0};  ///< Mean acceleration magnitude of the particles
+  double AccVar{0.0};   ///< Variance of acceleration
 };
 
 #endif /* end of include guard: PBC3D_SANDSTONE_HPP */

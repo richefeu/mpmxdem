@@ -17,6 +17,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       deltaStrain(),
       stress(),
       outOfPlaneStress(0.0),
+      hardeningForce(0.0),
       e(0),
       F(),
       velGrad(),
@@ -24,8 +25,8 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       prev_pos(),
       plastic(false),
       contactf(),
-      isDoubleScale(false),
       constitutiveModel(CM),
+      isDoubleScale(false),
       PBC(nullptr),
       isTracked(false) {
   vol0 = vol = size * size;

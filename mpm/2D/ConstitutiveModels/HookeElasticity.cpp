@@ -10,6 +10,7 @@ HookeElasticity::HookeElasticity(double young, double poisson) : Young(young), P
 void HookeElasticity::read(std::istream& is) { is >> Young >> Poisson; }
 void HookeElasticity::write(std::ostream& os) { os << Young << ' ' << Poisson << '\n'; }
 
+// This simple Hooke linear elasticity around a given state, and for a given velocity gradient et time increment 
 void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
@@ -33,9 +34,9 @@ void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].strain += dstrain;
   MPM.MP[p].deltaStrain = dstrain;
 
-  //      |De11 De12 0   |       |a        Poisson  0  |  with a = 1-Poisson
-  // De = |De12 De22 0   | = f * |Poisson  a        0  |       b = 1-2Poisson
-  //      |0    0    De33|       |0        0        b/2|   and f = Young/(1+2Poisson)
+  //      |De11 De12 0   |       |a        Poisson  0  |        with a = 1-Poisson
+  // De = |De12 De22 0   | = f * |Poisson  a        0  |             b = 1-2Poisson
+  //      |0    0    De33|       |0        0        b/2|         and f = Young/(1+2Poisson)
   double a = 1.0 - Poisson;
   double b = (1.0 - 2.0 * Poisson);
   double f = Young / ((1.0 + Poisson) * b);
@@ -47,7 +48,7 @@ void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Elastic stress
   MPM.MP[p].stress.xx += De11 * dstrain.xx + De12 * dstrain.yy;
   MPM.MP[p].stress.yy += De12 * dstrain.xx + De22 * dstrain.yy;
-  MPM.MP[p].stress.xy += 2 * De33 * dstrain.xy;
+  MPM.MP[p].stress.xy += 2.0 * De33 * dstrain.xy;
   MPM.MP[p].stress.yx = MPM.MP[p].stress.xy;
 }
 

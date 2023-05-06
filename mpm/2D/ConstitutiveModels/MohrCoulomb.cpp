@@ -3,8 +3,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<ConstitutiveModel, MohrCoulomb> registrar("MohrCoulomb");
 std::string MohrCoulomb::getRegistrationName() { return std::string("MohrCoulomb"); }
 
 // ==================================================================================
@@ -29,7 +27,7 @@ void MohrCoulomb::read(std::istream& is) {
 }
 
 void MohrCoulomb::write(std::ostream& os) {
-  os << Young << ' ' << Poisson << ' ' << FrictionAngle << ' ' << Cohesion << ' ' << DilatancyAngle <<'\n';
+  os << Young << ' ' << Poisson << ' ' << FrictionAngle << ' ' << Cohesion << ' ' << DilatancyAngle << '\n';
 }
 
 double MohrCoulomb::getYoung() { return Young; }
@@ -45,17 +43,19 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   mat4r dstrain;
   for (size_t r = 0; r < element::nbNodes; r++) {
     dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.xy += 0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
+    dstrain.xy +=
+        0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;
   }
   dstrain.yx = dstrain.xy;
-  MPM.MP[p].deltaStrain = dstrain;
+	
+  MPM.MP[p].deltaStrain = dstrain; // store it for processing
 
-  MPM.MP[p].strain += dstrain;
+  MPM.MP[p].strain += dstrain; // increment the strain
 
-  //      |De11 De12 0   |       |a        Poisson  0  |  with a = 1 - Poisson
-  // De = |De12 De22 0   | = f * |Poisson  a        0  |       b = 1 - 2Poisson
-  //      |0    0    De33|       |0        0        b/2|   and f = Young / (1 + 2Poisson)
+  //      |De11 De12 0   |       |a        Poisson  0  |        with a = 1 - Poisson
+  // De = |De12 De22 0   | = f * |Poisson  a        0  |             b = 1 - 2Poisson
+  //      |0    0    De33|       |0        0        b/2|         and f = Young / (1 + 2Poisson)
   double a = 1.0 - Poisson;
   double b = (1.0 - 2.0 * Poisson);
   double f = Young / ((1.0 + Poisson) * b);
@@ -79,11 +79,12 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   if (yieldF > 0.0) {
 
     if (MPM.MP[p].plastic == false) MPM.MP[p].plastic = true;
+		
     // Check if sigma is outside the 'apex-area'
     double s = 0.5 * (-sinDilatancyAngle * diff_3_1 + b * sum_1_3) / b;
     double apex = Cohesion * cosFrictionAngle / sinFrictionAngle;
 
-    if (s < apex) {  // okay, we can iterate
+    if (s < apex) {                          // okay, we can iterate
       int iter = 0;
       while (iter < 50 && yieldF > 1e-10) {  // Actually a single iteration should be okay	HERE WE HAD || INSTEAD
                                              // OF && AND WAS A SOURCE OF ISSUES
@@ -91,15 +92,15 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
         iter++;
 
         double diff_xx_yy = MPM.MP[p].stress.xx - MPM.MP[p].stress.yy;
-        double div = sqrt((diff_xx_yy) * (diff_xx_yy) + 4.0 * MPM.MP[p].stress.xy * MPM.MP[p].stress.xy);
+        double div = sqrt(diff_xx_yy * diff_xx_yy + 4.0 * MPM.MP[p].stress.xy * MPM.MP[p].stress.xy);
         double inv_div = 1.0f / div;  // div is not supposed to be null
 
-        double gradfxx = (diff_xx_yy)*inv_div + sinFrictionAngle;
-        double gradfyy = -(diff_xx_yy)*inv_div + sinFrictionAngle;
+        double gradfxx = diff_xx_yy * inv_div + sinFrictionAngle;
+        double gradfyy = -diff_xx_yy * inv_div + sinFrictionAngle;
         double gradfxy = 4.0 * MPM.MP[p].stress.xy * inv_div;
 
-        double gradgxx = (diff_xx_yy)*inv_div + sinDilatancyAngle;
-        double gradgyy = -(diff_xx_yy)*inv_div + sinDilatancyAngle;
+        double gradgxx = diff_xx_yy * inv_div + sinDilatancyAngle;
+        double gradgyy = -diff_xx_yy * inv_div + sinDilatancyAngle;
         double gradgxy = 4.0 * MPM.MP[p].stress.xy * inv_div;
 
         double bottom_lambda = gradfxx * (De11 * gradgxx + De12 * gradgyy) +
@@ -124,7 +125,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
         MPM.MP[p].stress -= delta_sigma_corrector;
 
         // saving the plastic stress to a mat4 variable
-        MPM.MP[p].plasticStress += delta_sigma_corrector;
+        MPM.MP[p].stressCorrection += delta_sigma_corrector;
 
         // New value of the yield function
         diff_3_1 = sqrt(4.0 * MPM.MP[p].stress.xy * MPM.MP[p].stress.xy +
@@ -140,8 +141,4 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   }
 }
 
-
-void MohrCoulomb::init(MaterialPoint& MP) {
-  MP.isDoubleScale = false;
-}
-
+void MohrCoulomb::init(MaterialPoint& MP) { MP.isDoubleScale = false; }
