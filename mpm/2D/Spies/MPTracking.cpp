@@ -5,35 +5,26 @@
 
 #include <fileTool.hpp>
 
+MPTracking::MPTracking() {
+  MP_Selector.actionForId = [this](MPMbox* /*B*/, size_t p) { this->MP_ids.push_back(p); };
+
+  MP_Selector.ContainerSize = [](MPMbox* B) -> size_t { return B->MP.size(); };
+
+  MP_Selector.getXY = [](MPMbox* B, size_t p, double& x, double& y) {
+    x = B->MP[p].pos.x;
+    y = B->MP[p].pos.y;
+  };
+}
+
 void MPTracking::read(std::istream& is) {
-  /*
-	selector.actionForNone = [](MPMbox *B) { };
-  selector.actionForId = [](MPMbox *B, size_t p) {
-    std::cout << B->element[p].pos << '\n';
-  };
-  selector.ContainerSize = [](AnyBox *B) -> size_t { return B->element.size(); };
-  selector.getXY = [](AnyBox *B, size_t p, double &x, double &y) {
-    x = B->element[p].pos.x;
-    y = B->element[p].pos.y;
-  };
-	*/
-	
   std::string Filename;
-  is >> nrec >> Filename;// >> selector;	
+  is >> nrec >> Filename >> MP_Selector;	
   nstep = nrec;
 
   filename = box->result_folder + fileTool::separator() + Filename;
   std::cout << "MPTracking: filename is " << filename << std::endl;
   file.open(filename.c_str());
-	
-	
-  for (size_t p = 0; p < box->MP.size(); p++) {
-    if (box->MP[p].pos.x > 0.225 && box->MP[p].pos.x < 0.575 && box->MP[p].pos.y > 0.225 && box->MP[p].pos.y < 0.375) {
-      MP_ids.push_back(p);
-    }
-  }
-	
-	
+	MP_Selector.execute(box);	
 }
 
 void MPTracking::exec() {

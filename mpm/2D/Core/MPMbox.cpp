@@ -24,6 +24,7 @@
 #include "ConstitutiveModels/CHCL_DEM.hpp"
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
 #include "ConstitutiveModels/HookeElasticity.hpp"
+#include "ConstitutiveModels/KelvinVoigt.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
 #include "ConstitutiveModels/SinfoniettaClassica.hpp"
 #include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
@@ -155,6 +156,8 @@ void MPMbox::ExplicitRegistrations() {
       "CHCL_DEM", [](void) -> ConstitutiveModel* { return new CHCL_DEM(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "HookeElasticity", [](void) -> ConstitutiveModel* { return new HookeElasticity(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "KelvinVoigt", [](void) -> ConstitutiveModel* { return new KelvinVoigt(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "MohrCoulomb", [](void) -> ConstitutiveModel* { return new MohrCoulomb(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(

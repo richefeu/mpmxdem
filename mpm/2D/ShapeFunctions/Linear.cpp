@@ -3,8 +3,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<ShapeFunction, Linear> registrar("Linear");
 std::string Linear::getRegistrationName() { return std::string("Linear"); }
 
 Linear::Linear() {}

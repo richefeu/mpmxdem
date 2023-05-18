@@ -5,8 +5,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-//#include "factory.hpp"
-//static Registrar<ShapeFunction, BSpline> registrar("BSpline");
 std::string BSpline::getRegistrationName() { return std::string("BSpline"); }
 
 // Reference: Paper Steffen - Analysis and reduction of quadrature errors in mpm
@@ -29,8 +27,8 @@ void BSpline::computeInterpolationValues(MPMbox& MPM, size_t p) {
     localCoord.push_back((MPM.MP[p].pos.y - MPM.nodes[I[i]].pos.y) * invL[1]);
   }
 
-  // careful when finding the gradient. dont derive using local coordinates.
-  // instead use (MPpos-nodepos)/cellLength. otherwise you'll miss a cellLength division!
+  // Be careful when finding the gradient. Don't derive using local coordinates.
+  // Instead use (MPpos - nodepos) / cellLength, otherwise you'll miss a cellLength division!
   int iL = 0;
   for (size_t i = 0; i < localCoord.size(); i++) {
     double x = localCoord[i];
