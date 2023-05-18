@@ -25,13 +25,14 @@ struct MaterialPoint {
   vec2r q;                  // Momentum (mass times velocity)
 
   mat4r strain;             // Total strain
-  mat4r plasticStrain;      // Plastic Strain
+  mat4r plasticStrain;      // Plastic Strain 
+  double outOfPlaneEp;      // Out-of-plane plastic strain component
   mat4r deltaStrain;        // Increment of strain (it is computed in ConstitutiveModel for processing purpose)
 
   mat4r stress;             // Total stress
   mat4r stressCorrection;   // Plastic Stress (REMARQUE à enlever ou renomer). C'est la correction plastic en
                             // fait. Ce truc avait été ajouté par Fabio.
-  double outOfPlaneStress;  // Out-of-plan stress component
+  double outOfPlaneStress;  // Out-of-plane total stress component
   double hardeningForce;
 
   double N[16];             // Value of shape function according to the position of the Material Point

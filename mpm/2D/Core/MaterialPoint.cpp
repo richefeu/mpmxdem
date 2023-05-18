@@ -14,6 +14,7 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
       q(),
       strain(),
       plasticStrain(),
+      outOfPlaneEp(0.0),
       deltaStrain(),
       stress(),
       outOfPlaneStress(0.0),

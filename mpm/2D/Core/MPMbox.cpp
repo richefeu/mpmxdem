@@ -19,6 +19,7 @@
 #include "Commands/set_MP_grid.hpp"
 #include "Commands/set_MP_polygon.hpp"
 #include "Commands/set_node_grid.hpp"
+#include "Commands/set_uniform_pressure.hpp"
 
 #include "ConstitutiveModels/CHCL_DEM.hpp"
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
@@ -42,6 +43,7 @@
 #include "ShapeFunctions/RegularQuadLinear.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 
+#include "Spies/MPTracking.hpp"
 #include "Spies/MeanStress.hpp"
 #include "Spies/ObstacleTracking.hpp"
 #include "Spies/Spy.hpp"
@@ -145,6 +147,8 @@ void MPMbox::ExplicitRegistrations() {
       "select_tracked_MP", [](void) -> Command* { return new select_tracked_MP(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
       "select_controlled_MP", [](void) -> Command* { return new select_controlled_MP(); });
+  Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
+      "set_uniform_pressure", [](void) -> Command* { return new set_uniform_pressure(); });
 
   // ConstitutiveModel =========
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
@@ -200,6 +204,8 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy* { return new Work(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MeanStress",
                                                                  [](void) -> Spy* { return new MeanStress(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MPTracking",
+                                                                 [](void) -> Spy* { return new MPTracking(); });
 }
 
 /*
@@ -281,9 +287,7 @@ void MPMbox::read(const char* name) {
         oneStep = nullptr;
       }
       oneStep = Factory<OneStep>::Instance()->Create(typeOneStep);
-    }
-
-    else if (token == "planeStrain") {
+    } else if (token == "planeStrain") {
       planeStrain = true;
     } else if (token == "tolmass") {
       file >> tolmass;
@@ -295,6 +299,8 @@ void MPMbox::read(const char* name) {
       file >> confPeriod;
     } else if (token == "proxPeriod") {
       file >> proxPeriod;
+    } else if (token == "securDistFactor") {
+      file >> securDistFactor;
     } else if (token == "dt") {
       file >> dt;
     } else if (token == "t") {
@@ -319,10 +325,7 @@ void MPMbox::read(const char* name) {
       file >> CHCL.limitTimeStepFactor;
     } else if (token == "CHCL.criticalDEMTimeStepFactor") {
       file >> CHCL.criticalDEMTimeStepFactor;
-    } /*else if (token == "verletCoef") {
-      file >> boundary_layer;
-    } */
-    else if (token == "set") {
+    } else if (token == "set") {
       std::string param;
       size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
       double value;
@@ -430,8 +433,12 @@ void MPMbox::read(const char* name) {
       MaterialPoint P;
       std::string modelName;
       for (size_t iMP = 0; iMP < nb; iMP++) {
+        // FIXME
+        // Il faut changer le sorties suivantes (enlever stressCorrection, ajouter hardeningForce, mettre
+        // outOfPlaneStress à cote de stress)
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
-            P.plasticStrain >> P.stress >> P.stressCorrection >> P.splitCount >> P.F >> P.outOfPlaneStress >> P.contactf;
+            P.plasticStrain >> P.stress >> P.stressCorrection >> P.splitCount >> P.F >> P.outOfPlaneStress >>
+            P.contactf;
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
@@ -454,12 +461,13 @@ void MPMbox::read(const char* name) {
         com->read(file);
         com->exec();
       } else {
-        msg::unknown(token);
+        // msg::unknown(token);
+        console->warn("@MPMbox::read, what do you mean by '{}'?", token);
       }
     }
 
     file >> token;
-  }  // while-loop
+  }  // end while-loop
 
   // Some checks before running a simulation
   if (!shapeFunction) {

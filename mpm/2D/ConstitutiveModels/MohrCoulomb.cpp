@@ -62,7 +62,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   double De11 = f * a;
   double De12 = f * Poisson;
   double De22 = De11;
-  double De33 = f * 0.5 * b;
+  double De33 = f * b;
 
   // Trial stress
   MPM.MP[p].stress.xx += De11 * dstrain.xx + De12 * dstrain.yy;

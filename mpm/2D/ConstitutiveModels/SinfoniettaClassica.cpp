@@ -3,10 +3,12 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-// En cours de developpement à l'aide de Quentin.
+// En cours de developpement avec Quentin.
 
 // This is a 'simple' version of Sinfonietta Classica
-// This is a kind of CamClay model. One objective is to extend this model to account for high compressibility.
+// This is a kind of CamClay model. 
+// One objective is to extend this model to account for high compressibility (SinfoniettaCrush)
+// 
 
 std::string SinfoniettaClassica::getRegistrationName() { return std::string("SinfoniettaClassica"); }
 
@@ -20,33 +22,27 @@ void SinfoniettaClassica::read(std::istream& is) {
   C.set(Young, Poisson);
   double sinVarphi = sin(varphi);
   double Z = 6.0 * sinVarphi / (3.0 - sinVarphi);
-  z = (9.0 - Z) * (9.0 - Z) / (3.0 - Z * Z + 2.0 * Z * Z * Z / 9.0);
+  z = (9.0 - Z * Z) / (3.0 - Z * Z + 2.0 * Z * Z * Z / 9.0);
 }
+
 void SinfoniettaClassica::write(std::ostream& os) {
-  os << Young << ' ' << Poisson << ' ' << beta << ' ' << beta_p << ' ' << kappa << ' ' << varphi << ' ' << pc0 << '\n';
+  os << Young << ' ' << Poisson << ' ' << beta << ' ' << beta_p << ' ' << kappa << ' ' << varphi * 180.0 / M_PI << ' ' << pc0 << '\n';
 }
 
 void SinfoniettaClassica::init(MaterialPoint& MP) {
   if (MP.hardeningForce == 0.0) {
     MP.hardeningForce = -log(pc0);
-    /*
-    MP.stress.xx = -pc0;
-    MP.stress.yy = -pc0;
-    MP.stress.xy = MP.stress.yx = 0.0;
-    MP.outOfPlaneStress = -pc0;
-    */
   }
 }
 
 double SinfoniettaClassica::func_f(mat9r Sigma, double q) {
-  // c'est les notations de l'annexe B de la these de Quentin
   double p = -Sigma.trace() / 3.0 + 1e-13;
   mat9r s = Sigma + p * mat9r::unit();
   mat9r xi = s * (1.0 / p);
   double J2xi = inner_product(xi, xi);
   double J3xi = inner_product(xi * xi, xi);
 
-  return (3.0 * beta * (z - 3.0) * (log(p) - q) + 9.0 * (z - 1.0) * J2xi / 4.0 + z * J3xi);
+  return (3.0 * beta * (z - 3.0) * (log(p) + q) + 9.0 * (z - 1.0) * J2xi / 4.0 + z * J3xi);
 }
 
 mat9r SinfoniettaClassica::func_df_ds(mat9r Sigma, double /*q*/) {
@@ -115,7 +111,7 @@ void SinfoniettaClassica::updateStrainAndStress(MPMbox& MPM, size_t p) {
   double qTrial = MPM.MP[p].hardeningForce;
   mat9r EpTrial(MPM.MP[p].plasticStrain.xx, MPM.MP[p].plasticStrain.xy, 0.0,
                 MPM.MP[p].plasticStrain.xx, MPM.MP[p].plasticStrain.xy, 0.0,
-                0.0,                        0.0,                        0.0);
+                0.0,                        0.0,                        MPM.MP[p].outOfPlaneEp);
   // clang-format on
   double fTrial = func_f(SigmaTrial, qTrial);
 
@@ -128,7 +124,6 @@ void SinfoniettaClassica::updateStrainAndStress(MPMbox& MPM, size_t p) {
     int iter = 0;
     double Hmodulus = 1.0 / beta_p;
     while (iter < 200 && yieldF > yield_tol) {
-
       iter++;
       mat9r dg_ds = func_dg_ds(Sigma, q);
       mat9r df_ds = func_df_ds(Sigma, q);
@@ -155,8 +150,9 @@ void SinfoniettaClassica::updateStrainAndStress(MPMbox& MPM, size_t p) {
     MPM.MP[p].plasticStrain.xx = Ep.xx;
     MPM.MP[p].plasticStrain.xy = MPM.MP[p].plasticStrain.yx = Ep.xy;
     MPM.MP[p].plasticStrain.yy = Ep.yy;
+    MPM.MP[p].outOfPlaneEp = Ep.zz;
 
-  } else {
+  } else { // we are inside the surface!
 
     MPM.MP[p].stress.xx = SigmaTrial.xx;
     MPM.MP[p].stress.xy = MPM.MP[p].stress.yx = SigmaTrial.xy;

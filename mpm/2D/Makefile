@@ -7,7 +7,7 @@ LIB = libMPMbox
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 
-CXX = g++-12
+CXX = g++-13
 CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion -pedantic \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
 

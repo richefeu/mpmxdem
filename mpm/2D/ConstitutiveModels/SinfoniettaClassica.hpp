@@ -13,10 +13,10 @@ struct SinfoniettaClassica : public ConstitutiveModel {
 
   // See page 49 of Quentin's PhD
   double beta;    // non-associativity characterisation (beta = 3 => associated)
-  double beta_p;  // plastic flexibility
-  double kappa;   // Nova's magic number (often 0)
+  double beta_p;  // plastic compliance (1/H)
+  double kappa;   // shear hardening parameter (often 0)
   double varphi;  // friction angle (characteristic state)
-  double pc0;     // ...
+  double pc0;     // pre-consolidation pressure
 
   // double phi_star_0;
   // double Epv0; // début (approx) du plateau à phi_star_0

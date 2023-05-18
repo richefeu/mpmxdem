@@ -3,9 +3,9 @@
 
 #include "ConstitutiveModel.hpp"
 
+#include "Rigidity.hpp"
+
 struct HookeElasticity : public ConstitutiveModel {
-  double Young;
-  double Poisson;
 
   HookeElasticity(double young = 200.0e6, double poisson = 0.2);
   std::string getRegistrationName();
@@ -14,6 +14,11 @@ struct HookeElasticity : public ConstitutiveModel {
   void updateStrainAndStress(MPMbox& MPM, size_t p);
   double getYoung();
   double getPoisson();
+
+private:
+  double Young;
+  double Poisson;
+  Rigidity C;
 };
 
 #endif /* end of include guard: HOOKEELASTICITY_HPP */
