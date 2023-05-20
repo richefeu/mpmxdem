@@ -455,8 +455,19 @@ void MPMbox::read(const char* name) {
         P.size = sqrt(P.vol0);
         MP.push_back(P);
       }
+    } else if (token == "Nodes") {
+      if (nodes.empty()) {
+        console->warn("@MPMbox::read, cannot set the node-datasets if the grid has not been set (with a command)");
+      }
+      size_t nbNodes = 0;
+      file >> nbNodes;
+      if (nbNodes != nodes.size()) {
+        console->warn("@MPMbox::read, The number of nodes is not compatible with the grid");
+      }
+      for (size_t in = 0; in < nodes.size(); in++) {
+        file >> nodes[in].q >> nodes[in].f >> nodes[in].fb >> nodes[in].mass >> nodes[in].xfixed >> nodes[in].yfixed;
+      }
     }
-
     else {  // it is possible that the keyword corresponds to a command-pluggin
       Command* com = Factory<Command>::Instance()->Create(token);
       if (com != nullptr) {
@@ -464,7 +475,6 @@ void MPMbox::read(const char* name) {
         com->read(file);
         com->exec();
       } else {
-        // msg::unknown(token);
         console->warn("@MPMbox::read, what do you mean by '{}'?", token);
       }
     }
@@ -530,7 +540,7 @@ void MPMbox::save(const char* name) {
   file << "ShapeFunction " << shapeFunction->getRegistrationName() << '\n';
 
   for (size_t sc = 0; sc < Scheduled.size(); sc++) {
-    file << "Scheduler ";
+    file << "Scheduled ";
     Scheduled[sc]->write(file);
   }
 
@@ -571,6 +581,14 @@ void MPMbox::save(const char* name) {
 
   // fixe-grid
   file << "set_node_grid Nx.Ny.lx.ly " << Grid.Nx << ' ' << Grid.Ny << ' ' << Grid.lx << ' ' << Grid.ly << '\n';
+  // This is a command that will set the Elements and the nodes also
+
+  // The node datasets (not all)
+  file << "Nodes " << nodes.size() << '\n';
+  for (size_t in = 0; in < nodes.size(); in++) {
+    file << nodes[in].q << ' ' << nodes[in].f << ' ' << nodes[in].fb << ' ' << nodes[in].mass << ' ' << nodes[in].xfixed
+         << ' ' << nodes[in].yfixed << '\n';
+  }
 
   // Obstacles
   for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {

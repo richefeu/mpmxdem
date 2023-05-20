@@ -160,8 +160,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelo;
     }
   }
-	
-	// ==== We may impose x- or y-velocity of some MP (it will overwrite those just computed)
+
+  // ==== We may impose x- or y-velocity of some MP (it will overwrite those just computed)
 	for (size_t cMP = 0; cMP < MPM.controlledMP.size(); cMP++) {
 		if (MPM.controlledMP[cMP].xcontrol == VEL_CONTROL) {
 			MP[MPM.controlledMP[cMP].PointNumber].vel.x = MPM.controlledMP[cMP].xvalue;

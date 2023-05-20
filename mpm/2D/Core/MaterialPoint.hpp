@@ -41,6 +41,7 @@ struct MaterialPoint {
   mat4r F;                  // Deformation gradient matrix
   mat4r velGrad;            // Gradient of velocity (required eg. for computation of F)
 
+  //vec2r shape[4];
   vec2r corner[4];          // Four corners according to F (positions expressed in the global frame)
   int splitCount;           // Generation number caused by successive to splits
 

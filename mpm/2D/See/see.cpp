@@ -33,6 +33,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '1': {
       color_option = 1;
+			colorBar.setTitle("velocity magnitude");
       float vmax = 0.0f;
       float vmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -49,6 +50,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '2': {
       color_option = 2;
+			colorBar.setTitle("pressure");
       float pmax = -std::numeric_limits<float>::max();
       float pmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -68,6 +70,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '3': {
       color_option = 3;
+			colorBar.setTitle("density");
       float rhomax = 0.0f;
       float rhomin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -84,6 +87,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '4': {
       color_option = 4;
+			colorBar.setTitle("sig_yy");
       float pmax = -std::numeric_limits<float>::max();
       float pmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -101,6 +105,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     case '5': {
       if (ADs.empty()) break;
       color_option = 5;
+			colorBar.setTitle("DEM-cell damage");
       float Dmax = 0.0f;
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
@@ -116,6 +121,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '6': {
       color_option = 6;
+			colorBar.setTitle("deps_q");
       float depsqmax = -std::numeric_limits<float>::max();
       float depsqmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -133,6 +139,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     } break;
     case '7': {
       color_option = 7;
+			colorBar.setTitle("volume variation");
       float volvarmax = -std::numeric_limits<float>::max();
       float volvarmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -151,6 +158,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     } break;
     case '8': {
       color_option = 8;
+			colorBar.setTitle("fx");
       float fxmax = -std::numeric_limits<float>::max();
       float fxmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -165,7 +173,9 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       std::cout << "MP colored by fx (fx_min = " << fxmin << ", fx_max = " << fxmax << ")\n";
     } break;
     case '9': {
+			if (ADs.empty()) break;
       color_option = 9;
+			colorBar.setTitle("inertial number");
       float Imax = -std::numeric_limits<float>::max();
       float Imin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -184,18 +194,16 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       std::cout << "MP colored by I (I_min = " << Imin << ", I_max = " << Imax << ")\n";
     } break;
 
-    case 'c': {
-      MP_contour = 1 - MP_contour;
+    case 'd': {
+      show_node_dofs = 1 - show_node_dofs;
     } break;
 
-    case 'n': {
-      std::cout << "number: ";
-      int num;
-      std::cin >> num;
-      try_to_readConf(num, Conf, confNum);
+    case 'b': {
+      show_background = 1 - show_background;
     } break;
-    case 'i': {
-      printInfo();
+
+    case 'c': {
+      MP_contour = 1 - MP_contour;
     } break;
 
     case 'g': {
@@ -204,6 +212,21 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case 'h': {
       printHelp();
+    } break;
+
+    case 'i': {
+      printInfo();
+    } break;
+
+    case 'm': {
+      show_MPs = 1 - show_MPs;
+    } break;
+
+    case 'n': {
+      std::cout << "number: ";
+      int num;
+      std::cin >> num;
+      try_to_readConf(num, Conf, confNum);
     } break;
 
     case 'q': {
@@ -310,8 +333,7 @@ void motion(int x, int y) {
 }
 
 void display() {
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glTools::clearBackground((bool)show_background);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -320,10 +342,13 @@ void display() {
   glEnable(GL_DEPTH_TEST);
 
   if (show_grid == 1) drawGrid();
-  drawMPs();
+  if (show_MPs == 1) drawMPs();
   if (show_obstacles == 1) drawObstacles();
   if (show_stress_directions == 1) drawStressDirections();
 
+  if (color_option > 0) colorBar.show(width, height, colorTable);
+
+  textZone.draw();
   glFlush();
   glutSwapBuffers();
 }
@@ -386,6 +411,27 @@ void drawGrid() {
     glBegin(GL_LINE_LOOP);
     for (size_t r = 0; r < 4; r++) glVertex2d(nodes[I[r]].pos.x, nodes[I[r]].pos.y);
     glEnd();
+  }
+
+  if (show_node_dofs) {
+    double s = 0.5 * 0.5 * (Conf.Grid.lx + Conf.Grid.ly);
+    glColor4f(1.f, 0.f, 0.0f, 1.0f);
+    for (size_t n = 0; n < nodes.size(); n++) {
+      if (nodes[n].xfixed) {
+        glBegin(GL_POLYGON);
+        glVertex2d(nodes[n].pos.x, nodes[n].pos.y);
+        glVertex2d(nodes[n].pos.x - s, nodes[n].pos.y + s / 3);
+        glVertex2d(nodes[n].pos.x - s, nodes[n].pos.y - s / 3);
+        glEnd();
+      }
+      if (nodes[n].yfixed) {
+        glBegin(GL_POLYGON);
+        glVertex2d(nodes[n].pos.x, nodes[n].pos.y);
+        glVertex2d(nodes[n].pos.x - s / 3, nodes[n].pos.y - s);
+        glVertex2d(nodes[n].pos.x + s / 3, nodes[n].pos.y - s);
+        glEnd();
+      }
+    }
   }
 }
 
@@ -479,9 +525,9 @@ void precomputeColors() {
   }
 }
 
-void setColor(int i) {
-  glColor3f((GLfloat)precompColors[i].r / 255.0f, (GLfloat)precompColors[i].g / 255.0f,
-            (GLfloat)precompColors[i].b / 255.0f);
+void setColor(int i, float alpha) {
+  glColor4f((GLfloat)precompColors[i].r / 255.0f, (GLfloat)precompColors[i].g / 255.0f,
+            (GLfloat)precompColors[i].b / 255.0f, alpha);
 }
 
 void drawStressDirections() {
@@ -633,28 +679,31 @@ bool try_to_readConf(int num, MPMbox& CF, int& OKNum) {
   char file_name[256];
   snprintf(file_name, 256, "conf%d.txt", num);
   if (fileExists(file_name)) {
-    std::cout << "Read " << file_name << std::endl;
     OKNum = num;
-    CF.clean();
-    CF.read(file_name);
-    CF.postProcess(SmoothedData);
-    precomputeColors();
-    std::cout << "Read " << file_name << std::endl;
-
     char co_file_name[256];
     snprintf(co_file_name, 256, "conf%d.txt_micro", num);
-    if (fileExists(co_file_name)) {
-      std::cout << "  with additional data in file " << co_file_name << std::endl;
-      readAdditionalData(co_file_name);
-    }
-    if (MPREF.empty()) {
-      MPREF = CF.MP;
-    }
+    readConf(file_name, co_file_name, CF);
   } else {
     std::cout << file_name << " does not exist" << std::endl;
     return false;
   }
   return true;
+}
+
+void readConf(const char* file_name, const char* co_file_name, MPMbox& CF) {
+  std::cout << "Read " << file_name << std::endl;
+  CF.clean();
+  CF.read(file_name);
+  CF.postProcess(SmoothedData);
+  precomputeColors();
+  textZone.addLine("%s - time = %.3G", file_name, CF.t);
+  if (fileExists(co_file_name)) {
+    std::cout << "  with additional data in file " << co_file_name << std::endl;
+    readAdditionalData(co_file_name); 
+  }
+  if (MPREF.empty()) {
+    MPREF = CF.MP;
+  }
 }
 
 void readAdditionalData(const char* fileName) {
@@ -730,56 +779,26 @@ int screenshot(const char* filename) {
   return 0;
 }
 
-void menu(int num) {
-  switch (num) {
-    case 0:
-      exit(0);
-      break;
-  };
-
-  glutPostRedisplay();
-}
-
-void buildMenu() {
-  /*
-  int submenu1 = glutCreateMenu(menu);  // Particle Colors
-  glutAddMenuEntry("None", 100);
-  glutAddMenuEntry("Velocity Magnitude", 101);
-  glutAddMenuEntry("Sum of Normal Contact Forces", 102);
-
-  int submenu2 = glutCreateMenu(menu);  // Force Colors
-  glutAddMenuEntry("None", 200);
-  glutAddMenuEntry("Magnitude", 201);
-  */
-
-  glutCreateMenu(menu);  // Main menu
-  // glutAddSubMenu("Particle Colors", submenu1);
-  // glutAddSubMenu("Force Colors", submenu2);
-  // glutAddSubMenu("Velocity Colors", submenu2);
-  glutAddMenuEntry("Quit", 0);
-}
-
 // =====================================================================
 // Main function
 // =====================================================================
 
 int main(int argc, char* argv[]) {
 
-  //unsigned char Key;
+  if (argc == 1) {
+    confNum = 0;
+    try_to_readConf(confNum, Conf, confNum);
+  } else if (argc > 1) {
+    confNum = 0;
+    readConf(argv[1], "###", Conf);
+  }
 
-  confNum = (argc > 1) ? atoi(argv[1]) : 0;
-  //Key = (argc > 2) ? *argv[2] : '2';
-  // color_option=atoi(Key);
-
-  std::cout << "Current Configuration: ";
-  try_to_readConf(confNum, Conf, confNum);
-  
   // ==== Init GLUT and create window
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
   glutInitWindowPosition(50, 50);
   glutInitWindowSize(width, height);
-  main_window = glutCreateWindow("CONF VISUALIZER");
+  main_window = glutCreateWindow("CONF VISUALIZER (MPMbox)");
 
   // ==== Register callbacks
   glutDisplayFunc(display);
@@ -788,21 +807,24 @@ int main(int argc, char* argv[]) {
   glutMouseFunc(mouse);
   glutMotionFunc(motion);
 
-  // ==== Menu
-  buildMenu();
-  glutAttachMenu(GLUT_RIGHT_BUTTON);
-
   mouse_mode = NOTHING;
+
+  glText::init();
+
+  glDisable(GL_CULL_FACE);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_COLOR_MATERIAL);
 
   glEnable(GL_BLEND);
   glBlendEquation(GL_FUNC_ADD);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  std::cout << "definig color options ";
-
-  //keyboard(Key, 0, 0);
 
   // ==== Enter GLUT event processing cycle
   fit_view();
+  display();
   glutMainLoop();
   return 0;
 }
