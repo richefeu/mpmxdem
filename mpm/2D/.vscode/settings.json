@@ -1,3 +1,4 @@
 {
-    "C_Cpp.intelliSenseEngineFallback": "disabled"
+    "C_Cpp.intelliSenseEngineFallback": "disabled",
+    "editor.fontSize": 15
 }

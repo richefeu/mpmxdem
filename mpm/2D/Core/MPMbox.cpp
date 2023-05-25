@@ -27,6 +27,7 @@
 #include "ConstitutiveModels/KelvinVoigt.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
 #include "ConstitutiveModels/SinfoniettaClassica.hpp"
+#include "ConstitutiveModels/SinfoniettaCrush.hpp"
 #include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
 
 #include "Obstacles/Circle.hpp"
@@ -100,6 +101,8 @@ MPMbox::MPMbox() {
   id_dt0 = dataTable.add("dt0");
 
   console = spdlog::stdout_color_mt("console");
+  console->set_pattern("[%^%l%$] %v");
+
   ExplicitRegistrations();
 }
 
@@ -164,6 +167,8 @@ void MPMbox::ExplicitRegistrations() {
       "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel* { return new VonMisesElastoPlasticity(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "SinfoniettaClassica", [](void) -> ConstitutiveModel* { return new SinfoniettaClassica(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "SinfoniettaCrush", [](void) -> ConstitutiveModel* { return new SinfoniettaCrush(); });
 
   // Obstacle ==================
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
@@ -467,8 +472,7 @@ void MPMbox::read(const char* name) {
       for (size_t in = 0; in < nodes.size(); in++) {
         file >> nodes[in].q >> nodes[in].f >> nodes[in].fb >> nodes[in].mass >> nodes[in].xfixed >> nodes[in].yfixed;
       }
-    }
-    else {  // it is possible that the keyword corresponds to a command-pluggin
+    } else {  // it is possible that the keyword corresponds to a command-pluggin
       Command* com = Factory<Command>::Instance()->Create(token);
       if (com != nullptr) {
         com->plug(this);
@@ -611,7 +615,7 @@ void MPMbox::save(const char* name) {
 void MPMbox::save(int num) {
   char name[256];
   snprintf(name, 256, "%s/conf%d.txt", result_folder.c_str(), num);
-  console->info("Save {}, #MP: {}, Time: {:.6f}", name, MP.size(), t);
+  console->info("Save {}, #MP: {}, Time: {:.6f} ({:.1f}%)", name, MP.size(), t, 100.0 * t / finalTime);
   save(name);
 }
 

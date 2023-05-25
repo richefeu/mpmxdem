@@ -9,6 +9,7 @@ ifeq ($(UNAME_S),Darwin)
 
 CXX = g++-13
 CXXFLAGS = -fopenmp -O3 -std=c++17 -Wall -Wextra -Wshadow -Wconversion -pedantic \
+-DENABLE_PROFILING \
 -I $(SPDLOG_PATH) -I $(CHCL_LIB_PATH) -I $(TOOFUS_PATH) -I.
 
 OPENMP_LIB = -l gomp

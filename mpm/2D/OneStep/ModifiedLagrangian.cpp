@@ -44,7 +44,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   MPM.number_MP_before_any_split = MPM.MP.size();
-  
+
   // ==== Reset the resultant forces and velGrad of MPs
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].f.reset();
@@ -76,7 +76,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM1(Obstacles[o], dt);
   }
-	
+
   // ==== Initialize grid state (mass and momentum)
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -109,13 +109,13 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // Forces imposed to MP
-	// TODO !!!!!!
+  // TODO !!!!!!
 
   // Updating free boundary conditions
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
   }
-	
+
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     OneStep::moveDEM2(Obstacles[o], dt);
   }
@@ -162,14 +162,14 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== We may impose x- or y-velocity of some MP (it will overwrite those just computed)
-	for (size_t cMP = 0; cMP < MPM.controlledMP.size(); cMP++) {
-		if (MPM.controlledMP[cMP].xcontrol == VEL_CONTROL) {
-			MP[MPM.controlledMP[cMP].PointNumber].vel.x = MPM.controlledMP[cMP].xvalue;
-		}
-		if (MPM.controlledMP[cMP].ycontrol == VEL_CONTROL) {
-			MP[MPM.controlledMP[cMP].PointNumber].vel.y = MPM.controlledMP[cMP].yvalue;
-		}
-	}
+  for (size_t cMP = 0; cMP < MPM.controlledMP.size(); cMP++) {
+    if (MPM.controlledMP[cMP].xcontrol == VEL_CONTROL) {
+      MP[MPM.controlledMP[cMP].PointNumber].vel.x = MPM.controlledMP[cMP].xvalue;
+    }
+    if (MPM.controlledMP[cMP].ycontrol == VEL_CONTROL) {
+      MP[MPM.controlledMP[cMP].PointNumber].vel.y = MPM.controlledMP[cMP].yvalue;
+    }
+  }
 
   // ==== Calculate updated velocity in nodes to compute deformation
   for (size_t p = 0; p < MP.size(); p++) {
@@ -203,13 +203,14 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
           simpleScaleVector.push_back(p);
         }
       }
-			
-			// Single-scale MPs
+
+      // Single-scale MPs
+#pragma omp parallel for default(shared)
       for (size_t q = 0; q < simpleScaleVector.size(); q++) {
         MP[simpleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, simpleScaleVector[q]);
       }
-			
-			// Two-scale MPs
+
+      // Two-scale MPs
 #pragma omp parallel for default(shared)
       for (size_t q = 0; q < doubleScaleVector.size(); q++) {
         MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
@@ -217,17 +218,16 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
                                       MP[doubleScaleVector[q]].stress.xx, MP[doubleScaleVector[q]].stress.xy,
                                       MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
       }
-			
+
     } else {
-			
-			// Every MPs are single-scale
+
+      // Every MPs are single-scale
       for (size_t p = 0; p < MP.size(); p++) {
         MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
-			
     }
   }
-	
+
   // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);

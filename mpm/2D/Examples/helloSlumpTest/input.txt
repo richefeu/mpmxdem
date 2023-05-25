@@ -1,8 +1,8 @@
 oneStepType ModifiedLagrangian
-result_folder ./helloSlumpTest
+result_folder .
 tolmass 1.e-5
 gravity 0.0  -9.81
-finalTime 0.5
+finalTime 1.0
 confPeriod 1000
 proxPeriod 10
 dt 1e-5
@@ -16,22 +16,25 @@ MaxSplitNumber 3
 #     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
 model MohrCoulomb    MC         1.0e7     0.42      0.3            5e1        0.01
 
+#                             Young  Poisson beta beta_p kappa varphiDeg pc0   phiStar0 epv0  l0    ginf
+model SinfoniettaCrush  SCr   3.46e6 0.25    1.2  0.01   0.0   38.5      6e3   0.08     0.02  0.1  1.0
+
 set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
 
 #            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
-set_MP_grid  0       MC            3000.0        0.04   0.04    0.1    0.20    0.005
-
-BoundaryForceLaw frictionalViscoElastic 1
+set_MP_grid  0       SCr           3000.0        0.04   0.04    0.1    0.20    0.005
 
 #                group  x0    y0     x1     y1    driveMode
 Obstacle Line    1      0.36  0.26   0.36   0.04  freeze
 Obstacle Line    1      0.36  0.04   0.04   0.04  freeze
 Obstacle Line    1      0.04  0.04   0.04   0.26  freeze
 
+BoundaryForceLaw frictionalViscoElastic 1
+
 #Obstacle Circle  1      0.14 0.3 0.04 free 300  0 0 0  0 0 0
 
 #properties      parameter  groupMP   groupObst  value
-set              mu         0         1          0.2
+set              mu         0         1          0.4
 set              kn         0         1          1e6
 set              kt         0         1          1e6
 set              viscRate   0         1          0.98

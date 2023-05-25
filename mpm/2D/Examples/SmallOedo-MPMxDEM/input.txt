@@ -1,27 +1,21 @@
 oneStepType ModifiedLagrangian
 result_folder .
-# Mass tolerance
 tolmass 1.e-6
-# Gravity    gx   gy
 gravity      0.0  0.0
 finalTime 2.5
-# Period of storing (in number of steps)
 confPeriod 2500
-proxPeriod 50 # at the MPM scale for interactions with boundaries
-# Time increment
+proxPeriod 50 
 dt 1e-5
-# Current time
 t 0.0
+
 # shape function can be Linear or GIMP (not yet implemented)
 ShapeFunction BSpline
 
-# PICDissipation 0.98 0.1
+Scheduled PICDissipation 0.98 2.5
 
 splitting 0
 shearLimit 1.0
 
-# ramp 0 -9.81 0 -0.0005 
-# demavg 50 0.01
 CHCL.minDEMstep 50
 CHCL.rateAverage 0.05
 CHCL.limitTimeStepFactor 0
@@ -47,7 +41,7 @@ select_tracked_MP ALL
 Obstacle Line    2      0.4   0.4    0.4   0.2  freeze    # right
 Obstacle Line    2      0.4   0.2    0.2   0.2  freeze    # bottom
 Obstacle Line    2      0.2   0.2    0.2   0.4  freeze    # left
-Obstacle Line    2      0.2   0.4    0.4   0.4  velocity 0.0 -0.01  # top
+Obstacle Line    2      0.2   0.4    0.4   0.4  velocity 0.0 -0.0  # top
 
 BoundaryForceLaw frictionalViscoElastic 2
 

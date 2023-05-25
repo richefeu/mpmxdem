@@ -27,13 +27,13 @@ struct MaterialPoint {
   mat4r strain;             // Total strain
   mat4r plasticStrain;      // Plastic Strain 
   double outOfPlaneEp;      // Out-of-plane plastic strain component
-  mat4r deltaStrain;        // Increment of strain (it is computed in ConstitutiveModel for processing purpose)
+  mat4r deltaStrain;        // Increment of strain (it is computed in ConstitutiveModel for processing purpose) (FIXME: remove?)
 
   mat4r stress;             // Total stress
   mat4r stressCorrection;   // Plastic Stress (REMARQUE à enlever ou renomer). C'est la correction plastic en
                             // fait. Ce truc avait été ajouté par Fabio.
   double outOfPlaneStress;  // Out-of-plane total stress component
-  double hardeningForce;
+  double hardeningForce;    // memory for hardening
 
   double N[16];             // Value of shape function according to the position of the Material Point
   vec2r gradN[16];          // Gradient of shape function according to the position of the Material Point
@@ -41,7 +41,8 @@ struct MaterialPoint {
   mat4r F;                  // Deformation gradient matrix
   mat4r velGrad;            // Gradient of velocity (required eg. for computation of F)
 
-  //vec2r shape[4];
+  //vec2r refShape[4];
+  // bool hasRefShape;
   vec2r corner[4];          // Four corners according to F (positions expressed in the global frame)
   int splitCount;           // Generation number caused by successive to splits
 

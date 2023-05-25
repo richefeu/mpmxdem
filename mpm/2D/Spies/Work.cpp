@@ -1,10 +1,10 @@
 #include "Work.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
-#include <Obstacles/Obstacle.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
+#include "Obstacles/Obstacle.hpp"
 
-#include <fileTool.hpp>
+#include "fileTool.hpp"
 
 void Work::read(std::istream& is) {
   std::string Filename;

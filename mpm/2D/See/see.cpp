@@ -33,7 +33,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '1': {
       color_option = 1;
-			colorBar.setTitle("velocity magnitude");
+      colorBar.setTitle("velocity magnitude");
       float vmax = 0.0f;
       float vmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -50,7 +50,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '2': {
       color_option = 2;
-			colorBar.setTitle("pressure");
+      colorBar.setTitle("pressure");
       float pmax = -std::numeric_limits<float>::max();
       float pmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -70,7 +70,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '3': {
       color_option = 3;
-			colorBar.setTitle("density");
+      colorBar.setTitle("density");
       float rhomax = 0.0f;
       float rhomin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -87,7 +87,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '4': {
       color_option = 4;
-			colorBar.setTitle("sig_yy");
+      colorBar.setTitle("sig_yy");
       float pmax = -std::numeric_limits<float>::max();
       float pmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -105,7 +105,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     case '5': {
       if (ADs.empty()) break;
       color_option = 5;
-			colorBar.setTitle("DEM-cell damage");
+      colorBar.setTitle("DEM-cell damage");
       float Dmax = 0.0f;
       for (size_t i = 0; i < ADs.size(); i++) {
         if (ADsREF[i].NB == 0.0) continue;
@@ -121,7 +121,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
     case '6': {
       color_option = 6;
-			colorBar.setTitle("deps_q");
+      colorBar.setTitle("deps_q");
       float depsqmax = -std::numeric_limits<float>::max();
       float depsqmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -139,7 +139,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     } break;
     case '7': {
       color_option = 7;
-			colorBar.setTitle("volume variation");
+      colorBar.setTitle("volume variation");
       float volvarmax = -std::numeric_limits<float>::max();
       float volvarmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -158,7 +158,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     } break;
     case '8': {
       color_option = 8;
-			colorBar.setTitle("fx");
+      colorBar.setTitle("fx");
       float fxmax = -std::numeric_limits<float>::max();
       float fxmin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -173,9 +173,9 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
       std::cout << "MP colored by fx (fx_min = " << fxmin << ", fx_max = " << fxmax << ")\n";
     } break;
     case '9': {
-			if (ADs.empty()) break;
+      if (ADs.empty()) break;
       color_option = 9;
-			colorBar.setTitle("inertial number");
+      colorBar.setTitle("inertial number");
       float Imax = -std::numeric_limits<float>::max();
       float Imin = std::numeric_limits<float>::max();
       for (size_t i = 0; i < Conf.MP.size(); i++) {
@@ -283,13 +283,16 @@ void mouse(int button, int state, int x, int y) {
     mouse_start[0] = x;
     mouse_start[1] = y;
     switch (button) {
-      case GLUT_LEFT_BUTTON:
-        if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
+      case GLUT_LEFT_BUTTON: {
+        int modifiers = glutGetModifiers();
+        if (modifiers == GLUT_ACTIVE_SHIFT)
           mouse_mode = PAN;
+        else if (modifiers == GLUT_ACTIVE_CTRL)
+          mouse_mode = ZOOM;
         else
           mouse_mode = ROTATION;
-        break;
-      case GLUT_MIDDLE_BUTTON:
+      } break;
+      case GLUT_MIDDLE_BUTTON: // will be removed (?)
         mouse_mode = ZOOM;
         break;
     }
@@ -699,7 +702,7 @@ void readConf(const char* file_name, const char* co_file_name, MPMbox& CF) {
   textZone.addLine("%s - time = %.3G", file_name, CF.t);
   if (fileExists(co_file_name)) {
     std::cout << "  with additional data in file " << co_file_name << std::endl;
-    readAdditionalData(co_file_name); 
+    readAdditionalData(co_file_name);
   }
   if (MPREF.empty()) {
     MPREF = CF.MP;

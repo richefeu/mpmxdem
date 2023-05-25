@@ -1,9 +1,9 @@
 #include "MeanStress.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
-#include <fileTool.hpp>
+#include "fileTool.hpp"
 
 void MeanStress::read(std::istream& is) {
   std::string Filename;

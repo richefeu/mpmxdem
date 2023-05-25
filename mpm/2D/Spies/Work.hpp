@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#include <slicedRange.hpp>
+#include "slicedRange.hpp"
 
 struct Work : public Spy {
   void read(std::istream& is);

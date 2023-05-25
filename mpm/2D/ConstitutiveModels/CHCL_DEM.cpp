@@ -43,8 +43,8 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
         0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;
   }
-  dstrain.yx = dstrain.xy; // symmetic tensor
-	
+  dstrain.yx = dstrain.xy;  // symmetic tensor
+
   MPM.MP[p].strain += dstrain;
   MPM.MP[p].deltaStrain = dstrain;
 
@@ -67,6 +67,10 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
 	                         MPM.CHCL.minDEMstep, MPM.CHCL.rateAverage, MPM.CHCL.criticalDEMTimeStepFactor, 
 													 SigAvg);
   // clang-format on
+
+  // FIXME: maybe we should force the symmetry of the stress tensor
+  // because it's ok for the DEM side, but probably not for MPM
+  SigAvg.symmetrize();
 
   // Stress
   // !!! (Sign convention is opposed between PBC3D and MPMbox) !!!
