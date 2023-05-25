@@ -1,6 +1,6 @@
 #include "GravityRamp.hpp"
 
-#include <Core/MPMbox.hpp>
+#include "Core/MPMbox.hpp"
 
 void GravityRamp::read(std::istream& is) {
   is >> gravityFrom >> rampStart;

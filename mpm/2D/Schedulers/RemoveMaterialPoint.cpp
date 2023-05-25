@@ -1,6 +1,6 @@
 #include "RemoveMaterialPoint.hpp"
 
-#include <Core/MPMbox.hpp>
+#include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
 

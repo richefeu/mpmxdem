@@ -4,7 +4,7 @@ message(STATUS "CMAKE_SYSTEM_NAME = " ${CMAKE_SYSTEM_NAME})
 message(STATUS "CMAKE_HOST_SYSTEM_NAME = " ${CMAKE_HOST_SYSTEM_NAME})
  
 if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
-  set(CMAKE_CXX_COMPILER "g++-12") # do not use AppleClang
+  set(CMAKE_CXX_COMPILER "g++-13") # do not use AppleClang
   message(STATUS "CMAKE_CXX_COMPILER = " ${CMAKE_CXX_COMPILER})
 endif()
 
@@ -25,7 +25,7 @@ find_package(OpenGL REQUIRED)
 
 if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
 
-  # you might use: export CXX="g++-12"
+  # you might use: export CXX="g++-13"
   # before the find_package(OpenMP)
   #find_package(OpenMP)
   # depuis g++-12 ça ne fonctionne plus sur mac

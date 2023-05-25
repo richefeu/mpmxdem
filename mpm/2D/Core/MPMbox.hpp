@@ -78,8 +78,6 @@ class MPMbox {
 
   vec2r gravity;       // The gravity acceleration vector
 
-  //double boundary_layer;  // enlarge the contact zone
-
   double finalTime;  // Time in seconds at which the simulation ends
   int step;          // The current step number
   int iconf;         // File number of the comming save

@@ -1,6 +1,6 @@
 #include "Line.hpp"
-#include <Core/MPMbox.hpp>
-#include <Core/MaterialPoint.hpp>
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
 
 std::string Line::getRegistrationName() { return std::string("Line"); }
 

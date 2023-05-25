@@ -7,7 +7,6 @@
 class MPMbox;
 struct MaterialPoint;
 
-
 struct ConstitutiveModel {
   std::string key;
 

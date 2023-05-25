@@ -1,7 +1,7 @@
 #include "RemoveObstacle.hpp"
 
-#include <Core/MPMbox.hpp>
-#include <Obstacles/Obstacle.hpp>
+#include "Core/MPMbox.hpp"
+#include "Obstacles/Obstacle.hpp"
 
 void RemoveObstacle::read(std::istream& is) {
   is >> groupNumber >> removeTime;
