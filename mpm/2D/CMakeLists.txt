@@ -75,6 +75,7 @@ ShapeFunctions/*.cpp
 Obstacles/*.cpp
 Commands/*.cpp
 Spies/*.cpp
+Schedulers/*.cpp
 )
 
 add_library(core_obj OBJECT ${core_object_files})
@@ -92,7 +93,7 @@ add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
 target_link_libraries (see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
 
-add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
-target_link_libraries(cut PUBLIC ${PLUGGED_DEM_LIBRARY})
+#add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
+#target_link_libraries(cut PUBLIC ${PLUGGED_DEM_LIBRARY})
 
 
