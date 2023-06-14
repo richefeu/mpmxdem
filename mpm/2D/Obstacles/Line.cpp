@@ -86,3 +86,7 @@ void Line::checkProximity(MPMbox& MPM) {
   }
 }
 
+bool Line::inside(vec2r& x) {
+	vec2r l = x - pos;
+	return (l * n < 0.0);
+}

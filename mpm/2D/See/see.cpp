@@ -787,7 +787,8 @@ int screenshot(const char* filename) {
 // =====================================================================
 
 int main(int argc, char* argv[]) {
-
+  Conf.computationMode = false;
+	
   if (argc == 1) {
     confNum = 0;
     try_to_readConf(confNum, Conf, confNum);

@@ -9,6 +9,7 @@ struct MaterialPoint;
 
 struct ConstitutiveModel {
   std::string key;
+	MPMbox *box;
 
   virtual ~ConstitutiveModel();
   virtual std::string getRegistrationName() = 0;

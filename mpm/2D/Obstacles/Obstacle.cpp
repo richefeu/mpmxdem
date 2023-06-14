@@ -1,7 +1,7 @@
 #include "Obstacle.hpp"
 #include "factory.hpp"
 
-bool Obstacle::MPisInside(MaterialPoint&) { return false; }
+bool Obstacle::inside(vec2r&) { return false; }
 
 // Ctor
 Obstacle::Obstacle() : isFree(false), pos(), vel(), acc(), force() {

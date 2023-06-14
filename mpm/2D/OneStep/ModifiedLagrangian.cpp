@@ -69,6 +69,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       sortedLive.insert(I[r]);
     }
   }
+
   liveNodeNum.clear();
   std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
 
@@ -145,23 +146,30 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
-    double invmass;
-    vec2r PICvelo;
-
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      if (nodes[I[r]].mass > MPM.tolmass) {
-        invmass = 1.0f / nodes[I[r]].mass;
-        PICvelo += MP[p].N[r] * nodes[I[r]].q * invmass;
-        MP[p].vel += (MP[p].N[r] * dt * nodes[I[r]].qdot * invmass);
-      }
-    }
-
     if (MPM.activePIC) {
+      double invmass;
+      vec2r PICvelo;
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        if (nodes[I[r]].mass > MPM.tolmass) {
+          invmass = 1.0f / nodes[I[r]].mass;
+          PICvelo += MP[p].N[r] * nodes[I[r]].q * invmass;
+          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+        }
+      }
       MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelo;
+    } else {
+      double invmass;
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        if (nodes[I[r]].mass > MPM.tolmass) {
+          invmass = 1.0f / nodes[I[r]].mass;
+          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+        }
+      }
     }
   }
 
   // ==== We may impose x- or y-velocity of some MP (it will overwrite those just computed)
+#if 0
   for (size_t cMP = 0; cMP < MPM.controlledMP.size(); cMP++) {
     if (MPM.controlledMP[cMP].xcontrol == VEL_CONTROL) {
       MP[MPM.controlledMP[cMP].PointNumber].vel.x = MPM.controlledMP[cMP].xvalue;
@@ -170,6 +178,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       MP[MPM.controlledMP[cMP].PointNumber].vel.y = MPM.controlledMP[cMP].yvalue;
     }
   }
+#endif
 
   // ==== Calculate updated velocity in nodes to compute deformation
   for (size_t p = 0; p < MP.size(); p++) {

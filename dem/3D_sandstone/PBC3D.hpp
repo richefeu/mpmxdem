@@ -23,7 +23,9 @@
 #include "fileTool.hpp"
 #include "geoPack3D.hpp"
 #include "linreg.hpp"
-#include "octree.hpp"
+//#include "octree.hpp"
+//#include "linkCells.hpp"
+#include "PeriodicNearestNeighbors.hpp"
 #include "profiler.hpp"
 
 // This is useful to make fortran-like outputs
@@ -123,8 +125,10 @@ class PBC3Dbox {
 
   void printScreen(double elapsedTime);            ///< Prints usefull data on screen during computation
   void dataOutput();                               ///< Outputs usefull data during computation
-  void updateNeighborList(double dmax);            ///< Updates the neighbor-list
+  
+	void updateNeighborList(double dmax);            ///< Updates the neighbor-list
   void updateNeighborList_brutForce(double dmax);  ///< Updates the neighbor-list
+	
   void saveConf(const char* name);                 ///< Saves the current configuration in a file named 'name'
   void saveConf(int i);                            ///< Saves the current configuration in a file named confX, where X=i
   void loadConf(const char* name);                 ///< Loads a configuration from a file
@@ -161,7 +165,6 @@ class PBC3Dbox {
                          double* fnMean) const;  ///< Methods to evaluate the quality of static state
 
  private:
-  // TODO: add m_ before any private data
 
   // Files
   std::ofstream stressOut;     ///< File to store stress

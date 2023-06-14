@@ -363,6 +363,7 @@ void MPMbox::read(const char* name) {
       if (CM != nullptr) {
         models[modelName] = CM;
         CM->key = modelName;
+				CM->box = this;
         CM->read(file);
       } else {
         console->warn("mode {} is unknown!", modelID);
@@ -444,6 +445,7 @@ void MPMbox::read(const char* name) {
         // FIXME
         // Il faut changer le sorties suivantes (enlever stressCorrection, ajouter hardeningForce, mettre
         // outOfPlaneStress à cote de stress)
+				// Pas maintenant, pour ne pas casser la compatibilité...
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
             P.plasticStrain >> P.stress >> P.stressCorrection >> P.splitCount >> P.F >> P.outOfPlaneStress >>
             P.contactf;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.3)
 
 message(STATUS "CMAKE_SYSTEM_NAME = " ${CMAKE_SYSTEM_NAME})
 message(STATUS "CMAKE_HOST_SYSTEM_NAME = " ${CMAKE_HOST_SYSTEM_NAME})
@@ -11,7 +11,7 @@ endif()
 project(MPMbox LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_CXX_FLAGS "-O3 -Wno-deprecated-declarations -Wall -Wextra -DENABLE_PROFILING -lpthread")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -27,8 +27,7 @@ if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
 
   # you might use: export CXX="g++-13"
   # before the find_package(OpenMP)
-  #find_package(OpenMP)
-  # depuis g++-12 ça ne fonctionne plus sur mac
+  find_package(OpenMP)
 
   # here, we do not uses find_package(glut) so that the version installed by apple is NOT used
   find_package(PkgConfig REQUIRED)
@@ -62,7 +61,10 @@ set(COMMON_INCLUDE_DIR ~/toofus)
 message(STATUS "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
 message(STATUS "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
 message(STATUS "COMMON_INCLUDE_DIR = " ${COMMON_INCLUDE_DIR})
-message(STATUS "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS} )
+message(STATUS "OpenMP_FLAGS = "  ${OpenMP_CXX_FLAGS})
+message(STATUS "OPENGL_INCLUDE_DIR = " ${OPENGL_INCLUDE_DIR})
+message(STATUS "OPENGL_LIBRARIES = " ${OPENGL_LIBRARIES})
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${COMMON_INCLUDE_DIR} ${PLUGGED_DEM_INCLUDE_DIR}) 
 link_directories(${PLUGGED_DEM_INCLUDE_DIR}) 
 
@@ -82,6 +84,7 @@ add_library(core_obj OBJECT ${core_object_files})
 if(OpenMP_CXX_FOUND)
   set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
   message(STATUS "CMAKE_CXX_FLAGS = "  ${CMAKE_CXX_FLAGS})
+	set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
   add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
   target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY} OpenMP::OpenMP_CXX)
 else()

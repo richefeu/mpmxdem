@@ -12,4 +12,4 @@ double ConstitutiveModel::getPoisson() {
   return 0;
 }
 
-void ConstitutiveModel::init(MaterialPoint & /*MP*/) { }
+void ConstitutiveModel::init([[maybe_unused]] MaterialPoint & MP) { }

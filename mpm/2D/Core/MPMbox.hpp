@@ -70,6 +70,8 @@ class MPMbox {
 
   std::vector<Scheduler*> Scheduled; // the schedulled action to do
 	std::vector<ControlMP> controlledMP; // force or velocity controls on some MP
+	
+	bool computationMode{true};
 
   std::string result_folder;  // The folder into which the result files will be saved
   bool planeStrain;           // Plane strain assumption (default value is false)

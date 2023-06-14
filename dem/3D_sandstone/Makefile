@@ -8,7 +8,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin) # ==========================================
 
 # The compiler to be used
-CXX = g++-12
+CXX = g++-13
 # The list of flags passed to the compiler
 CXXFLAGS = -O3 -Wall -Wextra -Wshadow -Wconversion -pedantic -std=c++17 -I ~/toofus -I /usr/include
 # Link flags for OpenGL and glut

@@ -116,11 +116,11 @@ void Polygon::checkProximity(MPMbox& MPM) {
 
 
 // not being used
-bool Polygon::MPisInside(MaterialPoint& MP) {
-  vec2r l = MP.pos - pos;
-  double radiusMP = 0.5 * MP.vol;
-  double sumR = (R + radiusMP);
-  return (norm2(l) < sumR * sumR);
+bool Polygon::inside(vec2r& x) {
+  vec2r l = x - pos;
+  //double radiusMP = 0.5 * MP.vol;
+  //double sumR = (R + radiusMP);
+  return (norm2(l) < R * R);
 }
 
 // TODO: shoudl create a library and call it instead of implementing it here

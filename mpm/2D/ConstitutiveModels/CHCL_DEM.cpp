@@ -18,17 +18,20 @@ double CHCL_DEM::getYoung() { return -1.0; }
 double CHCL_DEM::getPoisson() { return -1.0; }
 
 void CHCL_DEM::init(MaterialPoint& MP) {
-  MP.PBC = new PBC3Dbox;
-  MP.PBC->loadConf(fileName.c_str());
   MP.isDoubleScale = true;
 
-  // transfert the current stress
-  // !!! (Sign convention is opposed between PBC3D and MPMbox) !!!
-  MP.stress.xx = -MP.PBC->Sig.xx;
-  MP.stress.xy = -MP.PBC->Sig.xy;
-  MP.stress.yx = -MP.PBC->Sig.yx;
-  MP.stress.yy = -MP.PBC->Sig.yy;
-  MP.outOfPlaneStress = -MP.PBC->Sig.zz;
+  MP.PBC = new PBC3Dbox;
+  if (box->computationMode == true) {
+    MP.PBC->loadConf(fileName.c_str());
+
+    // transfert the current stress
+    // !!! (Sign convention is opposed between PBC3D and MPMbox) !!!
+    MP.stress.xx = -MP.PBC->Sig.xx;
+    MP.stress.xy = -MP.PBC->Sig.xy;
+    MP.stress.yx = -MP.PBC->Sig.yx;
+    MP.stress.yy = -MP.PBC->Sig.yy;
+    MP.outOfPlaneStress = -MP.PBC->Sig.zz;
+  }
 }
 
 void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {

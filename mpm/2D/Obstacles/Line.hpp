@@ -14,6 +14,7 @@ struct Line : public Obstacle {
   virtual void checkProximity(MPMbox& MPM);
   virtual int touch(MaterialPoint& MP, double& dn);
   virtual void getContactFrame(MaterialPoint& MP, vec2r& n, vec2r& t);
+	virtual bool inside(vec2r& x);
 };
 
 #endif /* end of include guard: OBSTACLE_LINE_HPP */

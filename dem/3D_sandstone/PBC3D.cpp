@@ -740,7 +740,7 @@ void PBC3Dbox::setSample() {
                       radius,           // rmax
                       200,              // no of trials
                       0.0, cellSize, 0.0, cellSize, 0.0, cellSize, cellSize - (2.0 * ngw * radius),
-                      ngw * ngw * ngw   // The periodic cell
+                      ngw * ngw * ngw  // The periodic cell
     );
     packing.seedTime();
     // MORE PARAMETRIZATION HERE ........ TODO
@@ -1098,7 +1098,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
     Ibak.push_back(I);
   }
 
-  // now rebuild the list
+  // octree (it doesn't work yet)
 #if 0
   Interactions.clear();
 
@@ -1136,8 +1136,10 @@ void PBC3Dbox::updateNeighborList(double dmax) {
       }
     }
   }
+#endif
 
-#else
+  // brute force
+#if 0
 
   Interactions.clear();
   for (size_t i = 0; i < Particles.size(); i++) {
@@ -1149,12 +1151,49 @@ void PBC3Dbox::updateNeighborList(double dmax) {
 
       double sum = dmax + Particles[i].radius + Particles[j].radius;
       if (norm2(branch) <= sum * sum) {
-        // double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
-        // double Dampn = dampRate * 2.0 * sqrt(kn * m);
-        // double Dampt = dampRate * 2.0 * sqrt(kt * m);
-        // Interactions.push_back(Interaction(i, j, Dampn, Dampt));
+        // Dampn and Dampt will computed after if this is a new interaction
         Interactions.push_back(Interaction(i, j, 0.0, 0.0));
       }
+    }
+  }
+
+#endif
+
+  // periodic linkCells
+#if 1
+
+  Interactions.clear();
+
+  size_t numPoints = Particles.size();
+  std::vector<IdPoint> reducedPosPoints;
+  for (size_t i = 0; i < numPoints; ++i) {
+    double x = Particles[i].pos.x;
+    double y = Particles[i].pos.y;
+    double z = Particles[i].pos.z;
+    reducedPosPoints.push_back({i, x, y, z});
+  }
+	
+  // Determine the gridSize based on the density of points
+	// WARNING: this is an empirical recipes (one day, we will make something more robust)
+  double optimumDistance = 1.5 * std::pow(1.0 / (double)numPoints, 1.0 / 3.0);
+  size_t optimumGridSize = std::max<size_t>(static_cast<size_t>(std::ceil(1.0 / optimumDistance)), 3);
+	
+  PeriodicNearestNeighbors perioNN(reducedPosPoints, optimumGridSize);
+  std::vector<std::vector<size_t>> neighbors = perioNN.getNeighbors(optimumDistance);
+
+  for (size_t i = 0; i < neighbors.size(); ++i) {
+    for (size_t j : neighbors[i]) {
+
+      vec3r sij = Particles[j].pos - Particles[i].pos;
+      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
+      vec3r branch = Cell.h * sij;
+
+      double sum = dmax + Particles[i].radius + Particles[j].radius;
+      if (norm2(branch) <= sum * sum) {
+        // Dampn and Dampt will computed after if this is a new interaction
+        Interactions.push_back(Interaction(i, j, 0.0, 0.0));
+      }
+			
     }
   }
 
@@ -1413,9 +1452,9 @@ void PBC3Dbox::computeForcesAndMoments() {
       Interactions[k].fn = fne + fnv;            // normal force component
 
       // Tangential force (elastic without viscuous damping)
-      vec3r ft_corr = Interactions[k].ft;                        // force that will be corrected
+      vec3r ft_corr = Interactions[k].ft;  // force that will be corrected
       if (objectiveFriction == 1) {
-        ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));  // 1st correction
+        ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));                               // 1st correction
         ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
       }
       vec3r vt = realVel - (vn * n);                // relative velocity projected on the tangential plan
@@ -1496,14 +1535,14 @@ void PBC3Dbox::computeForcesAndMoments() {
       // === Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
       double dn = len - (Particles[i].radius + Particles[j].radius);  // a negative value is an overlap
       double dn_bond = dn - Interactions[k].gap0;  // for a bond, the gap-at-creation is the normal distance reference
-      if (continuumContact == 1) dn -= Interactions[k].gap0;          // this gap0 is accounted for only for fake grains
-      double vn = realVel * n;                                        // normal relative (j/i) velocity
+      if (continuumContact == 1) dn -= Interactions[k].gap0;  // this gap0 is accounted for only for fake grains
+      double vn = realVel * n;                                // normal relative (j/i) velocity
       Interactions[k].fn_elas = 0.0;
-      if (dn < 0.0) Interactions[k].fn_elas = -w_particle * kn * dn;  // elastic normal contact-force
+      if (dn < 0.0) Interactions[k].fn_elas = -w_particle * kn * dn;                 // elastic normal contact-force
       Interactions[k].fn_bond = -w_bond * (1.0 - Interactions[k].D) * kn * dn_bond;  // elastic normal bond-force
       double fnv = -Interactions[k].dampn * vn;  // viscuous normal force (not stored)
       Interactions[k].fn = Interactions[k].fn_elas + Interactions[k].fn_bond + fnv;
-      double fnUsedForThresholds = Mth::keepPositive(Interactions[k].fn); // this fn is cut to zero
+      double fnUsedForThresholds = Mth::keepPositive(Interactions[k].fn);  // this fn is cut to zero
 
       // === Tangential force
       vec3r vt = realVel - (vn * n);        // relative velocity projected on the tangential plan
@@ -1668,9 +1707,9 @@ void PBC3Dbox::computeForcesAndMoments() {
         if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
         Interactions[k].fn_elas = Interactions[k].fn;
 
-        vec3r ft_corr = Interactions[k].ft;                        // force that will be corrected
+        vec3r ft_corr = Interactions[k].ft;  // force that will be corrected
         if (objectiveFriction == 1) {
-          ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));  // 1st correction
+          ft_corr -= cross(ft_corr, cross(Interactions[k].n, n));                               // 1st correction
           ft_corr -= cross(ft_corr, (dt_2 * (Particles[i].vrot + Particles[j].vrot) * n) * n);  // 2nd correction
         }
         vec3r vt = realVel - (vn * n);  // relative velocity projected on the tangential plan
@@ -1690,7 +1729,7 @@ void PBC3Dbox::computeForcesAndMoments() {
         double thresholdr = fabs(mur * Interactions[k].fn);
         double mom_square = Interactions[k].mom_fric * Interactions[k].mom_fric;
         if (mom_square > 0.0 && mom_square >= thresholdr * thresholdr)
-          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));  //??
+          Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));
         Interactions[k].mom = Interactions[k].mom_fric;
 
         // Cohesion
@@ -1740,7 +1779,7 @@ void PBC3Dbox::computeForcesAndMoments() {
       }
     }  // ====== end if non-bonded interactions
 
-  }    // Loop over interactions
+  }  // Loop over interactions
 }
 
 // =======================================================================
