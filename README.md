@@ -1,3 +1,7 @@
+<p align="center">
+<img src="./mpmxdem_logo.png" width="50%"/>
+</p>
+
 # MPMxDEM
 
 MPMxDEM is a versatile solution for running Material Point Method (MPM) simulations with classical constitutive models. Additionally, it offers the capability to integrate 2D/3D Discrete Element Method (DEM) simulations with periodic boundary conditions within an MPM simulation. This integration allows for the live generation of a digitally homogenized constitutive law.
