@@ -12,6 +12,7 @@
 #include <random>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #include "Interaction.hpp"
 #include "Loading.hpp"
@@ -45,6 +46,7 @@ class PBC3Dbox {
                                 ///< It can be different from Interactions.size()!
 
   bool oldVersion;
+  int NLStrategy{0};
 
   int nbBondsini;      ///< initial # of Bonds at start of Lagamine
   double porosityini;  ///< initial porosity at start of Lagamine
@@ -127,6 +129,7 @@ class PBC3Dbox {
   void dataOutput();                               ///< Outputs usefull data during computation
   
 	void updateNeighborList(double dmax);            ///< Updates the neighbor-list
+  void updateNeighborList_linkCells(double dmax);  ///< Updates the neighbor-list
   void updateNeighborList_brutForce(double dmax);  ///< Updates the neighbor-list
 	
   void saveConf(const char* name);                 ///< Saves the current configuration in a file named 'name'

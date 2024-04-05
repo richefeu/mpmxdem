@@ -9,6 +9,7 @@
 PBC3Dbox::PBC3Dbox() {
   // Some default values (actually, most of them will be (re-)set after)
   oldVersion = false;
+  NLStrategy = 1;
   t = 0.0;
   tmax = 5.0;
   dt = 1e-6;
@@ -172,7 +173,7 @@ void PBC3Dbox::saveConf(const char* name) {
            << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' '
            << Interactions[i].drot_fric << ' ' << Interactions[i].mom << ' ' << Interactions[i].mom_bond << ' '
            << Interactions[i].mom_fric << ' ' << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' '
-           << Interactions[i].state << ' ' << Interactions[i].D << '\n';
+           << Interactions[i].state << ' ' << Interactions[i].D << '\n';      
     }
   }
 }
@@ -222,6 +223,8 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> interConf;
     else if (token == "dVerlet")
       conf >> dVerlet;
+    else if (token == "NLStrategy")
+      conf >> NLStrategy; 
     else if (token == "density")
       conf >> density;
     else if (token == "kn")
@@ -611,6 +614,7 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
     if (branchLen2 <= sum * sum) {
       // switch to a cemented/bonded link
       Interactions[k].state = state;
+      Interactions[k].D = 0.0;
 
       double dn = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
       if (dn >= 0.0)
@@ -1085,98 +1089,44 @@ void PBC3Dbox::dataOutput() {
                << ' ' << VelVar << ' ' << ReducedPartDistMean << ' ' << Kin << std::endl;
 }
 
+
+void PBC3Dbox::updateNeighborList(double dmax) {
+  switch (NLStrategy) {
+    case 0: {
+      updateNeighborList_brutForce(dmax);
+    }break;
+    case 1: {
+      updateNeighborList_linkCells(dmax);
+    }break;
+    default:
+    updateNeighborList_brutForce(dmax);
+  }
+}
+
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
-void PBC3Dbox::updateNeighborList(double dmax) {
+void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
   START_TIMER("updateNeighborList");
 
   // store ft because the list will be cleared before being rebuilt
   std::vector<Interaction> Ibak;
-  Interaction I;
   for (size_t k = 0; k < Interactions.size(); k++) {
-    I = Interactions[k];
-    Ibak.push_back(I);
+    Ibak.push_back(Interactions[k]);
   }
-
-  // octree (it doesn't work yet)
-#if 0
-  Interactions.clear();
-
-  OcTree q(0.0, 0.0, 0.0, std::max({Cell.h.xx, Cell.h.xy, Cell.h.xz}), std::max({Cell.h.yx, Cell.h.yy, Cell.h.yz}),
-           std::max({Cell.h.zx, Cell.h.zy, Cell.h.zz}), 4);
-  vec3r realPos;
-  for (size_t i = 0; i < Particles.size(); i++) {
-    realPos = Cell.h * Particles[i].pos;
-    ot_Point p(realPos.x, realPos.y, realPos.z, i, &Particles[i]);
-    q.insert(p);
-  }
-
-  for (size_t i = 0; i < Particles.size(); i++) {
-    double Dist = dmax + Particles[i].radius + Rmax;
-    realPos = Cell.h * Particles[i].pos;
-    ot_Sphere crange(realPos.x, realPos.y, realPos.z, Dist);
-    //ot_Box crange(realPos.x - Dist, realPos.y - Dist, realPos.z - Dist, realPos.x + Dist, realPos.y + Dist,
-    //              realPos.z + Dist);
-    std::vector<ot_Point> found;
-    q.query_periodic(crange, found, i + 1);
-    for (size_t f = 0; f < found.size(); f++) {
-      size_t j = found[f].index;
-
-      vec3r sij = Particles[j].pos - Particles[i].pos;
-      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
-      vec3r branch = Cell.h * sij;
-
-      double sum = dmax + Particles[i].radius + Particles[j].radius;
-      if (norm2(branch) <= sum * sum) {
-        /*double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
-        double Dampn = dampRate * 2.0 * sqrt(kn * m);
-        double Dampt = dampRate * 2.0 * sqrt(kt * m);
-        Interactions.push_back(Interaction(i, j, Dampn, Dampt));*/
-        Interactions.push_back(Interaction(i, j, 0.0, 0.0));
-      }
-    }
-  }
-#endif
-
-  // brute force
-#if 0
-
-  Interactions.clear();
-  for (size_t i = 0; i < Particles.size(); i++) {
-    for (size_t j = i + 1; j < Particles.size(); j++) {
-
-      vec3r sij = Particles[j].pos - Particles[i].pos;
-      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
-      vec3r branch = Cell.h * sij;
-
-      double sum = dmax + Particles[i].radius + Particles[j].radius;
-      if (norm2(branch) <= sum * sum) {
-        // Dampn and Dampt will computed after if this is a new interaction
-        Interactions.push_back(Interaction(i, j, 0.0, 0.0));
-      }
-    }
-  }
-
-#endif
 
   // periodic linkCells
-#if 1
-
   Interactions.clear();
 
   size_t numPoints = Particles.size();
   std::vector<IdPoint> reducedPosPoints;
   for (size_t i = 0; i < numPoints; ++i) {
-    double x = Particles[i].pos.x;
-    double y = Particles[i].pos.y;
-    double z = Particles[i].pos.z;
-    reducedPosPoints.push_back({i, x, y, z});
+    reducedPosPoints.push_back(IdPoint(i, Particles[i].pos.x, Particles[i].pos.y, Particles[i].pos.z));
   }
 	
   // Determine the gridSize based on the density of points
 	// WARNING: this is an empirical recipes (one day, we will make something more robust)
-  double optimumDistance = 1.5 * std::pow(1.0 / (double)numPoints, 1.0 / 3.0);
-  size_t optimumGridSize = std::max<size_t>(static_cast<size_t>(std::ceil(1.0 / optimumDistance)), 3);
+  double optimumDistance = 1.8 * std::pow(1.0 / (double)numPoints, 1.0 / 3.0);
+  size_t optimumGridSize = std::max<size_t>(static_cast<size_t>(std::floor(1.0 / optimumDistance)), 3);
 	
   PeriodicNearestNeighbors perioNN(reducedPosPoints, optimumGridSize);
   std::vector<std::vector<size_t>> neighbors = perioNN.getNeighbors(optimumDistance);
@@ -1190,14 +1140,18 @@ void PBC3Dbox::updateNeighborList(double dmax) {
 
       double sum = dmax + Particles[i].radius + Particles[j].radius;
       if (norm2(branch) <= sum * sum) {
-        // Dampn and Dampt will computed after if this is a new interaction
-        Interactions.push_back(Interaction(i, j, 0.0, 0.0));
+        double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
+        double Dampn = dampRate * 2.0 * sqrt(kn * m);
+        double Dampt = dampRate * 2.0 * sqrt(kt * m);
+        Interactions.push_back(Interaction(i, j, Dampn, Dampt));
       }
 			
     }
   }
-
-#endif
+  
+  // no need to sort, it is already done
+  // lexicographic sort of Interactions
+  // std::sort(Interactions.begin(), Interactions.end());
 
   // retrieve previous contacts or bonds
   size_t k, kold = 0;
@@ -1211,23 +1165,7 @@ void PBC3Dbox::updateNeighborList(double dmax) {
     if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j) {
       Interactions[k] = Ibak[kold];
       ++kold;
-    } else {
-      size_t i = Interactions[k].i;
-      size_t j = Interactions[k].j;
-      double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
-      Interactions[k].dampn = dampRate * 2.0 * sqrt(kn * m);
-      Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m);
-    }
-  }
-
-  // if the previous loop has been break, the other interactions are new ones.
-  // So, dampn and dampt need to be pre-computed
-  for (; k < Interactions.size(); ++k) {
-    size_t i = Interactions[k].i;
-    size_t j = Interactions[k].j;
-    double m = (Particles[i].mass * Particles[j].mass) / (Particles[i].mass + Particles[j].mass);
-    Interactions[k].dampn = dampRate * 2.0 * sqrt(kn * m);
-    Interactions[k].dampt = dampRate * 2.0 * sqrt(kt * m);
+    } 
   }
 }
 
@@ -1678,7 +1616,9 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // Store the normal vector
       Interactions[k].n = n;
-    } else {
+    } 
+    else  
+    {
       // ===========================================================
       // ======= A NON-BONDED FRICTIONAL CONTACT INTERACTION =======
       // ===========================================================
