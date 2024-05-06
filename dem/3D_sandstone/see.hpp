@@ -12,14 +12,6 @@
 #include <GL/glut.h>
 #endif
 
-/*
-#ifdef __APPLE__
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
-*/
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -43,6 +35,9 @@ int show_ghosts = 0;
 int show_slice = 0;
 int show_forces = 0;
 int show_bond_damage = 0;
+
+int show_plot = 0;
+int plot_displayed = 0;
 
 GLfloat alpha_particles = 1.0f;
 GLfloat alpha_ghosts = 0.3f;
@@ -123,8 +118,11 @@ GLColorRGBA colorParticleVelocityMagnitude(int i);
 GLColorRGBA colorForceNone(int i);
 
 // Plotting functions
+void select_displayed_plot(int N);
 void plot_fnft();
+void plot_ftmom();
 void plot_qp();
+void plot_q_vs_p();
 
 // Pointers of functions
 std::function<GLColorRGBA(int)> colorParticle = colorParticleNone;

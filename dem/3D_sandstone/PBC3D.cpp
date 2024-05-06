@@ -99,6 +99,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "interOut " << interOut << '\n';
   conf << "interConf " << interConf << '\n';
   conf << "dVerlet " << dVerlet << '\n';
+  conf << "NLStrategy " << NLStrategy << '\n';
   conf << "density " << density << '\n';
   conf << "kn " << kn << '\n';
   conf << "kt " << kt << '\n';
@@ -110,9 +111,9 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "fn0 " << fn0 << '\n';
   conf << "ft0 " << ft0 << '\n';
   conf << "mom0 " << mom0 << '\n';
-  conf << "dn0 " << dn0 << '\n';
-  conf << "dt0 " << dt0 << '\n';
-  conf << "drot0 " << drot0 << '\n';
+  //conf << "dn0 " << dn0 << '\n';
+  //conf << "dt0 " << dt0 << '\n';
+  //conf << "drot0 " << drot0 << '\n';
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
   conf << "zetaInter " << zetaInter << '\n';
@@ -173,7 +174,7 @@ void PBC3Dbox::saveConf(const char* name) {
            << Interactions[i].dt_fric << ' ' << Interactions[i].dt_bond << ' ' << Interactions[i].drot_bond << ' '
            << Interactions[i].drot_fric << ' ' << Interactions[i].mom << ' ' << Interactions[i].mom_bond << ' '
            << Interactions[i].mom_fric << ' ' << Interactions[i].dampn << ' ' << Interactions[i].dampt << ' '
-           << Interactions[i].state << ' ' << Interactions[i].D << '\n';      
+           << Interactions[i].state << ' ' << Interactions[i].D << '\n';
     }
   }
 }
@@ -224,7 +225,7 @@ void PBC3Dbox::loadConf(const char* name) {
     else if (token == "dVerlet")
       conf >> dVerlet;
     else if (token == "NLStrategy")
-      conf >> NLStrategy; 
+      conf >> NLStrategy;
     else if (token == "density")
       conf >> density;
     else if (token == "kn")
@@ -460,11 +461,14 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> percentRemove;
       RemoveBonds(percentRemove, 1);
     } else if (token == "RecomputeMassProperties") {
+      Vsolid = 0.0;
       for (size_t i = 0; i < Particles.size(); i++) {
         double Vol = (4.0 / 3.0) * M_PI * Particles[i].radius * Particles[i].radius * Particles[i].radius;
+        Vsolid += Vol;
         Particles[i].mass = Vol * density;
         Particles[i].inertia = (2.0 / 5.0) * Particles[i].mass * Particles[i].radius * Particles[i].radius;
       }
+      Cell.mass = (Vsolid * density) / (double)(Particles.size());
     } else if (token == "RandomVelocities") {
       std::random_device rd;
       std::mt19937 gen(rd());
@@ -626,7 +630,7 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
       Interactions[k].n = branch;
       Interactions[k].n.normalize();
     }  // endif
-  }    // end loop over interactions
+  }  // end loop over interactions
 }
 
 void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
@@ -738,6 +742,12 @@ void PBC3Dbox::setSample() {
     std::cout << "Cubic cell size: ";
     std::cin >> cellSize;
     ans << cellSize << '\n';
+
+    unsigned int seedPerso = 0;
+    std::cout << "seed? (0 for time-seeded): ";
+    std::cin >> seedPerso;
+    ans << seedPerso << '\n';
+
     Cell.Define(cellSize, 0.0, 0.0, 0.0, cellSize, 0.0, 0.0, 0.0, cellSize);
 
     GeoPack3D packing(radius - deltaR,  // rmin
@@ -746,7 +756,13 @@ void PBC3Dbox::setSample() {
                       0.0, cellSize, 0.0, cellSize, 0.0, cellSize, cellSize - (2.0 * ngw * radius),
                       ngw * ngw * ngw  // The periodic cell
     );
-    packing.seedTime();
+
+    if (seedPerso > 0) {
+      srand(seedPerso);
+    } else {
+      packing.seedTime();
+    }
+
     // MORE PARAMETRIZATION HERE ........ TODO
     packing.execPeriodic();
 
@@ -1089,17 +1105,16 @@ void PBC3Dbox::dataOutput() {
                << ' ' << VelVar << ' ' << ReducedPartDistMean << ' ' << Kin << std::endl;
 }
 
-
 void PBC3Dbox::updateNeighborList(double dmax) {
   switch (NLStrategy) {
     case 0: {
       updateNeighborList_brutForce(dmax);
-    }break;
+    } break;
     case 1: {
       updateNeighborList_linkCells(dmax);
-    }break;
+    } break;
     default:
-    updateNeighborList_brutForce(dmax);
+      updateNeighborList_brutForce(dmax);
   }
 }
 
@@ -1122,14 +1137,14 @@ void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
   for (size_t i = 0; i < numPoints; ++i) {
     reducedPosPoints.push_back(IdPoint(i, Particles[i].pos.x, Particles[i].pos.y, Particles[i].pos.z));
   }
-	
+
   // Determine the gridSize based on the density of points
-	// WARNING: this is an empirical recipes (one day, we will make something more robust)
+  // WARNING: this is an empirical recipes (one day, we will make something more robust)
   double optimumDistance = 1.8 * std::pow(1.0 / (double)numPoints, 1.0 / 3.0);
   size_t optimumGridSize = std::max<size_t>(static_cast<size_t>(std::floor(1.0 / optimumDistance)), 3);
-	
+
   PeriodicNearestNeighbors perioNN(reducedPosPoints, optimumGridSize);
-  std::vector<std::vector<size_t>> neighbors = perioNN.getNeighbors(optimumDistance);
+  std::vector<std::vector<size_t>> neighbors = perioNN.getNeighbors(/*optimumDistance*/);
 
   for (size_t i = 0; i < neighbors.size(); ++i) {
     for (size_t j : neighbors[i]) {
@@ -1145,10 +1160,9 @@ void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
         double Dampt = dampRate * 2.0 * sqrt(kt * m);
         Interactions.push_back(Interaction(i, j, Dampn, Dampt));
       }
-			
     }
   }
-  
+
   // no need to sort, it is already done
   // lexicographic sort of Interactions
   // std::sort(Interactions.begin(), Interactions.end());
@@ -1165,7 +1179,7 @@ void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
     if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j) {
       Interactions[k] = Ibak[kold];
       ++kold;
-    } 
+    }
   }
 }
 
@@ -1229,8 +1243,8 @@ void PBC3Dbox::accelerations() {
 
   nbActiveInteractions = 0;
   nbBonds = 0;
-  // tensfailure=0;
-  // fricfailure=0;
+  tensfailure=0;
+  fricfailure=0;
 
   computeForcesAndMoments();
 
@@ -1353,6 +1367,7 @@ double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double Drot
 ///        and the tensorial moment (= Vcell * stress matrix) of the cell
 void PBC3Dbox::computeForcesAndMoments() {
   START_TIMER("computeForcesAndMoments");
+
   size_t i, j;
   for (size_t k = 0; k < Interactions.size(); k++) {
     i = Interactions[k].i;
@@ -1616,9 +1631,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // Store the normal vector
       Interactions[k].n = n;
-    } 
-    else  
-    {
+    } else {
       // ===========================================================
       // ======= A NON-BONDED FRICTIONAL CONTACT INTERACTION =======
       // ===========================================================

@@ -13,6 +13,19 @@ class graphGL {
   double rangeOffsetX, rangeOffsetY;
   double rangeWidth, rangeHeight;
 
+  bool withLines{false};
+  bool withPoints{true};
+  GLfloat pointSize{3.0f};
+  GLfloat lineWidth{2.0f};
+  GLfloat r{0.0f}, g{0.0f}, b{0.0f}, a{1.0f};
+
+  void setColor(GLfloat R, GLfloat G, GLfloat B, GLfloat A) {
+    r = R;
+    g = G;
+    b = B;
+    a = A;
+  }
+
   void setDataRanges(double RangeOffsetX, double RangeOffsetY, double RangeWidth, double RangeHeight) {
     rangeOffsetX = RangeOffsetX;
     rangeOffsetY = RangeOffsetY;
@@ -41,6 +54,7 @@ class graphGL {
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
 
+    // Frame
     glColor4f(1.0f, 1.0f, 1.0f, 0.95f);
     glBegin(GL_POLYGON);
     glVertex2i(winOffsetX, winOffsetY);
@@ -50,6 +64,7 @@ class graphGL {
     glEnd();
 
     glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+    glLineWidth(1.0f);
     glBegin(GL_LINE_LOOP);
     glVertex2i(winOffsetX, winOffsetY);
     glVertex2i(winOffsetX + winWidth, winOffsetY);
@@ -101,6 +116,25 @@ class graphGL {
 
       drawTickYValue(yo, Ytick);
     }
+
+    // Grid lines
+    glColor4f(0.65f, 0.65f, 0.65f, 0.8f);
+    for (double Xtick = X0tick; Xtick < rangeOffsetX + rangeWidth; Xtick += spaceW) {
+      ex = (double)(winWidth) / rangeWidth;
+      xo = (int)round(ex * (Xtick - rangeOffsetX)) + winOffsetX;
+      glBegin(GL_LINES);
+      glVertex2i(xo, winOffsetY);
+      glVertex2i(xo, winOffsetY + winHeight);
+      glEnd();
+    }
+    for (double Ytick = Y0tick; Ytick < rangeOffsetY + rangeHeight; Ytick += spaceH) {
+      ey = (double)(winHeight) / rangeHeight;
+      yo = (int)round(ey * (Ytick - rangeOffsetY)) + winOffsetY;
+      glBegin(GL_LINES);
+      glVertex2i(winOffsetX, yo);
+      glVertex2i(winOffsetX + winWidth, yo);
+      glEnd();
+    }
   }
 
   void end() {
@@ -111,20 +145,27 @@ class graphGL {
     glPopMatrix();
   }
 
-  // adapted from http://stackoverflow.com/questions/361681/algorithm-for-nice-grid-line-intervals-on-a-graph
-  double BestTick(double largest, int mostticks) {
+  double BestTick(double largest, int mostticks, double minTickSpacing = -1.0) {
     double minimum = largest / mostticks;
     double magnitude = pow(10, floor(log10(minimum) / log10(10)));
     double residual = minimum / magnitude;
     double tick;
-    if (residual > 5)
+
+    // Use a minimum tick spacing to avoid cluttering the graph with too many ticks
+    if (residual > 5) {
       tick = 10 * magnitude;
-    else if (residual > 2)
+    } else if (residual > 2) {
       tick = 5 * magnitude;
-    else if (residual > 1)
+    } else if (residual > 1) {
       tick = 2 * magnitude;
-    else
+    } else {
       tick = magnitude;
+    }
+
+    // Ensure that the tick interval is not smaller than the minimum tick spacing
+    if (minTickSpacing > 0.0 && tick < minTickSpacing) {
+      tick = minTickSpacing;
+    }
 
     return tick;
   }
@@ -168,38 +209,45 @@ class graphGL {
     }
   }
 
-  void plot(std::vector<double>& xbuf, std::vector<double>& ybuf, int opt) {
-    double ex, ey;
-    if (rangeWidth != 0.0)
-      ex = (double)(winWidth) / rangeWidth;
-    else
+  void plot(const std::vector<double>& xbuf, const std::vector<double>& ybuf) {
+    if (xbuf.empty() || ybuf.empty() || xbuf.size() != ybuf.size()) {
+      std::cerr << "Error: xbuf and ybuf must be non-empty and have the same size" << std::endl;
       return;
-    if (rangeHeight != 0.0)
-      ey = (double)(winHeight) / rangeHeight;
-    else
-      return;
+    }
+
+    double ex = (double)(winWidth) / rangeWidth;
+    double ey = (double)(winHeight) / rangeHeight;
 
     glColor3f(0.0f, 0.0f, 0.0f);
 
     glEnable(GL_SCISSOR_TEST);
     glScissor(winOffsetX + 1, winOffsetY + 1, winWidth - 2, winHeight - 2);
 
-    if (opt == 0) {
-      glPointSize(2.0f);
+    if (withPoints == true) {
+      glPointSize(pointSize);
+      glColor4f(r, g, b, a);
       glBegin(GL_POINTS);
-    } else {
-      glLineWidth(2.0f);
+      int xo, yo;
+      for (size_t i = 0; i < xbuf.size(); i++) {
+        xo = (int)round(ex * (xbuf[i] - rangeOffsetX)) + winOffsetX;
+        yo = (int)round(ey * (ybuf[i] - rangeOffsetY)) + winOffsetY;
+        glVertex2i(xo, yo);
+      }
+      glEnd();
+    }
+
+    if (withLines == true) {
+      glLineWidth(lineWidth);
+      glColor4f(r, g, b, a);
       glBegin(GL_LINE_STRIP);
+      int xo, yo;
+      for (size_t i = 0; i < xbuf.size(); i++) {
+        xo = (int)round(ex * (xbuf[i] - rangeOffsetX)) + winOffsetX;
+        yo = (int)round(ey * (ybuf[i] - rangeOffsetY)) + winOffsetY;
+        glVertex2i(xo, yo);
+      }
+      glEnd();
     }
-
-    int xo, yo;
-    for (size_t i = 0; i < xbuf.size(); i++) {
-      xo = (int)round(ex * (xbuf[i] - rangeOffsetX)) + winOffsetX;
-      yo = (int)round(ey * (ybuf[i] - rangeOffsetY)) + winOffsetY;
-      glVertex2i(xo, yo);
-    }
-
-    glEnd();
 
     glDisable(GL_SCISSOR_TEST);
   }

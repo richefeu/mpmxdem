@@ -18,8 +18,7 @@ void clear_background() {
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glBegin(GL_QUADS);
-  // glColor3f(0.4f, 0.4f, 1.0f);  // Bottom color
-  glColor3ub(102, 102, 255);
+  glColor3ub(102, 102, 255);  // Bottom color
   glVertex2f(-1.0f, -1.0f);
   glVertex2f(1.0f, -1.0f);
   glColor3f(1.0f, 1.0f, 1.0f);  // Top color
@@ -58,6 +57,19 @@ void printHelp() {
   cout << "x         switch ON/OFF the slice edition" << endl;
   // cout << "" << endl;
   cout << endl;
+}
+
+void select_displayed_plot(int N) {
+  if (show_plot == 0) {
+    show_plot = 1;
+    plot_displayed = N;
+  } else {
+    if (plot_displayed == N) {
+      show_plot = 0;
+    } else {
+      plot_displayed = N;
+    }
+  }
 }
 
 void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
@@ -168,6 +180,22 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     case '=': {
       fit_view();
       adjust_clipping_plans();
+    } break;
+
+    case '0': {
+      select_displayed_plot(0);
+    } break;
+
+    case '1': {
+      select_displayed_plot(1);
+    } break;
+
+    case '2': {
+      select_displayed_plot(2);
+    } break;
+    
+    case '3': {
+      select_displayed_plot(3);
     } break;
   };
 
@@ -490,16 +518,29 @@ void display() {
   // mode for slice edition
   if (display_mode == 1) drawSlice();
 
-  // TEST GRAPH
-  // plot_fnft();
-  // plot_qp();
+  if (show_plot) {
+    switch (plot_displayed) {
+      case 0: {
+        plot_fnft();
+      } break;
+      case 1: {
+        plot_ftmom();
+      } break;
+      case 2: {
+        plot_q_vs_p();
+      } break;
+      case 3: {
+        plot_qp();
+      } break;
+    }
+  }
 
   glFlush();
   glutSwapBuffers();
 }
 
 void plot_fnft() {
-  std::vector<double> fn, ft;
+  std::vector<double> fn_cont, ft_cont, fn_bond, ft_bond;
   double fnMin = 1e20;
   double fnMax = -1e20;
   double ftMin = 1e20;
@@ -509,18 +550,76 @@ void plot_fnft() {
     Fn = box.Interactions[k].fn;
     if (fnMin > Fn) fnMin = Fn;
     if (fnMax < Fn) fnMax = Fn;
-    fn.push_back(Fn);
 
     Ft = norm(box.Interactions[k].ft);
     if (ftMin > Ft) ftMin = Ft;
     if (ftMax < Ft) ftMax = Ft;
-    ft.push_back(Ft);
+
+    if (box.Interactions[k].state >= bondedState) {
+      fn_bond.push_back(Fn);
+      ft_bond.push_back(Ft);
+    } else {
+      fn_cont.push_back(Fn);
+      ft_cont.push_back(Ft);
+    }
   }
+
+  std::vector<double> xCoulomb = {fnMin, fnMax};
+  std::vector<double> yCoulomb = {fnMin * box.mu, fnMax * box.mu};
 
   graphGL Gph;
   Gph.setDataRanges(fnMin, ftMin, fnMax - fnMin, ftMax - ftMin);
-  Gph.begin(width / 4, width / 4, width / 2, height / 2, "fn vs. |ft|");
-  Gph.plot(fn, ft, 0);
+
+  Gph.begin(width / 4, width / 4, width / 2, height / 2, "fn vs |ft|");
+  Gph.withPoints = true;
+  Gph.withLines = false;
+  Gph.pointSize = 4.0f;
+  Gph.setColor(0.0f, 0.0f, 1.0f, 1.0f);
+  Gph.plot(fn_cont, ft_cont);
+  Gph.setColor(1.0f, 0.0f, 0.0f, 0.5f);
+  Gph.plot(fn_bond, ft_bond);
+
+  Gph.withPoints = false;
+  Gph.withLines = true;
+  Gph.setColor(0.0f, 0.0f, 1.0f, 1.0f);
+  Gph.plot(xCoulomb, yCoulomb);
+  Gph.end();
+}
+
+void plot_ftmom() {
+  std::vector<double> mom_bond, ft_bond;
+  // double momMin = 1e20;
+  double momMax = -1e20;
+  // double ftMin = 1e20;
+  double ftMax = -1e20;
+  double Mom, Ft;
+  for (size_t k = 0; k < box.Interactions.size(); k++) {
+    if (box.Interactions[k].state < bondedState) {
+      continue;
+    }
+
+    Mom = norm(box.Interactions[k].mom);
+    // if (momMin > Mom) momMin = Mom;
+    if (momMax < Mom) momMax = Mom;
+
+    Ft = norm(box.Interactions[k].ft);
+    // if (ftMin > Ft) ftMin = Ft;
+    if (ftMax < Ft) ftMax = Ft;
+
+    mom_bond.push_back(Mom);
+    ft_bond.push_back(Ft);
+  }
+
+  graphGL Gph;
+  Gph.setDataRanges(0.0, 0.0, momMax, ftMax);
+
+  Gph.begin(width / 4, width / 4, width / 2, height / 2, "|mom| vs |ft|");
+  Gph.withPoints = true;
+  Gph.withLines = false;
+  Gph.pointSize = 4.0f;
+  Gph.setColor(1.0f, 0.0f, 0.0f, 0.5f);
+  Gph.plot(mom_bond, ft_bond);
+
   Gph.end();
 }
 
@@ -542,6 +641,7 @@ void plot_qp() {
     return;
   }
 
+  // curve
   double tMin = 1e20;
   double tMax = -1e20;
   double qpMin = 1e20;
@@ -567,11 +667,104 @@ void plot_qp() {
     qp[i] = QP;
   }
 
+  // point
+  size_t itime = 0;
+  double dtMin = fabs(Time[0] - box.t);
+  for (size_t i = 0; i < Time.size(); i++) {
+    double dt = fabs(Time[i] - box.t);
+    if (dt < dtMin) {
+      dtMin = dt;
+      itime = i;
+    }
+  }
+  std::vector<double> xp = {Time[itime]};
+  std::vector<double> yp = {qp[itime]};
+
   graphGL Gph;
   Gph.setDataRanges(tMin, qpMin, tMax - tMin, qpMax - qpMin);
 
   Gph.begin(70, width / 4, width - 90, height / 2, "q/p vs. time");
-  Gph.plot(Time, qp, 1);
+  Gph.withPoints = false;
+  Gph.withLines = true;
+  Gph.setColor(0.0f, 0.0f, 1.0f, 1.0f);
+  Gph.plot(Time, qp);
+  Gph.withPoints = true;
+  Gph.withLines = false;
+  Gph.setColor(1.0f, 0.0f, 0.0f, 0.6f);
+  Gph.pointSize = 15.0f;
+  Gph.plot(xp, yp);
+  Gph.end();
+}
+
+void plot_q_vs_p() {
+  std::vector<double> qvec, pvec;
+  std::vector<mat9r> Str;
+  size_t itime = 0;
+
+  if (fileExists("stress.out.txt")) {
+    std::ifstream file("stress.out.txt");
+    double t;
+    mat9r S;
+
+    double dtMin = 1e20;
+    size_t i = 0;
+    while (file) {
+      file >> t >> S;
+      double dt = fabs(t - box.t);
+      if (dt < dtMin) {
+        dtMin = dt;
+        itime = i;
+      }
+      Str.push_back(S);
+      qvec.push_back(0.0);
+      pvec.push_back(0.0);
+      i++;
+    }
+  } else {
+    std::cout << "File 'stress.out.txt' not found" << std::endl;
+    return;
+  }
+
+  double qMin = 1e20;
+  double qMax = -1e20;
+  double pMin = 1e20;
+  double pMax = -1e20;
+  mat9r V;
+  vec3r D;
+  vec3r U;
+  U.set(1.0 / sqrt(3.0));
+  double q, p;
+  for (size_t i = 0; i < pvec.size(); i++) {
+
+    Str[i].sym_eigen(V, D);
+    q = norm(D - (D * U) * U);
+    p = 0.333333333 * (D.x + D.y + D.z);
+
+    if (qMin > q) qMin = q;
+    if (qMax < q) qMax = q;
+    if (pMin > p) pMin = p;
+    if (pMax < p) pMax = p;
+
+    pvec[i] = p;
+    qvec[i] = q;
+  }
+
+  // point
+  std::vector<double> xp = {pvec[itime]};
+  std::vector<double> yp = {qvec[itime]};
+
+  graphGL Gph;
+  Gph.setDataRanges(pMin, qMin, pMax - pMin, qMax - qMin);
+
+  Gph.begin(width / 4, height / 4, width / 2, height / 2, "q vs p");
+  Gph.withPoints = false;
+  Gph.withLines = true;
+  Gph.plot(pvec, qvec);
+  Gph.withPoints = true;
+  Gph.withLines = false;
+  Gph.setColor(1.0f, 0.0f, 0.0f, 0.6f);
+  Gph.pointSize = 15.0f;
+  Gph.plot(xp, yp);
   Gph.end();
 }
 
@@ -761,7 +954,7 @@ void drawTube(vec3r& orig, vec3r& arrow, double diam) {
   vec3r c1, c2, n;
   double r = 0.5 * diam;
   glBegin(GL_TRIANGLE_STRIP);
-  for (double angle = 0.0; angle <= 2.0 * M_PI; angle += 0.2 * M_PI) {
+  for (double angle = 0.0; angle <= 2.0 * M_PI; angle += 0.1 * M_PI) {
     n = cos(angle) * a + sin(angle) * b;
     glNormal3d(n.x, n.y, n.z);
     n *= r;
@@ -840,23 +1033,28 @@ void drawForces() {
     vec3r branch = box.Cell.h * sij;
 
     // color = colorForce(i);
-    if (box.Interactions[k].state == bondedState)
+    if (box.Interactions[k].state == bondedState) {
       glColor4f(0.4f, 0.4f, 1.0f, 1.0f);
-    else if (box.Interactions[k].state == bondedStateDam) { /*
-       colorRGBA RGBA;
-       DamCol.getRGB(box.Interactions[k].D, &RGBA);
-       // GLColorRGBA color = GLColorRGBA(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);
-       // glColor4f(color.r, color.g, color.b, 1.0f);
-       glColor4f(RGBA.rr, RGBA.gg, RGBA.bb, 1.0f);*/
+    } else if (box.Interactions[k].state == bondedStateDam) {
       glColor4f(0.4f, 0.4f, 1.0f, 1.0f);
-    } else
+    } else {
       glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+    }
     drawTube(orig, branch, scal * diam);
-    if (norm2(dec) > 0.0) {
+
+    if (fabs(dec.x) > 0.0) {
       vec3r da(box.Cell.h.xx * dec.x, box.Cell.h.yx * dec.x, box.Cell.h.zx * dec.x);
+      orig += da;
+      drawTube(orig, branch, scal * diam);
+    }
+    if (fabs(dec.y) > 0.0) {
       vec3r db(box.Cell.h.xy * dec.y, box.Cell.h.yy * dec.y, box.Cell.h.zy * dec.y);
+      orig += db;
+      drawTube(orig, branch, scal * diam);
+    }
+    if (fabs(dec.z) > 0.0) {
       vec3r dc(box.Cell.h.xz * dec.x, box.Cell.h.yz * dec.z, box.Cell.h.zz * dec.z);
-      orig += da + db + dc;
+      orig += dc;
       drawTube(orig, branch, scal * diam);
     }
   }
@@ -866,34 +1064,45 @@ void drawBondDamage() {
   if (mouse_mode != NOTHING && box.Particles.size() > 2000) return;
 
   // Scaling
-  double scal = 2.0 * radiusMax;
+  double scal = 0.5 * radiusMean;
 
   glEnable(GL_LIGHTING);
-  // GLColorRGBA color;
   size_t i, j;
-  double diam;
+  double diameter;
   for (size_t k = 0; k < box.Interactions.size(); k++) {
+    if (box.Interactions[k].state < bondedState) {
+      continue;
+    }
     i = box.Interactions[k].i;
     j = box.Interactions[k].j;
 
     vec3r orig = box.Cell.h * box.Particles[i].pos;
     if (!inSlice(orig)) continue;
 
-    diam = 1.0 - box.Interactions[k].D;
+    diameter = 1.0 - box.Interactions[k].D;
 
     vec3r sij = box.Particles[j].pos - box.Particles[i].pos;
     vec3r dec(floor(sij.x + 0.5), floor(sij.y + 0.5), floor(sij.z + 0.5));
     sij -= dec;
     vec3r branch = box.Cell.h * sij;
 
-    glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
-    drawTube(orig, branch, scal * diam);
-    if (norm2(dec) > 0.0) {
+    // glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+    glColor4f(0.35f, 0.35f, 0.35f, 1.0f);
+    drawTube(orig, branch, scal * diameter);
+    if (fabs(dec.x) > 0.0) {
       vec3r da(box.Cell.h.xx * dec.x, box.Cell.h.yx * dec.x, box.Cell.h.zx * dec.x);
+      orig += da;
+      drawTube(orig, branch, scal * diameter);
+    }
+    if (fabs(dec.y) > 0.0) {
       vec3r db(box.Cell.h.xy * dec.y, box.Cell.h.yy * dec.y, box.Cell.h.zy * dec.y);
+      orig += db;
+      drawTube(orig, branch, scal * diameter);
+    }
+    if (fabs(dec.z) > 0.0) {
       vec3r dc(box.Cell.h.xz * dec.x, box.Cell.h.yz * dec.z, box.Cell.h.zz * dec.z);
-      orig += da + db + dc;
-      drawTube(orig, branch, scal * diam);
+      orig += dc;
+      drawTube(orig, branch, scal * diameter);
     }
   }
 }
@@ -1067,8 +1276,8 @@ void buildMenu() {
 // Colorizer functions
 // =====================================================================
 
-GLColorRGBA colorForceNone(int) { return GLColorRGBA(0.2f, 0.2f, 0.2f, 1.0f); }
-GLColorRGBA colorParticleNone(int /*i*/) { return GLColorRGBA(0.5f, 0.5f, 0.5f, alpha_particles); }
+GLColorRGBA colorForceNone(int /* i */) { return GLColorRGBA(0.2f, 0.2f, 0.2f, 1.0f); }
+GLColorRGBA colorParticleNone(int /* i */) { return GLColorRGBA(0.5f, 0.5f, 0.5f, alpha_particles); }
 
 GLColorRGBA colorParticleVelocityMagnitude(int i) {
   colorRGBA RGBA;

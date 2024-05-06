@@ -12,7 +12,6 @@
 #include <random>
 #include <utility>
 #include <vector>
-#include <algorithm>
 
 #include "Interaction.hpp"
 #include "Loading.hpp"
@@ -24,8 +23,8 @@
 #include "fileTool.hpp"
 #include "geoPack3D.hpp"
 #include "linreg.hpp"
-//#include "octree.hpp"
-//#include "linkCells.hpp"
+// #include "octree.hpp"
+// #include "linkCells.hpp"
 #include "PeriodicNearestNeighbors.hpp"
 #include "profiler.hpp"
 
@@ -37,22 +36,22 @@ class PBC3Dbox {
  public:
   std::vector<Particle> Particles;        ///< The particles
   std::vector<Interaction> Interactions;  ///< The interactions (particle IDs, frames, force, etc.)
-  ///< In fact, it's the so-called neighbor-list because some interactions
-  ///< are not active
+  ///< In fact, it's the so-called neighbor-list because some interactions are not active
+
   Loading Load;                 ///< The Loading
   PeriodicCell Cell;            ///< The periodic cell
   mat9r Sig;                    ///< Internal stress
   size_t nbActiveInteractions;  ///< Number of active contacts, ie all interactions without the "noContactState"
                                 ///< It can be different from Interactions.size()!
 
-  bool oldVersion;
-  int NLStrategy{0};
+  bool oldVersion;    ///< TO BE REMOVED
+  int NLStrategy{0};  ///< Strategy to build the Verlet list
 
   int nbBondsini;      ///< initial # of Bonds at start of Lagamine
   double porosityini;  ///< initial porosity at start of Lagamine
-  int nbBonds;
-  double tensfailure;
-  double fricfailure;
+  int nbBonds;         ///< counted current number of bonds
+  int tensfailure;     ///< NAME IS NOT OK !!!!!!
+  int fricfailure;     ///< NAME IS NOT OK !!!!!!
 
   // Time parameters
   double t;     ///< Current Time
@@ -89,8 +88,8 @@ class PBC3Dbox {
   double drot0;    ///< Maximum angular rotation
   double powSurf;  ///< Power used in the breakage surface
 
-  double rampRatio;
-  double rampDuration;                       ///< linear laoding ramp between t = 0 and t = rampDuration
+  double rampRatio;     ///< slope of the ramp
+  double rampDuration;  ///< linear laoding ramp between t = 0 and t = rampDuration
 
   std::string modelSoftening;                ///< Can be "linear", "gate" or "trainee"(default)
   std::function<double(double)> DzetaModel;  ///< Compute D as a function of zeta
@@ -120,18 +119,18 @@ class PBC3Dbox {
   void computeForcesAndMoments();  ///< Computes forces and moments (and cell-stress)
 
   // Methods used for interaction of type 'bondedStateDam'
-  double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);
-  void setTraineeSoftening();
-  void setLinearSoftening();
-  void setGateSoftening();
+  double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);  ///< ???
+  void setTraineeSoftening();                                                   ///< ???
+  void setLinearSoftening();                                                    ///< ???
+  void setGateSoftening();                                                      ///< ???
 
-  void printScreen(double elapsedTime);            ///< Prints usefull data on screen during computation
-  void dataOutput();                               ///< Outputs usefull data during computation
-  
-	void updateNeighborList(double dmax);            ///< Updates the neighbor-list
+  void printScreen(double elapsedTime);  ///< Prints usefull data on screen during computation
+  void dataOutput();                     ///< Outputs usefull data during computation
+
+  void updateNeighborList(double dmax);            ///< Updates the neighbor-list
   void updateNeighborList_linkCells(double dmax);  ///< Updates the neighbor-list
   void updateNeighborList_brutForce(double dmax);  ///< Updates the neighbor-list
-	
+
   void saveConf(const char* name);                 ///< Saves the current configuration in a file named 'name'
   void saveConf(int i);                            ///< Saves the current configuration in a file named confX, where X=i
   void loadConf(const char* name);                 ///< Loads a configuration from a file
@@ -143,32 +142,32 @@ class PBC3Dbox {
 
   // Methods specifically written for MPMbox (MPMxDEM coupling).
   void transform(mat9r& Finc, double macro_dt, int nstepMin, double rateAverage, double rateCriticalTimeStep,
-                 mat9r& SigAvg);
-  void applySwitchMatrix(mat9r& P);
-  void ModularTransformation();
+                 mat9r& SigAvg);     ///< ???
+  void applySwitchMatrix(mat9r& P);  ///< ???
+  void ModularTransformation();      ///< ??? (not working yet)
 
   // Methods specifically written for Lagamine (FEMxDEM coupling).
   // They are compatible with fortran (it's the reason why all parameters are pointers).
   void initLagamine(double Q[]);  ///< Kind of serialization solution to get the initial configuration from Lagamine
   void initLagamineSandstone(double Q[]);  ///< Gets the initial configuration from Lagamine
-  void transform(double dFmoinsI[3][3], double* I, int* nstep, int* iana, double* pressure, double* sigRate);
-  void hold(double* tol, int* nstepConv, int* nstepMax, int* iana, double* pressure, double* sigRate);
+  void transform(double dFmoinsI[3][3], double* I, int* nstep, int* iana, double* pressure,
+                 double* sigRate);  ///< apply the transformation "Finc-I"
+  void hold(double* tol, int* nstepConv, int* nstepMax, int* iana, double* pressure,
+            double* sigRate);  ///< maintain a zero deformation to wait for stabilisation
   void transform_and_hold(double dFmoinsI[3][3], double* I, double* tol, int* nstepConv, int* nstepMax, int* nstep,
-                          int* iana, double* pressure, double* sigRate);
+                          int* iana, double* pressure, double* sigRate);  ///< call transform, and then hold
   void runSilently();  ///< Runs the simulation silently (without outputs) from time t to tmax
   void endLagamine(double Q[], double SIG[3][3]);           ///< Kind of serialization to get the data back
   void endLagamineSandstone(double Q[], double SIG[3][3]);  ///< Kind of serialization to get the data back
   void getOperatorKruyt(double L[6][6]);                    ///< Gets the operator proposed by Kruyt
   void getOperatorKruyt2(double L[9][9]);                   ///< Gets the operator proposed by Kruyt (version Kien)
-  void getOperatorKruyt2b(double L[3][3][3][3]);
-  void getOperatorKruyt3(double L[9][9]);                   ///< Gets the operator proposed by Kruyt
-  ///< (version Kien avec sliding-contacts)
+  void getOperatorKruyt2b(double L[3][3][3][3]);            ///< Gets the operator proposed by Kruyt (version Test)
+  void getOperatorKruyt3(double L[9][9]);  ///< Gets the operator proposed by Kruyt (version Kien, sliding-contacts)
 
   void staticQualityData(double* ResMean, double* Res0Mean, double* fnMin,
                          double* fnMean) const;  ///< Methods to evaluate the quality of static state
 
  private:
-
   // Files
   std::ofstream stressOut;     ///< File to store stress
   std::ofstream cellOut;       ///< File to store cell data
@@ -184,9 +183,9 @@ class PBC3Dbox {
   double dt_2;   ///< Half the time-step
   double dt2_2;  ///< Half the squared time-step
 
-  // balancing of stiffnesses
-  double w_bond{0.5};
-  double w_particle{0.5};
+  // balancing of stiffnesses (w is part of ??? relative to ???)
+  double w_bond{0.5};      ///< ???
+  double w_particle{0.5};  ///< ???
 
   int objectiveFriction{0};  //< activation of the objectivity for friction forces
 
@@ -206,10 +205,10 @@ class PBC3Dbox {
   double Rmean{0.0};  ///< Mean radius of the particles
 
   // Normal forces
-  double FnMin{0.0};   ///< Minimum normal force in the system
-  double FnMax{0.0};   ///< Maximum normal force in the system
-  double FnMean{0.0};  ///< Mean normal force in the system
-  double ReducedPartDistMean{0.0};
+  double FnMin{0.0};                ///< Minimum normal force in the system
+  double FnMax{0.0};                ///< Maximum normal force in the system
+  double FnMean{0.0};               ///< Mean normal force in the system
+  double ReducedPartDistMean{0.0};  ///< ?????
 
   // Particle velocities
   double VelMin{0.0};   ///< Minimum velocity magnitude of the particles

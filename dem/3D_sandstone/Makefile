@@ -58,6 +58,11 @@ testLaw: testLaw.cpp lib
 	$(CXX) $(CXXFLAGS) -c testLaw.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $@.o libPBC3D.a
 	
+analyse_cluster_breaks: analyse_cluster_breaks.cpp lib
+	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
+	$(CXX) $(CXXFLAGS) -c analyse_cluster_breaks.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $@.o libPBC3D.a	
+	
 # The application that runs a simulation
 run: run.cpp lib
 	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
