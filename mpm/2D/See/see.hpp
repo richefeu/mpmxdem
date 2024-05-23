@@ -1,6 +1,10 @@
 #ifndef SEE_CONF_HPP
 #define SEE_CONF_HPP
 
+#ifndef GL_SILENCE_DEPRECATION
+#define GL_SILENCE_DEPRECATION
+#endif
+
 #ifdef __APPLE__
 #include <GL/freeglut.h>
 #else
