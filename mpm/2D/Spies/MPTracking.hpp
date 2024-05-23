@@ -5,8 +5,8 @@
 
 #include <string>
 
-#include "mat4.hpp"
 #include "ElementSelector.hpp"
+#include "mat4.hpp"
 
 struct MPTracking : public Spy {
   MPTracking();
@@ -17,11 +17,11 @@ struct MPTracking : public Spy {
 
  private:
   ElementSelector<MPMbox> MP_Selector;
-	 std::vector<size_t> MP_ids;
+  std::vector<size_t> MP_ids;
   std::string filename;
   std::ofstream file;
-	mat4r meanStress;
-	mat4r meanStrain;
+  mat4r meanStress;
+  mat4r meanStrain;
 };
 
 #endif /* end of include guard: MP_TRACKING_HPP */

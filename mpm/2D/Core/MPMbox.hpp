@@ -19,9 +19,12 @@
 
 #include <stdlib.h>
 
-#define SPGLOG_HEADER_ONLY
+//#define SPGLOG_HEADER_ONLY
+//#define FMT_HEADER_ONLY
+//#include "spdlog/fwd.h"
+
 #define FMT_HEADER_ONLY
-#include "spdlog/fwd.h"
+#include "fmtLogger.hpp"
 
 // The linked DEM for HNL
 #include "PBC3D.hpp"
@@ -37,12 +40,12 @@
 #include "vec2.hpp"
 
 // Headers that are part of MPMbox
+#include "ControlMP.hpp"
 #include "Element.hpp"
 #include "Grid.hpp"
 #include "Neighbor.hpp"
 #include "Node.hpp"
 #include "ProcessedDataMP.hpp"
-#include "ControlMP.hpp"
 
 struct MaterialPoint;
 struct Obstacle;
@@ -58,9 +61,9 @@ class PBC3Dbox;
 
 class MPMbox {
  public:
-  std::vector<node> nodes;        // The nodes of the Eulerian grid
-  std::vector<element> Elem;      // Quad-elements of the grid
-  std::vector<MaterialPoint> MP;  // Material Points
+  std::vector<node> nodes;           // The nodes of the Eulerian grid
+  std::vector<element> Elem;         // Quad-elements of the grid
+  std::vector<MaterialPoint> MP;     // Material Points
   std::vector<Obstacle*> Obstacles;  // List of rigid obstacles
   std::vector<Spy*> Spies;           // Spies for (post-)processing
 
@@ -68,17 +71,17 @@ class MPMbox {
   OneStep* oneStep;                                  // Type of routine to be used
   std::map<std::string, ConstitutiveModel*> models;  // The models
 
-  std::vector<Scheduler*> Scheduled; // the schedulled action to do
-	std::vector<ControlMP> controlledMP; // force or velocity controls on some MP
-	
-	bool computationMode{true};
+  std::vector<Scheduler*> Scheduled;    // the schedulled action to do
+  std::vector<ControlMP> controlledMP;  // force or velocity controls on some MP
+
+  bool computationMode{true};
 
   std::string result_folder;  // The folder into which the result files will be saved
   bool planeStrain;           // Plane strain assumption (default value is false)
   grid Grid;                  // The fixed grid
   double tolmass;             // Tolerance for the mass of a MaterialPoint
 
-  vec2r gravity;       // The gravity acceleration vector
+  vec2r gravity;  // The gravity acceleration vector
 
   double finalTime;  // Time in seconds at which the simulation ends
   int step;          // The current step number
@@ -89,7 +92,7 @@ class MPMbox {
   double dt;         // Time increment
   double dtInitial;  // Prescribed time increment
   double t;          // Current time
-	
+
   double securDistFactor;  // Homothetic factor of shapes for proximity tests
 
   DataTable dataTable;
@@ -107,11 +110,11 @@ class MPMbox {
   bool activePIC;    // damping with PIC flag
 
   struct {
-    bool hasDoubleScale; // to know if the computation involves CHCLs
-    int minDEMstep;      // minimum number of DEM time steps for linear regression of stress
-    double rateAverage;  // end-part of MPM time step used for stress averaging
-		double limitTimeStepFactor;
-		double criticalDEMTimeStepFactor;
+    bool hasDoubleScale;  // to know if the computation involves CHCLs
+    int minDEMstep;       // minimum number of DEM time steps for linear regression of stress
+    double rateAverage;   // end-part of MPM time step used for stress averaging
+    double limitTimeStepFactor;
+    double criticalDEMTimeStepFactor;
   } CHCL;
 
   std::vector<size_t> liveNodeNum;  // list of node numbers being updated and used during each time step
@@ -121,7 +124,7 @@ class MPMbox {
                                       // (some "unknown" points could enter the obstacle and suddenly be detected
                                       // once they are way inside)
 
-  std::shared_ptr<spdlog::logger> console;
+  //std::shared_ptr<spdlog::logger> console;
 
   MPMbox();   // Ctor
   ~MPMbox();  // Dtor

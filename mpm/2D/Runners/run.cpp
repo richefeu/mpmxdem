@@ -1,14 +1,14 @@
 #include <ctime>
 
-#include "tclap/CmdLine.h"
+#include <tclap/CmdLine.h>
 
 #include "Core/MPMbox.hpp"
 #include "ExecChrono.hpp"
 #include "Spies/Spy.hpp"
 #include "stackTracer.hpp"
 
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
+//#include "spdlog/sinks/stdout_color_sinks.h"
+//#include "spdlog/spdlog.h"
 
 ExecChrono SimuChrono;
 MPMbox* SimuHandler;
@@ -70,21 +70,21 @@ int main(int argc, char** argv) {
 
 #ifdef _OPENMP
   omp_set_num_threads(nbThreads);
-  Simulation.console->info("OpenMP acceleration (Number of threads = {})", nbThreads);
+  Logger::info("OpenMP acceleration (Number of threads = {})", nbThreads);
 #else
-  Simulation.console->info("No multithreading (Number of threads = {})", nbThreads);
+  Logger::info("No multithreading (Number of threads = {})", nbThreads);
 #endif
 
   Simulation.read(confFileName.c_str());
 
-  Simulation.console->info("COMPUTATION STARTS");
+  Logger::info("COMPUTATION STARTS");
 
   SimuChrono.start();
   Simulation.init();
   Simulation.run();
 
   SimuChrono.stop();
-  Simulation.console->info("COMPUTATION NORMALLY STOPPED");
+  Logger::info("COMPUTATION NORMALLY STOPPED");
 
   PRINT_TIMERS("mpmbox");
 

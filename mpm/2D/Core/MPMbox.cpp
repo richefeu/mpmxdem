@@ -1,6 +1,6 @@
 #include "MPMbox.hpp"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
+//#include "spdlog/sinks/stdout_color_sinks.h"
+//#include "spdlog/spdlog.h"
 
 #include "BoundaryForceLaw/BoundaryForceLaw.hpp"
 #include "BoundaryForceLaw/frictionalNormalRestitution.hpp"
@@ -45,6 +45,7 @@
 #include "ShapeFunctions/RegularQuadLinear.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 
+#include "Spies/EnergyBalance.hpp"
 #include "Spies/MPTracking.hpp"
 #include "Spies/MeanStress.hpp"
 #include "Spies/ObstacleTracking.hpp"
@@ -100,8 +101,8 @@ MPMbox::MPMbox() {
   id_dn0 = dataTable.add("dn0");
   id_dt0 = dataTable.add("dt0");
 
-  console = spdlog::stdout_color_mt("console");
-  console->set_pattern("[%^%l%$] %v");
+  //console = spdlog::stdout_color_mt("console");
+  //Logger::set_pattern("[%^%l%$] %v");
 
   ExplicitRegistrations();
 }
@@ -210,6 +211,8 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleTracking",
                                                                  [](void) -> Spy* { return new ObstacleTracking(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy* { return new Work(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("EnergyBalance",
+                                                                 [](void) -> Spy* { return new EnergyBalance(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MeanStress",
                                                                  [](void) -> Spy* { return new MeanStress(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MPTracking",
@@ -228,28 +231,28 @@ void MPMbox::ExplicitRegistrations() {
 void MPMbox::setVerboseLevel(int v) {
   switch (v) {
     case 6:
-      console->set_level(spdlog::level::trace);
+      Logger::setLevel(LogLevel::trace);
       break;
     case 5:
-      console->set_level(spdlog::level::debug);
+      Logger::setLevel(LogLevel::debug);
       break;
     case 4:
-      console->set_level(spdlog::level::info);
+      Logger::setLevel(LogLevel::info);
       break;
     case 3:
-      console->set_level(spdlog::level::warn);
+      Logger::setLevel(LogLevel::warn);
       break;
     case 2:
-      console->set_level(spdlog::level::err);
+      Logger::setLevel(LogLevel::error);
       break;
     case 1:
-      console->set_level(spdlog::level::critical);
+      Logger::setLevel(LogLevel::critical);
       break;
     case 0:
-      console->set_level(spdlog::level::off);
+      Logger::setLevel(LogLevel::off);
       break;
     default:
-      console->set_level(spdlog::level::info);
+      Logger::setLevel(LogLevel::info);
       break;
   }
 }
@@ -274,7 +277,7 @@ void MPMbox::clean() {
 void MPMbox::read(const char* name) {
   std::ifstream file(name);
   if (!file) {
-    console->warn("@MPMbox::read, cannot open file {}", name);
+    Logger::warn("@MPMbox::read, cannot open file {}", name);
     return;
   }
 
@@ -363,10 +366,10 @@ void MPMbox::read(const char* name) {
       if (CM != nullptr) {
         models[modelName] = CM;
         CM->key = modelName;
-				CM->box = this;
+        CM->box = this;
         CM->read(file);
       } else {
-        console->warn("mode {} is unknown!", modelID);
+        Logger::warn("mode {} is unknown!", modelID);
       }
     } else if (token == "Obstacle") {
       std::string obsName;
@@ -376,12 +379,12 @@ void MPMbox::read(const char* name) {
         obs->read(file);
         Obstacles.push_back(obs);
       } else {
-        console->warn("Obstacle {} is unknown!", obsName);
+        Logger::warn("Obstacle {} is unknown!", obsName);
       }
     } else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
       if (Obstacles.empty()) {
-        console->warn("You try to define BoundaryForceLaw BEFORE any Obstacle is set!");
+        Logger::warn("You try to define BoundaryForceLaw BEFORE any Obstacle is set!");
       }
       std::string boundaryName;
       int obstacleGroup;
@@ -401,7 +404,7 @@ void MPMbox::read(const char* name) {
         sch->read(file);
         Scheduled.push_back(sch);
       } else {
-        console->warn("Scheduler {} is unknown!", scheduledName);
+        Logger::warn("Scheduler {} is unknown!", scheduledName);
       }
     } else if (token == "Spy") {
       std::string spyName;
@@ -412,7 +415,7 @@ void MPMbox::read(const char* name) {
         spy->read(file);
         Spies.push_back(spy);
       } else {
-        console->warn("Spy {} is unknown!", spyName);
+        Logger::warn("Spy {} is unknown!", spyName);
       }
     } else if (token == "node") {
       size_t nb;
@@ -445,14 +448,14 @@ void MPMbox::read(const char* name) {
         // FIXME
         // Il faut changer le sorties suivantes (enlever stressCorrection, ajouter hardeningForce, mettre
         // outOfPlaneStress à cote de stress)
-				// Pas maintenant, pour ne pas casser la compatibilité...
+        // Pas maintenant, pour ne pas casser la compatibilité...
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
             P.plasticStrain >> P.stress >> P.stressCorrection >> P.splitCount >> P.F >> P.outOfPlaneStress >>
             P.contactf;
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
-          console->warn("@MPMbox::read, model {} not found", modelName);
+          Logger::warn("@MPMbox::read, model {} not found", modelName);
         }
         P.constitutiveModel = itCM->second;
         P.constitutiveModel->init(P);
@@ -464,12 +467,12 @@ void MPMbox::read(const char* name) {
       }
     } else if (token == "Nodes") {
       if (nodes.empty()) {
-        console->warn("@MPMbox::read, cannot set the node-datasets if the grid has not been set (with a command)");
+        Logger::warn("@MPMbox::read, cannot set the node-datasets if the grid has not been set (with a command)");
       }
       size_t nbNodes = 0;
       file >> nbNodes;
       if (nbNodes != nodes.size()) {
-        console->warn("@MPMbox::read, The number of nodes is not compatible with the grid");
+        Logger::warn("@MPMbox::read, The number of nodes is not compatible with the grid");
       }
       for (size_t in = 0; in < nodes.size(); in++) {
         file >> nodes[in].q >> nodes[in].f >> nodes[in].fb >> nodes[in].mass >> nodes[in].xfixed >> nodes[in].yfixed;
@@ -481,7 +484,7 @@ void MPMbox::read(const char* name) {
         com->read(file);
         com->exec();
       } else {
-        console->warn("@MPMbox::read, what do you mean by '{}'?", token);
+        Logger::warn("@MPMbox::read, what do you mean by '{}'?", token);
       }
     }
 
@@ -492,13 +495,13 @@ void MPMbox::read(const char* name) {
   if (!shapeFunction) {
     std::string defaultShapeFunction = "Linear";
     shapeFunction = Factory<ShapeFunction>::Instance()->Create(defaultShapeFunction);
-    console->info("No ShapeFunction defined, automatically set to 'Linear'");
+    Logger::info("No ShapeFunction defined, automatically set to 'Linear'");
   }
 
   if (!oneStep) {
     std::string defaultOneStep = "ModifiedLagrangian";
     oneStep = Factory<OneStep>::Instance()->Create(defaultOneStep);
-    console->info("No OneStep type defined, automatically set to 'ModifiedLagrangian'");
+    Logger::info("No OneStep type defined, automatically set to 'ModifiedLagrangian'");
   }
   dtInitial = dt;
 
@@ -515,7 +518,7 @@ void MPMbox::read(int num) {
   // Open file
   char name[256];
   snprintf(name, 256, "%s/conf%d.txt", result_folder.c_str(), num);
-  console->info("Read {}", name);
+  Logger::info("Read {}", name);
   read(name);
 }
 
@@ -617,7 +620,7 @@ void MPMbox::save(const char* name) {
 void MPMbox::save(int num) {
   char name[256];
   snprintf(name, 256, "%s/conf%d.txt", result_folder.c_str(), num);
-  console->info("Save {}, #MP: {}, Time: {:.6f} ({:.1f}%)", name, MP.size(), t, 100.0 * t / finalTime);
+  Logger::info("Save {}, #MP: {}, Time: {:.6f} ({:.1f}%)", name, MP.size(), t, 100.0 * t / finalTime);
   save(name);
 }
 
@@ -722,7 +725,7 @@ void MPMbox::MPinGridCheck() {
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].pos.x > (double)Grid.Nx * Grid.lx || MP[p].pos.x < 0.0 || MP[p].pos.y > (double)Grid.Ny * Grid.ly ||
         MP[p].pos.y < 0.0) {
-      console->warn("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
+      Logger::warn("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
                     MP[p].pos.x, MP[p].pos.y);
     }
   }
@@ -785,20 +788,20 @@ void MPMbox::convergenceConditions() {
   double criticalDt = std::max({passthough_crit_dt, collision_crit_dt, cfl_crit_dt});
 
   if (step == 0) {
-    console->debug("Current dt:                        {}", dt);
-    console->debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
-    console->debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
-    console->debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
+    Logger::debug("Current dt:                        {}", dt);
+    Logger::debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
+    Logger::debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
+    Logger::debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
   }
 
   if (dt > 0.5 * criticalDt) {
-    console->info("@MPMbox::convergenceConditions, timestep seems too large!");
+    Logger::info("@MPMbox::convergenceConditions, timestep seems too large!");
     dt = 0.5 * criticalDt;
     dtInitial = dt;
-    console->info("--> Adjusting to {}", dt);
-    console->debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
-    console->debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
-    console->debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
+    Logger::info("--> Adjusting to {}", dt);
+    Logger::debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
+    Logger::debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
+    Logger::debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
   }
 }
 
@@ -852,7 +855,7 @@ void MPMbox::limitTimeStepForDEM() {
     }
   }
 
-  console->trace("MPM time-step dt = {} at the end limitTimeStepForDEM", dt);
+  Logger::trace("MPM time-step dt = {} at the end limitTimeStepForDEM", dt);
 }
 
 void MPMbox::updateTransformationGradient() {

@@ -4,8 +4,8 @@
 #include "Core/MaterialPoint.hpp"
 #include "select_tracked_MP.hpp"
 
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
+//#include "spdlog/sinks/stdout_color_sinks.h"
+//#include "spdlog/spdlog.h"
 
 select_tracked_MP::select_tracked_MP() {
   MP_Selector.actionForNone = [this](MPMbox* B) {
@@ -28,7 +28,7 @@ void select_tracked_MP::read(std::istream& is) { is >> MP_Selector; }
 
 void select_tracked_MP::exec() {
   if (box->MP.empty()) {
-    box->console->info("@select_tracked_MP::exec(), No MP has been added!");
+    Logger::info("@select_tracked_MP::exec(), No MP has been added!");
   }
 
   MP_Selector.execute(box);

@@ -3,8 +3,8 @@
 #include "Core/MPMbox.hpp"
 #include "set_node_grid.hpp"
 
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
+//#include "spdlog/sinks/stdout_color_sinks.h"
+//#include "spdlog/spdlog.h"
 
 void set_node_grid::read(std::istream& is) {
 
@@ -36,13 +36,13 @@ void set_node_grid::read(std::istream& is) {
     lx = W / (double)nbElemX;
     ly = H / (double)nbElemY;
   } else {
-    box->console->error("@set_node_grid::read(), inputChoice: '{}' is not known", inputChoice);
+    Logger::error("@set_node_grid::read(), inputChoice: '{}' is not known", inputChoice);
   }
 }
 
 void set_node_grid::exec() {
   if (box->shapeFunction == nullptr) {
-    box->console->critical("@set_node_grid::exec(), ShapeFunction has to be set BEFORE set_node_grid");
+    Logger::critical("@set_node_grid::exec(), ShapeFunction has to be set BEFORE set_node_grid");
     exit(0);
   }
 
@@ -119,7 +119,7 @@ void set_node_grid::exec() {
       }
     }
   } else {
-    box->console->error("element::nbNodes = {}! It can only be 4 or 16", element::nbNodes);
+    Logger::error("element::nbNodes = {}! It can only be 4 or 16", element::nbNodes);
   }
 
   // initial nodes for the first time

@@ -2,8 +2,8 @@
 
 #include "Core/MPMbox.hpp"
 
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
+//#include "spdlog/sinks/stdout_color_sinks.h"
+//#include "spdlog/spdlog.h"
 
 void PICDissipation::read(std::istream& is) {
   is >> box->ratioFLIP >> endTime;
@@ -18,7 +18,7 @@ void PICDissipation::check() {
   if (box->activePIC == true) {
     box->activePIC = endTime > box->t;
     if (box->activePIC == false) {
-      box->console->info("End of PIC damping at time {}", box->t);
+      Logger::info("End of PIC damping at time {}", box->t);
     }
   } 
 }
