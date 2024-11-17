@@ -1,6 +1,14 @@
 #ifndef NODE_HPP
 #define NODE_HPP
 
+/**
+ * @file
+ * @brief Header file for the Node struct.
+ *
+ * This file is part of the Encompass library, which is distributed under the
+ * 3-Clause BSD license. See the LICENSE file for details.
+ */
+
 #include <cstddef>
 
 #include "mat4.hpp"

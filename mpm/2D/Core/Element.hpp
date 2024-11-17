@@ -1,6 +1,11 @@
 #ifndef ELEMENT_HPP
 #define ELEMENT_HPP
 
+/**
+ * @file Element.hpp
+ * @brief Class and functions related to the FE mesh
+ */
+
 #include <cstddef>
 
 struct element {

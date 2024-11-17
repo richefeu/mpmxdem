@@ -2,27 +2,25 @@ oneStepType ModifiedLagrangian
 result_folder .
 tolmass 1.e-5
 gravity 0.0  -9.81
-finalTime 0.5
-confPeriod 1000
+finalTime 2.5
+confPeriod 5000
 proxPeriod 10
 dt 1e-5
 t 0.0
 ShapeFunction BSpline
 splitting 0
-#shearLimit 1.0
-#splitCriterionValue 3.0
-#MaxSplitNumber 3
+enablePIC 0.01
 
 #     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
-model MohrCoulomb    MC         1.0e7     0.42      0.3            5e2        0.01
+model MohrCoulomb    MC         1.0e9     0.42      0.3            1e2        0.01
 
-#                             Young   Poisson beta beta_p kappa varphiDeg pc0
-model SinfoniettaClassica SC  3.46e6  0.25    1.2  0.01   0.0   38.5      1e3
+#     modelID             modelName  Young   Poisson  beta  beta_p  kappa  varphiDeg  pc0
+model SinfoniettaClassica SC         3.46e6  0.25     1.2   0.01    0.0    38.5       1e3
 
 set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
 
 #            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
-set_MP_grid  0       SC            2700.0        0.04   0.04    0.1    0.20    0.005
+set_MP_grid  0       MC            2700.0        0.04   0.04    0.1    0.20    0.005
 
 
 #                group  x0    y0     x1     y1    driveMode

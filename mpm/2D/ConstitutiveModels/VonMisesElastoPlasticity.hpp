@@ -1,6 +1,16 @@
 #ifndef VONMISESELASTOPLASTICITY_HPP
 #define VONMISESELASTOPLASTICITY_HPP
 
+/**
+ * @file VonMisesElastoPlasticity.hpp
+ * @brief Defines the VonMisesElastoPlasticity structure and related functions.
+ *
+ * This header file contains the definition of the VonMisesElastoPlasticity
+ * structure, which represents a Von Mises elastoplasticity material model.
+ * It also contains the necessary functions for the structure's implementation.
+ *
+ */
+
 #include "ConstitutiveModel.hpp"
 
 struct VonMisesElastoPlasticity : public ConstitutiveModel {

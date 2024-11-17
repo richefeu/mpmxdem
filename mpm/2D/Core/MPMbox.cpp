@@ -1,6 +1,4 @@
 #include "MPMbox.hpp"
-//#include "spdlog/sinks/stdout_color_sinks.h"
-//#include "spdlog/spdlog.h"
 
 #include "BoundaryForceLaw/BoundaryForceLaw.hpp"
 #include "BoundaryForceLaw/frictionalNormalRestitution.hpp"
@@ -64,6 +62,13 @@
 
 #include <list>
 
+/**
+ * @brief Constructor of the MPMbox class
+ *
+ * Initializes the MPMbox with default values for its fields.
+ *
+ * The constructor also calls the ExplicitRegistrations() function.
+ */
 MPMbox::MPMbox() {
   shapeFunction = nullptr;
   oneStep = nullptr;
@@ -76,8 +81,8 @@ MPMbox::MPMbox() {
   CHCL.rateAverage = 0;
   CHCL.limitTimeStepFactor = 1e-3;
   CHCL.criticalDEMTimeStepFactor = 0.01;
-  ratioFLIP = 1.0;
-  activePIC = false;
+  ratioFLIP = 0.95;
+  activePIC = true;
 
   iconf = 0;
   confPeriod = 5000;
@@ -101,14 +106,32 @@ MPMbox::MPMbox() {
   id_dn0 = dataTable.add("dn0");
   id_dt0 = dataTable.add("dt0");
 
-  //console = spdlog::stdout_color_mt("console");
-  //Logger::set_pattern("[%^%l%$] %v");
-
   ExplicitRegistrations();
 }
 
-MPMbox::~MPMbox() { clean(); }
+  /**
+   * @brief Destructor of the MPMbox class.
+   *
+   * This is the default destructor of the MPMbox class, which is
+   * responsible for cleaning up the allocated memory.
+   *
+   * @details
+   * The destructor just calls the clean() method, which is
+   * responsible for freeing the memory allocated during the
+   * initialization of the MPMbox object. This is important to
+   * prevent memory leaks.
+   */
+MPMbox::~MPMbox() { 
+  clean(); }
 
+/**
+ * @brief Displays the application banner.
+ *
+ * This function outputs a stylized banner to the console,
+ * representing the application's name or logo using ASCII art.
+ * It adds a visual separator before and after the banner
+ * for better readability.
+ */
 void MPMbox::showAppBanner() {
   std::cout << std::endl;
   std::cout << "    _/      _/  _/_/_/    _/      _/  _/                         " << std::endl;
@@ -119,6 +142,19 @@ void MPMbox::showAppBanner() {
   std::cout << std::endl;
 }
 
+/**
+ * @brief Registers all the necessary classes to the factories.
+ *
+ * This is a static method that registers all the necessary classes to the factories.
+ * It is called by the constructor of the MPMbox class.
+ *
+ * @details
+ * This method is responsible for registering all the necessary classes to the factories,
+ * which are used later on in the code to create objects of the registered classes.
+ * The classes are registered by calling the RegisterFactoryFunction method of the
+ * corresponding factory, and providing a lambda function that returns an instance of
+ * the class to be registered.
+ */
 void MPMbox::ExplicitRegistrations() {
 
   // BoundaryForceLaw ==========
@@ -219,15 +255,20 @@ void MPMbox::ExplicitRegistrations() {
                                                                  [](void) -> Spy* { return new MPTracking(); });
 }
 
-/*
-    trace    =  6
-    debug    =  5
-    info     =  4
-    warn     =  3
-    err      =  2
-    critical =  1
-    off      =  0
-*/
+/**
+ * @brief Sets the verbosity level for the logger
+ *
+ * The verbosity level corresponds to the following levels of logging:
+ *  - 0: off
+ *  - 1: critical
+ *  - 2: error
+ *  - 3: warning
+ *  - 4: info
+ *  - 5: debug
+ *  - 6: trace
+ *
+ * If the given verbosity level is not recognized, the logger will default to info level.
+ */
 void MPMbox::setVerboseLevel(int v) {
   switch (v) {
     case 6:
@@ -257,6 +298,15 @@ void MPMbox::setVerboseLevel(int v) {
   }
 }
 
+/**
+ * @brief Cleans up the MPMbox object by releasing allocated resources.
+ *
+ * This method clears the internal data structures used by the MPMbox,
+ * including nodes, elements, material points (MP), obstacles, and models.
+ * It deletes dynamically allocated memory for obstacles and constitutive
+ * models to prevent memory leaks. After calling this function, the MPMbox
+ * object is reset to an empty state.
+ */
 void MPMbox::clean() {
   nodes.clear();
   Elem.clear();
@@ -274,6 +324,16 @@ void MPMbox::clean() {
   models.clear();
 }
 
+/**
+ * @brief Reads a MPMbox object from a file.
+ *
+ * This function reads a MPMbox object from a file, which must be a text file
+ * containing the information about the nodes, elements, material points, obstacles,
+ * models, and other parameters of the MPMbox. The file format is specific to
+ * the MPMbox library and is described in the user manual.
+ *
+ * @param name The name of the file to read from.
+ */
 void MPMbox::read(const char* name) {
   std::ifstream file(name);
   if (!file) {
@@ -316,6 +376,16 @@ void MPMbox::read(const char* name) {
       file >> dt;
     } else if (token == "t") {
       file >> t;
+    } else if (token == "enablePIC") {
+      double ratioPIC;
+      file >> ratioPIC;
+      if (ratioPIC < 0.0 || ratioPIC > 1.0) {
+        Logger::warn("The PIC ratio (here {}) should be set in range 0 to 1", ratioPIC);
+      }
+      ratioFLIP = 1.0 - ratioPIC;
+      activePIC = true;
+    } else if (token == "disablePIC") {
+      activePIC = false;
     } else if (token == "splitting") {
       file >> splitting;
     } else if (token == "splittingExtremeShearing") {
@@ -514,6 +584,17 @@ void MPMbox::read(const char* name) {
   }
 }
 
+/**
+ * @brief Read a configuration file.
+ *
+ * Opens a file named <code>conf<num>.txt</code> in the
+ * <code>result_folder</code> directory, and reads in the configuration
+ * of the MPMbox object from that file. The configuration file is
+ * assumed to have been written by a call to the <code>save</code>
+ * method.
+ *
+ * @param num the number of the configuration file to read.
+ */
 void MPMbox::read(int num) {
   // Open file
   char name[256];
@@ -522,6 +603,17 @@ void MPMbox::read(int num) {
   read(name);
 }
 
+/**
+ * @brief Write a configuration file.
+ *
+ * Writes a configuration file named <code>conf<num>.txt</code> in the
+ * <code>result_folder</code> directory, which contains all the
+ * information needed to reconstruct the current state of the MPMbox
+ * object. The configuration file is written in a format that can be
+ * read by a call to the <code>read</code> method.
+ *
+ * @param name the name of the configuration file to write.
+ */
 void MPMbox::save(const char* name) {
   std::ofstream file(name);
 
@@ -617,6 +709,23 @@ void MPMbox::save(const char* name) {
   }
 }
 
+/**
+ * @brief Saves the current state of the simulation to a file
+ *
+ * @param num the number of the configuration to be saved
+ *
+ * The function saves the current state of the simulation to a file
+ * with the name <tt>result_folder/conf\*num*.txt</tt>.
+ *
+ * The state of the simulation consists of the following information:
+ * - the nodes of the Eulerian grid
+ * - the Material Points (their position, velocity, strain, stress, etc.)
+ * - the rigid obstacles
+ * - the models used for the Material Points
+ *
+ * The function also logs the time and the number of Material Points
+ * of the simulation.
+ */
 void MPMbox::save(int num) {
   char name[256];
   snprintf(name, 256, "%s/conf%d.txt", result_folder.c_str(), num);
@@ -624,6 +733,17 @@ void MPMbox::save(int num) {
   save(name);
 }
 
+/**
+ * @brief Initializes the MPMbox by setting up necessary directories and 
+ *        updating the previous positions of Material Points.
+ *
+ * This function performs the following actions:
+ * - Creates the result folder if it doesn't exist.
+ * - Creates individual folders for each tracked Material Point (MP) 
+ *   for simulations with double scale.
+ * - Updates the previous position of each Material Point to the current 
+ *   position for future reference.
+ */
 void MPMbox::init() {
   // If the result folder does not exist, it is created
   if (result_folder != "" && result_folder != "." && result_folder != "./") fileTool::create_folder(result_folder);
@@ -642,6 +762,20 @@ void MPMbox::init() {
   }
 }
 
+/**
+ * @brief Run the simulation.
+ *
+ * This function runs the simulation until the final time is reached.
+ * It will:
+ * - Check if the Material Points are inside the grid area
+ * - Perform the simulation steps
+ * - Check for convergence requirements
+ * - Save the configuration of the simulation at regular intervals
+ * - Check for proximity between Material Points
+ * - Split Material Points if necessary
+ * - Execute/Record the spies at regular intervals
+ * - Shutdown the spies at the end of the simulation
+ */
 void MPMbox::run() {
   START_TIMER("run");
 
@@ -707,6 +841,12 @@ void MPMbox::run() {
   }
 }
 
+  /**
+   * Check the proximity of the MPs and obstacles. This function is called every @c proxPeriod steps.
+   * It computes the security distance for each MP and obstacle as @c securDistFactor * velocity * dt * @c proxPeriod.
+   * It then calls the @c checkProximity function on each obstacle.
+   * @see MPMbox::proxPeriod, Obstacle::checkProximity
+   */
 void MPMbox::checkProximity() {
   START_TIMER("checkProximity");
   // Compute securDist of MPs
@@ -720,6 +860,11 @@ void MPMbox::checkProximity() {
   }
 }
 
+  /**
+   * @brief Check if any Material Point is outside the grid before the start of the simulation.
+   *
+   * This function will check if any Material Point is outside the grid before the start of the simulation. If any Material Point is found to be outside the grid, a warning message will be printed.
+   */
 void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
   for (size_t p = 0; p < MP.size(); p++) {
@@ -731,7 +876,16 @@ void MPMbox::MPinGridCheck() {
   }
 }
 
-// Convergence conditions for MPs interacting with obstacles
+  /**
+   * @brief Check for convergence conditions.
+   *
+   * This function checks for several convergence conditions:
+   * - Passthrough velocity condition: the timestep should be smaller than the smallest rayon of the MPs divided by the maximum velocity of the MPs.
+   * - Collision condition: the timestep should be smaller than the minimum mass of the MPs divided by the maximum normal stiffness of the obstacles.
+   * - CFL condition: the timestep should be smaller than the smallest rayon of the MPs divided by the maximum speed of sound of the MPs.
+   * If any of these conditions is not satisfied, the timestep is adjusted to half the critical value.
+   * @see MPMbox::dt, MPMbox::dtInitial
+   */
 void MPMbox::convergenceConditions() {
   START_TIMER("convergenceConditions");
 
@@ -768,14 +922,14 @@ void MPMbox::convergenceConditions() {
   std::set<int>::iterator it2;
   for (it = groupsMP.begin(); it != groupsMP.end(); ++it) {
     for (it2 = groupsObs.begin(); it2 != groupsObs.end(); ++it2) {
-      if (dataTable.get(id_kn, *it, *it2) > knMax) knMax = dataTable.get(id_kn, *it, *it2);
+      if (dataTable.get(id_kn, *it, *it2) > knMax) {knMax = dataTable.get(id_kn, *it, *it2);}
     }
   }
 
   // compute the 3 timestep conditions
   double collision_crit_dt = sqrt(massMin / knMax);
   double passthough_crit_dt = collision_crit_dt;
-  if (velMax > 1e-6) passthough_crit_dt = rayMin / velMax;
+  if (velMax > 1e-6) {passthough_crit_dt = rayMin / velMax;}
   double cfl_crit_dt;
   if (YoungMax >= 0 && PoissonMax >= 0) {
     double Kmax = YoungMax / (1.0 - 2.0 * PoissonMax);
@@ -809,7 +963,16 @@ void MPMbox::convergenceConditions() {
 //  Functions called by the 'OneStep'-type functions
 // =================================================
 
-// Node velocities (vel = q/m) need to be already updated after calling this function
+  /**
+   * Update the velocity gradient for all material points.
+   *
+   * The velocity gradient of a material point is computed as the sum of the
+   * product of the gradient of the shape function and the velocity of the
+   * corresponding node. The velocity gradient is stored in the velGrad member
+   * variable of each material point.
+   *
+   * This function is called by the OneStep functions.
+   */
 void MPMbox::updateVelocityGradient() {
   START_TIMER("updateVelocityGradient");
   size_t* I;
@@ -824,6 +987,17 @@ void MPMbox::updateVelocityGradient() {
   }
 }
 
+  /**
+   * @brief Limit the time-step for DEM simulations.
+   *
+   * If @c CHCL.limitTimeStepFactor is positive, this function limits the time-step
+   * @c dt to a value that is a fraction of the critical time-step for DEM simulations.
+   * The critical time-step is computed as @c CHCL.limitTimeStepFactor * Rmin / maxi,
+   * where @c Rmin is the minimum radius of the MPs and @c maxi is the maximum absolute
+   * value of the components of the velocity gradient tensor of the MPs.
+   *
+   * @see MPMbox::dt, MPMbox::dtInitial, MPMbox::CHCL
+   */
 void MPMbox::limitTimeStepForDEM() {
   START_TIMER("limitTimeStepForDEM");
   if (CHCL.limitTimeStepFactor <= 0.0) return;
@@ -858,6 +1032,16 @@ void MPMbox::limitTimeStepForDEM() {
   Logger::trace("MPM time-step dt = {} at the end limitTimeStepForDEM", dt);
 }
 
+/**
+ * @brief Updates the transformation gradient F for all material points.
+ *
+ * The transformation gradient F is computed at each time-step as @c F = (I + dt * L) * F,
+ * where @c I is the identity matrix, @c dt is the time-step, @c L is the velocity gradient
+ * tensor computed by @c updateVelocityGradient, and @c F is the transformation gradient
+ * at the previous time-step.
+ *
+ * This function is called by the OneStep functions.
+ */
 void MPMbox::updateTransformationGradient() {
   START_TIMER("updateTransformationGradient");
   updateVelocityGradient();
@@ -869,6 +1053,22 @@ void MPMbox::updateTransformationGradient() {
   }
 }
 
+/**
+ * @brief Perform adaptive refinement of material points.
+ *
+ * This function checks each material point for excessive shearing or deformation
+ * and performs splitting if necessary. The transformation gradient F is set to
+ * identity when shearing exceeds a predefined limit. If the deformation satisfies
+ * certain criteria, the material point is split into two, with properties adjusted
+ * accordingly. The split is either along the x or y direction, based on the
+ * deformation extent. This function is part of a refinement strategy to enhance
+ * simulation accuracy by adapting the discretization dynamically.
+ *
+ * - If the shearing in F is too large, F is reset to the identity matrix.
+ * - Splitting occurs if the deformation extent in one direction exceeds a critical value.
+ * - Splits are performed along the axis with the larger deformation extent.
+ * - The function also checks for extreme shearing conditions after the splitting criteria.
+ */
 void MPMbox::adaptativeRefinement() {
   START_TIMER("adaptativeRefinement");
   for (size_t p = 0; p < MP.size(); p++) {
@@ -961,6 +1161,15 @@ void MPMbox::adaptativeRefinement() {
   }  // end for loop over MPs
 }
 
+  /**
+   * @brief Post-process the MPs after time stepping.
+   *
+   * Compute the smoothed data (vel, stress, velGrad, outOfPlaneStress, pos, strain,
+   * rho) from the MPs by using the shape functions. The data is stored in the
+   * Data vector.
+   *
+   * @param Data the vector of ProcessedDataMP where the smoothed data will be stored.
+   */
 void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   Data.clear();
   Data.resize(MP.size());

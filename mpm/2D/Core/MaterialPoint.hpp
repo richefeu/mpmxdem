@@ -1,6 +1,21 @@
 #ifndef MATERIALPOINT_HPP
 #define MATERIALPOINT_HPP
 
+/**
+ * @file MaterialPoint.hpp
+ * @brief Defines the MaterialPoint structure and related includes.
+ *
+ * This header file contains the definition of the MaterialPoint structure,
+ * which represents a material point in a simulation. It includes necessary
+ * libraries and forward declarations needed for the structure's implementation.
+ *
+ * The MaterialPoint structure includes properties such as mass, size, volume,
+ * and group number, which are essential for simulations involving material
+ * points.
+ *
+ */
+
+
 #include <vector>
 
 #include "PBC3D.hpp"

@@ -1,6 +1,23 @@
 #ifndef MPMBOX_HPP
 #define MPMBOX_HPP
 
+/**
+ * @file MPMbox.hpp
+ * @brief Header file for the MPMbox class and related declarations.
+ *
+ * This file contains the declaration of the MPMbox class, which is responsible
+ * for managing the simulation of material points within a grid using the Material Point Method (MPM).
+ * It includes the data structures and functions necessary for initializing the simulation,
+ * performing adaptive refinement, handling boundary conditions, and post-processing results.
+ *
+ * The class relies on several components such as nodes, elements, material points, obstacles,
+ * and various constitutive models to accurately simulate physical behaviors.
+ *
+ * The file also defines constants and includes necessary headers for the implementation of MPMbox.
+ *
+ * @note This file requires C++17 standard and OpenMP for parallel processing.
+ */
+
 #include <algorithm>
 #include <cstddef>
 #include <ctime>

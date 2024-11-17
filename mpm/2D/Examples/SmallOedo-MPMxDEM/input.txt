@@ -1,17 +1,16 @@
 oneStepType ModifiedLagrangian
 result_folder .
 tolmass 1.e-6
-gravity      0.0  0.0
+gravity 0.0 0.0
 finalTime 2.5
 confPeriod 2500
 proxPeriod 50 
 dt 1e-5
 t 0.0
-
-# shape function can be Linear or GIMP (not yet implemented)
 ShapeFunction BSpline
 
-Scheduled PICDissipation 0.98 2.5
+#Scheduled PICDissipation 0.98 2.5
+enablePIC 0.05
 
 splitting 0
 shearLimit 1.0
@@ -21,26 +20,24 @@ CHCL.rateAverage 0.05
 CHCL.limitTimeStepFactor 0
 CHCL.criticalDEMTimeStepFactor 0.01
 
-
-# Materials
 #     modelID          modelName  Young    Poisson  FrictionAngle  Cohesion  DilatancyAngle
 model MohrCoulomb      M0         2.14e+5  0.498    0.4            82.6      -0.18
 
-#                                 PBC3D-file            
+#     modelID          modelName  PBC3D-file            
 model CHCL_DEM         DE         8shells_1000Pa.txt
 
 set_node_grid  W.H.lx.ly  0.6  0.6  0.1 0.1
 
-#                   group       modelName     mass_density(kg/m3)    x0    y0     x1     y1      size of boxes
-set_MP_grid         0           DE            550.0                  0.2   0.2    0.4    0.4     0.05
+#             group  modelName     mass_density(kg/m3)    x0    y0     x1     y1      size of boxes
+set_MP_grid   0      DE            550.0                  0.2   0.2    0.4    0.4     0.05
 
 # NONE, ALL, LIST NB [...NB x ID], GRID X0 Y0 LX LY TOL, BOX X0 Y0 X1 Y1
 select_tracked_MP ALL
 
 #                group  x0    y0     x1    y1   driveMode
-Obstacle Line    2      0.4   0.4    0.4   0.2  freeze    # right
-Obstacle Line    2      0.4   0.2    0.2   0.2  freeze    # bottom
-Obstacle Line    2      0.2   0.2    0.2   0.4  freeze    # left
+Obstacle Line    2      0.4   0.4    0.4   0.2  freeze             # right
+Obstacle Line    2      0.4   0.2    0.2   0.2  freeze             # bottom
+Obstacle Line    2      0.2   0.2    0.2   0.4  freeze             # left
 Obstacle Line    2      0.2   0.4    0.4   0.4  velocity 0.0 -0.0  # top
 
 BoundaryForceLaw frictionalViscoElastic 2

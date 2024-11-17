@@ -32,7 +32,7 @@ FetchContent_Declare (
 FetchContent_GetProperties(toofus)
 if(NOT toofus_POPULATED)
   message(STATUS "Fetching toofus")
-  FetchContent_Populate(toofus)
+  FetchContent_MakeAvailable(toofus)
 endif()
 
 ######################################################################
@@ -45,8 +45,7 @@ FetchContent_Declare (
 FetchContent_GetProperties(tclap)
 if(NOT tclap_POPULATED)
   message(STATUS "Fetching tclap")
-  FetchContent_Populate(tclap)
-	#add_subdirectory(${tclap_SOURCE_DIR})
+  FetchContent_MakeAvailable(tclap)
 endif()
 
 ######################################################################
@@ -60,16 +59,14 @@ FetchContent_Declare(fmt
 FetchContent_GetProperties(fmt)
 if(NOT fmt_POPULATED)
   message(STATUS "Fetching fmt")
-  FetchContent_Populate(fmt)
-  #add_subdirectory(${FETCHCONTENT_BASE_DIR}/fmt-src)
+  FetchContent_MakeAvailable(fmt)
 endif()
-
-
 
 ######################################################################
 ##### OpenMP
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
+   message(STATUS "OpenMP CXX has been found")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
@@ -89,24 +86,22 @@ if (${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
   # here, we do not uses find_package(glut) so that the version installed by apple is NOT used
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(GLUT REQUIRED glut>=3.4.0)
-  IF(GLUT_FOUND)
-    message(STATUS "GLUT as been found")
-  ENDIF() 
-  set(GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIRS})
-  set(GLUT_LIBRARIES "-L${GLUT_LIBDIR} -lglut")
-  message(STATUS "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
-  message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
+  if(GLUT_FOUND)
+    message(STATUS "GLUT as been found with PkgConfig")		
+		message(STATUS "GLUT_LIBRARY_DIRS = " ${GLUT_LIBRARY_DIRS})
+    message(STATUS "GLUT_INCLUDE_DIRS = " ${GLUT_INCLUDE_DIRS})
+		message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
+  endif() 
   
 else()
   
   find_package(GLUT REQUIRED)
 
-  message(STATUS "OPENGL_INCLUDE_DIR = " ${OPENGL_INCLUDE_DIR})
   message(STATUS "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
-  message(STATUS "OPENGL_LIBRARIES = " ${OPENGL_LIBRARIES})
   message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
   
 endif()
+
 
 # Remark:
 # Before being able to compile, the file 'libPBC3D.a' needs to be already compiled
@@ -138,24 +133,21 @@ Spies/*.cpp
 Schedulers/*.cpp
 )
 
+# The set of object files that constitute the library
 add_library(core_obj OBJECT ${core_object_files})
 
 if(OpenMP_CXX_FOUND)
-  set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-  message(STATUS "CMAKE_CXX_FLAGS = "  ${CMAKE_CXX_FLAGS})
-	set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
   add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
-  target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY} OpenMP::OpenMP_CXX)
+  target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY}) # OpenMP::OpenMP_CXX)
 else()
   add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
 	target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY})
 endif()
 
+
+# SEE
 add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
-target_link_libraries (see PUBLIC ${PLUGGED_DEM_LIBRARY} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
-target_include_directories(see PUBLIC ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
-
-#add_executable(cut See/cut.cpp $<TARGET_OBJECTS:core_obj>)
-#target_link_libraries(cut PUBLIC ${PLUGGED_DEM_LIBRARY})
-
+target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIRS})
+target_link_directories(see PRIVATE ${GLUT_LIBRARY_DIRS})
+target_link_libraries(see PUBLIC OpenGL::GL OpenGL::GLU ${GLUT_LIBRARIES} ${PLUGGED_DEM_LIBRARY})
 

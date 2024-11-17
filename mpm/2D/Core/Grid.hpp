@@ -1,6 +1,15 @@
 #ifndef GRID_HPP
 #define GRID_HPP
 
+/**
+ * @file
+ * @brief   Geometric grid definition
+ *
+ * @details   This file contains the definition of the
+ *            Geometric grid used in the simulations.
+ *
+ */
+
 #include <cstddef>
 
 //   +---+---+---+

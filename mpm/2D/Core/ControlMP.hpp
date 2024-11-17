@@ -1,6 +1,14 @@
 #ifndef CONTROL_MP_HPP
 #define CONTROL_MP_HPP
 
+/**
+ * @file
+ * @brief A class for tracking and controlling Material Points.
+ *
+ * The functions and data structures here are used to control the movement
+ * of material points. This includes velocity control and force control.
+ */
+
 #include <cstddef>
 
 #define VEL_CONTROL true

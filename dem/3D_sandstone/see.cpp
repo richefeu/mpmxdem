@@ -1325,6 +1325,7 @@ int main(int argc, char* argv[]) {
   glutInitWindowPosition(50, 50);
   glutInitWindowSize(width, height);
   main_window = glutCreateWindow("PBC3Dbox VISUALIZER");
+  
 
   // ==== Register callbacks
   glutDisplayFunc(display);

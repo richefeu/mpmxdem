@@ -1,6 +1,26 @@
 #ifndef SINFONIETTA_CRUSH_HPP
 #define SINFONIETTA_CRUSH_HPP
 
+/**
+ * @file SinfoniettaCrush.hpp
+ * @brief Header file for the SinfoniettaCrush class.
+ *
+ * This file contains the declaration of the SinfoniettaCrush class, which is
+ * a constitutive model for a material point.
+ *
+ * The SinfoniettaCrush model is an extension of the SinfoniettaClassica model,
+ * which is used for the crushing of granular materials.
+ *
+ * The SinfoniettaCrush model is a simple model that can be used to model
+ * the behavior of granular materials under a wide range of conditions.
+ *
+ * The class relies on various components such as the Young's modulus, Poisson's
+ * ratio, and the rigidity of the material point.
+ *
+ * The file also defines constants and includes necessary headers for the
+ * implementation of SinfoniettaCrush.
+ */
+
 #include "ConstitutiveModel.hpp"
 
 #include "Rigidity.hpp"

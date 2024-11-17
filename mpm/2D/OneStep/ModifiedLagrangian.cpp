@@ -13,11 +13,16 @@
 
 #include "PBC3D.hpp"
 
-//#include "spdlog/sinks/stdout_color_sinks.h"
-//#include "spdlog/spdlog.h"
-
 std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
+/**
+ * @brief One step of the Modified Lagrangian (MUSL) integration scheme.
+ *
+ * Updates the positions, velocities, deformation gradients, strains, and stresses of all MaterialPoints.
+ *
+ * @param MPM the MPMbox data structure containing all the relevant information.
+ * @return 0 if the computation was successful, 1 otherwise.
+ */
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   START_TIMER("MUSL step");
 

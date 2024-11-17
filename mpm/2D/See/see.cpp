@@ -417,18 +417,18 @@ void drawGrid() {
   }
 
   if (show_node_dofs) {
-    double s = 0.5 * 0.5 * (Conf.Grid.lx + Conf.Grid.ly);
+    double s = 0.25 * 0.5 * (Conf.Grid.lx + Conf.Grid.ly);
     glColor4f(1.f, 0.f, 0.0f, 1.0f);
     for (size_t n = 0; n < nodes.size(); n++) {
       if (nodes[n].xfixed) {
-        glBegin(GL_POLYGON);
+        glBegin(GL_LINE_LOOP);
         glVertex2d(nodes[n].pos.x, nodes[n].pos.y);
         glVertex2d(nodes[n].pos.x - s, nodes[n].pos.y + s / 3);
         glVertex2d(nodes[n].pos.x - s, nodes[n].pos.y - s / 3);
         glEnd();
       }
       if (nodes[n].yfixed) {
-        glBegin(GL_POLYGON);
+        glBegin(GL_LINE_LOOP);
         glVertex2d(nodes[n].pos.x, nodes[n].pos.y);
         glVertex2d(nodes[n].pos.x - s / 3, nodes[n].pos.y - s);
         glVertex2d(nodes[n].pos.x + s / 3, nodes[n].pos.y - s);

@@ -1,5 +1,17 @@
 #include "MaterialPoint.hpp"
 
+/**
+ * @brief Constructs a MaterialPoint with specified group number, size, and density.
+ *
+ * Initializes a MaterialPoint object with the given group number, size, and density.
+ * Sets the initial values for mass, volume, position, velocity, and other material properties.
+ * Initializes the constitutive model and related parameters.
+ *
+ * @param Group Group number for the material point.
+ * @param Size Size of the sides of the squared material point.
+ * @param Rho Initial density of the material point.
+ * @param CM Pointer to the constitutive model associated with the material point.
+ */
 MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveModel* CM)
     : groupNb(Group),
       mass(0.0),

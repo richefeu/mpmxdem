@@ -1,6 +1,16 @@
 #ifndef NEIGHBOR_HPP
 #define NEIGHBOR_HPP
 
+/**
+ * @file
+ * @brief Definition of the Neighbor structure.
+ *
+ * The Neighbor structure is used to store the information
+ * associated with a neighboring material point.
+ *
+ * @see MaterialPoint
+ */
+
 #include <cstddef>
 
 struct Neighbor {
