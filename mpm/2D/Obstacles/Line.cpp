@@ -36,7 +36,9 @@ int Line::touch(MaterialPoint& MP, double& dn) {
   dn = c * n - radiusMP;
   if (dn < 0.0) {
     double proj = c * t;
-    if (proj >= 0.0 && proj <= len) Touch = 1;
+    if (proj >= 0.0 && proj <= len) {
+      Touch = 1;
+    }
   }
   return Touch;
 }
@@ -58,7 +60,9 @@ void Line::checkProximity(MPMbox& MPM) {
   for (size_t p = 0; p < MPM.MP.size(); p++) {
     double sumSecurDistMin = 2 * MPM.MP[p].size;
     double sumSecurDist = MPM.MP[p].securDist + securDist;
-    if (sumSecurDist < sumSecurDistMin) sumSecurDist = sumSecurDistMin;
+    if (sumSecurDist < sumSecurDistMin) {
+      sumSecurDist = sumSecurDistMin;
+    }
     c = MPM.MP[p].pos - pos;
     double dstt = c * t;
     if (dstt > -sumSecurDist && dstt < len + sumSecurDist) {
@@ -73,20 +77,21 @@ void Line::checkProximity(MPMbox& MPM) {
   // Get the known forces back in the vector 'Neighbors'
   size_t istore = 0;
   for (size_t inew = 0; inew < Neighbors.size(); inew++) {
-    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) ++istore;
-    if (istore == Store.size()) break;
+    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) {
+      ++istore;
+    }
+    if (istore == Store.size()) {
+      break;
+    }
 
     if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
-      //Neighbors[inew].fn = Store[istore].fn;
-      //Neighbors[inew].ft = Store[istore].ft;
       Neighbors[inew] = Store[istore];
-
       ++istore;
     }
   }
 }
 
 bool Line::inside(vec2r& x) {
-	vec2r l = x - pos;
-	return (l * n < 0.0);
+  vec2r l = x - pos;
+  return (l * n < 0.0);
 }

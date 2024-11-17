@@ -59,7 +59,8 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
   corner[3].reset();
 }
 
-void MaterialPoint::updateCornersFromF() {
+void MaterialPoint::updateCornersFromF() 
+{
   // TODO: This is wrong if it's to be used in move_MP.cpp
   // FIXME: it assumes that the reference shape is an axis aligned rectangle
   // -> faire une fonction updateCornersFromFincrement

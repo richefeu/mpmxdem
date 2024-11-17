@@ -90,7 +90,7 @@ void Polygon::checkProximity(MPMbox& MPM) {
   for (size_t p = 0; p < MPM.MP.size(); p++) {
     double sumSecurDistMin = MPM.MP[p].size;
     double sumSecurDist = MPM.MP[p].securDist + securDist;
-    if (sumSecurDist < sumSecurDistMin) sumSecurDist = sumSecurDistMin;
+    if (sumSecurDist < sumSecurDistMin) {sumSecurDist = sumSecurDistMin;}
     c = MPM.MP[p].pos - pos;
     double dst = norm(c) - R;  // has to be adapted to the polygons but leave it like that for now
     if (dst < sumSecurDist) {
@@ -102,8 +102,8 @@ void Polygon::checkProximity(MPMbox& MPM) {
   // Get the known forces back
   size_t istore = 0;
   for (size_t inew = 0; inew < Neighbors.size(); inew++) {
-    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) ++istore;
-    if (istore == Store.size()) break;
+    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) {++istore;}
+    if (istore == Store.size()) {break;}
 
     if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
       Neighbors[inew].fn = Store[istore].fn;
@@ -118,8 +118,6 @@ void Polygon::checkProximity(MPMbox& MPM) {
 // not being used
 bool Polygon::inside(vec2r& x) {
   vec2r l = x - pos;
-  //double radiusMP = 0.5 * MP.vol;
-  //double sumR = (R + radiusMP);
   return (norm2(l) < R * R);
 }
 

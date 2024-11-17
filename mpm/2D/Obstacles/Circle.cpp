@@ -42,10 +42,11 @@ int Circle::touch(MaterialPoint& MP, double& dn) {
   vec2r c = MP.pos - pos;
   double radiusMP = 0.5 * sqrt(MP.vol);
   dn = norm(c) - R - radiusMP;
-  if (dn < 0.0)
-    return 1;  // true;
-  else
+  if (dn < 0.0) {
+    return 1;
+  } else {
     return -1;
+  }
 }
 
 void Circle::getContactFrame(MaterialPoint& MP, vec2r& N, vec2r& T) {
@@ -78,8 +79,12 @@ void Circle::checkProximity(MPMbox& MPM) {
   // Get the known forces back
   size_t istore = 0;
   for (size_t inew = 0; inew < Neighbors.size(); inew++) {
-    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) ++istore;
-    if (istore == Store.size()) break;
+    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) {
+      ++istore;
+    }
+    if (istore == Store.size()) {
+      break;
+    }
 
     if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
       Neighbors[inew].fn = Store[istore].fn;
@@ -92,7 +97,5 @@ void Circle::checkProximity(MPMbox& MPM) {
 
 bool Circle::inside(vec2r& x) {
   vec2r l = x - pos;
-  //double radiusMP = 0.5 * sqrt(MP.vol0);
-  //double sumR = (R + radiusMP);
   return (norm2(l) < R * R);
 }

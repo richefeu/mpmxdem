@@ -3,12 +3,14 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-// En cours de developpement avec Quentin.
+// WARNING: En cours de developpement avec Quentin.
 
+// =========================================================================
 // This is a 'simple' version of Sinfonietta Classica
 // This is a kind of CamClay model. 
-// One objective is to extend this model to account for high compressibility (SinfoniettaCrush)
-// 
+// One objective is to extend this model to account for high compressibility 
+// induced by 'escape' of closed porosity (SinfoniettaCrush)
+// =========================================================================
 
 std::string SinfoniettaClassica::getRegistrationName() { return std::string("SinfoniettaClassica"); }
 

@@ -1,4 +1,5 @@
 {
     "C_Cpp.intelliSenseEngineFallback": "disabled",
-    "editor.fontSize": 15
+    "editor.fontSize": 15,
+    "git.ignoreLimitWarning": true
 }
