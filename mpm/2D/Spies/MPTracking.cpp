@@ -31,7 +31,7 @@ void MPTracking::exec() {
   meanStress.reset();
   meanStrain.reset();
   size_t nbMP = box->MP.size();
-  if (0 == nbMP) return;
+  if (0 == nbMP) {return;}
 
   size_t p = 0;
   for (size_t id = 0; id < MP_ids.size(); id++) {

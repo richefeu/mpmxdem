@@ -1,16 +1,9 @@
-#ifndef SEE_HPP
-#define SEE_HPP
+#pragma once
 
-#if __APPLE__
-#include <GLUT/glut.h>
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#else
-#include <GL/freeglut.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glut.h>
+#ifndef GL_SILENCE_DEPRECATION
+#define GL_SILENCE_DEPRECATION
 #endif
+#include <GL/freeglut.h>
 
 #include <cmath>
 #include <cstdio>
@@ -150,4 +143,3 @@ void export_sample();
 void add_ghost_pos(size_t i, double mn, double mx, std::vector<vec3r>& lst);
 bool inSlice(vec3r& pos);
 
-#endif /* end of include guard: SEE_HPP */

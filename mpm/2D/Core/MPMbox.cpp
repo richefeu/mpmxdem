@@ -49,6 +49,7 @@
 #include "Spies/ObstacleTracking.hpp"
 #include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
+#include "Spies/ElasticBeamDev.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/PICDissipation.hpp"
@@ -109,20 +110,19 @@ MPMbox::MPMbox() {
   ExplicitRegistrations();
 }
 
-  /**
-   * @brief Destructor of the MPMbox class.
-   *
-   * This is the default destructor of the MPMbox class, which is
-   * responsible for cleaning up the allocated memory.
-   *
-   * @details
-   * The destructor just calls the clean() method, which is
-   * responsible for freeing the memory allocated during the
-   * initialization of the MPMbox object. This is important to
-   * prevent memory leaks.
-   */
-MPMbox::~MPMbox() { 
-  clean(); }
+/**
+ * @brief Destructor of the MPMbox class.
+ *
+ * This is the default destructor of the MPMbox class, which is
+ * responsible for cleaning up the allocated memory.
+ *
+ * @details
+ * The destructor just calls the clean() method, which is
+ * responsible for freeing the memory allocated during the
+ * initialization of the MPMbox object. This is important to
+ * prevent memory leaks.
+ */
+MPMbox::~MPMbox() { clean(); }
 
 /**
  * @brief Displays the application banner.
@@ -253,6 +253,8 @@ void MPMbox::ExplicitRegistrations() {
                                                                  [](void) -> Spy* { return new MeanStress(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MPTracking",
                                                                  [](void) -> Spy* { return new MPTracking(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ElasticBeamDev",
+                                                                 [](void) -> Spy* { return new ElasticBeamDev(); });
 }
 
 /**
@@ -734,14 +736,14 @@ void MPMbox::save(int num) {
 }
 
 /**
- * @brief Initializes the MPMbox by setting up necessary directories and 
+ * @brief Initializes the MPMbox by setting up necessary directories and
  *        updating the previous positions of Material Points.
  *
  * This function performs the following actions:
  * - Creates the result folder if it doesn't exist.
- * - Creates individual folders for each tracked Material Point (MP) 
+ * - Creates individual folders for each tracked Material Point (MP)
  *   for simulations with double scale.
- * - Updates the previous position of each Material Point to the current 
+ * - Updates the previous position of each Material Point to the current
  *   position for future reference.
  */
 void MPMbox::init() {
@@ -841,12 +843,12 @@ void MPMbox::run() {
   }
 }
 
-  /**
-   * Check the proximity of the MPs and obstacles. This function is called every @c proxPeriod steps.
-   * It computes the security distance for each MP and obstacle as @c securDistFactor * velocity * dt * @c proxPeriod.
-   * It then calls the @c checkProximity function on each obstacle.
-   * @see MPMbox::proxPeriod, Obstacle::checkProximity
-   */
+/**
+ * Check the proximity of the MPs and obstacles. This function is called every @c proxPeriod steps.
+ * It computes the security distance for each MP and obstacle as @c securDistFactor * velocity * dt * @c proxPeriod.
+ * It then calls the @c checkProximity function on each obstacle.
+ * @see MPMbox::proxPeriod, Obstacle::checkProximity
+ */
 void MPMbox::checkProximity() {
   START_TIMER("checkProximity");
   // Compute securDist of MPs
@@ -860,32 +862,35 @@ void MPMbox::checkProximity() {
   }
 }
 
-  /**
-   * @brief Check if any Material Point is outside the grid before the start of the simulation.
-   *
-   * This function will check if any Material Point is outside the grid before the start of the simulation. If any Material Point is found to be outside the grid, a warning message will be printed.
-   */
+/**
+ * @brief Check if any Material Point is outside the grid before the start of the simulation.
+ *
+ * This function will check if any Material Point is outside the grid before the start of the simulation. If any
+ * Material Point is found to be outside the grid, a warning message will be printed.
+ */
 void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].pos.x > (double)Grid.Nx * Grid.lx || MP[p].pos.x < 0.0 || MP[p].pos.y > (double)Grid.Ny * Grid.ly ||
         MP[p].pos.y < 0.0) {
       Logger::warn("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
-                    MP[p].pos.x, MP[p].pos.y);
+                   MP[p].pos.x, MP[p].pos.y);
     }
   }
 }
 
-  /**
-   * @brief Check for convergence conditions.
-   *
-   * This function checks for several convergence conditions:
-   * - Passthrough velocity condition: the timestep should be smaller than the smallest rayon of the MPs divided by the maximum velocity of the MPs.
-   * - Collision condition: the timestep should be smaller than the minimum mass of the MPs divided by the maximum normal stiffness of the obstacles.
-   * - CFL condition: the timestep should be smaller than the smallest rayon of the MPs divided by the maximum speed of sound of the MPs.
-   * If any of these conditions is not satisfied, the timestep is adjusted to half the critical value.
-   * @see MPMbox::dt, MPMbox::dtInitial
-   */
+/**
+ * @brief Check for convergence conditions.
+ *
+ * This function checks for several convergence conditions:
+ * - Passthrough velocity condition: the timestep should be smaller than the smallest rayon of the MPs divided by the
+ * maximum velocity of the MPs.
+ * - Collision condition: the timestep should be smaller than the minimum mass of the MPs divided by the maximum normal
+ * stiffness of the obstacles.
+ * - CFL condition: the timestep should be smaller than the smallest rayon of the MPs divided by the maximum speed of
+ * sound of the MPs. If any of these conditions is not satisfied, the timestep is adjusted to half the critical value.
+ * @see MPMbox::dt, MPMbox::dtInitial
+ */
 void MPMbox::convergenceConditions() {
   START_TIMER("convergenceConditions");
 
@@ -922,14 +927,18 @@ void MPMbox::convergenceConditions() {
   std::set<int>::iterator it2;
   for (it = groupsMP.begin(); it != groupsMP.end(); ++it) {
     for (it2 = groupsObs.begin(); it2 != groupsObs.end(); ++it2) {
-      if (dataTable.get(id_kn, *it, *it2) > knMax) {knMax = dataTable.get(id_kn, *it, *it2);}
+      if (dataTable.get(id_kn, *it, *it2) > knMax) {
+        knMax = dataTable.get(id_kn, *it, *it2);
+      }
     }
   }
 
   // compute the 3 timestep conditions
   double collision_crit_dt = sqrt(massMin / knMax);
   double passthough_crit_dt = collision_crit_dt;
-  if (velMax > 1e-6) {passthough_crit_dt = rayMin / velMax;}
+  if (velMax > 1e-6) {
+    passthough_crit_dt = rayMin / velMax;
+  }
   double cfl_crit_dt;
   if (YoungMax >= 0 && PoissonMax >= 0) {
     double Kmax = YoungMax / (1.0 - 2.0 * PoissonMax);
@@ -963,16 +972,16 @@ void MPMbox::convergenceConditions() {
 //  Functions called by the 'OneStep'-type functions
 // =================================================
 
-  /**
-   * Update the velocity gradient for all material points.
-   *
-   * The velocity gradient of a material point is computed as the sum of the
-   * product of the gradient of the shape function and the velocity of the
-   * corresponding node. The velocity gradient is stored in the velGrad member
-   * variable of each material point.
-   *
-   * This function is called by the OneStep functions.
-   */
+/**
+ * Update the velocity gradient for all material points.
+ *
+ * The velocity gradient of a material point is computed as the sum of the
+ * product of the gradient of the shape function and the velocity of the
+ * corresponding node. The velocity gradient is stored in the velGrad member
+ * variable of each material point.
+ *
+ * This function is called by the OneStep functions.
+ */
 void MPMbox::updateVelocityGradient() {
   START_TIMER("updateVelocityGradient");
   size_t* I;
@@ -987,17 +996,17 @@ void MPMbox::updateVelocityGradient() {
   }
 }
 
-  /**
-   * @brief Limit the time-step for DEM simulations.
-   *
-   * If @c CHCL.limitTimeStepFactor is positive, this function limits the time-step
-   * @c dt to a value that is a fraction of the critical time-step for DEM simulations.
-   * The critical time-step is computed as @c CHCL.limitTimeStepFactor * Rmin / maxi,
-   * where @c Rmin is the minimum radius of the MPs and @c maxi is the maximum absolute
-   * value of the components of the velocity gradient tensor of the MPs.
-   *
-   * @see MPMbox::dt, MPMbox::dtInitial, MPMbox::CHCL
-   */
+/**
+ * @brief Limit the time-step for DEM simulations.
+ *
+ * If @c CHCL.limitTimeStepFactor is positive, this function limits the time-step
+ * @c dt to a value that is a fraction of the critical time-step for DEM simulations.
+ * The critical time-step is computed as @c CHCL.limitTimeStepFactor * Rmin / maxi,
+ * where @c Rmin is the minimum radius of the MPs and @c maxi is the maximum absolute
+ * value of the components of the velocity gradient tensor of the MPs.
+ *
+ * @see MPMbox::dt, MPMbox::dtInitial, MPMbox::CHCL
+ */
 void MPMbox::limitTimeStepForDEM() {
   START_TIMER("limitTimeStepForDEM");
   if (CHCL.limitTimeStepFactor <= 0.0) return;
@@ -1161,15 +1170,15 @@ void MPMbox::adaptativeRefinement() {
   }  // end for loop over MPs
 }
 
-  /**
-   * @brief Post-process the MPs after time stepping.
-   *
-   * Compute the smoothed data (vel, stress, velGrad, outOfPlaneStress, pos, strain,
-   * rho) from the MPs by using the shape functions. The data is stored in the
-   * Data vector.
-   *
-   * @param Data the vector of ProcessedDataMP where the smoothed data will be stored.
-   */
+/**
+ * @brief Post-process the MPs after time stepping.
+ *
+ * Compute the smoothed data (vel, stress, velGrad, outOfPlaneStress, pos, strain,
+ * rho) from the MPs by using the shape functions. The data is stored in the
+ * Data vector.
+ *
+ * @param Data the vector of ProcessedDataMP where the smoothed data will be stored.
+ */
 void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
   Data.clear();
   Data.resize(MP.size());

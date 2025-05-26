@@ -16,7 +16,7 @@
 std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
 /**
- * @brief One step of the Modified Lagrangian (MUSL) integration scheme.
+ * @brief One step of the Modified Lagrangian or Modified Update Stress Last (MUSL) integration scheme.
  *
  * Updates the positions, velocities, deformation gradients, strains, and stresses of all MaterialPoints.
  *
@@ -153,15 +153,15 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
     if (MPM.activePIC) {
       double invmass;
-      vec2r PICvelo;
+      vec2r PICvelocity;
       for (size_t r = 0; r < element::nbNodes; r++) {
         if (nodes[I[r]].mass > MPM.tolmass) {
           invmass = 1.0f / nodes[I[r]].mass;
-          PICvelo += MP[p].N[r] * nodes[I[r]].q * invmass;
+          PICvelocity += MP[p].N[r] * nodes[I[r]].q * invmass;
           MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
         }
       }
-      MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelo;
+      MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelocity;
     } else {
       double invmass;
       for (size_t r = 0; r < element::nbNodes; r++) {
@@ -239,6 +239,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       for (size_t p = 0; p < MP.size(); p++) {
         MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
+      
     }
   }
 

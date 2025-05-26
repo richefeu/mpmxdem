@@ -111,9 +111,9 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "fn0 " << fn0 << '\n';
   conf << "ft0 " << ft0 << '\n';
   conf << "mom0 " << mom0 << '\n';
-  //conf << "dn0 " << dn0 << '\n';
-  //conf << "dt0 " << dt0 << '\n';
-  //conf << "drot0 " << drot0 << '\n';
+  // conf << "dn0 " << dn0 << '\n';
+  // conf << "dt0 " << dt0 << '\n';
+  // conf << "drot0 " << drot0 << '\n';
   conf << "powSurf " << powSurf << '\n';
   conf << "zetaMax " << zetaMax << '\n';
   conf << "zetaInter " << zetaInter << '\n';
@@ -157,7 +157,9 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "Interactions " << nbActiveInteractions << '\n';
   if (oldVersion == true) {
     for (size_t i = 0; i < Interactions.size(); i++) {
-      if (Interactions[i].state == noContactState) continue;
+      if (Interactions[i].state == noContactState) {
+        continue;
+      }
       conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
            << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
            << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
@@ -167,7 +169,9 @@ void PBC3Dbox::saveConf(const char* name) {
     }
   } else {
     for (size_t i = 0; i < Interactions.size(); i++) {
-      if (Interactions[i].state == noContactState) continue;
+      if (Interactions[i].state == noContactState) {
+        continue;
+      }
       conf << Interactions[i].i << ' ' << Interactions[i].j << ' ' << Interactions[i].gap0 << ' ' << Interactions[i].n
            << ' ' << Interactions[i].fn << ' ' << Interactions[i].fn_elas << ' ' << Interactions[i].fn_bond << ' '
            << Interactions[i].ft << ' ' << Interactions[i].ft_fric << ' ' << Interactions[i].ft_bond << ' '
@@ -208,71 +212,83 @@ void PBC3Dbox::loadConf(const char* name) {
       getline(conf, token);  // ignore the rest of the current line
       conf >> token;         // next token
       continue;
-    } else if (token == "t")
+    } else if (token == "t") {
       conf >> t;
-    else if (token == "tmax")
+    } else if (token == "tmax") {
       conf >> tmax;
-    else if (token == "dt") {
+    } else if (token == "dt") {
       conf >> dt;
       dt_2 = 0.5 * dt;
       dt2_2 = 0.5 * dt * dt;
-    } else if (token == "interVerlet")
+    } else if (token == "interVerlet") {
       conf >> interVerlet;
-    else if (token == "interOut")
+    } else if (token == "interOut") {
       conf >> interOut;
-    else if (token == "interConf")
+    } else if (token == "interConf") {
       conf >> interConf;
-    else if (token == "dVerlet")
+    } else if (token == "dVerlet") {
       conf >> dVerlet;
-    else if (token == "NLStrategy")
+    } else if (token == "NLStrategy") {
       conf >> NLStrategy;
-    else if (token == "density")
+    } else if (token == "density") {
       conf >> density;
-    else if (token == "kn")
+    } else if (token == "kn") {
       conf >> kn;
-    else if (token == "kt")
+    } else if (token == "kt") {
       conf >> kt;
-    else if (token == "kr")
+    } else if (token == "kr") {
       conf >> kr;
-    else if (token == "dampRate")
+    } else if (token == "dampRate") {
       conf >> dampRate;
-    else if (token == "mu")
+    } else if (token == "mu") {
       conf >> mu;
-    else if (token == "mur")
+    } else if (token == "mur") {
       conf >> mur;
-    else if (token == "fcoh")
+    } else if (token == "fcoh") {
       conf >> fcoh;
-    else if (token == "fn0") {
+    } else if (token == "fn0") {
       conf >> fn0;
-      if (kn == 0.0) std::cout << "ATTENTION ! kn = 0, (à definir avant fn0)\n";
+      if (kn == 0.0) {
+        std::cout << "ATTENTION ! kn = 0, (à definir avant fn0)\n";
+      }
       dn0 = fn0 / kn;  // suppose that kn has been defined before
     } else if (token == "ft0") {
       conf >> ft0;
-      if (kn == 0.0) std::cout << "ATTENTION ! kt = 0, (à definir avant ft0)\n";
+      if (kn == 0.0) {
+        std::cout << "ATTENTION ! kt = 0, (à definir avant ft0)\n";
+      }
       dt0 = ft0 / kt;  // suppose that kt has been defined before
     } else if (token == "mom0") {
       conf >> mom0;
-      if (kn == 0.0) std::cout << "ATTENTION ! kr = 0, (à definir avant mom0)\n";
+      if (kn == 0.0) {
+        std::cout << "ATTENTION ! kr = 0, (à definir avant mom0)\n";
+      }
       drot0 = mom0 / kr;  // suppose that kr has been defined before
     } else if (token == "dn0") {
       conf >> dn0;
-      if (kn == 0.0) std::cout << "ATTENTION ! kn = 0, (à definir avant dn0)\n";
+      if (kn == 0.0) {
+        std::cout << "ATTENTION ! kn = 0, (à definir avant dn0)\n";
+      }
       fn0 = kn * dn0;  // suppose that kn has been defined before
     } else if (token == "dt0") {
       conf >> dt0;
-      if (kn == 0.0) std::cout << "ATTENTION ! kt = 0, (à definir avant dt0)\n";
+      if (kn == 0.0) {
+        std::cout << "ATTENTION ! kt = 0, (à definir avant dt0)\n";
+      }
       ft0 = kt * dt0;  // suppose that kt has been defined before
     } else if (token == "drot0") {
       conf >> drot0;
-      if (kn == 0.0) std::cout << "ATTENTION ! kr = 0, (à definir avant drot0)\n";
+      if (kn == 0.0) {
+        std::cout << "ATTENTION ! kr = 0, (à definir avant drot0)\n";
+      }
       mom0 = kr * drot0;  // suppose that kr has been defined before
-    } else if (token == "powSurf")
+    } else if (token == "powSurf") {
       conf >> powSurf;
-    else if (token == "zetaMax")
+    } else if (token == "zetaMax") {
       conf >> zetaMax;
-    else if (token == "zetaInter")
+    } else if (token == "zetaInter") {
       conf >> zetaInter;
-    else if (token == "softening") {
+    } else if (token == "softening") {
       conf >> modelSoftening;
       if (modelSoftening == "linear") {
         setLinearSoftening();
@@ -281,44 +297,44 @@ void PBC3Dbox::loadConf(const char* name) {
       } else {
         setTraineeSoftening();
       }
-    } else if (token == "permamentGluer")
+    } else if (token == "permamentGluer") {
       conf >> permamentGluer;
-    else if (token == "continuumContact")
+    } else if (token == "continuumContact") {
       conf >> continuumContact;
-    else if (token == "rampDuration") {
+    } else if (token == "rampDuration") {
       conf >> rampDuration;
-    } else if (token == "numericalDampingCoeff")
+    } else if (token == "numericalDampingCoeff") {
       conf >> numericalDampingCoeff;
-    else if (token == "Kratio")
+    } else if (token == "Kratio") {
       conf >> Kratio;
-    else if (token == "iconf")
+    } else if (token == "iconf") {
       conf >> iconf;
-    else if (token == "h")
+    } else if (token == "h") {
       conf >> Cell.h;
-    else if (token == "vh")
+    } else if (token == "vh") {
       conf >> Cell.vh;
-    else if (token == "ah")
+    } else if (token == "ah") {
       conf >> Cell.ah;
-    else if (token == "hmass")
+    } else if (token == "hmass") {
       conf >> Cell.mass;
-    else if (token == "hvelGrad")
+    } else if (token == "hvelGrad") {
       conf >> Cell.velGrad;
-    else if (token == "hstrain")
+    } else if (token == "hstrain") {
       conf >> Cell.strain;
-    else if (token == "Sig")
+    } else if (token == "Sig") {
       conf >> Sig;
-    else if (token == "enableSwitch") {
+    } else if (token == "enableSwitch") {
       int unused;
       conf >> unused;
       std::cerr << "enableSwitch is not used anymore (remove it from the conf file please)\n";
-    } else if (token == "substractMeanVelocity")
+    } else if (token == "substractMeanVelocity") {
       conf >> substractMeanVelocity;
-    else if (token == "limitHboxvelocity") {
+    } else if (token == "limitHboxvelocity") {
       conf >> hboxLimitVel;
       limitHboxvelocity = 1;
-    } else if (token == "objectiveFriction")
+    } else if (token == "objectiveFriction") {
       conf >> objectiveFriction;
-    else if (token == "Load") {
+    } else if (token == "Load") {
       std::string command;
       conf >> command;
       if (command == "TriaxialCompressionY") {
@@ -391,25 +407,25 @@ void PBC3Dbox::loadConf(const char* name) {
       } else {
         std::cerr << "Unknown command for loading: " << command << std::endl;
       }
-    } else if (token == "interVerletC")
+    } else if (token == "interVerletC") {
       conf >> trash;
-    else if (token == "interOutC")
+    } else if (token == "interOutC") {
       conf >> trash;
-    else if (token == "interConfC")
+    } else if (token == "interConfC") {
       conf >> trash;
-    else if (token == "nbBonds")
+    } else if (token == "nbBonds") {
       conf >> trash;
-    else if (token == "nbActiveInteractions")
+    } else if (token == "nbActiveInteractions") {
       conf >> trash;
-    else if (token == "nbBondsini")
+    } else if (token == "nbBondsini") {
       conf >> trash;
-    else if (token == "porosityini")
+    } else if (token == "porosityini") {
       conf >> trash;
-    else if (token == "tensfailure")
+    } else if (token == "tensfailure") {
       conf >> trash;
-    else if (token == "fricfailure")
+    } else if (token == "fricfailure") {
       conf >> trash;
-    else if (token == "Particles") {
+    } else if (token == "Particles") {
       size_t nb;
       conf >> nb;
       Particles.clear();
@@ -441,7 +457,9 @@ void PBC3Dbox::loadConf(const char* name) {
         }
       }
     }
+    /// ===========================================
     /// ============= PRE-PROCESSING ==============
+    /// ===========================================
     else if (token == "ActivateBonds") {
       double epsiDist;
       conf >> epsiDist;
@@ -526,12 +544,20 @@ void PBC3Dbox::computeSampleData() {
       Vsolid += V;
 
       Rmean += R;
-      if (R > Rmax) Rmax = R;
-      if (R < Rmin) Rmin = R;
+      if (R > Rmax) {
+        Rmax = R;
+      }
+      if (R < Rmin) {
+        Rmin = R;
+      }
 
       Vmean += V;
-      if (V > Vmax) Vmax = V;
-      if (V < Vmin) Vmin = V;
+      if (V > Vmax) {
+        Vmax = V;
+      }
+      if (V < Vmin) {
+        Vmin = V;
+      }
 
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
@@ -541,10 +567,18 @@ void PBC3Dbox::computeSampleData() {
       double SqrAcc = norm2(Acc);
       VelMean += SqrVel;
       AccMean += SqrAcc;
-      if (SqrVel > VelMax) VelMax = SqrVel;
-      if (SqrVel < VelMin) VelMin = SqrVel;
-      if (SqrAcc > AccMax) AccMax = SqrAcc;
-      if (SqrAcc < AccMin) AccMin = SqrAcc;
+      if (SqrVel > VelMax) {
+        VelMax = SqrVel;
+      }
+      if (SqrVel < VelMin) {
+        VelMin = SqrVel;
+      }
+      if (SqrAcc > AccMax) {
+        AccMax = SqrAcc;
+      }
+      if (SqrAcc < AccMin) {
+        AccMin = SqrAcc;
+      }
     }
     for (size_t k = 0; k < Interactions.size(); k++) {
       ReducedPartDistMean += (norm(Cell.h * (Particles[Interactions[k].i].pos - Particles[Interactions[k].j].pos)) +
@@ -579,16 +613,28 @@ void PBC3Dbox::computeSampleData() {
     nbActiveInteractions = 0;
     nbBonds = 0;
     for (size_t k = 0; k < Interactions.size(); k++) {
-      if (Interactions[k].state == noContactState) continue;
-      if (Interactions[k].state == bondedState) nbBonds++;
-      if (Interactions[k].state == bondedStateDam) nbBonds++;
+      if (Interactions[k].state == noContactState) {
+        continue;
+      }
+      if (Interactions[k].state == bondedState) {
+        nbBonds++;
+      }
+      if (Interactions[k].state == bondedStateDam) {
+        nbBonds++;
+      }
       nbActiveInteractions++;
       double Fn = Interactions[k].fn;
       FnMean += Fn;
-      if (Fn > FnMax) FnMax = Fn;
-      if (Fn < FnMin) FnMin = Fn;
+      if (Fn > FnMax) {
+        FnMax = Fn;
+      }
+      if (Fn < FnMin) {
+        FnMin = Fn;
+      }
     }
-    if (nbActiveInteractions > 0) FnMean /= (double)nbActiveInteractions;
+    if (nbActiveInteractions > 0) {
+      FnMean /= (double)nbActiveInteractions;
+    }
   }
 
   // weighting of stiffnesses
@@ -621,10 +667,11 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
       Interactions[k].D = 0.0;
 
       double dn = sqrt(branchLen2) - (Particles[i].radius + Particles[j].radius);
-      if (dn >= 0.0)
+      if (dn >= 0.0) {
         Interactions[k].gap0 = dn;
-      else
+      } else {
         Interactions[k].gap0 = 0.0;
+      }
 
       // compute the contact-point positions (relative to each particle)
       Interactions[k].n = branch;
@@ -710,7 +757,9 @@ void PBC3Dbox::setSample() {
   while (true) {
     std::cout << "Packing strategy:\n    (1) grid\n    (2) Poisson sampling\n> ";
     std::cin >> strategy;
-    if (strategy == '1' || strategy == '2') break;
+    if (strategy == '1' || strategy == '2') {
+      break;
+    }
   }
   ans << (char)strategy << '\n';
 
@@ -793,7 +842,9 @@ void PBC3Dbox::setSample() {
   while (true) {
     std::cout << "choice: ";
     std::cin >> repMass;
-    if (repMass == '1' || repMass == '2' || repMass == '3') break;
+    if (repMass == '1' || repMass == '2' || repMass == '3') {
+      break;
+    }
   }
   ans << (char)repMass << '\n';
   if (repMass == '1') {
@@ -834,7 +885,9 @@ void PBC3Dbox::setSample() {
     std::cout << "Satisfied ? (y/n): ";
     std::cin >> rep;
     ans << (char)rep << '\n';
-    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y') break;
+    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y') {
+      break;
+    }
   }
 
   double ktkn = 1.0;
@@ -866,7 +919,9 @@ void PBC3Dbox::setSample() {
     std::cout << "Satisfied? (y/n): ";
     std::cin >> rep;
     ans << (char)rep << '\n';
-    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y') break;
+    if (rep == 'o' || rep == 'O' || rep == 'y' || rep == 'Y') {
+      break;
+    }
   }
 
   dt_2 = 0.5 * dt;
@@ -890,33 +945,45 @@ void PBC3Dbox::setSample() {
   interVerlet = 10 * dt;
   interOut = 100 * dt;
   interConf = 100 * dt;
-  // enableSwitch = 1;
 
   std::cout << "Other parameters have been set to given values.\n"
             << "You can change it in the generated file.\n";
   std::cout << "interVerlet " << interVerlet << '\n';
   std::cout << "interOut " << interOut << '\n';
   std::cout << "interConf " << interConf << '\n';
-  // std::cout << "enableSwitch " << enableSwitch << '\n';
+
   return;
 }
 
 /// @brief Computes a single step with the velocity-Verlet algorithm
 void PBC3Dbox::velocityVerletStep() {
   START_TIMER("velocityVerletStep");
-  if (Load.ServoFunction != nullptr) Load.ServoFunction(*this);
+  if (Load.ServoFunction != nullptr) {
+    Load.ServoFunction(*this);
+  }
 
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].pos += dt * Particles[i].vel + dt2_2 * Particles[i].acc;
     Particles[i].vel += dt_2 * Particles[i].acc;
 
     // Periodicity in position (can be usefull in the sample preparation)
+    vec3r move;
+    bool recompute_velocity = false;
     for (size_t c = 0; c < 3; c++) {
-      while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
-      while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
+      while (Particles[i].pos[c] < 0.0) {
+        Particles[i].pos[c] += 1.0;
+        move[c] = 1.0;
+        recompute_velocity = true;
+      }
+      while (Particles[i].pos[c] > 1.0) {
+        Particles[i].pos[c] -= 1.0;
+        move[c] = -1.0;
+        recompute_velocity = true;
+      }
     }
-    // Remark: the reduced velocities do not need to be corrected
-    //         since they are periodic
+    if (recompute_velocity == true) {
+      Particles[i].vel = Cell.h.get_inverse() * (Cell.h * Particles[i].vel + Cell.vh * move);
+    }
 
     // Rotation: Q = Q + (dQ/dt) * dt + (d2Q/dt2) * dt2/2
     // It reads like this with quaternions
@@ -1150,7 +1217,9 @@ void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
     for (size_t j : neighbors[i]) {
 
       vec3r sij = Particles[j].pos - Particles[i].pos;
-      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
+      for (size_t c = 0; c < 3; c++) {
+        sij[c] -= floor(sij[c] + 0.5);
+      }
       vec3r branch = Cell.h * sij;
 
       double sum = dmax + Particles[i].radius + Particles[j].radius;
@@ -1170,11 +1239,19 @@ void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
   // retrieve previous contacts or bonds
   size_t k, kold = 0;
   for (k = 0; k < Interactions.size(); ++k) {
-    while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i) ++kold;
-    if (kold == Ibak.size()) break;
+    while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i) {
+      ++kold;
+    }
+    if (kold == Ibak.size()) {
+      break;
+    }
 
-    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j) ++kold;
-    if (kold == Ibak.size()) break;
+    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j) {
+      ++kold;
+    }
+    if (kold == Ibak.size()) {
+      break;
+    }
 
     if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j) {
       Interactions[k] = Ibak[kold];
@@ -1202,7 +1279,9 @@ void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
     for (size_t j = i + 1; j < Particles.size(); j++) {
 
       vec3r sij = Particles[j].pos - Particles[i].pos;
-      for (size_t c = 0; c < 3; c++) sij[c] -= floor(sij[c] + 0.5);
+      for (size_t c = 0; c < 3; c++) {
+        sij[c] -= floor(sij[c] + 0.5);
+      }
       vec3r branch = Cell.h * sij;
 
       double sum = dmax + Particles[i].radius + Particles[j].radius;
@@ -1218,11 +1297,19 @@ void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
   // retrieve previous contacts or bonds
   size_t k, kold = 0;
   for (k = 0; k < Interactions.size(); ++k) {
-    while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i) ++kold;
-    if (kold == Ibak.size()) break;
+    while (kold < Ibak.size() && Ibak[kold].i < Interactions[k].i) {
+      ++kold;
+    }
+    if (kold == Ibak.size()) {
+      break;
+    }
 
-    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j) ++kold;
-    if (kold == Ibak.size()) break;
+    while (kold < Ibak.size() && Ibak[kold].i == Interactions[k].i && Ibak[kold].j < Interactions[k].j) {
+      ++kold;
+    }
+    if (kold == Ibak.size()) {
+      break;
+    }
 
     if (Ibak[kold].i == Interactions[k].i && Ibak[kold].j == Interactions[k].j) {
       Interactions[k] = Ibak[kold];
@@ -1243,8 +1330,8 @@ void PBC3Dbox::accelerations() {
 
   nbActiveInteractions = 0;
   nbBonds = 0;
-  tensfailure=0;
-  fricfailure=0;
+  tensfailure = 0;
+  fricfailure = 0;
 
   computeForcesAndMoments();
 
@@ -1342,12 +1429,16 @@ void PBC3Dbox::setLinearSoftening() {
 void PBC3Dbox::setGateSoftening() {
   modelSoftening = "gate";
   DzetaModel = [this](double zeta) -> double {
-    if (zeta <= this->zetaInter) return (zeta - 1.0) / zeta;
+    if (zeta <= this->zetaInter) {
+      return (zeta - 1.0) / zeta;
+    }
     return 1.0 - (this->zetaMax - zeta) / ((this->zetaMax - this->zetaInter) * zeta);
   };
   zetaDModel = [this](double D) -> double {
     double Dinter = (this->zetaInter - 1.0) / this->zetaInter;
-    if (D <= Dinter) return 1.0 / (1.0 - D);
+    if (D <= Dinter) {
+      return 1.0 / (1.0 - D);
+    }
     return this->zetaMax / (1.0 + (1.0 - D) * (this->zetaMax - this->zetaInter));
   };
 }
@@ -1374,9 +1465,11 @@ void PBC3Dbox::computeForcesAndMoments() {
     j = Interactions[k].j;
 
     vec3r sij = Particles[j].pos - Particles[i].pos;
-    sij.x -= floor(sij.x + 0.5);
-    sij.y -= floor(sij.y + 0.5);
-    sij.z -= floor(sij.z + 0.5);
+    vec3r imag_j_period_move(floor(sij.x + 0.5), floor(sij.y + 0.5), floor(sij.z + 0.5));
+    //sij.x -= floor(sij.x + 0.5);
+    //sij.y -= floor(sij.y + 0.5);
+    //sij.z -= floor(sij.z + 0.5);
+    sij -= imag_j_period_move;
     vec3r branch = Cell.h * sij;
 
     if (Interactions[k].state == bondedState) {
@@ -1393,7 +1486,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // real relative velocities
       vec3r vel = Particles[j].vel - Particles[i].vel;
-      vec3r realVel = Cell.h * vel + Cell.vh * sij;
+      vec3r realVel = Cell.h * vel + Cell.vh * imag_j_period_move;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
@@ -1482,16 +1575,20 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // real relative velocities
       vec3r vel = Particles[j].vel - Particles[i].vel;
-      vec3r realVel = Cell.h * vel + Cell.vh * sij;
+      vec3r realVel = Cell.h * vel + Cell.vh * imag_j_period_move;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // === Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
       double dn = len - (Particles[i].radius + Particles[j].radius);  // a negative value is an overlap
       double dn_bond = dn - Interactions[k].gap0;  // for a bond, the gap-at-creation is the normal distance reference
-      if (continuumContact == 1) dn -= Interactions[k].gap0;  // this gap0 is accounted for only for fake grains
-      double vn = realVel * n;                                // normal relative (j/i) velocity
+      if (continuumContact == 1) {
+        dn -= Interactions[k].gap0;
+      }  // this gap0 is accounted for only for fake grains
+      double vn = realVel * n;  // normal relative (j/i) velocity
       Interactions[k].fn_elas = 0.0;
-      if (dn < 0.0) Interactions[k].fn_elas = -w_particle * kn * dn;                 // elastic normal contact-force
+      if (dn < 0.0) {
+        Interactions[k].fn_elas = -w_particle * kn * dn;
+      }  // elastic normal contact-force
       Interactions[k].fn_bond = -w_bond * (1.0 - Interactions[k].D) * kn * dn_bond;  // elastic normal bond-force
       double fnv = -Interactions[k].dampn * vn;  // viscuous normal force (not stored)
       Interactions[k].fn = Interactions[k].fn_elas + Interactions[k].fn_bond + fnv;
@@ -1506,8 +1603,9 @@ void PBC3Dbox::computeForcesAndMoments() {
         Interactions[k].ft_fric -= w_particle * kt * deltat;  // update the friction force with elastic increment
         double threshold = mu * fnUsedForThresholds;          // could be mu * Interactions[k].fn_elas
         double ft_square = Interactions[k].ft_fric * Interactions[k].ft_fric;
-        if (ft_square > 0.0 && ft_square >= threshold * threshold)
+        if (ft_square > 0.0 && ft_square >= threshold * threshold) {
           Interactions[k].ft_fric = threshold * Interactions[k].ft_fric * (1.0 / sqrt(ft_square));
+        }
       } else {
         Interactions[k].ft_fric.reset();
         Interactions[k].dt_fric.reset();
@@ -1559,10 +1657,13 @@ void PBC3Dbox::computeForcesAndMoments() {
         for (int p = 0; p < 20; p++) {
           zetaTest = 0.5 * (zeta1 + zeta2);
           surfFunc = YieldFuncDam(zetaTest, dn_bond, norm_dt_bond, norm_drot_bond);
-          if (surfFunc < 0.0)
+
+          if (surfFunc < 0.0) {
             zeta2 = zetaTest;
-          else if (surfFunc > 0.0)
+          } else if (surfFunc > 0.0) {
             zeta1 = zetaTest;
+          }
+
           if (fabs(surfFunc) < tol) {
             break;
           }
@@ -1647,7 +1748,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
         // real relative velocities
         vec3r vel = Particles[j].vel - Particles[i].vel;
-        vec3r realVel = Cell.h * vel + Cell.vh * sij;
+        vec3r realVel = Cell.h * vel + Cell.vh * imag_j_period_move;
         realVel -=
             Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
@@ -1657,7 +1758,9 @@ void PBC3Dbox::computeForcesAndMoments() {
         double fne = -w_particle * kn * dn;
         double fnv = -Interactions[k].dampn * vn;
         Interactions[k].fn = fne + fnv;
-        if (Interactions[k].fn < 0.0) Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
+        if (Interactions[k].fn < 0.0) {
+          Interactions[k].fn = 0.0;  // Because viscuous damping can make fn negative
+        }
         Interactions[k].fn_elas = Interactions[k].fn;
 
         vec3r ft_corr = Interactions[k].ft;  // force that will be corrected
@@ -1671,8 +1774,9 @@ void PBC3Dbox::computeForcesAndMoments() {
         Interactions[k].ft = ft_corr - w_particle * kt * deltat;  // no viscuous damping since friction can dissipate
         double threshold = fabs(mu * Interactions[k].fn);         // Suppose that fn is elastic and without cohesion
         double ft_square = Interactions[k].ft * Interactions[k].ft;
-        if (ft_square > 0.0 && ft_square >= threshold * threshold)
+        if (ft_square > 0.0 && ft_square >= threshold * threshold) {
           Interactions[k].ft = threshold * Interactions[k].ft * (1.0f / sqrt(ft_square));
+        }
         Interactions[k].ft_fric = Interactions[k].ft;
 
         // moment of resistance
@@ -1681,8 +1785,9 @@ void PBC3Dbox::computeForcesAndMoments() {
         Interactions[k].mom_fric -= kr * drot;
         double thresholdr = fabs(mur * Interactions[k].fn);
         double mom_square = Interactions[k].mom_fric * Interactions[k].mom_fric;
-        if (mom_square > 0.0 && mom_square >= thresholdr * thresholdr)
+        if (mom_square > 0.0 && mom_square >= thresholdr * thresholdr) {
           Interactions[k].mom_fric = thresholdr * Interactions[k].mom_fric * (1.0f / sqrt(mom_square));
+        }
         Interactions[k].mom = Interactions[k].mom_fric;
 
         // Cohesion
@@ -1719,10 +1824,11 @@ void PBC3Dbox::computeForcesAndMoments() {
           // switch to a cemented/bonded link
           Interactions[k].state = bondedStateDam;
 
-          if (dn >= 0.0)
+          if (dn >= 0.0) {
             Interactions[k].gap0 = dn;
-          else
+          } else {
             Interactions[k].gap0 = 0.0;
+          }
         }
       } else {
         Interactions[k].dt_fric.reset();
@@ -1748,7 +1854,9 @@ void PBC3Dbox::transform(mat9r& Finc, double macro_dt, int nstepMin, double rate
 
   // Restrict to a minimum of nstepMin DEM-time-increments
   double dtMax = macro_dt / (double)nstepMin;
-  if (dt >= dtMax) dt = dtMax;
+  if (dt >= dtMax) {
+    dt = dtMax;
+  }
 
   // Now, we've got the good time-step
   dt_2 = 0.5 * dt;
@@ -1854,8 +1962,12 @@ void PBC3Dbox::applySwitchMatrix(mat9r& P) {
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].pos = P * Particles[i].pos;
     for (size_t c = 0; c < 3; c++) {
-      while (Particles[i].pos[c] < 0.0) Particles[i].pos[c] += 1.0;
-      while (Particles[i].pos[c] > 1.0) Particles[i].pos[c] -= 1.0;
+      while (Particles[i].pos[c] < 0.0) {
+        Particles[i].pos[c] += 1.0;
+      }
+      while (Particles[i].pos[c] > 1.0) {
+        Particles[i].pos[c] -= 1.0;
+      }
     }
 
     Particles[i].vel = P * Particles[i].vel;
@@ -1922,7 +2034,9 @@ void PBC3Dbox::getOperatorKruyt(double L[6][6]) {
   const size_t yz = 5;
 
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
 
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
@@ -2009,7 +2123,9 @@ void PBC3Dbox::getOperatorKruyt2(double L[9][9]) {
   double nx, ny, nz, tx, ty, tz, wx, wy, wz;
 
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
 
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
@@ -2165,7 +2281,9 @@ void PBC3Dbox::getOperatorKruyt2b(double L[3][3][3][3]) {
   double nx, ny, nz, tx, ty, tz, wx, wy, wz;
 
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
 
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
@@ -2420,7 +2538,9 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
   double Lkt2 = 0.0;
 
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
 
     size_t i = Interactions[k].i;
     size_t j = Interactions[k].j;
@@ -2876,7 +2996,9 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double* /*I*/, int* nstep, int* 
   for (size_t i = 0; i < 3; i++) {
     for (size_t j = 0; j < 3; j++) {
       double tmp = fabs(dFmoinsI[i][j]);
-      if (tmp > max_dFmoinsI) max_dFmoinsI = tmp;
+      if (tmp > max_dFmoinsI) {
+        max_dFmoinsI = tmp;
+      }
     }
   }
 
@@ -2900,10 +3022,11 @@ void PBC3Dbox::transform(double dFmoinsI[3][3], double* /*I*/, int* nstep, int* 
   vh.zy = fact * (Cell.h.zx * dFmoinsI[0][1] + Cell.h.zy * dFmoinsI[1][1] + Cell.h.zz * dFmoinsI[2][1]);
   vh.zz = fact * (Cell.h.zx * dFmoinsI[0][2] + Cell.h.zy * dFmoinsI[1][2] + Cell.h.zz * dFmoinsI[2][2]);
 
-  if (*iana == 2)
+  if (*iana == 2) {
     Load.VelocityControl(vh);
-  else if (*iana == 1)
+  } else if (*iana == 1) {
     Load.VelocityControlPlaneStress(vh, *pressure);
+  }
 
   updateNeighborList(dVerlet);
 
@@ -2938,10 +3061,11 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax, int* iana, doubl
   vh.zy = 0;
   vh.zz = 0;
 
-  if (*iana == 2)
+  if (*iana == 2) {
     Load.VelocityControl(vh);
-  else if (*iana == 1)
+  } else if (*iana == 1) {
     Load.VelocityControlPlaneStress(vh, *pressure);
+  }
 
   // std::cout << "tolSigma " << *tol << std::endl;
   // std::cout << "nstepconv " << *nstepConv << std::endl;
@@ -2961,9 +3085,13 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax, int* iana, doubl
       nstepOK = 0;
     }  // nstepOK has to be consecutive!
 
-    if (nstepOK >= *nstepConv) break;
+    if (nstepOK >= *nstepConv) {
+      break;
+    }
 
-    if (nstepOK >= *nstepConv) break;
+    if (nstepOK >= *nstepConv) {
+      break;
+    }
     if (nstep == *nstepMax - 1) {
       std::cout << "******************************" << std::endl;
       std::cout << "nstepOK " << nstepOK << std::endl;
@@ -2982,7 +3110,9 @@ void PBC3Dbox::hold(double* tol, int* nstepConv, int* nstepMax, int* iana, doubl
     t += dt;
     nstep++;
   }
-  if (nstep > 2000) std::cout << "large nstep " << nstep << std::endl;
+  if (nstep > 2000) {
+    std::cout << "large nstep " << nstep << std::endl;
+  }
   /*
   std::cout << "nstep " << nstep << std::endl;
   std::cout << "nstepconv " << *nstepConv << std::endl;
@@ -3038,14 +3168,22 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   nbActiveInteractions = 0;
   nbBonds = 0;
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
-    if (Interactions[k].state == bondedState) nbBonds++;
-    if (Interactions[k].state == bondedStateDam) nbBonds++;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
+    if (Interactions[k].state == bondedState) {
+      nbBonds++;
+    }
+    if (Interactions[k].state == bondedStateDam) {
+      nbBonds++;
+    }
     nbActiveInteractions++;
   }
   Q[offset++] = (double)nbActiveInteractions;
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
     Q[offset++] = (double)(Interactions[k].i + 1);  // Fortran index starts with 1
     Q[offset++] = (double)(Interactions[k].j + 1);
     Q[offset++] = Interactions[k].gap0;
@@ -3074,9 +3212,13 @@ void PBC3Dbox::endLagamine(double Q[], double SIG[3][3]) {
   // state variables: this is added to send back some state variables to Lagamine
   double Vcell = fabs(Cell.h.det());
   // update initial values if equal to -1 (specified in the REVini file, ugly but works...)
-  if (nbBondsini == -1) nbBondsini = nbBonds;
+  if (nbBondsini == -1) {
+    nbBondsini = nbBonds;
+  }
   Q[offset++] = (double)nbBondsini;
-  if (porosityini == -1) porosityini = (Vcell - Vsolid) / Vcell;
+  if (porosityini == -1) {
+    porosityini = (Vcell - Vsolid) / Vcell;
+  }
   Q[offset++] = porosityini;
 
   Q[offset++] = (double)nbBonds;
@@ -3113,14 +3255,20 @@ void PBC3Dbox::staticQualityData(double* ResMean, double* Res0Mean, double* fnMi
   size_t Nc = Interactions.size();
   size_t Np = Particles.size();
 
-  if (Nc == 0 || Np == 0) return;
+  if (Nc == 0 || Np == 0) {
+    return;
+  }
 
   std::vector<vec3r> R(Particles.size());
-  for (size_t i = 0; i < R.size(); i++) R[i].reset();
+  for (size_t i = 0; i < R.size(); i++) {
+    R[i].reset();
+  }
 
   std::vector<int> z(Np, 0);
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
     z[Interactions[k].i] += 1;
     z[Interactions[k].j] += 1;
   }
@@ -3128,19 +3276,27 @@ void PBC3Dbox::staticQualityData(double* ResMean, double* Res0Mean, double* fnMi
   *fnMin = 1e12;
   size_t Nc0 = 0;
   for (size_t k = 0; k < Interactions.size(); k++) {
-    if (Interactions[k].state == noContactState) continue;
-    if (z[Interactions[k].i] < 3 || z[Interactions[k].j] < 3) continue;
+    if (Interactions[k].state == noContactState) {
+      continue;
+    }
+    if (z[Interactions[k].i] < 3 || z[Interactions[k].j] < 3) {
+      continue;
+    }
 
     Nc0++;
     *fnMean += Interactions[k].fn;
-    if (Interactions[k].fn > 0.0 && Interactions[k].fn < *fnMin) *fnMin = Interactions[k].fn;
+    if (Interactions[k].fn > 0.0 && Interactions[k].fn < *fnMin) {
+      *fnMin = Interactions[k].fn;
+    }
 
     vec3r f = Interactions[k].fn * Interactions[k].n + Interactions[k].ft;
     R[Interactions[k].i] += f;
     R[Interactions[k].j] -= f;
   }
 
-  if (Nc0 > 0) *fnMean /= (double)Nc0;
+  if (Nc0 > 0) {
+    *fnMean /= (double)Nc0;
+  }
 
   size_t Np0 = 0;
   for (size_t i = 0; i < R.size(); i++) {
@@ -3152,5 +3308,7 @@ void PBC3Dbox::staticQualityData(double* ResMean, double* Res0Mean, double* fnMi
     }
   }
   *ResMean /= (double)Np;
-  if (Np0 > 0) *Res0Mean /= (double)Np0;
+  if (Np0 > 0) {
+    *Res0Mean /= (double)Np0;
+  }
 }

@@ -4,9 +4,6 @@
 #include "Core/MaterialPoint.hpp"
 #include "select_controlled_MP.hpp"
 
-//#include "spdlog/sinks/stdout_color_sinks.h"
-//#include "spdlog/spdlog.h"
-
 select_controlled_MP::select_controlled_MP() {
   MP_Selector.actionForNone = [this](MPMbox* B) { B->controlledMP.clear(); };
 

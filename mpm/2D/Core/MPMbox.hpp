@@ -124,7 +124,7 @@ class MPMbox {
 
   // integration scheme dissipation
   double ratioFLIP;  // barycenter coef for using PIC as damping
-  bool activePIC;    // damping with PIC flag
+  bool activePIC;    // damping with PIC flag ***** rename blended_PIC_FLIP
 
   struct {
     bool hasDoubleScale;  // to know if the computation involves CHCLs
@@ -140,8 +140,6 @@ class MPMbox {
   size_t number_MP_before_any_split;  // used to check proximity if # of MP has changed
                                       // (some "unknown" points could enter the obstacle and suddenly be detected
                                       // once they are way inside)
-
-  //std::shared_ptr<spdlog::logger> console;
 
   MPMbox();   // Ctor
   ~MPMbox();  // Dtor
