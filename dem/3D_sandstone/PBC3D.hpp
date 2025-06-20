@@ -96,14 +96,14 @@ class PBC3Dbox {
   std::function<double(double)> zetaDModel;  ///< Compute zeta as a function of D
 
   // Other parameters
-  int iconf;  ///< Current configuration ID
-  // int enableSwitch;              ///< If non-null, enable the switch of particles from one boundary to the opposite
-  int substractMeanVelocity;
-  int limitHboxvelocity;
-  double hboxLimitVel;
-  int permamentGluer;            ///< If 1, contacts are permanently transformed to glued-point
-  double numericalDampingCoeff;  ///< This is the so called Cundall damping
-  int continuumContact;
+  int iconf{0};         ///< Current configuration ID
+  int enableSwitch{0};  ///< If non-null, enable the switch of particles from one boundary to the opposite
+  int substractMeanVelocity{1};
+  int limitHboxvelocity{0};
+  double hboxLimitVel{1e8};
+  int permamentGluer{0};              ///< If 1, contacts are permanently transformed to glued-point
+  double numericalDampingCoeff{0.0};  ///< This is the so called Cundall damping
+  int continuumContact{0};
 
   // Ctor
   PBC3Dbox();

@@ -148,6 +148,7 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "porosityini " << porosityini << '\n';
   conf << "tensfailure " << tensfailure << '\n';
   conf << "fricfailure " << fricfailure << '\n';
+  conf << "enableSwitch " << enableSwitch << '\n';
   conf << "Particles " << Particles.size() << '\n';
   for (size_t i = 0; i < Particles.size(); i++) {
     conf << Particles[i].pos << ' ' << Particles[i].vel << ' ' << Particles[i].acc << ' ' << Particles[i].Q << ' '
@@ -324,9 +325,7 @@ void PBC3Dbox::loadConf(const char* name) {
     } else if (token == "Sig") {
       conf >> Sig;
     } else if (token == "enableSwitch") {
-      int unused;
-      conf >> unused;
-      std::cerr << "enableSwitch is not used anymore (remove it from the conf file please)\n";
+      conf >> enableSwitch;
     } else if (token == "substractMeanVelocity") {
       conf >> substractMeanVelocity;
     } else if (token == "limitHboxvelocity") {
@@ -958,6 +957,7 @@ void PBC3Dbox::setSample() {
 /// @brief Computes a single step with the velocity-Verlet algorithm
 void PBC3Dbox::velocityVerletStep() {
   START_TIMER("velocityVerletStep");
+
   if (Load.ServoFunction != nullptr) {
     Load.ServoFunction(*this);
   }
@@ -967,22 +967,24 @@ void PBC3Dbox::velocityVerletStep() {
     Particles[i].vel += dt_2 * Particles[i].acc;
 
     // Periodicity in position (can be usefull in the sample preparation)
-    vec3r move;
-    bool recompute_velocity = false;
-    for (size_t c = 0; c < 3; c++) {
-      while (Particles[i].pos[c] < 0.0) {
-        Particles[i].pos[c] += 1.0;
-        move[c] = 1.0;
-        recompute_velocity = true;
+    if (enableSwitch > 0) {
+      vec3r move;
+      bool recompute_velocity = false;
+      for (size_t c = 0; c < 3; c++) {
+        while (Particles[i].pos[c] < 0.0) {
+          Particles[i].pos[c] += 1.0;
+          move[c] += 1.0;
+          recompute_velocity = true;
+        }
+        while (Particles[i].pos[c] > 1.0) {
+          Particles[i].pos[c] -= 1.0;
+          move[c] -= 1.0;
+          recompute_velocity = true;
+        }
       }
-      while (Particles[i].pos[c] > 1.0) {
-        Particles[i].pos[c] -= 1.0;
-        move[c] = -1.0;
-        recompute_velocity = true;
+      if (recompute_velocity == true) {
+        Particles[i].vel = Cell.h.get_inverse() * (Cell.h * Particles[i].vel + Cell.vh * move);
       }
-    }
-    if (recompute_velocity == true) {
-      Particles[i].vel = Cell.h.get_inverse() * (Cell.h * Particles[i].vel + Cell.vh * move);
     }
 
     // Rotation: Q = Q + (dQ/dt) * dt + (d2Q/dt2) * dt2/2
@@ -1466,9 +1468,6 @@ void PBC3Dbox::computeForcesAndMoments() {
 
     vec3r sij = Particles[j].pos - Particles[i].pos;
     vec3r imag_j_period_move(floor(sij.x + 0.5), floor(sij.y + 0.5), floor(sij.z + 0.5));
-    //sij.x -= floor(sij.x + 0.5);
-    //sij.y -= floor(sij.y + 0.5);
-    //sij.z -= floor(sij.z + 0.5);
     sij -= imag_j_period_move;
     vec3r branch = Cell.h * sij;
 
@@ -1486,7 +1485,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // real relative velocities
       vec3r vel = Particles[j].vel - Particles[i].vel;
-      vec3r realVel = Cell.h * vel + Cell.vh * imag_j_period_move;
+      vec3r realVel = Cell.h * vel + Cell.vh * sij;//+ Cell.vh * imag_j_period_move;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
@@ -1575,7 +1574,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // real relative velocities
       vec3r vel = Particles[j].vel - Particles[i].vel;
-      vec3r realVel = Cell.h * vel + Cell.vh * imag_j_period_move;
+      vec3r realVel = Cell.h * vel + Cell.vh * sij;//+ Cell.vh * imag_j_period_move;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // === Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
@@ -1748,7 +1747,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
         // real relative velocities
         vec3r vel = Particles[j].vel - Particles[i].vel;
-        vec3r realVel = Cell.h * vel + Cell.vh * imag_j_period_move;
+        vec3r realVel = Cell.h * vel + Cell.vh * sij;// + Cell.vh * imag_j_period_move;
         realVel -=
             Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
