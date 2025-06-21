@@ -326,6 +326,8 @@ void PBC3Dbox::loadConf(const char* name) {
       conf >> Sig;
     } else if (token == "enableSwitch") {
       conf >> enableSwitch;
+    } else if (token == "kineticStress") {
+      conf >> kineticStress;
     } else if (token == "substractMeanVelocity") {
       conf >> substractMeanVelocity;
     } else if (token == "limitHboxvelocity") {
@@ -968,22 +970,22 @@ void PBC3Dbox::velocityVerletStep() {
 
     // Periodicity in position (can be usefull in the sample preparation)
     if (enableSwitch > 0) {
-      vec3r move;
+      //vec3r move;
       bool recompute_velocity = false;
       for (size_t c = 0; c < 3; c++) {
         while (Particles[i].pos[c] < 0.0) {
           Particles[i].pos[c] += 1.0;
-          move[c] += 1.0;
+          //move[c] += 1.0;
           recompute_velocity = true;
         }
         while (Particles[i].pos[c] > 1.0) {
           Particles[i].pos[c] -= 1.0;
-          move[c] -= 1.0;
+          //move[c] -= 1.0;
           recompute_velocity = true;
         }
       }
       if (recompute_velocity == true) {
-        Particles[i].vel = Cell.h.get_inverse() * (Cell.h * Particles[i].vel + Cell.vh * move);
+        Particles[i].vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       }
     }
 
@@ -1336,6 +1338,9 @@ void PBC3Dbox::accelerations() {
   fricfailure = 0;
 
   computeForcesAndMoments();
+  if (kineticStress > 0) {
+    addKineticStress();
+  }
 
   // Cundall damping for particles
   if (numericalDampingCoeff > 0.0) {
@@ -1456,6 +1461,23 @@ double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double Drot
   return yieldFunc;
 }
 
+
+
+void PBC3Dbox::addKineticStress() {
+  for (size_t i = 0; i < Particles.size(); i++) {
+    vec3r vel = Cell.h * Particles[i].vel;
+    Sig.xx += Particles[i].mass * vel.x * vel.x;
+    Sig.xy += Particles[i].mass * vel.x * vel.y;
+    Sig.xz += Particles[i].mass * vel.x * vel.z;
+    Sig.yx += Particles[i].mass * vel.y * vel.x;
+    Sig.yy += Particles[i].mass * vel.y * vel.y;
+    Sig.yz += Particles[i].mass * vel.y * vel.z;
+    Sig.zx += Particles[i].mass * vel.z * vel.x;
+    Sig.zy += Particles[i].mass * vel.z * vel.y;
+    Sig.zz += Particles[i].mass * vel.z * vel.z;    
+  }
+}
+
 /// @brief Computes the interaction forces and moments,
 ///        and the tensorial moment (= Vcell * stress matrix) of the cell
 void PBC3Dbox::computeForcesAndMoments() {
@@ -1485,7 +1507,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // real relative velocities
       vec3r vel = Particles[j].vel - Particles[i].vel;
-      vec3r realVel = Cell.h * vel + Cell.vh * sij;//+ Cell.vh * imag_j_period_move;
+      vec3r realVel = Cell.h * vel + Cell.vh * sij;  //+ Cell.vh * imag_j_period_move;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
@@ -1574,7 +1596,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // real relative velocities
       vec3r vel = Particles[j].vel - Particles[i].vel;
-      vec3r realVel = Cell.h * vel + Cell.vh * sij;//+ Cell.vh * imag_j_period_move;
+      vec3r realVel = Cell.h * vel + Cell.vh * sij;  //+ Cell.vh * imag_j_period_move;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // === Normal force (elastic-contact + elastic-damageable-bond + viscuous damping)
@@ -1747,7 +1769,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
         // real relative velocities
         vec3r vel = Particles[j].vel - Particles[i].vel;
-        vec3r realVel = Cell.h * vel + Cell.vh * sij;// + Cell.vh * imag_j_period_move;
+        vec3r realVel = Cell.h * vel + Cell.vh * sij;  // + Cell.vh * imag_j_period_move;
         realVel -=
             Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
@@ -2884,7 +2906,7 @@ void PBC3Dbox::getOperatorKruyt3(double L[9][9]) {
 
 // Be carefull!! The density needs to be set before calling this function
 void PBC3Dbox::initLagamine(double Q[]) {
-  // enableSwitch = 0;
+  enableSwitch = 0;
 
   // Q[0] (in plane strain condition) unused here because the computation is 3D
   size_t offset = 1;

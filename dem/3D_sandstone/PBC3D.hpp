@@ -98,6 +98,7 @@ class PBC3Dbox {
   // Other parameters
   int iconf{0};         ///< Current configuration ID
   int enableSwitch{0};  ///< If non-null, enable the switch of particles from one boundary to the opposite
+  int kineticStress{0};
   int substractMeanVelocity{1};
   int limitHboxvelocity{0};
   double hboxLimitVel{1e8};
@@ -117,6 +118,7 @@ class PBC3Dbox {
                                    ///< (iteratively make a time increment and check for updates or saving)
   void accelerations();            ///< Computes accelerations (both for particles and the periodic-cell)
   void computeForcesAndMoments();  ///< Computes forces and moments (and cell-stress)
+  void addKineticStress();         ///< Add the term m<vv> to the stress tensor
 
   // Methods used for interaction of type 'bondedStateDam'
   double YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm);  ///< ???
