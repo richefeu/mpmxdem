@@ -735,7 +735,7 @@ void PBC3Dbox::setSample() {
 
   char periodicShape = '1';
   while (true) {
-    std::cout << "Shape of sample:\n    (1) Cube\n    (2) Cuboid\n> ";
+    std::cout << "Shape of sample:\n    (1) Cube\n    (2) Rectangle\n> ";
     std::cin >> periodicShape;
     if (periodicShape == '1' || periodicShape == '2') {
       break;
