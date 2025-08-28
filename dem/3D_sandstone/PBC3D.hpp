@@ -91,13 +91,13 @@ class PBC3Dbox {
   double rampRatio;     ///< slope of the ramp
   double rampDuration;  ///< linear laoding ramp between t = 0 and t = rampDuration
 
-  std::string modelSoftening;                ///< Can be "linear", "gate" or "trainee"(default)
+  std::string modelSoftening{"trainee"};     ///< Can be "linear", "gate" or "trainee"(default)
   std::function<double(double)> DzetaModel;  ///< Compute D as a function of zeta
   std::function<double(double)> zetaDModel;  ///< Compute zeta as a function of D
 
   // Other parameters
   int iconf{0};         ///< Current configuration ID
-  int enableSwitch{0};  ///< If non-null, enable the switch of particles from one boundary to the opposite
+  int enableSwitch{1};  ///< If non-null, enable the switch of particles from one boundary to the opposite
   int kineticStress{0};
   int substractMeanVelocity{1};
   int limitHboxvelocity{0};

@@ -54,6 +54,8 @@ PBC3Dbox::PBC3Dbox() {
   rampRatio = 1.0;
   rampDuration = 0.0;
   continuumContact = 0;
+  enableSwitch = 1;
+  kineticStress = 0;
 
   modelSoftening = "trainee";
   setTraineeSoftening();
@@ -135,7 +137,9 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "hvelGrad " << Cell.velGrad << '\n';
   conf << "hstrain " << Cell.strain << '\n';
   conf << "Sig " << Sig << '\n';
-  if (limitHboxvelocity > 0) conf << "limitHboxvelocity " << hboxLimitVel << '\n';
+  if (limitHboxvelocity > 0) {
+    conf << "limitHboxvelocity " << hboxLimitVel << '\n';
+  }
   conf << "substractMeanVelocity " << substractMeanVelocity << '\n';
   conf << "objectiveFriction " << objectiveFriction << '\n';
   conf << "Load " << Load.StoredCommand << '\n';
@@ -148,7 +152,10 @@ void PBC3Dbox::saveConf(const char* name) {
   conf << "porosityini " << porosityini << '\n';
   conf << "tensfailure " << tensfailure << '\n';
   conf << "fricfailure " << fricfailure << '\n';
-  conf << "enableSwitch " << enableSwitch << '\n';
+  if (enableSwitch == 0) {  // by default, switch is enabled
+    conf << "enableSwitch " << enableSwitch << '\n';
+  }
+  conf << "kineticStress " << kineticStress << '\n';
   conf << "Particles " << Particles.size() << '\n';
   for (size_t i = 0; i < Particles.size(); i++) {
     conf << Particles[i].pos << ' ' << Particles[i].vel << ' ' << Particles[i].acc << ' ' << Particles[i].Q << ' '
@@ -970,22 +977,21 @@ void PBC3Dbox::velocityVerletStep() {
 
     // Periodicity in position (can be usefull in the sample preparation)
     if (enableSwitch > 0) {
-      //vec3r move;
       bool recompute_velocity = false;
       for (size_t c = 0; c < 3; c++) {
         while (Particles[i].pos[c] < 0.0) {
           Particles[i].pos[c] += 1.0;
-          //move[c] += 1.0;
           recompute_velocity = true;
         }
         while (Particles[i].pos[c] > 1.0) {
           Particles[i].pos[c] -= 1.0;
-          //move[c] -= 1.0;
           recompute_velocity = true;
         }
       }
       if (recompute_velocity == true) {
-        Particles[i].vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+        // ************************
+        // Particles[i].vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+        // TODO: modifier cette vitesse réduite
       }
     }
 
@@ -1402,19 +1408,19 @@ void PBC3Dbox::accelerations() {
   // Finally compute the accelerations (translation and rotation) of the particles
   for (size_t i = 0; i < Particles.size(); i++) {
     vec3r acc = Particles[i].force / Particles[i].mass;
+    Particles[i].acc = hinv * acc;
 
-#if 0
+#if 1
     // =====================================================
     // The following 2 lines can be removed.
     // In fact, mathematic relations say we should use them
-    // but in practice their presence makes no difference 
+    // but in practice their presence makes no difference
     // in the case of quasistatic strainning (ah and vh <<< 1)
     // =====================================================
     acc -= Cell.ah * Particles[i].pos;
     acc -= 2.0 * Cell.vh * Particles[i].vel;
 #endif
 
-    Particles[i].acc = hinv * acc;
     Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // It's ok for spheres
   }
 }
@@ -1461,8 +1467,6 @@ double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double Drot
   return yieldFunc;
 }
 
-
-
 void PBC3Dbox::addKineticStress() {
   for (size_t i = 0; i < Particles.size(); i++) {
     vec3r vel = Cell.h * Particles[i].vel;
@@ -1474,7 +1478,7 @@ void PBC3Dbox::addKineticStress() {
     Sig.yz += Particles[i].mass * vel.y * vel.z;
     Sig.zx += Particles[i].mass * vel.z * vel.x;
     Sig.zy += Particles[i].mass * vel.z * vel.y;
-    Sig.zz += Particles[i].mass * vel.z * vel.z;    
+    Sig.zz += Particles[i].mass * vel.z * vel.z;
   }
 }
 
