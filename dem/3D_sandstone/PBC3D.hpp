@@ -97,8 +97,8 @@ class PBC3Dbox {
 
   // Other parameters
   int iconf{0};         ///< Current configuration ID
-  int enableSwitch{0};  ///< If non-null, enable the switch of particles from one boundary to the opposite
-  int kineticStress{0};
+  int enableSwitch{1};  ///< If non-null, enable the switch of particles from one boundary to the opposite
+  int kineticStress{1};
   int substractMeanVelocity{1};
   int limitHboxvelocity{0};
   double hboxLimitVel{1e8};
@@ -223,6 +223,11 @@ class PBC3Dbox {
   double AccMax{0.0};   ///< Maximum acceleration magnitude of the particles
   double AccMean{0.0};  ///< Mean acceleration magnitude of the particles
   double AccVar{0.0};   ///< Variance of acceleration
+
+  int ngx{15};
+  int ngy{15};
+  int ngz{15};
+  int ngw{15};
 };
 
 #endif /* end of include guard: PBC3D_SANDSTONE_HPP */
