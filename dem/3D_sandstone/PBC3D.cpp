@@ -739,11 +739,36 @@ void PBC3Dbox::setSample() {
 
   std::ofstream ans("answer-setSample.txt");
 
-  int ngw = 15;
-  std::cout << "\nNumber of spheres on one side: ";
-  std::cin >> ngw;
-  ans << ngw << '\n';
-  double step = 1.0 / (2.0 * ngw);  // in the range [0, 1]
+  char periodicShape = '1';
+  while (true) {
+    std::cout << "Shape of sample:\n    (1) Cube\n    (2) Rectangle\n> ";
+    std::cin >> periodicShape;
+    if (periodicShape == '1' || periodicShape == '2') {
+      break;
+    }
+  }
+  ans << (char)periodicShape << '\n';
+  if (periodicShape == '1') {
+    std::cout << "\nNumber of spheres on one side: ";
+    std::cin >> ngz;
+    ngx = ngy = ngz;
+    ans << ngz << '\n';
+  } else if (periodicShape == '2') {
+    std::cout << "\nNumber of spheres on X side: ";
+    std::cin >> ngx;
+    ans << ngx << '\n';
+    std::cout << "Number of spheres on Y side: ";
+    std::cin >> ngy;
+    ans << ngy << '\n';
+    std::cout << "Number of spheres on Z side: ";
+    std::cin >> ngz;
+    ans << ngz << '\n';
+  }
+  ngw = (ngx > ngy ? ngx : (ngy > ngz ? ngy : ngz));
+
+  double stepX = 1.0 / (2.0 * ngx);  // in the range [0, 1]
+  double stepY = 1.0 / (2.0 * ngy);  // in the range [0, 1]
+  double stepZ = 1.0 / (2.0 * ngz);  // in the range [0, 1]
 
   double radius = 1e-3;
   std::cout << "Maximum (larger) radius: ";
@@ -772,14 +797,16 @@ void PBC3Dbox::setSample() {
   ans << (char)strategy << '\n';
 
   if (strategy == '1') {
-    double cellSize = 2.0 * ngw * radius;
-    Cell.Define(cellSize, 0.0, 0.0, 0.0, cellSize, 0.0, 0.0, 0.0, cellSize);
+    double cellSizeX = 2.0 * ngx * radius;
+    double cellSizeY = 2.0 * ngy * radius;
+    double cellSizeZ = 2.0 * ngz * radius;
+    Cell.Define(cellSizeX, 0.0, 0.0, 0.0, cellSizeY, 0.0, 0.0, 0.0, cellSizeZ);
     Vsolid = 0.0;
     double Vol;
     Particles.clear();
-    for (int iz = 0; iz < ngw; iz++) {
-      for (int iy = 0; iy < ngw; iy++) {
-        for (int ix = 0; ix < ngw; ix++) {
+    for (int iz = 0; iz < ngz; iz++) {
+      for (int iy = 0; iy < ngy; iy++) {
+        for (int ix = 0; ix < ngx; ix++) {
           P.radius = radius - deltaR * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
           Vol = (4.0 / 3.0) * M_PI * P.radius * P.radius * P.radius;
           Vsolid += Vol;
@@ -787,13 +814,14 @@ void PBC3Dbox::setSample() {
           P.inertia = (2.0 / 5.0) * P.mass * P.radius * P.radius;
 
           // reduced positions
-          P.pos.x = step * (1.0 + 2.0 * ix);
-          P.pos.y = step * (1.0 + 2.0 * iy);
-          P.pos.z = step * (1.0 + 2.0 * iz);
+          P.pos.x = stepX * (1.0 + 2.0 * ix);
+          P.pos.y = stepY * (1.0 + 2.0 * iy);
+          P.pos.z = stepZ * (1.0 + 2.0 * iz);
           Particles.push_back(P);
         }
       }
     }
+    // To define
   } else if (strategy == '2') {
     double cellSize = 1.0;
     std::cout << "Cubic cell size: ";
@@ -811,7 +839,7 @@ void PBC3Dbox::setSample() {
                       radius,           // rmax
                       200,              // no of trials
                       0.0, cellSize, 0.0, cellSize, 0.0, cellSize, cellSize - (2.0 * ngw * radius),
-                      ngw * ngw * ngw  // The periodic cell
+                      ngx * ngy * ngz  // The periodic cell
     );
 
     if (seedPerso > 0) {
@@ -856,9 +884,9 @@ void PBC3Dbox::setSample() {
   }
   ans << (char)repMass << '\n';
   if (repMass == '1') {
-    Cell.mass = (Vsolid * density) / (double)(ngw * ngw * ngw);
+    Cell.mass = (Vsolid * density) / (double)(ngx * ngy * ngz);
   } else if (repMass == '2') {
-    Cell.mass = (Vsolid * density) / (double)ngw;
+    Cell.mass = (Vsolid * density) / (double)(ngw);  // Taking the slightest slice, like a bread loaf?
   } else if (repMass == '3') {
     Cell.mass = (Vsolid * density);
   }
@@ -977,14 +1005,18 @@ void PBC3Dbox::velocityVerletStep() {
 
     // Periodicity in position (can be usefull in the sample preparation)
     if (enableSwitch > 0) {
+
+      // vec3r move;
       bool recompute_velocity = false;
       for (size_t c = 0; c < 3; c++) {
         while (Particles[i].pos[c] < 0.0) {
           Particles[i].pos[c] += 1.0;
+          // move[c] += 1.0;
           recompute_velocity = true;
         }
         while (Particles[i].pos[c] > 1.0) {
           Particles[i].pos[c] -= 1.0;
+          // move[c] -= 1.0;
           recompute_velocity = true;
         }
       }
