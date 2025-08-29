@@ -1440,7 +1440,6 @@ void PBC3Dbox::accelerations() {
   // Finally compute the accelerations (translation and rotation) of the particles
   for (size_t i = 0; i < Particles.size(); i++) {
     vec3r acc = Particles[i].force / Particles[i].mass;
-    Particles[i].acc = hinv * acc;
 
 #if 1
     // =====================================================
@@ -1452,6 +1451,8 @@ void PBC3Dbox::accelerations() {
     acc -= Cell.ah * Particles[i].pos;
     acc -= 2.0 * Cell.vh * Particles[i].vel;
 #endif
+
+    Particles[i].acc = hinv * acc;
 
     Particles[i].arot = Particles[i].moment / Particles[i].inertia;  // It's ok for spheres
   }
