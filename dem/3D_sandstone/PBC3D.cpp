@@ -1502,7 +1502,7 @@ double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double Drot
 
 void PBC3Dbox::addKineticStress() {
   for (size_t i = 0; i < Particles.size(); i++) {
-    vec3r vel = Cell.h * Particles[i].vel;
+    vec3r vel = Cell.h * Particles[i].vel + Cell.vh * Particles[i].pos;
     Sig.xx += Particles[i].mass * vel.x * vel.x;
     Sig.xy += Particles[i].mass * vel.x * vel.y;
     Sig.xz += Particles[i].mass * vel.x * vel.z;
