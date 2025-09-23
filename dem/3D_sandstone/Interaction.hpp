@@ -12,13 +12,13 @@ const int bondedStateDam = 3;
 
 // Struct to hold information about an interaction between two particles
 struct Interaction {
-  size_t i;         ///< Unique identifier for the first particle involved in the interaction
-  size_t j;         ///< Unique identifier for the second particle involved in the interaction
-  double gap0;      ///< The initial gap between the two particles when a bond is first established
+  size_t i{0};         ///< Unique identifier for the first particle involved in the interaction
+  size_t j{0};         ///< Unique identifier for the second particle involved in the interaction
+  double gap0{0.0};      ///< The initial gap between the two particles when a bond is first established
   vec3r n;          ///< The normal unit vector of the contact point, expressed in the world frame
-  double fn;        ///< The total normal force acting on the particles
-  double fn_elas;   ///< The elastic component of the normal force
-  double fn_bond;   ///< The bond component of the normal force
+  double fn{0.0};        ///< The total normal force acting on the particles
+  double fn_elas{0.0};   ///< The elastic component of the normal force
+  double fn_bond{0.0};   ///< The bond component of the normal force
   vec3r ft;         ///< The total tangential force acting on the particles, expressed in the world frame
   vec3r ft_fric;    ///< The frictional component of the tangential force at the contact point
   vec3r ft_bond;    ///< The bond component of the tangential force
@@ -30,10 +30,10 @@ struct Interaction {
   vec3r mom_fric;   ///< The frictional component of the torque vector
   vec3r mom_bond;   ///< The bond component of the torque vector
 
-  double dampn;  ///< Precomputed viscous damping coefficient in the normal direction
-  double dampt;  ///< Precomputed viscous damping coefficient in the tangent direction
-  int state;     ///< The current state of the contact (can be noContactState, contactState or bondedState)
-  double D;      ///< The damage parameter, indicating the level of damage for a bonded link
+  double dampn{0.0};  ///< Precomputed viscous damping coefficient in the normal direction
+  double dampt{0.0};  ///< Precomputed viscous damping coefficient in the tangent direction
+  int state{noContactState};     ///< The current state of the contact (can be noContactState, contactState or bondedState)
+  double D{0.0};      ///< The damage parameter, indicating the level of damage for a bonded link
 
   // Default constructor for Interaction
   Interaction();

@@ -349,10 +349,18 @@ void PBC3Dbox::loadConf(const char* name) {
         double pressure, velocity;
         conf >> pressure >> velocity;
         Load.TriaxialCompressionY(pressure, velocity);
+      } else if (command == "TriaxialCompressionYGradual") {
+        double pressure, velocity, ramp_duration;
+        conf >> pressure >> velocity >> ramp_duration;
+        Load.TriaxialCompressionYGradual(pressure, velocity, ramp_duration);
       } else if (command == "TriaxialCompressionZ") {
         double pressure, velocity;
         conf >> pressure >> velocity;
         Load.TriaxialCompressionZ(pressure, velocity);
+      } else if (command == "TriaxialCompressionZGradual") {
+        double pressure, velocity, ramp_duration;
+        conf >> pressure >> velocity >> ramp_duration;
+        Load.TriaxialCompressionZGradual(pressure, velocity, ramp_duration);
       } else if (command == "BiaxialCompressionYPlaneStrainZ") {
         double pressure, velocity;
         conf >> pressure >> velocity;
@@ -1067,11 +1075,13 @@ void PBC3Dbox::velocityVerletStep() {
     }
   }
 
+  // velocity rampe
   if (rampDuration - t > 0.0) {
     rampRatio = t / rampDuration;
   } else {
     rampRatio = 1.0;
   }
+  
   for (size_t c = 0; c < 9; c++) {
     if (Load.Drive[c] == ForceDriven) {
       Cell.vh[c] += rampRatio * dt_2 * Cell.ah[c];
@@ -1080,6 +1090,8 @@ void PBC3Dbox::velocityVerletStep() {
       }
     }
   }
+  
+  
   Cell.update(dt);
 }
 
@@ -1363,6 +1375,7 @@ void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
 /// @brief Compute acceleration of the particles and of the periodic-cell.
 void PBC3Dbox::accelerations() {
   START_TIMER("accelerations");
+  
   // Set forces and moments to zero
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].force.reset();
@@ -1529,6 +1542,8 @@ void PBC3Dbox::computeForcesAndMoments() {
     vec3r imag_j_period_move(floor(sij.x + 0.5), floor(sij.y + 0.5), floor(sij.z + 0.5));
     sij -= imag_j_period_move;
     vec3r branch = Cell.h * sij;
+	
+	// 
 
     if (Interactions[k].state == bondedState) {
       // ===========================================================
@@ -1544,7 +1559,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
       // real relative velocities
       vec3r vel = Particles[j].vel - Particles[i].vel;
-      vec3r realVel = Cell.h * vel + Cell.vh * sij;  //+ Cell.vh * imag_j_period_move;
+      vec3r realVel = Cell.h * vel + Cell.vh * sij;
       realVel -= Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 
       // Normal force (elastic + viscuous damping)
@@ -1806,7 +1821,7 @@ void PBC3Dbox::computeForcesAndMoments() {
 
         // real relative velocities
         vec3r vel = Particles[j].vel - Particles[i].vel;
-        vec3r realVel = Cell.h * vel + Cell.vh * sij;  // + Cell.vh * imag_j_period_move;
+        vec3r realVel = Cell.h * vel + Cell.vh * sij;
         realVel -=
             Particles[i].radius * cross(n, Particles[i].vrot) + Particles[j].radius * cross(n, Particles[j].vrot);
 

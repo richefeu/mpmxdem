@@ -54,42 +54,42 @@ class PBC3Dbox {
   int fricfailure;     ///< NAME IS NOT OK !!!!!!
 
   // Time parameters
-  double t;     ///< Current Time
-  double tmax;  ///< End time
-  double dt;    ///< Time increment
+  double t{0.0};     ///< Current Time
+  double tmax{1.0};  ///< End time
+  double dt{1.0e-8};    ///< Time increment
 
   // Simulation flow
-  double interVerlet;  ///< Time intervalle between each update of the neighbor-list
-  double interOut;     ///< Time intervalle between data outputs
-  double interConf;    ///< Time intervalle between the CONF files
+  double interVerlet{0.0};  ///< Time intervalle between each update of the neighbor-list
+  double interOut{0.0};     ///< Time intervalle between data outputs
+  double interConf{0.0};    ///< Time intervalle between the CONF files
 
   // Neighbor list
-  double dVerlet;  ///< Distance of Verlet
+  double dVerlet{0.0};  ///< Distance of Verlet
 
   // Properties
-  double density;    ///< Density of all particles
-  double kn;         ///< Normal stiffness (for compression/tension, bonded or not)
-  double kt;         ///< Tangential stiffness (bonded or not)
-  double kr;         ///< Angular stiffness (only for bonded links)
-  double dampRate;   ///< Viscous damping Rate -- in the range [0, 1[
-  double mu;         ///< Coefficent of friction
-  double mur;        ///< Coefficient of "angular-friction"
-  double fcoh;       ///< Cohesion force (strictly negative)
-  double zetaMax;    ///< Can be seen as "dn_rupture / dn_dammage_starts"
-  double zetaInter;  ///< This is used for gate softening
-  double Kratio;     ///< Ratio of particle stiffness over bond stiffness
+  double density{0.0};    ///< Density of all particles
+  double kn{0.0};         ///< Normal stiffness (for compression/tension, bonded or not)
+  double kt{0.0};         ///< Tangential stiffness (bonded or not)
+  double kr{0.0};         ///< Angular stiffness (only for bonded links)
+  double dampRate{0.98};  ///< Viscous damping Rate -- in the range [0, 1[
+  double mu{0.0};         ///< Coefficent of friction
+  double mur{0.0};        ///< Coefficient of "angular-friction"
+  double fcoh{0.0};       ///< Cohesion force (strictly negative)
+  double zetaMax{0.0};    ///< Can be seen as "dn_rupture / dn_dammage_starts"
+  double zetaInter{0.0};  ///< This is used for gate softening
+  double Kratio{0.0};     ///< Ratio of particle stiffness over bond stiffness
 
   // Solid cohesion
-  double fn0;      ///< Maximum normal force
-  double ft0;      ///< Maximum tangential force
-  double mom0;     ///< Maximum Torque
-  double dn0;      ///< Maximum normal displacement
-  double dt0;      ///< Maximum tangential displacement
-  double drot0;    ///< Maximum angular rotation
-  double powSurf;  ///< Power used in the breakage surface
+  double fn0{0.0};      ///< Maximum normal force
+  double ft0{0.0};      ///< Maximum tangential force
+  double mom0{0.0};     ///< Maximum Torque
+  double dn0{0.0};      ///< Maximum normal displacement
+  double dt0{0.0};      ///< Maximum tangential displacement
+  double drot0{0.0};    ///< Maximum angular rotation
+  double powSurf{0.0};  ///< Power used in the breakage surface
 
-  double rampRatio;     ///< slope of the ramp
-  double rampDuration;  ///< linear laoding ramp between t = 0 and t = rampDuration
+  double rampRatio{0.0};     ///< slope of the ramp
+  double rampDuration{0.0};  ///< linear laoding ramp between t = 0 and t = rampDuration
 
   std::string modelSoftening{"trainee"};     ///< Can be "linear", "gate" or "trainee"(default)
   std::function<double(double)> DzetaModel;  ///< Compute D as a function of zeta

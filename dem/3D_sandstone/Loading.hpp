@@ -27,7 +27,9 @@ struct Loading {
   Loading();
 
   void TriaxialCompressionY(double pressure, double velocity);
+  void TriaxialCompressionYGradual(double pressure, double velocity, double rampDuration);
   void TriaxialCompressionZ(double pressure, double velocity);
+  void TriaxialCompressionZGradual(double pressure, double velocity, double rampDuration);
   void BiaxialCompressionYPlaneStrainZ(double pressure, double velocity);
   void BiaxialCompressionZPlaneStrainX(double pressure, double velocity);
   void BiaxialCompressionXPlaneStrainY(double pressure, double velocity);

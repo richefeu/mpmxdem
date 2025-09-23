@@ -2,6 +2,37 @@
 
 Loading::Loading() {}
 
+void Loading::TriaxialCompressionYGradual(double pressure, double velocity, double ramp_duration) {
+  snprintf(StoredCommand, 512, "TriaxialCompressionYGradual %g %g %g", pressure, velocity, ramp_duration);
+
+  Drive.xx = Drive.zz = ForceDriven;
+  Drive.yy = VelocityDriven;  // controlled by ServoFunction
+  Drive.xy = Drive.yx = VelocityDriven;
+  Drive.xz = Drive.zx = VelocityDriven;
+  Drive.yz = Drive.zy = VelocityDriven;
+
+  Sig.xx = Sig.zz = pressure;
+  Sig.yy = 0.0;
+  Sig.xy = Sig.yx = 0.0;
+  Sig.xz = Sig.yz = 0.0;
+  Sig.yz = Sig.zy = 0.0;
+
+  v.xx = v.zz = 0.0;  // free in fact
+  v.yy = -velocity;
+  v.xy = v.yx = 0.0;  // blocked
+  v.xz = v.zx = 0.0;  // blocked
+  v.yz = v.zy = 0.0;  // blocked
+
+  // ServoFunction = nullptr;
+  ServoFunction = [velocity, ramp_duration](PBC3Dbox& box) -> void {
+    if (ramp_duration > 0.0 && box.t - ramp_duration < 0.0) {
+      box.Load.v.yy = -velocity * (box.t / ramp_duration);
+    } else {
+      box.Load.v.yy = -velocity;
+    }
+  };
+}
+
 void Loading::TriaxialCompressionY(double pressure, double velocity) {
   snprintf(StoredCommand, 512, "TriaxialCompressionY %g %g", pressure, velocity);
 
@@ -24,6 +55,36 @@ void Loading::TriaxialCompressionY(double pressure, double velocity) {
   v.yz = v.zy = 0.0;
 
   ServoFunction = nullptr;
+}
+
+void Loading::TriaxialCompressionZGradual(double pressure, double velocity, double ramp_duration) {
+  snprintf(StoredCommand, 512, "TriaxialCompressionZGradual %g %g %g", pressure, velocity, ramp_duration);
+
+  Drive.xx = Drive.yy = ForceDriven;
+  Drive.zz = VelocityDriven;  // controlled by ServoFunction
+  Drive.xy = Drive.yx = VelocityDriven;
+  Drive.xz = Drive.zx = VelocityDriven;
+  Drive.yz = Drive.zy = VelocityDriven;
+
+  Sig.xx = Sig.yy = pressure;
+  Sig.zz = 0.0;
+  Sig.xy = Sig.yx = 0.0;
+  Sig.xz = Sig.yz = 0.0;
+  Sig.yz = Sig.zy = 0.0;
+
+  v.xx = v.yy = 0.0;  // free in fact
+  v.zz = -velocity;
+  v.xy = v.yx = 0.0;  // blocked
+  v.xz = v.zx = 0.0;  // blocked
+  v.yz = v.zy = 0.0;  // blocked
+
+  ServoFunction = [velocity, ramp_duration](PBC3Dbox& box) -> void {
+    if (ramp_duration > 0.0 && box.t - ramp_duration < 0.0) {
+      box.Load.v.zz = -velocity * (box.t / ramp_duration);
+    } else {
+      box.Load.v.zz = -velocity;
+    }
+  };
 }
 
 void Loading::TriaxialCompressionZ(double pressure, double velocity) {

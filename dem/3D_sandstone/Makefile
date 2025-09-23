@@ -7,12 +7,12 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin) # ==========================================
 
 #The compiler to be used
-#CXX = g++ - 15
-GNU_GPP := $(shell ls /usr/local/bin/g++-* 2>/dev/null | grep -Eo 'g\+\+-([0-9]+)' | sort -V | tail -1)
-CXX := $(if $(GNU_GPP),$(GNU_GPP),g++)
+CXX = g++-15
+#GNU_GPP := $(shell ls /usr/local/bin/g++-* 2>/dev/null | grep -Eo 'g\+\+-([0-9]+)' | sort -V | tail -1)
+#CXX := $(if $(GNU_GPP),$(GNU_GPP),g++)
 
 #The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -Wextra -Wshadow -Wconversion -pedantic -std=c++17 -I ./toofus
+CXXFLAGS = -O3 -Wall -Wextra -Wshadow -std=c++17 -I ./toofus
 #Link flags for OpenGL and glut
 GLLINK = `pkg-config --libs gl glu glut`
 GLFLAGS = `pkg-config --cflags gl glu glut`
