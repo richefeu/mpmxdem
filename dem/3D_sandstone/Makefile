@@ -77,7 +77,7 @@ run: run.cpp libPBC3D.a
 	$(CXX) $(CXXFLAGS) -o $@ $@.o libPBC3D.a
 
 #The application that visualizes the conf files
-see: see.cpp libPBC3D.a
+see: see.cpp libPBC3D.a graphGL.hpp
 	@echo "\033[0;32m-> BUILDING" $@ "\033[0m"
 	$(CXX) $(CXXFLAGS) -c $< -o see.o $(GLFLAGS)
 	$(CXX) -o $@ see.o libPBC3D.a $(GLLINK) 

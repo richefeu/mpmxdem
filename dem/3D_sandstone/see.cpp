@@ -1,5 +1,6 @@
 #include "see.hpp"
 
+/*
 void clear_background() {
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -32,31 +33,56 @@ void clear_background() {
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
 }
+*/
 
 void printHelp() {
-  using namespace std;
-  cout << endl;
-  cout << "+         load next configuration file" << endl;
-  cout << "-         load previous configuration file" << endl;
-  cout << "=         fit the view" << endl;
-  cout << "a         (TODO) switch ON/OFF the fluctuating velocities" << endl;
-  cout << "b         switch ON/OFF the background color" << endl;
-  cout << "c         switch ON/OFF the periodic cell" << endl;
-  cout << "d         switch ON/OFF bond damage" << endl;
-  cout << "e E       decrease/increase particles' alpha (transparence)" << endl;
-  cout << "f         switch ON/OFF the forces" << endl;
-  cout << "g         switch ON/OFF the ghost particles" << endl;
-  cout << "h         print this help" << endl;
-  cout << "k K       (TODO) decrease/increase the size of velocities arrows" << endl;
-  cout << "p         switch ON/OFF the particles" << endl;
-  cout << "q         quit" << endl;
-  cout << "r R       decrease/increase ghosts' alpha (transparence)" << endl;
-  cout << "s         switch ON/OFF the slice" << endl;
-  cout << "t T       decrease/increase size of forces when displayed as tubes" << endl;
-  cout << "w W       decrease/increase the width of ghost particles" << endl;
-  cout << "x         switch ON/OFF the slice edition" << endl;
-  // cout << "" << endl;
-  cout << endl;
+
+  // Declare the static vector inside the function
+  static const std::vector<std::string> keybindLines = {
+      "[+]    load next configuration file",
+      "[-]    load previous configuration file",
+      "[=]    fit the view",
+      "[a]    (TODO) switch ON/OFF the fluctuating velocities",
+      "[b]    switch ON/OFF the background color",
+      "[c]    switch ON/OFF the periodic cell",
+      "[d]    switch ON/OFF bond damage",
+      "[e][E] decrease/increase particles' alpha (transparence)",
+      "[f]    switch ON/OFF the forces",
+      "[g]    open another file",
+      "[h]    print this help",
+      "[k][K] (TODO) decrease/increase the size of velocities arrows",
+      "[p]    switch ON/OFF the particles",
+      "[q]    quit",
+      "[r][R] decrease/increase ghosts' alpha (transparence)",
+      "[s]    switch ON/OFF the slice",
+      "[t][T] decrease/increase size of forces when displayed as tubes",
+      "[w][W] decrease/increase the width of ghost particles",
+      "[x]    switch ON/OFF the slice edition",
+      "[0]    plot fn vs ft",
+      "[1]    plot |mom| vs |ft|",
+      "[2]    plot q vs p",
+      "[3]    plot q/p vs time"};
+
+  switch2D::go(width, height);
+  glColor4f(1.0f, 1.0f, 1.0f, 0.6f);
+  glBegin(GL_QUADS);
+  int nbLines = keybindLines.size();
+  int by = height - nbLines * 15 - 3;
+  glVertex2i(0, height);
+  glVertex2i(width, height);
+  glVertex2i(width, by);
+  glVertex2i(0, by);
+  glEnd();
+  glColor3i(0, 0, 0);
+  int dhline = -15;
+  int hline = height;
+
+  for (const auto& line : keybindLines) {
+    hline += dhline;
+    glText::print(15, hline, line.c_str());
+  }
+
+  switch2D::back();
 }
 
 void select_displayed_plot(int N) {
@@ -75,85 +101,92 @@ void select_displayed_plot(int N) {
 void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
   switch (Key) {
 
-    case 'b':
+    case 'b': {
       show_background = 1 - show_background;
-      break;
+    } break;
 
-    case 'c':
+    case 'c': {
       show_cell = 1 - show_cell;
-      break;
+    } break;
 
-    case 'd':
+    case 'd': {
       show_bond_damage = 1 - show_bond_damage;
-      break;
+    } break;
 
-    case 'e':
+    case 'e': {
       if (alpha_particles > 0.1f) alpha_particles -= 0.05f;
-      break;
-    case 'E':
+    } break;
+    case 'E': {
       if (alpha_particles <= 0.95f) alpha_particles += 0.05f;
-      break;
+    } break;
 
-    case 'f':
+    case 'f': {
       show_forces = 1 - show_forces;
-      break;
+    } break;
 
-    case 'g':
+    case 'g': {
       show_ghosts = 1 - show_ghosts;
-      break;
+    } break;
 
-    case 'h':
-      printHelp();
-      break;
+    case 'h': {  // printHelp();
+      show_help = 1 - show_help;
+    } break;
 
-    case 'm':
+    case 'm': {
       export_sample();
-      break;
+    } break;
 
-    case 'p':
+    case 'p': {
       show_particles = 1 - show_particles;
-      break;
+    } break;
 
-    case 'q':
+    case 'q': {
       exit(0);
-      break;
+    } break;
 
-    case 'r':
-      if (alpha_ghosts > 0.1f) alpha_ghosts -= 0.05f;
-      break;
-    case 'R':
-      if (alpha_ghosts <= 0.95f) alpha_ghosts += 0.05f;
-      break;
+    case 'r': {
+      if (alpha_ghosts > 0.1f) {
+        alpha_ghosts -= 0.05f;
+      }
+    } break;
+    case 'R': {
+      if (alpha_ghosts <= 0.95f) {
+        alpha_ghosts += 0.05f;
+      }
+    } break;
 
-    case 's':
+    case 's': {
       show_slice = 1 - show_slice;
-      break;
+    } break;
 
-    case 't':
+    case 't': {
       if (forceTubeFactor > 0.2) forceTubeFactor -= 0.05;
-      break;
-    case 'T':
+    } break;
+    case 'T': {
       if (forceTubeFactor <= 0.9) forceTubeFactor += 0.05;
-      break;
+    } break;
 
-    case 'v':
+    case 'v': {
       show_velocities = 1 - show_velocities;
-      break;
+    } break;
 
-    case 'w':
-      if (ghost_width > 0.1) ghost_width -= 0.1;
-      break;
+    case 'w': {
+      if (ghost_width > 0.1) {
+        ghost_width -= 0.1;
+      }
+    } break;
+    case 'W': {
+      if (ghost_width <= 0.9) {
+        ghost_width += 0.1;
+      }
+    } break;
 
-    case 'W':
-      if (ghost_width <= 0.9) ghost_width += 0.1;
-      break;
-
-    case 'x':
+    case 'x': {
       display_mode = 1 - display_mode;
-      break;
+    } break;
 
     case 'z': {
-      std::cout << "image saved in 'oneshot.tga'\n";
+      msg::info("image saved in 'oneshot.tga'", std::cout);
       screenshot("oneshot.tga");
     } break;
 
@@ -166,16 +199,18 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
         display();
         screenshot(name);
       }
-      std::cout << "series of images saved in 'shot<n>.tga'\n";
+      msg::info("series of images saved in 'shot<n>.tga'", std::cout);
     } break;
 
-    case '-':
-      if (confNum > 0) try_to_readConf(confNum - 1);
-      break;
+    case '-': {
+      if (confNum > 0) {
+        try_to_readConf(confNum - 1);
+      }
+    } break;
 
-    case '+':
+    case '+': {
       try_to_readConf(confNum + 1);
-      break;
+    } break;
 
     case '=': {
       fit_view();
@@ -193,7 +228,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     case '2': {
       select_displayed_plot(2);
     } break;
-    
+
     case '3': {
       select_displayed_plot(3);
     } break;
@@ -205,10 +240,13 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 void mouse(int button, int state, int x, int y) {
   if (state == GLUT_UP) {
     mouse_mode = NOTHING;
-    display();
+    // display();
+    glutPostRedisplay();
   } else if (state == GLUT_DOWN) {
+
     mouse_start[0] = x;
     mouse_start[1] = y;
+
     switch (button) {
       case GLUT_LEFT_BUTTON:
         if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
@@ -306,7 +344,8 @@ void motion(int x, int y) {
   mouse_start[0] = x;
   mouse_start[1] = y;
 
-  display();
+  // display();
+  glutPostRedisplay();
 }
 
 void normalize(GLfloat* a) {
@@ -498,7 +537,7 @@ bool inSlice(vec3r& pos) {
 }
 
 void display() {
-  clear_background();
+  glTools::clearBackground(static_cast<bool>(show_background));
   adjust_clipping_plans();
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -508,15 +547,29 @@ void display() {
   glShadeModel(GL_SMOOTH);
   glEnable(GL_DEPTH_TEST);
 
-  if (show_cell) drawPeriodicCell();
-  if (show_velocities) drawVelocities();
-  if (show_forces) drawForces();
-  if (show_bond_damage) drawBondDamage();
-  if (show_particles) drawParticles();
-  if (show_ghosts) drawGhosts();
+  if (show_cell) {
+    drawPeriodicCell();
+  }
+  if (show_velocities) {
+    drawVelocities();
+  }
+  if (show_forces) {
+    drawForces();
+  }
+  if (show_bond_damage) {
+    drawBondDamage();
+  }
+  if (show_particles) {
+    drawParticles();
+  }
+  if (show_ghosts) {
+    drawGhosts();
+  }
 
   // mode for slice edition
-  if (display_mode == 1) drawSlice();
+  if (display_mode == 1) {
+    drawSlice();
+  }
 
   if (show_plot) {
     switch (plot_displayed) {
@@ -535,6 +588,11 @@ void display() {
     }
   }
 
+  if (show_help) {
+    printHelp();
+  }
+
+  textZone.draw();
   glFlush();
   glutSwapBuffers();
 }
@@ -548,12 +606,20 @@ void plot_fnft() {
   double Fn, Ft;
   for (size_t k = 0; k < box.Interactions.size(); k++) {
     Fn = box.Interactions[k].fn;
-    if (fnMin > Fn) fnMin = Fn;
-    if (fnMax < Fn) fnMax = Fn;
+    if (fnMin > Fn) {
+      fnMin = Fn;
+    }
+    if (fnMax < Fn) {
+      fnMax = Fn;
+    }
 
     Ft = norm(box.Interactions[k].ft);
-    if (ftMin > Ft) ftMin = Ft;
-    if (ftMax < Ft) ftMax = Ft;
+    if (ftMin > Ft) {
+      ftMin = Ft;
+    }
+    if (ftMax < Ft) {
+      ftMax = Ft;
+    }
 
     if (box.Interactions[k].state >= bondedState) {
       fn_bond.push_back(Fn);
@@ -574,14 +640,20 @@ void plot_fnft() {
   Gph.withPoints = true;
   Gph.withLines = false;
   Gph.pointSize = 4.0f;
-  Gph.setColor(0.0f, 0.0f, 1.0f, 1.0f);
-  Gph.plot(fn_cont, ft_cont);
-  Gph.setColor(1.0f, 0.0f, 0.0f, 0.5f);
-  Gph.plot(fn_bond, ft_bond);
+
+  if (!fn_bond.empty()) {
+    Gph.setColor(1.0f, 0.0f, 0.0f, 0.5f);
+    Gph.plot(fn_bond, ft_bond);
+  }
+
+  if (!fn_cont.empty()) {
+    Gph.setColor(0.0f, 0.0f, 1.0f, 1.0f);
+    Gph.plot(fn_cont, ft_cont);
+  }
 
   Gph.withPoints = false;
   Gph.withLines = true;
-  Gph.setColor(0.0f, 0.0f, 1.0f, 1.0f);
+  Gph.setColor(0.0f, 0.0f, 0.0f, 1.0f);
   Gph.plot(xCoulomb, yCoulomb);
   Gph.end();
 }
@@ -600,11 +672,15 @@ void plot_ftmom() {
 
     Mom = norm(box.Interactions[k].mom);
     // if (momMin > Mom) momMin = Mom;
-    if (momMax < Mom) momMax = Mom;
+    if (momMax < Mom) {
+      momMax = Mom;
+    }
 
     Ft = norm(box.Interactions[k].ft);
     // if (ftMin > Ft) ftMin = Ft;
-    if (ftMax < Ft) ftMax = Ft;
+    if (ftMax < Ft) {
+      ftMax = Ft;
+    }
 
     mom_bond.push_back(Mom);
     ft_bond.push_back(Ft);
@@ -617,8 +693,10 @@ void plot_ftmom() {
   Gph.withPoints = true;
   Gph.withLines = false;
   Gph.pointSize = 4.0f;
-  Gph.setColor(1.0f, 0.0f, 0.0f, 0.5f);
-  Gph.plot(mom_bond, ft_bond);
+  if (!mom_bond.empty()) {
+    Gph.setColor(1.0f, 0.0f, 0.0f, 0.5f);
+    Gph.plot(mom_bond, ft_bond);
+  }
 
   Gph.end();
 }
@@ -637,7 +715,7 @@ void plot_qp() {
       qp.push_back(0.0);
     }
   } else {
-    std::cout << "File 'stress.out.txt' not found" << std::endl;
+    msg::alert("File 'stress.out.txt' not found", std::cout);
     return;
   }
 
@@ -652,18 +730,27 @@ void plot_qp() {
   U.set(1.0 / sqrt(3.0));
   double q, p, QP;
   for (size_t i = 0; i < Time.size(); i++) {
-    if (tMin > Time[i]) tMin = Time[i];
-    if (tMax < Time[i]) tMax = Time[i];
+    if (tMin > Time[i]) {
+      tMin = Time[i];
+    }
+    if (tMax < Time[i]) {
+      tMax = Time[i];
+    }
 
     Str[i].sym_eigen(V, D);
     q = norm(D - (D * U) * U);
     p = 0.333333333 * (D.x + D.y + D.z);
-    if (p != 0.0)
+    if (p != 0.0) {
       QP = q / p;
-    else
+    } else {
       QP = 0.0;
-    if (qpMin > QP) qpMin = QP;
-    if (qpMax < QP) qpMax = QP;
+    }
+    if (qpMin > QP) {
+      qpMin = QP;
+    }
+    if (qpMax < QP) {
+      qpMax = QP;
+    }
     qp[i] = QP;
   }
 
@@ -721,7 +808,7 @@ void plot_q_vs_p() {
       i++;
     }
   } else {
-    std::cout << "File 'stress.out.txt' not found" << std::endl;
+    msg::alert("File 'stress.out.txt' not found", std::cout);
     return;
   }
 
@@ -740,10 +827,18 @@ void plot_q_vs_p() {
     q = norm(D - (D * U) * U);
     p = 0.333333333 * (D.x + D.y + D.z);
 
-    if (qMin > q) qMin = q;
-    if (qMax < q) qMax = q;
-    if (pMin > p) pMin = p;
-    if (pMax < p) pMax = p;
+    if (qMin > q) {
+      qMin = q;
+    }
+    if (qMax < q) {
+      qMax = q;
+    }
+    if (pMin > p) {
+      pMin = p;
+    }
+    if (pMax < p) {
+      pMax = p;
+    }
 
     pvec[i] = p;
     qvec[i] = q;
@@ -1159,6 +1254,7 @@ bool try_to_readConf(int num) {
     box.clearMemory();
     box.loadConf(file_name);
     confNum = box.iconf;
+    textZone.addLine("conf-file: %s (time = %f)", file_name, box.t);
     adjust_clipping_plans();
   } else {
     std::cout << file_name << " does not exist" << std::endl;
@@ -1232,7 +1328,8 @@ void export_sample() {
     file << pos << ' ' << box.Particles[i].radius << '\n';
   }
 
-  std::cout << "Sample has been exported in sample.txt\n";
+  // std::cout << "Sample has been exported in sample.txt\n";
+  msg::info("Sample has been exported in sample.txt", std::cout);
 }
 
 void menu(int num) {
@@ -1292,11 +1389,15 @@ GLColorRGBA colorParticleVelocityMagnitude(int i) {
 
 int main(int argc, char* argv[]) {
   INIT_TIMERS();
+
+  char file_name[256];
   if (argc == 1) {
-    box.loadConf("conf0");
-    confNum = 0;
+    snprintf(file_name, 256, "conf0");
+    box.loadConf(file_name);
+    confNum = box.iconf;
   } else {
-    box.loadConf(argv[1]);
+    snprintf(file_name, 256, "%s", argv[1]);
+    box.loadConf(file_name);
     confNum = box.iconf;
   }
 
@@ -1325,7 +1426,6 @@ int main(int argc, char* argv[]) {
   glutInitWindowPosition(50, 50);
   glutInitWindowSize(width, height);
   main_window = glutCreateWindow("PBC3Dbox VISUALIZER");
-  
 
   // ==== Register callbacks
   glutDisplayFunc(display);
@@ -1352,6 +1452,9 @@ int main(int argc, char* argv[]) {
   view_angle = 45.0;
   znear = 0.01f;
   zfar = 10.0f;
+
+  glText::init();
+  textZone.addLine("conf-file: %s (time = %f)", file_name, box.t);
 
   glDisable(GL_CULL_FACE);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

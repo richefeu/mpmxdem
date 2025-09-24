@@ -3,6 +3,8 @@
 
 #include <cmath>
 
+#include "glTools.hpp"
+
 class graphGL {
  public:
   // Window position
@@ -42,17 +44,7 @@ class graphGL {
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-
-    glLoadIdentity();
-    glOrtho(0.0f, (GLdouble)viewport[2], 0.0f, (GLdouble)viewport[3], -1.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
-
-    glDisable(GL_LIGHTING);
-    glDisable(GL_DEPTH_TEST);
+    switch2D::go((GLdouble)viewport[2], (GLdouble)viewport[3]);
 
     // Frame
     glColor4f(1.0f, 1.0f, 1.0f, 0.95f);
@@ -64,7 +56,7 @@ class graphGL {
     glEnd();
 
     glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-    glLineWidth(1.0f);
+    glLineWidth(1.5f);
     glBegin(GL_LINE_LOOP);
     glVertex2i(winOffsetX, winOffsetY);
     glVertex2i(winOffsetX + winWidth, winOffsetY);
@@ -78,7 +70,9 @@ class graphGL {
     // Tick marks along X
     double spaceW = BestTick(rangeWidth, 4);
     double X0tick = floor(rangeOffsetX / spaceW) * spaceW;
-    if (X0tick < rangeOffsetX) X0tick += spaceW;
+    if (X0tick < rangeOffsetX) {
+      X0tick += spaceW;
+    }
 
     double ex;
     int xo;
@@ -119,7 +113,7 @@ class graphGL {
 
     // Grid lines
     glColor4f(0.65f, 0.65f, 0.65f, 0.8f);
-    for (double Xtick = X0tick; Xtick < rangeOffsetX + rangeWidth; Xtick += spaceW) {
+    for (double Xtick = X0tick + spaceW; Xtick < rangeOffsetX + rangeWidth; Xtick += spaceW) {
       ex = (double)(winWidth) / rangeWidth;
       xo = (int)round(ex * (Xtick - rangeOffsetX)) + winOffsetX;
       glBegin(GL_LINES);
@@ -127,7 +121,7 @@ class graphGL {
       glVertex2i(xo, winOffsetY + winHeight);
       glEnd();
     }
-    for (double Ytick = Y0tick; Ytick < rangeOffsetY + rangeHeight; Ytick += spaceH) {
+    for (double Ytick = Y0tick + spaceH; Ytick < rangeOffsetY + rangeHeight; Ytick += spaceH) {
       ey = (double)(winHeight) / rangeHeight;
       yo = (int)round(ey * (Ytick - rangeOffsetY)) + winOffsetY;
       glBegin(GL_LINES);
@@ -137,13 +131,7 @@ class graphGL {
     }
   }
 
-  void end() {
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
-  }
+  void end() { switch2D::back(); }
 
   double BestTick(double largest, int mostticks, double minTickSpacing = -1.0) {
     double minimum = largest / mostticks;
@@ -174,44 +162,55 @@ class graphGL {
     char textValue[50];
     snprintf(textValue, 50, "%s", label);  // to be sure it is null terminated
     int len = 0;
-    for (int i = 0; textValue[i] != '\0'; i++) len++;
-    glRasterPos2i(winOffsetX + (int)round(0.5 * winWidth - 0.5 * len * 9), winOffsetY + winHeight + 4);
-    for (int i = 0; textValue[i] != '\0'; i++) glutBitmapCharacter(GLUT_BITMAP_9_BY_15, textValue[i]);
+    for (int i = 0; textValue[i] != '\0'; i++) {
+      len++;
+    }
+    glText::print(winOffsetX + (int)round(0.5 * winWidth - 0.5 * len * 9), winOffsetY + winHeight + 4, textValue);
   }
 
   void drawTickXValue(int xt, double value) {
     char textValue[50];
     snprintf(textValue, 50, "%.2g", value);
     int len = 0;
-    for (int i = 0; textValue[i] != '\0'; i++) len++;
-    glRasterPos2i(xt - (int)round(0.5 * len * 8), winOffsetY - 13);
-    for (int i = 0; textValue[i] != '\0'; i++) glutBitmapCharacter(GLUT_BITMAP_8_BY_13, textValue[i]);
+    for (int i = 0; textValue[i] != '\0'; i++) {
+      len++;
+    }
+    glText::print(xt - (int)round(0.5 * len * 9), winOffsetY - 13, textValue);
   }
 
   void drawTickYValue(int yt, double value) {
     char textValue[50];
     snprintf(textValue, 50, "%.2g", value);
     int len = 0;
-    for (int i = 0; textValue[i] != '\0'; i++) len++;
-    glRasterPos2i(winOffsetX - (len * 8) - 4, yt - 4);
-    for (int i = 0; textValue[i] != '\0'; i++) glutBitmapCharacter(GLUT_BITMAP_8_BY_13, textValue[i]);
+    for (int i = 0; textValue[i] != '\0'; i++) {
+      len++;
+    }
+    glText::print(winOffsetX - (len * 9) - 4, yt - 4, textValue);
   }
 
   void fit(std::vector<double>& buf, double& valMin, double& valMax) {
-    if (buf.empty()) return;
+    if (buf.empty()) {
+      return;
+    }
 
     valMin = buf[0];
     valMax = buf[0];
     for (size_t i = 1; i < buf.size(); i++) {
-      if (buf[i] > valMax) valMax = buf[i];
+      if (buf[i] > valMax) {
+        valMax = buf[i];
+      }
 
-      if (buf[i] < valMin) valMin = buf[i];
+      if (buf[i] < valMin) {
+        valMin = buf[i];
+      }
     }
   }
 
   void plot(const std::vector<double>& xbuf, const std::vector<double>& ybuf) {
     if (xbuf.empty() || ybuf.empty() || xbuf.size() != ybuf.size()) {
       std::cerr << "Error: xbuf and ybuf must be non-empty and have the same size" << std::endl;
+      std::cerr << "xbuf.size() = " << xbuf.size() << std::endl;
+      std::cerr << "ybuf.size() = " << ybuf.size() << std::endl;
       return;
     }
 

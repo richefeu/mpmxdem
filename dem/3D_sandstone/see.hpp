@@ -3,6 +3,7 @@
 #ifndef GL_SILENCE_DEPRECATION
 #define GL_SILENCE_DEPRECATION
 #endif
+
 #include <GL/freeglut.h>
 
 #include <cmath>
@@ -10,9 +11,12 @@
 #include <cstdlib>
 #include <functional>
 
-#include "ColorTable.hpp"
 #include "PBC3D.hpp"
+
+#include "ColorTable.hpp"
 #include "graphGL.hpp"
+#include "glTools.hpp"
+#include "message.hpp"
 
 PBC3Dbox box;
 int confNum = 0;
@@ -20,6 +24,7 @@ int confNum = 0;
 int main_window;
 
 // flags
+int show_help = 0;
 int show_background = 0;
 int show_particles = 1;
 int show_velocities = 0;
@@ -48,6 +53,8 @@ double radiusMean;
 int width = 800;
 int height = 800;
 float wh_ratio = (float)width / (float)height;
+
+glTextZone textZone(3, &width, &height);
 
 // Miscellaneous global variables
 enum MouseMode { NOTHING, ROTATION, ZOOM, PAN } mouse_mode = NOTHING;
@@ -93,7 +100,7 @@ void drawsphere(int ndiv, float radius);
 void drawtri(GLfloat* a, GLfloat* b, GLfloat* c, int div, float r);
 void normalize(GLfloat* a);
 
-void clear_background();
+//void clear_background();
 void drawPeriodicCell();
 void drawSlice();
 void drawArrow(vec3r& orig, vec3r& arrow);
@@ -142,4 +149,3 @@ int screenshot(const char* filename);
 void export_sample();
 void add_ghost_pos(size_t i, double mn, double mx, std::vector<vec3r>& lst);
 bool inSlice(vec3r& pos);
-
