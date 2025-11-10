@@ -6,8 +6,6 @@
 
 #include "PBC3D.hpp"
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 PBC3Dbox::PBC3Dbox() {
   // Some default values (actually, most of them will be (re-)set after)
   oldVersion = false;
@@ -63,18 +61,14 @@ PBC3Dbox::PBC3Dbox() {
   setTraineeSoftening();
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Print a banner related with the current code
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::showBanner() {
   std::cout << "\nPBC3D (sandstone version), Periodic Boundary Conditions in 3D\n";
   std::cout << "<Vincent.Richefeu@3sr-grenoble.fr>\n\n";
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief open the files that will hold computation data
 ///        (macro-stress, cell config, macro-strain, static quality indices)
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::initOutputFiles() {
   stressOut.open("stress.out.txt");
   cellOut.open("cell.out.txt");
@@ -82,26 +76,20 @@ void PBC3Dbox::initOutputFiles() {
   resultantOut.open("resultant.out.txt");
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Clear Particles and Interactions
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::clearMemory() {
   Particles.clear();
   Interactions.clear();
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Save the current configuration
 /// @param[in] i File number. It will be named 'confx' where x is replaced by i
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::saveConf(int i) {
   char fname[256];
   snprintf(fname, 256, "conf%d", i);
   saveConf(fname);
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::saveConf(const char* name) {
   std::ofstream conf(name);
 
@@ -203,10 +191,8 @@ void PBC3Dbox::saveConf(const char* name) {
   }
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Load the configuration
 /// @param[in]    name     Name of the file
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::loadConf(const char* name) {
   double trash;
   // std::cout << "PBC3Dbox loading " << name << std::endl;
@@ -544,7 +530,7 @@ void PBC3Dbox::loadConf(const char* name) {
   accelerations();  // a fake time-increment that will compute missing thinks
 }
 
-/// ----------------------------------------------------------------------------------------------------
+// ==========================================================================
 // This function computes some useful data related to the sample:
 // Rmin, Rmax
 // VelMin, velMax, VelMean
@@ -553,7 +539,7 @@ void PBC3Dbox::loadConf(const char* name) {
 //
 // remark: it is called at the end of 'loadConf' and also in 'initLagamine'
 //         or at the beginning of 'transform' for MPMxDEM
-/// ----------------------------------------------------------------------------------------------------
+// ==========================================================================
 void PBC3Dbox::computeSampleData() {
   // Particle related data
   if (!Particles.empty()) {
@@ -591,6 +577,12 @@ void PBC3Dbox::computeSampleData() {
 
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
+
+#if 1
+      Acc -= Cell.ah * Particles[i].pos;
+      // Acc -= 2.0 * Cell.vh * Particles[i].vel;
+#endif
+
       VectVelMean += Vel;
       VectAccMean += Acc;
       double SqrVel = norm2(Vel);
@@ -630,7 +622,7 @@ void PBC3Dbox::computeSampleData() {
       vec3r Vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
       vec3r Acc = Cell.h * Particles[i].acc;
       VelVar += norm2(Vel - VectVelMean);
-      AccVar += norm2(Acc - VectVelMean);
+      AccVar += norm2(Acc - VectAccMean);
     }
     VelVar /= (double)Particles.size();
     AccVar /= (double)Particles.size();
@@ -672,11 +664,9 @@ void PBC3Dbox::computeSampleData() {
   w_particle = Kratio / (Kratio + 1.0);
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// This method is callinged as a pre-processing command at the end of a conf-file.
-/// It 'activates' each interaction by with normal distance lower than epsiDist
-/// into a point of glue by changing its state
-/// ----------------------------------------------------------------------------------------------------
+// This method is callinged as a pre-processing command at the end of a conf-file.
+// It 'activates' each interaction by with normal distance lower than epsiDist
+// into a point of glue by changing its state
 void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
   // In case the conf-file has no interactions, the neighbor list is updated
   updateNeighborList(dVerlet);
@@ -712,8 +702,6 @@ void PBC3Dbox::ActivateBonds(double epsiDist, int state) {
   }  // end loop over interactions
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
   std::vector<size_t> indices;
   for (size_t i = 0; i < Interactions.size(); i++) {
@@ -743,9 +731,7 @@ void PBC3Dbox::RemoveBonds(double percentRemove, int StrategyId) {
   }
 }
 
-/// ----------------------------------------------------------------------------------------------------
 // This is the most radical damping ever
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::freeze() {
   for (size_t i = 0; i < Particles.size(); i++) {
     Particles[i].vel.reset();
@@ -755,14 +741,12 @@ void PBC3Dbox::freeze() {
   }
 }
 
-/// ----------------------------------------------------------------------------------------------------
 // Here is the framework used
 //
-//      z
-//      |_ y
-//    x/
+//      y
+//      |_ x
+//    z/
 //
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::setSample() {
   Particle P;
   P.Q.reset();
@@ -825,7 +809,7 @@ void PBC3Dbox::setSample() {
     }
   }
   ans << (char)strategy << '\n';
-
+  std::srand(std::time({})); 
   if (strategy == '1') {
     double cellSizeX = 2.0 * ngx * radius;
     double cellSizeY = 2.0 * ngy * radius;
@@ -1021,9 +1005,7 @@ void PBC3Dbox::setSample() {
   return;
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Computes a single step with the velocity-Verlet algorithm
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::velocityVerletStep() {
   START_TIMER("velocityVerletStep");
 
@@ -1035,18 +1017,27 @@ void PBC3Dbox::velocityVerletStep() {
     Particles[i].pos += dt * Particles[i].vel + dt2_2 * Particles[i].acc;
     Particles[i].vel += dt_2 * Particles[i].acc;
 
-    // Periodicity in position, i.e. move the outgoing particles in the orther side
-    // Vincent: Gael conviced me this is ok and absolutely mandatory, so even if the flag enableSwitch
-    //          exists, it should always be activated (enableSwitch = 1)
+    // Periodicity in position (can be usefull in the sample preparation)
     if (enableSwitch > 0) {
-      //bool recompute_velocity = false;
+
+      // vec3r move;
+      bool recompute_velocity = false;
       for (size_t c = 0; c < 3; c++) {
         while (Particles[i].pos[c] < 0.0) {
           Particles[i].pos[c] += 1.0;
+          // move[c] += 1.0;
+          recompute_velocity = true;
         }
         while (Particles[i].pos[c] > 1.0) {
           Particles[i].pos[c] -= 1.0;
+          // move[c] -= 1.0;
+          recompute_velocity = true;
         }
+      }
+      if (recompute_velocity == true) {
+        // ************************
+        // Particles[i].vel = Cell.vh * Particles[i].pos + Cell.h * Particles[i].vel;
+        // TODO: modifier cette vitesse réduite
       }
     }
 
@@ -1109,9 +1100,7 @@ void PBC3Dbox::velocityVerletStep() {
   Cell.update(dt);
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Print information about the running computation and current state of the sample
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << "+\n";
   std::cout << "|  iconf = " << iconf << ", Time = " << t << '\n';
@@ -1162,9 +1151,7 @@ void PBC3Dbox::printScreen(double elapsedTime) {
   std::cout << std::flush;
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief The main loop of time-integration
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::integrate() {
   START_TIMER("integrate");
   // (re)-compute some constants in case they were not yet set
@@ -1215,12 +1202,10 @@ void PBC3Dbox::integrate() {
   return;
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Save data in output files
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::dataOutput() {
   // Cell
-  cellOut << t << ' ' << Cell.h << ' ' << Cell.vh << std::endl;
+  cellOut << t << ' ' << Cell.h << ' ' << Cell.vh << ' ' << Cell.ah << std::endl;
 
   // Stress
   stressOut << t << ' ' << Sig << std::endl;
@@ -1241,13 +1226,17 @@ void PBC3Dbox::dataOutput() {
   Kin *= 0.5;
 
   staticQualityData(&ResMean, &Res0Mean, &fnMin, &fnMean);
-  resultantOut << t << ' ' << ResMean << ' ' << Res0Mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' '
-               << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << VelMax << ' ' << VelMin << ' ' << VelMean
-               << ' ' << VelVar << ' ' << ReducedPartDistMean << ' ' << Kin << std::endl;
+
+  // Compute voidRatio e et coordination number Z: (pas encore commit)
+  double voidRatio = (Vcell - Vsolid) / Vsolid;
+  double coordinationZ = 2.0 * nbActiveInteractions / Particles.size();
+
+  resultantOut << t << ' ' << ResMean << ' ' << Res0Mean << ' ' << fnMin << ' ' << fnMean << ' ' << nbBonds << ' ' 
+                << tensfailure << ' ' << fricfailure << ' ' << Vcell << ' ' << Vsolid << ' ' << voidRatio << ' '  << coordinationZ
+                << ' '  << VelMax << ' ' << VelMin << ' ' << VelMean << ' ' << VelVar << ' ' << ReducedPartDistMean
+                << ' ' << Kin  << std::endl;
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::updateNeighborList(double dmax) {
   switch (NLStrategy) {
     case 0: {
@@ -1261,10 +1250,8 @@ void PBC3Dbox::updateNeighborList(double dmax) {
   }
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
   START_TIMER("updateNeighborList");
 
@@ -1338,10 +1325,8 @@ void PBC3Dbox::updateNeighborList_linkCells(double dmax) {
   }
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief  Update the neighbor list (that is the list of 'active' and 'non-active' interactions)
 /// @param[in] dmax Maximum distance for adding an Interaction in the neighbor list
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
   START_TIMER("updateNeighborList_brutForce");
 
@@ -1398,9 +1383,7 @@ void PBC3Dbox::updateNeighborList_brutForce(double dmax) {
   }
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Compute acceleration of the particles and of the periodic-cell.
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::accelerations() {
   START_TIMER("accelerations");
 
@@ -1482,16 +1465,19 @@ void PBC3Dbox::accelerations() {
   for (size_t i = 0; i < Particles.size(); i++) {
     vec3r acc = Particles[i].force / Particles[i].mass;
 
-#if 1
+    // #if 1
+    if (kineticStress > 0)
     // =====================================================
     // The following 2 lines can be removed.
     // In fact, mathematic relations say we should use them
     // but in practice their presence makes no difference
     // in the case of quasistatic strainning (ah and vh <<< 1)
     // =====================================================
-    //acc -= Cell.ah * Particles[i].pos;
-    acc -= 2.0 * Cell.vh * Particles[i].vel;
-#endif
+    {
+      // acc -= Cell.ah * Particles[i].pos;
+      acc -= 2.0 * Cell.vh * Particles[i].vel;
+    }
+    // #endif
 
     Particles[i].acc = hinv * acc;
 
@@ -1499,17 +1485,12 @@ void PBC3Dbox::accelerations() {
   }
 }
 
-
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::setTraineeSoftening() {
   modelSoftening = "trainee";
   DzetaModel = [this](double zeta) -> double { return (zeta - 1.0) / (this->zetaMax - 1.0); };
   zetaDModel = [this](double D) -> double { return D * (this->zetaMax - 1.0) + 1.0; };
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::setLinearSoftening() {
   modelSoftening = "linear";
   DzetaModel = [this](double zeta) -> double {
@@ -1518,8 +1499,6 @@ void PBC3Dbox::setLinearSoftening() {
   zetaDModel = [this](double D) -> double { return this->zetaMax / (this->zetaMax - D * (this->zetaMax - 1.0)); };
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::setGateSoftening() {
   modelSoftening = "gate";
   DzetaModel = [this](double zeta) -> double {
@@ -1537,8 +1516,6 @@ void PBC3Dbox::setGateSoftening() {
   };
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double DrotNorm) {
   START_TIMER("YieldFuncDam");
   double yieldFunc;
@@ -1550,13 +1527,10 @@ double PBC3Dbox::YieldFuncDam(double zeta, double Dn, double DtNorm, double Drot
   return yieldFunc;
 }
 
-/// ----------------------------------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::addKineticStress() {
   for (size_t i = 0; i < Particles.size(); i++) {
-    // Remark: only the fluctuating part of velocities is part of the
-    //         kinetic stress
-    vec3r vel = Cell.h * Particles[i].vel;  // + Cell.vh * Particles[i].pos;
+    // Using fluctuation velocity only, the affine field's term (Cell.vh*Particles[i].position) should not be included
+    vec3r vel = Cell.h * Particles[i].vel;
     Sig.xx += Particles[i].mass * vel.x * vel.x;
     Sig.xy += Particles[i].mass * vel.x * vel.y;
     Sig.xz += Particles[i].mass * vel.x * vel.z;
@@ -1569,10 +1543,8 @@ void PBC3Dbox::addKineticStress() {
   }
 }
 
-/// ----------------------------------------------------------------------------------------------------
 /// @brief Computes the interaction forces and moments,
 ///        and the tensorial moment (= Vcell * stress matrix) of the cell
-/// ----------------------------------------------------------------------------------------------------
 void PBC3Dbox::computeForcesAndMoments() {
   START_TIMER("computeForcesAndMoments");
 
@@ -1585,6 +1557,8 @@ void PBC3Dbox::computeForcesAndMoments() {
     vec3r imag_j_period_move(floor(sij.x + 0.5), floor(sij.y + 0.5), floor(sij.z + 0.5));
     sij -= imag_j_period_move;
     vec3r branch = Cell.h * sij;
+	
+	// 
 
     if (Interactions[k].state == bondedState) {
       // ===========================================================
