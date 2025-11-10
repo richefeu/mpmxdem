@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -54,9 +55,9 @@ class PBC3Dbox {
   int fricfailure;     ///< NAME IS NOT OK !!!!!!
 
   // Time parameters
-  double t{0.0};     ///< Current Time
-  double tmax{1.0};  ///< End time
-  double dt{1.0e-8};    ///< Time increment
+  double t{0.0};      ///< Current Time
+  double tmax{1.0};   ///< End time
+  double dt{1.0e-8};  ///< Time increment
 
   // Simulation flow
   double interVerlet{0.0};  ///< Time intervalle between each update of the neighbor-list
