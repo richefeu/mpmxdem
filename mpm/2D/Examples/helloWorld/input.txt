@@ -17,8 +17,10 @@ model MohrCoulomb    MC         1.0e9     0.42      0.3            1e2        0.
 #     modelID             modelName  Young   Poisson  beta  beta_p  kappa  varphiDeg  pc0
 model SinfoniettaClassica SC         3.46e6  0.25     1.2   0.01    0.0    38.5       1e3
 
+# Place the nodes
 set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
 
+# Place the MPs
 #            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
 set_MP_grid  0       MC            2700.0        0.04   0.04    0.1    0.20    0.005
 
@@ -28,10 +30,12 @@ Obstacle Line    1      0.36  0.26   0.36   0.04  freeze
 Obstacle Line    1      0.36  0.04   0.04   0.04  freeze
 Obstacle Line    1      0.04  0.04   0.04   0.26  freeze
 
-#Obstacle Circle  1      0.14 0.3 0.04 free 300  0 0 0  0 0 0
 
+# Obstacles of groupe 1 use this force law
+# (this command needs to be placed after the Obstacles)
 BoundaryForceLaw frictionalViscoElastic 1
 
+# Set the properties that will be used between Obstacles and MPs
 #properties      parameter  groupMP   groupObst  value
 set              mu         0         1          0.4
 set              kn         0         1          1e7

@@ -1039,7 +1039,7 @@ void PBC3Dbox::velocityVerletStep() {
     // Vincent: Gael conviced me this is ok and absolutely mandatory, so even if the flag enableSwitch
     //          exists, it should always be activated (enableSwitch = 1)
     if (enableSwitch > 0) {
-      bool recompute_velocity = false;
+      //bool recompute_velocity = false;
       for (size_t c = 0; c < 3; c++) {
         while (Particles[i].pos[c] < 0.0) {
           Particles[i].pos[c] += 1.0;

@@ -16,7 +16,7 @@ CXXFLAGS = -O3 -Wall -Wextra -Wshadow -std=c++17 -I ./toofus
 #Link flags for OpenGL and glut
 GLLINK = `pkg-config --libs gl glu glut`
 GLFLAGS = `pkg-config --cflags gl glu glut`
-#on apple, use brew to install freeglut and mesa - glu
+#on apple, use brew to install freeglut and mesa-glu
 
 else # ==============================================================
 

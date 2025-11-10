@@ -36,9 +36,9 @@
 
 #include <stdlib.h>
 
-//#define SPGLOG_HEADER_ONLY
-//#define FMT_HEADER_ONLY
-//#include "spdlog/fwd.h"
+// #define SPGLOG_HEADER_ONLY
+// #define FMT_HEADER_ONLY
+// #include "spdlog/fwd.h"
 
 #define FMT_HEADER_ONLY
 #include "fmtLogger.hpp"
@@ -140,6 +140,8 @@ class MPMbox {
   size_t number_MP_before_any_split;  // used to check proximity if # of MP has changed
                                       // (some "unknown" points could enter the obstacle and suddenly be detected
                                       // once they are way inside)
+
+  std::vector<std::string> BFLCommandStored;
 
   MPMbox();   // Ctor
   ~MPMbox();  // Dtor

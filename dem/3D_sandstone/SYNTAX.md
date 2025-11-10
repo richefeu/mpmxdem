@@ -55,11 +55,11 @@ This document describes the syntax and structure of input files (shared with con
 
  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |  
  |---|---|---|---|---|---|---|---|---|----|
- | time | $\langle \vert \vec{F} \vert \rangle$ | $\langle \vert \vec{F} \vert_2 \rangle$ | $\text{min}(f_n)$ | $N_\text{bonds}$ | $N_\text{break}^\text{tens}$ | $N_\text{break}^\text{fric}$ |$V_\text{cell}$ | $v_\text{max}$ | $v_\text{min}$ |
+ | time | $\langle \vert \vec{F} \vert \rangle$ | $\langle \vert \vec{F} \vert_2 \rangle$ | $\text{min}(f_n)$ | $\langle f_n \rangle$| $N_\text{bonds}$ | $N_\text{break}^\text{tens}$ | $N_\text{break}^\text{fric}$ |$V_\text{cell}$ | $v_\text{max}$ |
  
- | 11 | 12 | 13 | 14 | 
- |----|----|----|----|
- | $\langle v \rangle$ | $\Delta v$ | ReducedPartDistMean | $E_k$ |
+ | 11 | 12 | 13 | 14 | 15 |
+ |----|----|----|----|----|
+ | $v_\text{min}$  | $\langle v \rangle$ | $\Delta v$ | ReducedPartDistMean | $E_k$ |
  
  where $\langle \vert \vec{F} \vert \rangle$ is the average resultant force over all bodies, $\langle \vert \vec{F} \vert_2 \rangle$ is same but with only the bodies holding more than 2 contacts, $\text{min}(f_n)$ is the minimum normal force strictly superior to zero, $\langle f_n \rangle$ is the mean nonzero normal force ...
  

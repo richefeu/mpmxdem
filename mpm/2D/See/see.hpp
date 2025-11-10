@@ -69,22 +69,22 @@ AABB worldBox;
 int main_window;
 
 // flags
-int show_background = 0;
-int show_MPs = 1;
-int show_grid = 1;
-int show_obstacles = 1;
+int show_background        = 0;
+int show_MPs               = 1;
+int show_grid              = 1;
+int show_obstacles         = 1;
 int show_stress_directions = 0;
-int show_node_dofs = 1;
+int show_node_dofs         = 1;
 
 int MP_deformed_shape = 0;
-int MP_contour = 1;
+int MP_contour        = 1;
 
 int color_option = 0;
 ColorTable colorTable;
 glColorBar colorBar;
 
-int width = 800;
-int height = 600;
+int width      = 800;
+int height     = 600;
 float wh_ratio = (float)width / (float)height;
 
 glTextZone textZone(1, &width, &height);
@@ -111,10 +111,11 @@ void reshape(int x, int y);
 void precomputeColors();
 void printHelp();
 void fit_view();
-bool fileExists(const char* fileName);
-bool try_to_readConf(int num, MPMbox& CF, int& OKNum);
-void readConf(const char* file_name, const char* co_file_name, MPMbox& CF);
-void readAdditionalData(const char* fileName);
-int screenshot(const char* filename);
+bool fileExists(const char *fileName);
+bool try_to_readConf(int num, MPMbox &CF, int &OKNum);
+void updateTextLine();
+void readConf(const char *file_name, const char *co_file_name, MPMbox &CF);
+void readAdditionalData(const char *fileName);
+int screenshot(const char *filename);
 
 #endif /* end of include guard: SEE_CONF_HPP */

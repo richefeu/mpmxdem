@@ -43,13 +43,13 @@
 #include "ShapeFunctions/RegularQuadLinear.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 
+#include "Spies/ElasticBeamDev.hpp"
 #include "Spies/EnergyBalance.hpp"
 #include "Spies/MPTracking.hpp"
 #include "Spies/MeanStress.hpp"
 #include "Spies/ObstacleTracking.hpp"
 #include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
-#include "Spies/ElasticBeamDev.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/PICDissipation.hpp"
@@ -343,12 +343,14 @@ void MPMbox::read(const char* name) {
     return;
   }
 
+  BFLCommandStored.clear();
+
   std::string token;
   file >> token;
   while (file) {
-    if (token[0] == '/' || token[0] == '#' || token[0] == '!')
+    if (token[0] == '/' || token[0] == '#' || token[0] == '!') {
       getline(file, token);
-    else if (token == "result_folder") {
+    } else if (token == "result_folder") {
       file >> result_folder;
       // If result_folder does not exist, it is created
       fileTool::create_folder(result_folder);
@@ -398,7 +400,7 @@ void MPMbox::read(const char* name) {
       file >> shearLimit;
     } else if (token == "MaxSplitNumber") {
       file >> MaxSplitNumber;
-    } else if (token == "demavg") {
+    } else if (token == "demavg") {  // kept for compatibility
       file >> CHCL.minDEMstep >> CHCL.rateAverage;
     } else if (token == "CHCL.minDEMstep") {
       file >> CHCL.minDEMstep;
@@ -461,6 +463,11 @@ void MPMbox::read(const char* name) {
       std::string boundaryName;
       int obstacleGroup;
       file >> boundaryName >> obstacleGroup;
+
+      char StoredCommand[256];
+      snprintf(StoredCommand, 256, "BoundaryForceLaw %s %d", boundaryName.c_str(), obstacleGroup);
+      BFLCommandStored.push_back(std::string(StoredCommand));
+
       BoundaryForceLaw* bType = Factory<BoundaryForceLaw>::Instance()->Create(boundaryName);
       for (size_t o = 0; o < Obstacles.size(); o++) {
         if (Obstacles[o]->group == obstacleGroup) {
@@ -489,14 +496,20 @@ void MPMbox::read(const char* name) {
       } else {
         Logger::warn("Spy {} is unknown!", spyName);
       }
-    } else if (token == "node") {
+    } else if (token == "Nodes") {
+      if (nodes.empty()) {
+        Logger::warn("You need to set the nodes BEFORE reading their datasets (e.g., use set_nodes_grid before)");
+      }
       size_t nb;
       file >> nb;
-      nodes.clear();
-      node N;
-      for (size_t inode = 0; inode < nb; inode++) {
-        file >> N.number >> N.pos;
-        nodes.push_back(N);
+      // nodes.clear();
+      // node N;
+      size_t in;
+      for (size_t n = 0; n < nb; n++) {
+        // file >> N.number >> N.pos;
+        // nodes.push_back(N);
+        file >> in;
+        file >> nodes[in].q >> nodes[in].f >> nodes[in].fb >> nodes[in].mass >> nodes[in].xfixed >> nodes[in].yfixed;
       }
     } else if (token == "Elem") {
       size_t nb;
@@ -625,8 +638,15 @@ void MPMbox::save(const char* name) {
     file << "planeStrain\n";
   }
   file << "oneStepType " << oneStep->getRegistrationName() << '\n';
-  file << "result_folder .\n";
+  file << "result_folder " << result_folder << "\n";
   file << "tolmass " << tolmass << '\n';
+
+  if (activePIC == true) {
+    file << "enablePIC " << 1.0 - ratioFLIP << '\n';
+  } else {
+    file << "disablePIC" << '\n';
+  }
+
   file << "gravity " << gravity << '\n';
 
   file << "CHCL.minDEMstep " << CHCL.minDEMstep << '\n';
@@ -640,6 +660,7 @@ void MPMbox::save(const char* name) {
   file << "dt " << dt << '\n';
   file << "t " << t << '\n';
   file << "splitting " << splitting << '\n';
+  file << "securDistFactor " << securDistFactor << '\n';
   file << "ShapeFunction " << shapeFunction->getRegistrationName() << '\n';
 
   for (size_t sc = 0; sc < Scheduled.size(); sc++) {
@@ -687,16 +708,31 @@ void MPMbox::save(const char* name) {
   // This is a command that will set the Elements and the nodes also
 
   // The node datasets (not all)
-  file << "Nodes " << nodes.size() << '\n';
+  std::vector<size_t> savedNodes;
   for (size_t in = 0; in < nodes.size(); in++) {
-    file << nodes[in].q << ' ' << nodes[in].f << ' ' << nodes[in].fb << ' ' << nodes[in].mass << ' ' << nodes[in].xfixed
-         << ' ' << nodes[in].yfixed << '\n';
+    if (nodes[in].q.x == 0.0 && nodes[in].q.y == 0.0 && nodes[in].f.x == 0.0 && nodes[in].f.y == 0.0 &&
+        nodes[in].fb.x == 0.0 && nodes[in].fb.y == 0.0 && nodes[in].mass == 0.0 && nodes[in].xfixed == 0 &&
+        nodes[in].yfixed == 0) {
+      continue;
+    }
+    savedNodes.push_back(in);
+  }
+  file << "Nodes " << savedNodes.size() << '\n';
+  for (size_t n = 0; n < savedNodes.size(); n++) {
+    size_t in = savedNodes[n];
+    file << in << ' ' << nodes[in].q << ' ' << nodes[in].f << ' ' << nodes[in].fb << ' ' << nodes[in].mass << ' '
+         << nodes[in].xfixed << ' ' << nodes[in].yfixed << '\n';
   }
 
   // Obstacles
   for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
     file << "Obstacle " << Obstacles[iObst]->getRegistrationName() << ' ';
     Obstacles[iObst]->write(file);
+  }
+
+  // Boudary Force Laws
+  for (size_t i = 0; i < BFLCommandStored.size(); i++) {
+    file << BFLCommandStored[i] << '\n';
   }
 
   // Material points
@@ -1024,7 +1060,7 @@ void MPMbox::limitTimeStepForDEM() {
       // VG3D.zz = 0.0;  // assuming plane strain
       VG3D = VG3D * MP[p].PBC->Cell.h;
       // clang-format off
-      double maxi = std::max({fabs(VG3D.xx), fabs(VG3D.xy), fabs(VG3D.xz), 
+      double maxi = std::max({fabs(VG3D.xx), fabs(VG3D.xy), fabs(VG3D.xz),
 				                      fabs(VG3D.yx), fabs(VG3D.yy), fabs(VG3D.yz),
                               fabs(VG3D.zx), fabs(VG3D.zy), fabs(VG3D.zz)});
       // clang-format on

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.26)
 
 message(STATUS "CMAKE_SYSTEM_NAME = " ${CMAKE_SYSTEM_NAME})
 message(STATUS "CMAKE_HOST_SYSTEM_NAME = " ${CMAKE_HOST_SYSTEM_NAME})
@@ -8,10 +8,9 @@ if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
   execute_process(
     COMMAND
       bash -c
-      "ls /usr/local/bin/g++-* 2>/dev/null | grep -Eo 'g\\+\\+-[0-9]+' | sort -V | tail -1"
+      "ls /usr/local/bin/g++-* /opt/homebrew/bin/g++-* 2>/dev/null | grep -Eo 'g\\+\\+-[0-9]+' | sort -V | tail -1"
     OUTPUT_VARIABLE LATEST_GNU_GPP
     OUTPUT_STRIP_TRAILING_WHITESPACE)
-
   if(LATEST_GNU_GPP)
     set(CMAKE_OSX_COMPILER_ID "GNU")
     set(CMAKE_CXX_COMPILER "${LATEST_GNU_GPP}")
@@ -19,7 +18,7 @@ if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
   else()
     message(
       WARNING
-        "No GNU g++ found in /usr/local/bin/. Falling back to default compiler."
+        "No GNU g++ found in /usr/local/bin/ or /opt/homebrew/bin/. Falling back to default compiler."
     )
   endif()
 endif()
@@ -30,7 +29,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # -Wno-deprecated-declarations
-set(CMAKE_CXX_FLAGS "-O3  -Wall -Wextra -DENABLE_PROFILING -lpthread")
+set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra -DENABLE_PROFILING -lpthread")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 include(FetchContent)
@@ -183,10 +182,52 @@ endif()
 
 # ##############################################################################
 # see
+if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Linux") #=========
+    
+  add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
+  target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR}
+                                         ${GLUT_INCLUDE_DIRS})
+  target_link_directories(see PRIVATE ${GLUT_LIBRARY_DIRS})
+  target_link_libraries(see PUBLIC OpenGL::GL OpenGL::GLU ${GLUT_LIBRARIES}
+                                   ${PLUGGED_DEM_LIBRARY})
 
-add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
-target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR}
-                                       ${GLUT_INCLUDE_DIRS})
-target_link_directories(see PRIVATE ${GLUT_LIBRARY_DIRS})
-target_link_libraries(see PUBLIC OpenGL::GL OpenGL::GLU ${GLUT_LIBRARIES}
-                                 ${PLUGGED_DEM_LIBRARY})
+else() # Darwin =========
+  
+  if(NOT PkgConfig_FOUND)
+    find_package(PkgConfig REQUIRED)
+  endif()
+
+  pkg_check_modules(GL REQUIRED gl)
+  pkg_check_modules(GLU REQUIRED glu)
+  pkg_check_modules(GLUT REQUIRED glut>=3.4.0)
+
+  if(GL_FOUND)
+    message(STATUS "GL as been found with PkgConfig")
+    message(STATUS "GL_LIBRARY_DIRS = " ${GL_LIBRARY_DIRS})
+    message(STATUS "GL_INCLUDE_DIRS = " ${GL_INCLUDE_DIRS})
+    message(STATUS "GL_LIBRARIES = " ${GL_LIBRARIES})
+  endif()
+
+  if(GLU_FOUND)
+    message(STATUS "GLU as been found with PkgConfig")
+    message(STATUS "GLU_LIBRARY_DIRS = " ${GLU_LIBRARY_DIRS})
+    message(STATUS "GLU_INCLUDE_DIRS = " ${GLU_INCLUDE_DIRS})
+    message(STATUS "GLU_LIBRARIES = " ${GLU_LIBRARIES})
+  endif()
+
+  if(GLUT_FOUND)
+    message(STATUS "GLUT as been found with PkgConfig")
+    message(STATUS "GLUT_LIBRARY_DIRS = " ${GLUT_LIBRARY_DIRS})
+    message(STATUS "GLUT_INCLUDE_DIRS = " ${GLUT_INCLUDE_DIRS})
+    message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
+  endif()
+  
+  add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
+  target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR} ${GLU_INCLUDE_DIRS}
+                                         ${GLUT_INCLUDE_DIRS})
+  target_link_directories(see PRIVATE ${GL_LIBRARY_DIRS} ${GLU_LIBRARY_DIRS}
+                            ${GLUT_LIBRARY_DIRS})
+  target_link_libraries(see PUBLIC ${GL_LIBRARIES} ${GLU_LIBRARIES} ${GLUT_LIBRARIES}
+                                   ${PLUGGED_DEM_LIBRARY})
+                                     
+endif() #=========
