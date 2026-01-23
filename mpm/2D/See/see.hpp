@@ -74,7 +74,9 @@ int show_MPs               = 1;
 int show_grid              = 1;
 int show_obstacles         = 1;
 int show_stress_directions = 0;
-int show_node_dofs         = 1;
+
+int show_node_dofs                = 0;
+int show_node_velocity_directions = 0;
 
 int MP_deformed_shape = 0;
 int MP_contour        = 1;
@@ -107,11 +109,14 @@ void motion(int x, int y);
 void display();
 void reshape(int x, int y);
 
+// menu
+void menu(int num);
+void buildMenu();
+
 // Helper functions
-void precomputeColors();
+void precomputeColors(int n);
 void printHelp();
 void fit_view();
-bool fileExists(const char *fileName);
 bool try_to_readConf(int num, MPMbox &CF, int &OKNum);
 void updateTextLine();
 void readConf(const char *file_name, const char *co_file_name, MPMbox &CF);

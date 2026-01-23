@@ -27,170 +27,43 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
   switch (Key) {
 
   case '0': {
-    color_option = 0;
-    precomputeColors();
+    precomputeColors(0);
   } break;
 
   case '1': {
-    color_option = 1;
-    colorBar.setTitle("velocity magnitude");
-    float vmax = 0.0f;
-    float vmin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float vel = (float)norm(SmoothedData[i].vel);
-      if (vel > vmax) vmax = vel;
-      if (vel < vmax) vmin = vel;
-    }
-    colorTable.setMinMax(0.0f, vmax);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by velocity magnitude (vmin = " << vmin << ", vmax = " << vmax << ")\n";
+    precomputeColors(1);
   } break;
 
   case '2': {
-    color_option = 2;
-    colorBar.setTitle("pressure");
-    float pmax = -std::numeric_limits<float>::max();
-    float pmin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float p = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
-      if (p > pmax) pmax = p;
-      if (p < pmin) pmin = p;
-    }
-    // pmin=-10000;
-    // pmax=10000;
-    colorTable.setMinMax(pmin, pmax);
-    // colorTable.setMinMax(-1e4, 1e3);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
+    precomputeColors(2);
   } break;
 
   case '3': {
-    color_option = 3;
-    colorBar.setTitle("density");
-    float rhomax = 0.0f;
-    float rhomin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float rho = (float)SmoothedData[i].rho;
-      if (rho > rhomax) rhomax = rho;
-      if (rho < rhomin) rhomin = rho;
-    }
-    colorTable.setMinMax(rhomin, rhomax);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by density (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
+    precomputeColors(3);
   } break;
 
   case '4': {
-    color_option = 4;
-    colorBar.setTitle("sig_xx");
-    float pmax = -std::numeric_limits<float>::max();
-    float pmin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float p = (float)SmoothedData[i].stress.xx;
-      if (p > pmax) pmax = p;
-      if (p < pmin) pmin = p;
-    }
-    colorTable.setMinMax(pmin, pmax);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by sig_yy (s_xx_min = " << pmin << ", s_xx_max = " << pmax << ")\n";
+    precomputeColors(4);
   } break;
 
   case '5': {
-    if (ADs.empty()) break;
-    color_option = 5;
-    colorBar.setTitle("DEM-cell damage");
-    float Dmax = 0.0f;
-    for (size_t i = 0; i < ADs.size(); i++) {
-      if (ADsREF[i].NB == 0.0) continue;
-      float D = 1.0f - (float)ADs[i].NB / (float)ADsREF[i].NB;
-      if (D > Dmax) Dmax = D;
-    }
-    colorTable.setMinMax(0.0f, Dmax);
-    colorTable.setTableID(6);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by DEM-cell damage [0, " << Dmax << "] \n";
+    if (!ADs.empty()) precomputeColors(5);
   } break;
 
   case '6': {
-    color_option = 6;
-    colorBar.setTitle("deps_q");
-    float depsqmax = -std::numeric_limits<float>::max();
-    float depsqmin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float d1    = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
-      float d2    = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
-      float depsq = (float)sqrt(d1 * d1 + d2 * d2);
-      if (depsq > depsqmax) depsqmax = depsq;
-      if (depsq < depsqmin) depsqmin = depsq;
-    }
-    colorTable.setMinMax(depsqmin, depsqmax);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by deps_q (deps_q_min = " << depsqmin << ", deps_q_max = " << depsqmax << ")\n";
+    precomputeColors(6);
   } break;
+
   case '7': {
-    color_option = 7;
-    colorBar.setTitle("volume variation");
-    float volvarmax = -std::numeric_limits<float>::max();
-    float volvarmin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      if (fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx) == 0) continue;
-      float volvar = (float)(fabs(Conf.MP[i].F.xx * Conf.MP[i].F.yy - Conf.MP[i].F.xy * Conf.MP[i].F.yx) /
-                             fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx)) -
-                     1.0f;
-      if (volvar > volvarmax) volvarmax = volvar;
-      if (volvar < volvarmin) volvarmin = volvar;
-    }
-    colorTable.setMinMax(volvarmin, volvarmax);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by volvar (volvar_min = " << volvarmin << ", volvar_max = " << volvarmax << ")\n";
+    precomputeColors(7);
   } break;
+
   case '8': {
-    color_option = 8;
-    colorBar.setTitle("fx");
-    float fxmax = -std::numeric_limits<float>::max();
-    float fxmin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float fx = (float)Conf.MP[i].contactf.x;
-      if (fx > fxmax) fxmax = fx;
-      if (fx < fxmin) fxmin = fx;
-    }
-    colorTable.setMinMax(fxmin, fxmax);
-    colorTable.setTableID(2);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by fx (fx_min = " << fxmin << ", fx_max = " << fxmax << ")\n";
+    precomputeColors(8);
   } break;
+
   case '9': {
-    if (ADs.empty()) break;
-    color_option = 9;
-    colorBar.setTitle("inertial number");
-    float Imax = -std::numeric_limits<float>::max();
-    float Imin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float d1   = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
-      float d2   = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
-      float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
-      float I = (float)((2 * ADs[i].Rmean * sqrt(d1 * d1 + d2 * d2)) / sqrt((abs(pres) + 1e-6) / SmoothedData[i].rho));
-      if (I > Imax) Imax = I;
-      if (I < Imin) Imin = I;
-    }
-    colorTable.setMinMax(Imin, Imax);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    precomputeColors();
-    std::cout << "MP colored by I (I_min = " << Imin << ", I_max = " << Imax << ")\n";
+    if (!ADs.empty()) precomputeColors(9);
   } break;
 
   case 'd': {
@@ -419,8 +292,10 @@ void drawGrid() {
   }
 
   if (show_node_dofs) {
+
     double s = 0.25 * 0.5 * (Conf.Grid.lx + Conf.Grid.ly);
-    glColor4f(1.f, 0.f, 0.0f, 1.0f);
+    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    glLineWidth(1.5f);
     for (size_t n = 0; n < nodes.size(); n++) {
       if (nodes[n].xfixed) {
         glBegin(GL_LINE_LOOP);
@@ -438,11 +313,29 @@ void drawGrid() {
       }
     }
   }
+
+  if (show_node_velocity_directions) {
+    double s = 0.25 * sqrt(2) * (Conf.Grid.lx + Conf.Grid.ly);
+    glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
+    glLineWidth(1.5f);
+    glBegin(GL_LINES);
+    for (size_t n = 0; n < nodes.size(); n++) {
+      if (fabs(nodes[n].q.x) < 1e-10 && fabs(nodes[n].q.y) < 1e-10) { continue; }
+      vec2r dir = nodes[n].q;
+      dir.normalize();
+      dir *= s;
+      glVertex2d(nodes[n].pos.x, nodes[n].pos.y);
+      glVertex2d(nodes[n].pos.x + dir.x, nodes[n].pos.y + dir.y);
+    }
+    glEnd();
+  }
 }
 
-void precomputeColors() {
+void precomputeColors(int n) {
   precompColors.clear();
   precompColors.resize(SmoothedData.size());
+
+  if (n > 0 && color_option != n) { color_option = n; }
 
   switch (color_option) {
 
@@ -451,6 +344,20 @@ void precomputeColors() {
   } break;
 
   case 1: {
+
+    colorBar.setTitle("velocity magnitude");
+    float vmax = 0.0f;
+    float vmin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float vel = (float)norm(SmoothedData[i].vel);
+      if (vel > vmax) vmax = vel;
+      if (vel < vmax) vmin = vel;
+    }
+    colorTable.setMinMax(0.0f, vmax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by velocity magnitude (vmin = " << vmin << ", vmax = " << vmax << ")\n";
+
     for (size_t i = 0; i < SmoothedData.size(); i++) {
       float vel = (float)norm(SmoothedData[i].vel);
       colorTable.getRGB(vel, &precompColors[i]);
@@ -458,6 +365,20 @@ void precomputeColors() {
   } break;
 
   case 2: {
+
+    colorBar.setTitle("pressure");
+    float pmax = -std::numeric_limits<float>::max();
+    float pmin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float p = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+      if (p > pmax) pmax = p;
+      if (p < pmin) pmin = p;
+    }
+    colorTable.setMinMax(pmin, pmax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
+
     for (size_t i = 0; i < SmoothedData.size(); i++) {
       float p = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
       colorTable.getRGB(p, &precompColors[i]);
@@ -465,6 +386,20 @@ void precomputeColors() {
   } break;
 
   case 3: {
+
+    colorBar.setTitle("density");
+    float rhomax = 0.0f;
+    float rhomin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float rho = (float)SmoothedData[i].rho;
+      if (rho > rhomax) rhomax = rho;
+      if (rho < rhomin) rhomin = rho;
+    }
+    colorTable.setMinMax(rhomin, rhomax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by density (rhomin = " << rhomin << ", rhomax = " << rhomax << ")\n";
+
     for (size_t i = 0; i < SmoothedData.size(); i++) {
       float rho = (float)SmoothedData[i].rho;
       colorTable.getRGB(rho, &precompColors[i]);
@@ -472,6 +407,19 @@ void precomputeColors() {
   } break;
 
   case 4: {
+    colorBar.setTitle("sig_yy");
+    float pmax = -std::numeric_limits<float>::max();
+    float pmin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float p = (float)SmoothedData[i].stress.yy;
+      if (p > pmax) pmax = p;
+      if (p < pmin) pmin = p;
+    }
+    colorTable.setMinMax(pmin, pmax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
+
     for (size_t i = 0; i < SmoothedData.size(); i++) {
       float p = (float)SmoothedData[i].stress.xx;
       colorTable.getRGB(p, &precompColors[i]);
@@ -479,6 +427,20 @@ void precomputeColors() {
   } break;
 
   case 5: {
+    if (ADs.empty()) break;
+
+    colorBar.setTitle("DEM-cell damage (DEM)");
+    float Dmax = 0.0f;
+    for (size_t i = 0; i < ADs.size(); i++) {
+      if (ADsREF[i].NB == 0.0) continue;
+      float D = 1.0f - (float)ADs[i].NB / (float)ADsREF[i].NB;
+      if (D > Dmax) Dmax = D;
+    }
+    colorTable.setMinMax(0.0f, Dmax);
+    colorTable.setTableID(6);
+    colorTable.Rebuild();
+    std::cout << "MP colored by DEM-cell damage [0, " << Dmax << "] \n";
+
     for (size_t i = 0; i < ADs.size(); i++) {
       if (ADsREF[i].NB == 0.0) continue;
       float D = 1.0f - (float)ADs[i].NB / (float)ADsREF[i].NB;
@@ -487,6 +449,21 @@ void precomputeColors() {
   } break;
 
   case 6: {
+    colorBar.setTitle("deps_q");
+    float depsqmax = -std::numeric_limits<float>::max();
+    float depsqmin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float d1    = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
+      float d2    = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
+      float depsq = (float)sqrt(d1 * d1 + d2 * d2);
+      if (depsq > depsqmax) depsqmax = depsq;
+      if (depsq < depsqmin) depsqmin = depsq;
+    }
+    colorTable.setMinMax(depsqmin, depsqmax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by deps_q (deps_q_min = " << depsqmin << ", deps_q_max = " << depsqmax << ")\n";
+
     for (size_t i = 0; i < SmoothedData.size(); i++) {
       float d1    = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
       float d2    = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
@@ -496,6 +473,22 @@ void precomputeColors() {
   } break;
 
   case 7: {
+    colorBar.setTitle("volume variation");
+    float volvarmax = -std::numeric_limits<float>::max();
+    float volvarmin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      if (fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx) == 0) continue;
+      float volvar = (float)(fabs(Conf.MP[i].F.xx * Conf.MP[i].F.yy - Conf.MP[i].F.xy * Conf.MP[i].F.yx) /
+                             fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx)) -
+                     1.0f;
+      if (volvar > volvarmax) volvarmax = volvar;
+      if (volvar < volvarmin) volvarmin = volvar;
+    }
+    colorTable.setMinMax(volvarmin, volvarmax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by volvar (volvar_min = " << volvarmin << ", volvar_max = " << volvarmax << ")\n";
+
     for (size_t i = 0; i < Conf.MP.size(); i++) {
       if (fabs(MPREF[i].F.xx * MPREF[i].F.yy - MPREF[i].F.xy * MPREF[i].F.yx) == 0) continue;
       float volvar = (float)(fabs(Conf.MP[i].F.xx * Conf.MP[i].F.yy - Conf.MP[i].F.xy * Conf.MP[i].F.yx) /
@@ -506,9 +499,58 @@ void precomputeColors() {
   } break;
 
   case 8: {
+    colorBar.setTitle("fx");
+    float fxmax = -std::numeric_limits<float>::max();
+    float fxmin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float fx = (float)Conf.MP[i].contactf.x;
+      if (fx > fxmax) fxmax = fx;
+      if (fx < fxmin) fxmin = fx;
+    }
+    colorTable.setMinMax(fxmin, fxmax);
+    colorTable.setTableID(2);
+    colorTable.Rebuild();
+    std::cout << "MP colored by fx (fx_min = " << fxmin << ", fx_max = " << fxmax << ")\n";
+
     for (size_t i = 0; i < Conf.MP.size(); i++) { colorTable.getRGB((float)Conf.MP[i].contactf.x, &precompColors[i]); }
   } break;
+  
   case 9: {
+    colorBar.setTitle("fy");
+    float fymax = -std::numeric_limits<float>::max();
+    float fymin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float fy = (float)Conf.MP[i].contactf.y;
+      if (fy > fymax) fymax = fy;
+      if (fy < fymin) fymin = fy;
+    }
+    colorTable.setMinMax(fymin, fymax);
+    colorTable.setTableID(2);
+    colorTable.Rebuild();
+    std::cout << "MP colored by fy (fy_min = " << fymin << ", fy_max = " << fymax << ")\n";
+
+    for (size_t i = 0; i < Conf.MP.size(); i++) { colorTable.getRGB((float)Conf.MP[i].contactf.y, &precompColors[i]); }
+  } break;
+
+  case 10: {
+    if (ADs.empty()) break;
+
+    colorBar.setTitle("Inertial number (DEM)");
+    float Imax = -std::numeric_limits<float>::max();
+    float Imin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float d1   = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
+      float d2   = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
+      float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+      float I = (float)((2 * ADs[i].Rmean * sqrt(d1 * d1 + d2 * d2)) / sqrt((abs(pres) + 1e-6) / SmoothedData[i].rho));
+      if (I > Imax) Imax = I;
+      if (I < Imin) Imin = I;
+    }
+    colorTable.setMinMax(Imin, Imax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by Inertial Number (I_min = " << Imin << ", I_max = " << Imax << ")\n";
+
     for (size_t i = 0; i < SmoothedData.size(); i++) {
       float d1   = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
       float d2   = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
@@ -571,6 +613,13 @@ void drawStressDirections() {
 }
 
 void drawMPs() {
+  if (mouse_mode != NOTHING) {
+    if (show_grid == 0) {
+       drawGrid();
+    }
+    return;
+  }
+  
   glLineWidth(1.0f);
 
   for (size_t i = 0; i < Conf.MP.size(); ++i) {
@@ -658,26 +707,15 @@ void drawObstacles() {
   }
 }
 
-/// Robust and portable function to test if a file exists
-bool fileExists(const char *fileName) {
-  std::fstream fin;
-  fin.open(fileName, std::ios::in);
-  if (fin.is_open()) {
-    fin.close();
-    return true;
-  }
-  fin.close();
-  return false;
-}
-
 bool try_to_readConf(int num, MPMbox &CF, int &OKNum) {
   char file_name[256];
   snprintf(file_name, 256, "conf%d.txt", num);
-  if (fileExists(file_name)) {
+  if (fileTool::fileExists(file_name)) {
     OKNum = num;
     char co_file_name[256];
     snprintf(co_file_name, 256, "conf%d.txt_micro", num);
     readConf(file_name, co_file_name, CF);
+    updateTextLine();
   } else {
     std::cout << file_name << " does not exist" << std::endl;
     return false;
@@ -691,9 +729,9 @@ void readConf(const char *file_name, const char *co_file_name, MPMbox &CF) {
   CF.clean();
   CF.read(file_name);
   CF.postProcess(SmoothedData);
-  precomputeColors();
+  precomputeColors(color_option);
   textZone.addLine("conf%d,  t = %0.4g s", CF.iconf, CF.t);
-  if (fileExists(co_file_name)) {
+  if (fileTool::fileExists(co_file_name)) {
     std::cout << "  with additional data in file " << co_file_name << std::endl;
     readAdditionalData(co_file_name);
   }
@@ -771,6 +809,126 @@ int screenshot(const char *filename) {
   return 0;
 }
 
+void menu(int num) {
+  switch (num) {
+
+  case 0: {
+    exit(0);
+  } break;
+
+  // Display options
+  case 100: {
+    show_MPs = 1 - show_MPs;
+  } break;
+  case 101: {
+    show_background = 1 - show_background;
+  } break;
+  case 102: {
+    MP_contour = 1 - MP_contour;
+  } break;
+  case 103: {
+    MP_deformed_shape = 1 - MP_deformed_shape;
+  } break;
+
+  case 104: {
+    show_stress_directions = 1 - show_stress_directions;
+  } break;
+
+  // Color Material Points
+  case 200: {
+    precomputeColors(0);
+  } break;
+  case 201: {
+    precomputeColors(1);
+  } break;
+  case 202: {
+    precomputeColors(2);
+  } break;
+  case 203: {
+    precomputeColors(3);
+  } break;
+  case 204: {
+    precomputeColors(4);
+  } break;
+  case 205: {
+    if (!ADs.empty()) precomputeColors(5);
+  } break;
+  case 206: {
+    precomputeColors(6);
+  } break;
+  case 207: {
+    precomputeColors(7);
+  } break;
+  case 208: {
+    precomputeColors(8);
+  } break;
+  case 209: {
+    precomputeColors(9);
+  } break;
+  case 210: {
+    if (!ADs.empty()) precomputeColors(10);
+  } break;
+
+  // Grid informations
+  case 300: {
+    show_grid = 1 - show_grid;
+  } break;
+  case 301: {
+    show_node_dofs = 1 - show_node_dofs;
+  } break;
+  case 302: {
+    show_node_velocity_directions = 1 - show_node_velocity_directions;
+  } break;
+  
+  default: {
+    std::cout << "Not yet plugged!" << std::endl;
+  }
+  
+
+  }; // end switch
+
+  glutPostRedisplay();
+}
+
+void buildMenu() {
+  int submenu100 = glutCreateMenu(menu); // Display options
+  glutAddMenuEntry("Show/Hide Material Points", 100);
+  glutAddMenuEntry("Show/Hide Background", 101);
+  glutAddMenuEntry("Show/Hide MP Contours", 102);
+  glutAddMenuEntry("Show/Hide MP Deformed Shape", 103);
+  glutAddMenuEntry("Show/Hide MP Stress Directions", 104);
+
+  int submenu200 = glutCreateMenu(menu); // Color Material Points
+  glutAddMenuEntry("None", 200);
+  glutAddMenuEntry("Velocity Magnitude", 201);
+  glutAddMenuEntry("Pressure, tr(Sig)/3", 202);
+  glutAddMenuEntry("Density", 203);
+  glutAddMenuEntry("Sig yy", 204);
+  glutAddMenuEntry("DEM-cell damage (DEM)", 205);
+  glutAddMenuEntry("Delta Eps Deviator", 206);
+  glutAddMenuEntry("Volume Variation", 207);
+  glutAddMenuEntry("Fx (with Obstacle)", 208);
+  glutAddMenuEntry("Fy (with Obstacle)", 209);
+  glutAddMenuEntry("Inertial number (DEM)", 210);
+  
+  int submenu300 = glutCreateMenu(menu); // Grid informations
+  glutAddMenuEntry("Show/Hide Grid", 300);
+  glutAddMenuEntry("Imposed DoF", 301);
+  glutAddMenuEntry("Velocity Directions", 302);
+  
+  int submenu400 = glutCreateMenu(menu); // Material Points informations
+  glutAddMenuEntry("Bidon", 401);
+  // ...
+
+  // Main menu
+  glutCreateMenu(menu);
+  glutAddSubMenu("Display Options", submenu100);
+  glutAddSubMenu("Color Material Points", submenu200);
+  glutAddSubMenu("Grid Informations", submenu300);
+  glutAddSubMenu("Material Points Informations", submenu400);
+  glutAddMenuEntry("Quit", 0);
+}
+
 // =====================================================================
 // Main function
 // =====================================================================
@@ -785,6 +943,8 @@ int main(int argc, char *argv[]) {
     confNum = 0;
     readConf(argv[1], "###", Conf);
   }
+
+  mouse_mode = NOTHING;
 
   // ==== Init GLUT and create window
   glutInit(&argc, argv);
@@ -803,8 +963,11 @@ int main(int argc, char *argv[]) {
   glutMouseFunc(mouse);
   glutMotionFunc(motion);
 
-  mouse_mode = NOTHING;
+  // ==== Menu
+  buildMenu();
+  glutAttachMenu(GLUT_RIGHT_BUTTON);
 
+  // ==== Other initialisations
   glText::init();
 
   glDisable(GL_CULL_FACE);

@@ -74,7 +74,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       sortedLive.insert(I[r]);
     }
   }
-
   liveNodeNum.clear();
   std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
 
@@ -101,6 +100,12 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       }
     }
   }
+  
+  // TODO TODO TODO TODO TODO TODO
+  // ==== compute node.q that are screened by obstacles
+  
+  
+  
 
   // ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
