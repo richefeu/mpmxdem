@@ -87,11 +87,11 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
   case '4': {
     color_option = 4;
-    colorBar.setTitle("sig_yy");
+    colorBar.setTitle("sig_xx");
     float pmax = -std::numeric_limits<float>::max();
     float pmin = std::numeric_limits<float>::max();
     for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float p = (float)SmoothedData[i].stress.yy;
+      float p = (float)SmoothedData[i].stress.xx;
       if (p > pmax) pmax = p;
       if (p < pmin) pmin = p;
     }
@@ -99,7 +99,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     colorTable.setTableID(3);
     colorTable.Rebuild();
     precomputeColors();
-    std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
+    std::cout << "MP colored by sig_yy (s_xx_min = " << pmin << ", s_xx_max = " << pmax << ")\n";
   } break;
 
   case '5': {
@@ -275,7 +275,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
 void updateTextLine() {
   textZone.addLine("conf%d,  t = %0.4g s", confNum, Conf.t);
-  //textZone.addLine("%s - time = %.3G", file_name, Conf.t);
+  // textZone.addLine("%s - time = %.3G", file_name, Conf.t);
 }
 
 void mouse(int button, int state, int x, int y) {
@@ -353,7 +353,7 @@ void display() {
   if (color_option > 0) colorBar.show(width, height, colorTable);
 
   textZone.draw();
-  
+
   glFlush();
   glutSwapBuffers();
 }
@@ -473,7 +473,7 @@ void precomputeColors() {
 
   case 4: {
     for (size_t i = 0; i < SmoothedData.size(); i++) {
-      float p = (float)SmoothedData[i].stress.yy;
+      float p = (float)SmoothedData[i].stress.xx;
       colorTable.getRGB(p, &precompColors[i]);
     }
   } break;
@@ -687,6 +687,7 @@ bool try_to_readConf(int num, MPMbox &CF, int &OKNum) {
 
 void readConf(const char *file_name, const char *co_file_name, MPMbox &CF) {
   std::cout << "Read " << file_name << std::endl;
+  CF.computationMode = false;
   CF.clean();
   CF.read(file_name);
   CF.postProcess(SmoothedData);
