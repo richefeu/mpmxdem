@@ -421,7 +421,7 @@ void precomputeColors(int n) {
     std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
 
     for (size_t i = 0; i < SmoothedData.size(); i++) {
-      float p = (float)SmoothedData[i].stress.yy;
+      float p = (float)SmoothedData[i].stress.xx;
       colorTable.getRGB(p, &precompColors[i]);
     }
   } break;
@@ -725,6 +725,7 @@ bool try_to_readConf(int num, MPMbox &CF, int &OKNum) {
 
 void readConf(const char *file_name, const char *co_file_name, MPMbox &CF) {
   std::cout << "Read " << file_name << std::endl;
+  CF.computationMode = false;
   CF.clean();
   CF.read(file_name);
   CF.postProcess(SmoothedData);

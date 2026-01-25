@@ -16,8 +16,14 @@ void Work::read(std::istream& is) {
   filename = box->result_folder + fileTool::separator() + Filename;
   std::cout << "WorkSlice: filename is " << filenameSlices << std::endl;
   std::cout << "Work: filename is " << filename << std::endl;
-  fileSlices.open(filenameSlices.c_str());
-  file.open(filename.c_str());
+  // Only open file in computation mode to prevent overwriting during visualization
+  if (box->computationMode) {
+    fileSlices.open(filenameSlices.c_str());
+  }
+  // Only open file in computation mode to prevent overwriting during visualization
+  if (box->computationMode) {
+    file.open(filename.c_str());
+  }
 
   double Xmin, Xmax;
   unsigned int nbSlices;
@@ -79,6 +85,8 @@ void Work::exec() {
 }
 
 void Work::record() {
+  // Only record if file is open (i.e., if we're in computation mode)
+  if (!file.is_open()) return;
   file << box->t << " " << -Wn_tot << " " << -Wt_tot << " " << Wint_tot << " " << -Wn_tot - Wt_tot + Wint_tot << " "
        << Wp_tot << std::endl;
 }
