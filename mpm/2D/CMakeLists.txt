@@ -51,8 +51,8 @@ endif()
 # tclap
 FetchContent_Declare(
   tclap
-  GIT_REPOSITORY https://github.com/xguerin/tclap.git
-  GIT_TAG v1.2.5)
+  GIT_REPOSITORY https://github.com/mirror/tclap.git
+  GIT_TAG 1.4)
 FetchContent_GetProperties(tclap)
 if(NOT tclap_POPULATED)
   message(STATUS "Fetching tclap")
