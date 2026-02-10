@@ -72,40 +72,40 @@
  */
 MPMbox::MPMbox() {
   shapeFunction = nullptr;
-  oneStep = nullptr;
-  planeStrain = false;
-  Grid.Nx = 20;
-  Grid.Ny = 20;
-  tolmass = 1.0e-6;
+  oneStep       = nullptr;
+  planeStrain   = false;
+  Grid.Nx       = 20;
+  Grid.Ny       = 20;
+  tolmass       = 1.0e-6;
   gravity.set(0.0, 0.0);
-  CHCL.minDEMstep = 5;
-  CHCL.rateAverage = 0;
-  CHCL.limitTimeStepFactor = 1e-3;
+  CHCL.minDEMstep                = 5;
+  CHCL.rateAverage               = 0;
+  CHCL.limitTimeStepFactor       = 1e-3;
   CHCL.criticalDEMTimeStepFactor = 0.01;
-  ratioFLIP = 0.95;
-  activePIC = true;
+  ratioFLIP                      = 0.95;
+  activePIC                      = true;
 
-  iconf = 0;
+  iconf      = 0;
   confPeriod = 5000;
 
-  dt = 0.00001;
-  dtInitial = dt;
-  t = 0.0;
+  dt            = 0.00001;
+  dtInitial     = dt;
+  t             = 0.0;
   result_folder = ".";
 
   securDistFactor = 2.0;
 
-  splitting = false;
+  splitting           = false;
   splitCriterionValue = 2.0;
-  MaxSplitNumber = 5;
+  MaxSplitNumber      = 5;
 
-  id_kn = dataTable.add("kn");
-  id_kt = dataTable.add("kt");
-  id_en2 = dataTable.add("en2");
-  id_mu = dataTable.add("mu");
+  id_kn       = dataTable.add("kn");
+  id_kt       = dataTable.add("kt");
+  id_en2      = dataTable.add("en2");
+  id_mu       = dataTable.add("mu");
   id_viscRate = dataTable.add("viscRate");
-  id_dn0 = dataTable.add("dn0");
-  id_dt0 = dataTable.add("dt0");
+  id_dn0      = dataTable.add("dn0");
+  id_dt0      = dataTable.add("dt0");
 
   ExplicitRegistrations();
 }
@@ -122,7 +122,9 @@ MPMbox::MPMbox() {
  * initialization of the MPMbox object. This is important to
  * prevent memory leaks.
  */
-MPMbox::~MPMbox() { clean(); }
+MPMbox::~MPMbox() {
+  clean();
+}
 
 /**
  * @brief Displays the application banner.
@@ -159,102 +161,102 @@ void MPMbox::ExplicitRegistrations() {
 
   // BoundaryForceLaw ==========
   Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
-      "frictionalNormalRestitution", [](void) -> BoundaryForceLaw* { return new frictionalNormalRestitution(); });
+      "frictionalNormalRestitution", [](void) -> BoundaryForceLaw * { return new frictionalNormalRestitution(); });
   Factory<BoundaryForceLaw, std::string>::Instance()->RegisterFactoryFunction(
-      "frictionalViscoElastic", [](void) -> BoundaryForceLaw* { return new frictionalViscoElastic(); });
+      "frictionalViscoElastic", [](void) -> BoundaryForceLaw * { return new frictionalViscoElastic(); });
 
   // Command ===================
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "add_MP_ShallowPath", [](void) -> Command* { return new add_MP_ShallowPath(); });
+      "add_MP_ShallowPath", [](void) -> Command * { return new add_MP_ShallowPath(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction("move_MP",
-                                                                     [](void) -> Command* { return new move_MP(); });
+                                                                     [](void) -> Command * { return new move_MP(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "new_set_grid", [](void) -> Command* { return new new_set_grid(); });
+      "new_set_grid", [](void) -> Command * { return new new_set_grid(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "reset_model", [](void) -> Command* { return new reset_model(); });
+      "reset_model", [](void) -> Command * { return new reset_model(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "set_BC_column", [](void) -> Command* { return new set_BC_column(); });
+      "set_BC_column", [](void) -> Command * { return new set_BC_column(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "set_BC_line", [](void) -> Command* { return new set_BC_line(); });
+      "set_BC_line", [](void) -> Command * { return new set_BC_line(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "set_K0_stress", [](void) -> Command* { return new set_K0_stress(); });
+      "set_K0_stress", [](void) -> Command * { return new set_K0_stress(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "set_MP_grid", [](void) -> Command* { return new set_MP_grid(); });
+      "set_MP_grid", [](void) -> Command * { return new set_MP_grid(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "set_MP_polygon", [](void) -> Command* { return new set_MP_polygon(); });
+      "set_MP_polygon", [](void) -> Command * { return new set_MP_polygon(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "set_node_grid", [](void) -> Command* { return new set_node_grid(); });
+      "set_node_grid", [](void) -> Command * { return new set_node_grid(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "select_tracked_MP", [](void) -> Command* { return new select_tracked_MP(); });
+      "select_tracked_MP", [](void) -> Command * { return new select_tracked_MP(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "select_controlled_MP", [](void) -> Command* { return new select_controlled_MP(); });
+      "select_controlled_MP", [](void) -> Command * { return new select_controlled_MP(); });
   Factory<Command, std::string>::Instance()->RegisterFactoryFunction(
-      "set_uniform_pressure", [](void) -> Command* { return new set_uniform_pressure(); });
+      "set_uniform_pressure", [](void) -> Command * { return new set_uniform_pressure(); });
 
   // ConstitutiveModel =========
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "CHCL_DEM", [](void) -> ConstitutiveModel* { return new CHCL_DEM(); });
+      "CHCL_DEM", [](void) -> ConstitutiveModel * { return new CHCL_DEM(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "HookeElasticity", [](void) -> ConstitutiveModel* { return new HookeElasticity(); });
+      "HookeElasticity", [](void) -> ConstitutiveModel * { return new HookeElasticity(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "KelvinVoigt", [](void) -> ConstitutiveModel* { return new KelvinVoigt(); });
+      "KelvinVoigt", [](void) -> ConstitutiveModel * { return new KelvinVoigt(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "MohrCoulomb", [](void) -> ConstitutiveModel* { return new MohrCoulomb(); });
+      "MohrCoulomb", [](void) -> ConstitutiveModel * { return new MohrCoulomb(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel* { return new VonMisesElastoPlasticity(); });
+      "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel * { return new VonMisesElastoPlasticity(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "SinfoniettaClassica", [](void) -> ConstitutiveModel* { return new SinfoniettaClassica(); });
+      "SinfoniettaClassica", [](void) -> ConstitutiveModel * { return new SinfoniettaClassica(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "SinfoniettaCrush", [](void) -> ConstitutiveModel* { return new SinfoniettaCrush(); });
+      "SinfoniettaCrush", [](void) -> ConstitutiveModel * { return new SinfoniettaCrush(); });
 
   // Obstacle ==================
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
-                                                                      [](void) -> Obstacle* { return new Circle(); });
+                                                                      [](void) -> Obstacle * { return new Circle(); });
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Line",
-                                                                      [](void) -> Obstacle* { return new Line(); });
+                                                                      [](void) -> Obstacle * { return new Line(); });
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Polygon",
-                                                                      [](void) -> Obstacle* { return new Polygon(); });
+                                                                      [](void) -> Obstacle * { return new Polygon(); });
 
   // OneStep ===================
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
-      "ModifiedLagrangian", [](void) -> OneStep* { return new ModifiedLagrangian(); });
+      "ModifiedLagrangian", [](void) -> OneStep * { return new ModifiedLagrangian(); });
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
-      "UpdateStressFirst", [](void) -> OneStep* { return new UpdateStressFirst(); });
+      "UpdateStressFirst", [](void) -> OneStep * { return new UpdateStressFirst(); });
   Factory<OneStep, std::string>::Instance()->RegisterFactoryFunction(
-      "UpdateStressLast", [](void) -> OneStep* { return new UpdateStressLast(); });
+      "UpdateStressLast", [](void) -> OneStep * { return new UpdateStressLast(); });
 
   // ShapeFunction =============
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
-      "BSpline", [](void) -> ShapeFunction* { return new BSpline(); });
+      "BSpline", [](void) -> ShapeFunction * { return new BSpline(); });
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
-      "Linear", [](void) -> ShapeFunction* { return new Linear(); });
+      "Linear", [](void) -> ShapeFunction * { return new Linear(); });
   Factory<ShapeFunction, std::string>::Instance()->RegisterFactoryFunction(
-      "RegularQuadLinear", [](void) -> ShapeFunction* { return new RegularQuadLinear(); });
+      "RegularQuadLinear", [](void) -> ShapeFunction * { return new RegularQuadLinear(); });
 
   // Scheduler ==================
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
-      "GravityRamp", [](void) -> Scheduler* { return new GravityRamp(); });
+      "GravityRamp", [](void) -> Scheduler * { return new GravityRamp(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
-      "PICDissipation", [](void) -> Scheduler* { return new PICDissipation(); });
+      "PICDissipation", [](void) -> Scheduler * { return new PICDissipation(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
-      "RemoveObstacle", [](void) -> Scheduler* { return new RemoveObstacle(); });
+      "RemoveObstacle", [](void) -> Scheduler * { return new RemoveObstacle(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
-      "RemoveMaterialPoint", [](void) -> Scheduler* { return new RemoveMaterialPoint(); });
+      "RemoveMaterialPoint", [](void) -> Scheduler * { return new RemoveMaterialPoint(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
-      "ReactivateCHCLBonds", [](void) -> Scheduler* { return new ReactivateCHCLBonds(); });
+      "ReactivateCHCLBonds", [](void) -> Scheduler * { return new ReactivateCHCLBonds(); });
 
   // Spy ========================
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ObstacleTracking",
-                                                                 [](void) -> Spy* { return new ObstacleTracking(); });
-  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy* { return new Work(); });
+                                                                 [](void) -> Spy * { return new ObstacleTracking(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy * { return new Work(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("EnergyBalance",
-                                                                 [](void) -> Spy* { return new EnergyBalance(); });
+                                                                 [](void) -> Spy * { return new EnergyBalance(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MeanStress",
-                                                                 [](void) -> Spy* { return new MeanStress(); });
+                                                                 [](void) -> Spy * { return new MeanStress(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MPTracking",
-                                                                 [](void) -> Spy* { return new MPTracking(); });
+                                                                 [](void) -> Spy * { return new MPTracking(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ElasticBeamDev",
-                                                                 [](void) -> Spy* { return new ElasticBeamDev(); });
+                                                                 [](void) -> Spy * { return new ElasticBeamDev(); });
 }
 
 /**
@@ -273,30 +275,30 @@ void MPMbox::ExplicitRegistrations() {
  */
 void MPMbox::setVerboseLevel(int v) {
   switch (v) {
-    case 6:
-      Logger::setLevel(LogLevel::trace);
-      break;
-    case 5:
-      Logger::setLevel(LogLevel::debug);
-      break;
-    case 4:
-      Logger::setLevel(LogLevel::info);
-      break;
-    case 3:
-      Logger::setLevel(LogLevel::warn);
-      break;
-    case 2:
-      Logger::setLevel(LogLevel::error);
-      break;
-    case 1:
-      Logger::setLevel(LogLevel::critical);
-      break;
-    case 0:
-      Logger::setLevel(LogLevel::off);
-      break;
-    default:
-      Logger::setLevel(LogLevel::info);
-      break;
+  case 6:
+    Logger::setLevel(LogLevel::trace);
+    break;
+  case 5:
+    Logger::setLevel(LogLevel::debug);
+    break;
+  case 4:
+    Logger::setLevel(LogLevel::info);
+    break;
+  case 3:
+    Logger::setLevel(LogLevel::warn);
+    break;
+  case 2:
+    Logger::setLevel(LogLevel::error);
+    break;
+  case 1:
+    Logger::setLevel(LogLevel::critical);
+    break;
+  case 0:
+    Logger::setLevel(LogLevel::off);
+    break;
+  default:
+    Logger::setLevel(LogLevel::info);
+    break;
   }
 }
 
@@ -314,15 +316,11 @@ void MPMbox::clean() {
   Elem.clear();
   MP.clear();
 
-  for (size_t i = 0; i < Obstacles.size(); i++) {
-    delete (Obstacles[i]);
-  }
+  for (size_t i = 0; i < Obstacles.size(); i++) { delete (Obstacles[i]); }
   Obstacles.clear();
 
-  std::map<std::string, ConstitutiveModel*>::iterator itModel;
-  for (itModel = models.begin(); itModel != models.end(); ++itModel) {
-    delete itModel->second;
-  }
+  std::map<std::string, ConstitutiveModel *>::iterator itModel;
+  for (itModel = models.begin(); itModel != models.end(); ++itModel) { delete itModel->second; }
   models.clear();
 }
 
@@ -336,7 +334,7 @@ void MPMbox::clean() {
  *
  * @param name The name of the file to read from.
  */
-void MPMbox::read(const char* name) {
+void MPMbox::read(const char *name) {
   std::ifstream file(name);
   if (!file) {
     Logger::warn("@MPMbox::read, cannot open file {}", name);
@@ -400,7 +398,7 @@ void MPMbox::read(const char* name) {
       file >> shearLimit;
     } else if (token == "MaxSplitNumber") {
       file >> MaxSplitNumber;
-    } else if (token == "demavg") {  // kept for compatibility
+    } else if (token == "demavg") { // kept for compatibility
       file >> CHCL.minDEMstep >> CHCL.rateAverage;
     } else if (token == "CHCL.minDEMstep") {
       file >> CHCL.minDEMstep;
@@ -412,11 +410,11 @@ void MPMbox::read(const char* name) {
       file >> CHCL.criticalDEMTimeStepFactor;
     } else if (token == "set") {
       std::string param;
-      size_t g1, g2;  // g1 corresponds to MPgroup and g2 to obstacle group
+      size_t g1, g2; // g1 corresponds to MPgroup and g2 to obstacle group
       double value;
       file >> param >> g1 >> g2 >> value;
       dataTable.set(param, g1, g2, value);
-    } else if (token == "prescribedVelocity") {  // TODO (V) -> Move it as a command
+    } else if (token == "prescribedVelocity") { // TODO (V) -> Move it as a command
       int groupNb;
       vec2r prescribedVel;
       file >> groupNb >> prescribedVel;
@@ -436,11 +434,11 @@ void MPMbox::read(const char* name) {
     } else if (token == "model") {
       std::string modelName, modelID;
       file >> modelID >> modelName;
-      ConstitutiveModel* CM = Factory<ConstitutiveModel>::Instance()->Create(modelID);
+      ConstitutiveModel *CM = Factory<ConstitutiveModel>::Instance()->Create(modelID);
       if (CM != nullptr) {
         models[modelName] = CM;
-        CM->key = modelName;
-        CM->box = this;
+        CM->key           = modelName;
+        CM->box           = this;
         CM->read(file);
       } else {
         Logger::warn("mode {} is unknown!", modelID);
@@ -448,7 +446,7 @@ void MPMbox::read(const char* name) {
     } else if (token == "Obstacle") {
       std::string obsName;
       file >> obsName;
-      Obstacle* obs = Factory<Obstacle>::Instance()->Create(obsName);
+      Obstacle *obs = Factory<Obstacle>::Instance()->Create(obsName);
       if (obs != nullptr) {
         obs->read(file);
         Obstacles.push_back(obs);
@@ -457,9 +455,7 @@ void MPMbox::read(const char* name) {
       }
     } else if (token == "BoundaryForceLaw") {
       // This has to be defined after defining the obstacles
-      if (Obstacles.empty()) {
-        Logger::warn("You try to define BoundaryForceLaw BEFORE any Obstacle is set!");
-      }
+      if (Obstacles.empty()) { Logger::warn("You try to define BoundaryForceLaw BEFORE any Obstacle is set!"); }
       std::string boundaryName;
       int obstacleGroup;
       file >> boundaryName >> obstacleGroup;
@@ -468,16 +464,35 @@ void MPMbox::read(const char* name) {
       snprintf(StoredCommand, 256, "BoundaryForceLaw %s %d", boundaryName.c_str(), obstacleGroup);
       BFLCommandStored.push_back(std::string(StoredCommand));
 
-      BoundaryForceLaw* bType = Factory<BoundaryForceLaw>::Instance()->Create(boundaryName);
+      BoundaryForceLaw *bType = Factory<BoundaryForceLaw>::Instance()->Create(boundaryName);
       for (size_t o = 0; o < Obstacles.size(); o++) {
-        if (Obstacles[o]->group == obstacleGroup) {
-          Obstacles[o]->boundaryForceLaw = bType;
+        if (Obstacles[o]->group == obstacleGroup) { Obstacles[o]->boundaryForceLaw = bType; }
+      }
+    } else if (token == "ObstacleNeighbors") {
+      // This has to be defined after defining the obstacles
+      if (Obstacles.empty()) { Logger::warn("You try to define ObstacleNeighbors BEFORE any Obstacle is set!"); }
+      if (MP.empty()) { Logger::warn("You try to define ObstacleNeighbors BEFORE any MP is set!"); }
+
+      size_t nbNeighbors;
+      Neighbor N;
+      for (size_t o = 0; o < Obstacles.size(); o++) {
+        file >> nbNeighbors;
+        Obstacles[o]->Neighbors.clear();
+        Obstacles[o]->force.reset();
+        Obstacles[o]->acc.reset();
+        vec2r Nvec;
+        vec2r Tvec;
+        for (size_t n = 0; n < nbNeighbors; n++) {
+          file >> N.PointNumber >> N.fn >> N.dn >> N.ft >> N.dt >> N.sigma_n;
+          Obstacles[o]->getContactFrame(MP[N.PointNumber], Nvec, Tvec);
+          Obstacles[o]->force -= N.fn * Nvec + N.fn * Tvec; 
+          Obstacles[o]->Neighbors.push_back(N);
         }
       }
     } else if (token == "Scheduled") {
       std::string scheduledName;
       file >> scheduledName;
-      Scheduler* sch = Factory<Scheduler>::Instance()->Create(scheduledName);
+      Scheduler *sch = Factory<Scheduler>::Instance()->Create(scheduledName);
       if (sch != nullptr) {
         sch->plug(this);
         sch->read(file);
@@ -488,7 +503,7 @@ void MPMbox::read(const char* name) {
     } else if (token == "Spy") {
       std::string spyName;
       file >> spyName;
-      Spy* spy = Factory<Spy>::Instance()->Create(spyName);
+      Spy *spy = Factory<Spy>::Instance()->Create(spyName);
       if (spy != nullptr) {
         spy->plug(this);
         spy->read(file);
@@ -502,12 +517,8 @@ void MPMbox::read(const char* name) {
       }
       size_t nb;
       file >> nb;
-      // nodes.clear();
-      // node N;
       size_t in;
       for (size_t n = 0; n < nb; n++) {
-        // file >> N.number >> N.pos;
-        // nodes.push_back(N);
         file >> in;
         file >> nodes[in].q >> nodes[in].f >> nodes[in].fb >> nodes[in].mass >> nodes[in].xfixed >> nodes[in].yfixed;
       }
@@ -518,9 +529,7 @@ void MPMbox::read(const char* name) {
       element E;
       for (size_t e = 0; e < nb; e++) {
 
-        for (size_t r = 0; r < (size_t)element::nbNodes; r++) {
-          file >> E.I[r];
-        }
+        for (size_t r = 0; r < (size_t)element::nbNodes; r++) { file >> E.I[r]; }
         Elem.push_back(E);
       }
     } else if (token == "MPs") {
@@ -539,9 +548,7 @@ void MPMbox::read(const char* name) {
             P.contactf;
 
         auto itCM = models.find(modelName);
-        if (itCM == models.end()) {
-          Logger::warn("@MPMbox::read, model {} not found", modelName);
-        }
+        if (itCM == models.end()) { Logger::warn("@MPMbox::read, model {} not found", modelName); }
         P.constitutiveModel = itCM->second;
         P.constitutiveModel->init(P);
         P.constitutiveModel->key = modelName;
@@ -562,8 +569,8 @@ void MPMbox::read(const char* name) {
       for (size_t in = 0; in < nodes.size(); in++) {
         file >> nodes[in].q >> nodes[in].f >> nodes[in].fb >> nodes[in].mass >> nodes[in].xfixed >> nodes[in].yfixed;
       }
-    } else {  // it is possible that the keyword corresponds to a command-pluggin
-      Command* com = Factory<Command>::Instance()->Create(token);
+    } else { // it is possible that the keyword corresponds to a command-pluggin
+      Command *com = Factory<Command>::Instance()->Create(token);
       if (com != nullptr) {
         com->plug(this);
         com->read(file);
@@ -574,18 +581,18 @@ void MPMbox::read(const char* name) {
     }
 
     file >> token;
-  }  // end while-loop
+  } // end while-loop
 
   // Some checks before running a simulation
   if (!shapeFunction) {
     std::string defaultShapeFunction = "Linear";
-    shapeFunction = Factory<ShapeFunction>::Instance()->Create(defaultShapeFunction);
+    shapeFunction                    = Factory<ShapeFunction>::Instance()->Create(defaultShapeFunction);
     Logger::info("No ShapeFunction defined, automatically set to 'Linear'");
   }
 
   if (!oneStep) {
     std::string defaultOneStep = "ModifiedLagrangian";
-    oneStep = Factory<OneStep>::Instance()->Create(defaultOneStep);
+    oneStep                    = Factory<OneStep>::Instance()->Create(defaultOneStep);
     Logger::info("No OneStep type defined, automatically set to 'ModifiedLagrangian'");
   }
   dtInitial = dt;
@@ -629,14 +636,12 @@ void MPMbox::read(int num) {
  *
  * @param name the name of the configuration file to write.
  */
-void MPMbox::save(const char* name) {
+void MPMbox::save(const char *name) {
   std::ofstream file(name);
 
   file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
 
-  if (planeStrain == true) {
-    file << "planeStrain\n";
-  }
+  if (planeStrain == true) { file << "planeStrain\n"; }
   file << "oneStepType " << oneStep->getRegistrationName() << '\n';
   file << "result_folder " << result_folder << "\n";
   file << "tolmass " << tolmass << '\n';
@@ -668,7 +673,7 @@ void MPMbox::save(const char* name) {
     Scheduled[sc]->write(file);
   }
 
-  std::map<std::string, ConstitutiveModel*>::iterator itModel;
+  std::map<std::string, ConstitutiveModel *>::iterator itModel;
   for (itModel = models.begin(); itModel != models.end(); ++itModel) {
     file << "model " << itModel->second->getRegistrationName() << ' ' << itModel->first << ' ';
     itModel->second->write(file);
@@ -731,8 +736,16 @@ void MPMbox::save(const char* name) {
   }
 
   // Boudary Force Laws
-  for (size_t i = 0; i < BFLCommandStored.size(); i++) {
-    file << BFLCommandStored[i] << '\n';
+  for (size_t i = 0; i < BFLCommandStored.size(); i++) { file << BFLCommandStored[i] << '\n'; }
+
+  // Obstacle Neighbors
+  for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
+    file << Obstacles[iObst]->Neighbors.size() << '\n';
+    for (size_t n = 0; n < Obstacles[iObst]->Neighbors.size(); n++) {
+      file << Obstacles[iObst]->Neighbors[n].PointNumber << ' ' << Obstacles[iObst]->Neighbors[n].fn << ' '
+           << Obstacles[iObst]->Neighbors[n].dn << ' ' << Obstacles[iObst]->Neighbors[n].ft << ' '
+           << Obstacles[iObst]->Neighbors[n].dt << ' ' << Obstacles[iObst]->Neighbors[n].sigma_n << '\n';
+    }
   }
 
   // Material points
@@ -795,9 +808,7 @@ void MPMbox::init() {
     }
   }
 
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].prev_pos = MP[p].pos;
-  }
+  for (size_t p = 0; p < MP.size(); p++) { MP[p].prev_pos = MP[p].pos; }
 }
 
 /**
@@ -837,8 +848,8 @@ void MPMbox::run() {
             char fname[256];
             snprintf(fname, 256, "%s/DEM_MP%zu/conf%i", result_folder.c_str(), p, iconf);
             MP[p].PBC->iconf = iconf;
-            MP[p].PBC->t = t;
-            MP[p].PBC->tmax = t;
+            MP[p].PBC->t     = t;
+            MP[p].PBC->tmax  = t;
             MP[p].PBC->saveConf(fname);
           }
         }
@@ -848,17 +859,15 @@ void MPMbox::run() {
     }
 
     if (step % proxPeriod == 0 ||
-        MP.size() != number_MP_before_any_split) {  // second condition is needed because of the splitting
+        MP.size() != number_MP_before_any_split) { // second condition is needed because of the splitting
       checkProximity();
     }
 
-    for (size_t s = 0; s < Scheduled.size(); ++s) {
-      Scheduled[s]->check();
-    }
+    for (size_t s = 0; s < Scheduled.size(); ++s) { Scheduled[s]->check(); }
 
     // run a step!
     int ret = oneStep->advanceOneStep(*this);
-    if (ret == 1) break;  // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
+    if (ret == 1) break; // returns 1 only in trajectory analyses when contact is lost and normal vel is 1
 
     // Split MPs
     if (splitting) adaptativeRefinement();
@@ -875,7 +884,7 @@ void MPMbox::run() {
 
   // shutdown the spies
   for (size_t s = 0; s < Spies.size(); ++s) {
-    Spies[s]->end();  // there is often nothing implemented
+    Spies[s]->end(); // there is often nothing implemented
   }
 }
 
@@ -888,9 +897,7 @@ void MPMbox::run() {
 void MPMbox::checkProximity() {
   START_TIMER("checkProximity");
   // Compute securDist of MPs
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].securDist = securDistFactor * norm(MP[p].vel) * dt * proxPeriod;
-  }
+  for (size_t p = 0; p < MP.size(); p++) { MP[p].securDist = securDistFactor * norm(MP[p].vel) * dt * proxPeriod; }
 
   for (size_t o = 0; o < Obstacles.size(); o++) {
     Obstacles[o]->securDist = securDistFactor * norm(Obstacles[o]->vel) * dt * proxPeriod;
@@ -931,50 +938,44 @@ void MPMbox::convergenceConditions() {
   START_TIMER("convergenceConditions");
 
   // finding necessary parameters
-  double inf = std::numeric_limits<double>::max();
-  double YoungMax = -inf;
+  double inf        = std::numeric_limits<double>::max();
+  double YoungMax   = -inf;
   double PoissonMax = -inf;
-  double rhoMin = inf;
-  double rayMin = inf;
-  double knMax = -inf;
-  double massMin = inf;
-  double velMax = -inf;
+  double rhoMin     = inf;
+  double rayMin     = inf;
+  double knMax      = -inf;
+  double massMin    = inf;
+  double velMax     = -inf;
   std::set<int> groupsMP;
   std::set<int> groupsObs;
   for (size_t p = 0; p < MP.size(); ++p) {
-    YoungMax = std::max(MP[p].constitutiveModel->getYoung(), YoungMax);
+    YoungMax   = std::max(MP[p].constitutiveModel->getYoung(), YoungMax);
     PoissonMax = std::max(MP[p].constitutiveModel->getPoisson(), PoissonMax);
-    rhoMin = std::min(MP[p].density, rhoMin);
-    massMin = std::min(MP[p].mass, massMin);
-    velMax = std::max(MP[p].vel * MP[p].vel, velMax);
-    rayMin = std::min(MP[p].vol * Mth::invPi, rayMin);
+    rhoMin     = std::min(MP[p].density, rhoMin);
+    massMin    = std::min(MP[p].mass, massMin);
+    velMax     = std::max(MP[p].vel * MP[p].vel, velMax);
+    rayMin     = std::min(MP[p].vol * Mth::invPi, rayMin);
     groupsMP.insert((size_t)(MP[p].groupNb));
   }
   velMax = sqrt(velMax);
   rayMin = sqrt(rayMin);
 
   if (Obstacles.size() > 0) {
-    for (size_t o = 0; o < Obstacles.size(); ++o) {
-      groupsObs.insert(Obstacles[o]->group);
-    }
+    for (size_t o = 0; o < Obstacles.size(); ++o) { groupsObs.insert(Obstacles[o]->group); }
   }
 
   std::set<int>::iterator it;
   std::set<int>::iterator it2;
   for (it = groupsMP.begin(); it != groupsMP.end(); ++it) {
     for (it2 = groupsObs.begin(); it2 != groupsObs.end(); ++it2) {
-      if (dataTable.get(id_kn, *it, *it2) > knMax) {
-        knMax = dataTable.get(id_kn, *it, *it2);
-      }
+      if (dataTable.get(id_kn, *it, *it2) > knMax) { knMax = dataTable.get(id_kn, *it, *it2); }
     }
   }
 
   // compute the 3 timestep conditions
-  double collision_crit_dt = sqrt(massMin / knMax);
+  double collision_crit_dt  = sqrt(massMin / knMax);
   double passthough_crit_dt = collision_crit_dt;
-  if (velMax > 1e-6) {
-    passthough_crit_dt = rayMin / velMax;
-  }
+  if (velMax > 1e-6) { passthough_crit_dt = rayMin / velMax; }
   double cfl_crit_dt;
   if (YoungMax >= 0 && PoissonMax >= 0) {
     double Kmax = YoungMax / (1.0 - 2.0 * PoissonMax);
@@ -995,7 +996,7 @@ void MPMbox::convergenceConditions() {
 
   if (dt > 0.5 * criticalDt) {
     Logger::info("@MPMbox::convergenceConditions, timestep seems too large!");
-    dt = 0.5 * criticalDt;
+    dt        = 0.5 * criticalDt;
     dtInitial = dt;
     Logger::info("--> Adjusting to {}", dt);
     Logger::debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
@@ -1020,7 +1021,7 @@ void MPMbox::convergenceConditions() {
  */
 void MPMbox::updateVelocityGradient() {
   START_TIMER("updateVelocityGradient");
-  size_t* I;
+  size_t *I;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     for (size_t r = 0; r < element::nbNodes; r++) {
@@ -1047,7 +1048,7 @@ void MPMbox::limitTimeStepForDEM() {
   START_TIMER("limitTimeStepForDEM");
   if (CHCL.limitTimeStepFactor <= 0.0) return;
 
-  dt = dtInitial;
+  dt           = dtInitial;
   double dtmax = 0.0;
 
   for (size_t p = 0; p < MP.size(); p++) {
@@ -1065,10 +1066,8 @@ void MPMbox::limitTimeStepForDEM() {
                               fabs(VG3D.zx), fabs(VG3D.zy), fabs(VG3D.zz)});
       // clang-format on
 
-      if (maxi < 1e-12)
-        dtmax = dt;
-      else
-        dtmax = CHCL.limitTimeStepFactor * MP[p].PBC->Rmin / maxi;
+      if (maxi < 1e-12) dtmax = dt;
+      else dtmax = CHCL.limitTimeStepFactor * MP[p].PBC->Rmin / maxi;
 
       dt = (dtmax <= dt) ? dtmax : dt;
     }
@@ -1094,7 +1093,7 @@ void MPMbox::updateTransformationGradient() {
 
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_F = MP[p].F;
-    MP[p].F = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
+    MP[p].F      = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
   }
 }
 
@@ -1129,7 +1128,7 @@ void MPMbox::adaptativeRefinement() {
 
     double XSquaredExtent = (MP[p].F.xx * MP[p].F.xx + MP[p].F.yx * MP[p].F.yx);
     double YSquaredExtent = (MP[p].F.xy * MP[p].F.xy + MP[p].F.yy * MP[p].F.yy);
-    double SquaredCrit = splitCriterionValue * splitCriterionValue;
+    double SquaredCrit    = splitCriterionValue * splitCriterionValue;
 
     bool critX = ((XSquaredExtent / YSquaredExtent) >= SquaredCrit);
     bool critY = ((YSquaredExtent / XSquaredExtent) >= SquaredCrit);
@@ -1146,7 +1145,7 @@ void MPMbox::adaptativeRefinement() {
       // MP[p] will go to the left or bottom
       // and MP2 will go to the right or top
 
-      if (critX == true) {  // -> left-right splitting
+      if (critX == true) { // -> left-right splitting
         vec2r sx = MP[p].F * vec2r(halfSizeMP, 0.0);
         MP[p].pos -= 0.5 * sx;
         MP2.pos += 0.5 * sx;
@@ -1167,7 +1166,7 @@ void MPMbox::adaptativeRefinement() {
         MP2.corner[3] += sx;
 
         MP.push_back(MP2);
-      } else {  // -> top-bottom splitting
+      } else { // -> top-bottom splitting
         vec2r sy = MP[p].F * vec2r(0.0, halfSizeMP);
         MP[p].pos -= 0.5 * sy;
         MP2.pos += 0.5 * sy;
@@ -1192,7 +1191,7 @@ void MPMbox::adaptativeRefinement() {
 
         MP.push_back(MP2);
       }
-    }  // end if if ((critX || critY) == true)
+    } // end if if ((critX || critY) == true)
 
     // checking extremeShearing after checking the above criteria
     if (extremeShearing) {
@@ -1203,7 +1202,7 @@ void MPMbox::adaptativeRefinement() {
       }
     }
 
-  }  // end for loop over MPs
+  } // end for loop over MPs
 }
 
 /**
@@ -1215,30 +1214,26 @@ void MPMbox::adaptativeRefinement() {
  *
  * @param Data the vector of ProcessedDataMP where the smoothed data will be stored.
  */
-void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
+void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
   Data.clear();
   Data.resize(MP.size());
 
   // Preparation for smoothed data
-  size_t* I;
-  for (size_t p = 0; p < MP.size(); p++) {
-    shapeFunction->computeInterpolationValues(*this, p);
-  }
+  size_t *I;
+  for (size_t p = 0; p < MP.size(); p++) { shapeFunction->computeInterpolationValues(*this, p); }
 
   // Update Vector of node indices
   std::set<size_t> sortedLive;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      sortedLive.insert(I[r]);
-    }
+    for (size_t r = 0; r < element::nbNodes; r++) { sortedLive.insert(I[r]); }
   }
   liveNodeNum.clear();
   std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
 
   // Reset nodal mass
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass = 0.0;
+    nodes[liveNodeNum[n]].mass             = 0.0;
     nodes[liveNodeNum[n]].outOfPlaneStress = 0.0;
     nodes[liveNodeNum[n]].vel.reset();
     nodes[liveNodeNum[n]].stress.reset();
@@ -1274,9 +1269,9 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP>& Data) {
       Data[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
       Data[p].outOfPlaneStress += MP[p].N[r] * nodes[I[r]].outOfPlaneStress;
     }
-    Data[p].pos = MP[p].pos;
+    Data[p].pos    = MP[p].pos;
     Data[p].strain = MP[p].F;
-    Data[p].rho = MP[p].density;
+    Data[p].rho    = MP[p].density;
   }
 
   // corners from F (supposed to be already computed)
