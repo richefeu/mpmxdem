@@ -49,15 +49,15 @@ endif()
 
 # ##############################################################################
 # tclap
-FetchContent_Declare(
-  tclap
-  GIT_REPOSITORY https://github.com/xguerin/tclap.git
-  GIT_TAG v1.2.5)
-FetchContent_GetProperties(tclap)
-if(NOT tclap_POPULATED)
-  message(STATUS "Fetching tclap")
-  FetchContent_MakeAvailable(tclap)
-endif()
+#FetchContent_Declare(
+#  tclap
+#  GIT_REPOSITORY https://github.com/xguerin/tclap.git
+#  GIT_TAG v1.2.5)
+#FetchContent_GetProperties(tclap)
+#if(NOT tclap_POPULATED)
+#  message(STATUS "Fetching tclap")
+#  FetchContent_MakeAvailable(tclap)
+#endif()
 
 # ##############################################################################
 # Fetching fmt
