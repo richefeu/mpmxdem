@@ -52,6 +52,7 @@
 #include "Spies/Work.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
+#include "Schedulers/MoveObstacle.hpp"
 #include "Schedulers/PICDissipation.hpp"
 #include "Schedulers/ReactivateCHCLBonds.hpp"
 #include "Schedulers/RemoveMaterialPoint.hpp"
@@ -236,6 +237,8 @@ void MPMbox::ExplicitRegistrations() {
   // Scheduler ==================
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "GravityRamp", [](void) -> Scheduler * { return new GravityRamp(); });
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "MoveObstacle", [](void) -> Scheduler * { return new MoveObstacle(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "PICDissipation", [](void) -> Scheduler * { return new PICDissipation(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
@@ -485,7 +488,7 @@ void MPMbox::read(const char *name) {
         for (size_t n = 0; n < nbNeighbors; n++) {
           file >> N.PointNumber >> N.fn >> N.dn >> N.ft >> N.dt >> N.sigma_n;
           Obstacles[o]->getContactFrame(MP[N.PointNumber], Nvec, Tvec);
-          Obstacles[o]->force -= N.fn * Nvec + N.fn * Tvec; 
+          Obstacles[o]->force -= N.fn * Nvec + N.fn * Tvec;
           Obstacles[o]->Neighbors.push_back(N);
         }
       }

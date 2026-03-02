@@ -90,6 +90,13 @@ List of parameters for each spyName:
 
 **`RemoveObstacle`**
 
+**`MoveObstacle`** (_int_)`group` (_int_)`N` (... repeated `N` times: (_double_)`t` (_double_)`vx` (_double_)`vy` ...)
+
+> Imposes a piecewise-constant velocity to all obstacles of a given group.
+> For `t < t0`: keep the obstacle velocity as defined initially.
+> For `t` in `[ti, t(i+1))`: impose `(vxi, vyi)`.
+> For `t >= t(N-1)`: impose `(vx(N-1), vy(N-1))`.
+
 
 
   
