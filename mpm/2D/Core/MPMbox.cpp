@@ -54,6 +54,7 @@
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/MoveObstacle.hpp"
 #include "Schedulers/PICDissipation.hpp"
+#include "Schedulers/PICDissipationByPIC.hpp"
 #include "Schedulers/ReactivateCHCLBonds.hpp"
 #include "Schedulers/RemoveMaterialPoint.hpp"
 #include "Schedulers/RemoveObstacle.hpp"
@@ -241,6 +242,11 @@ void MPMbox::ExplicitRegistrations() {
       "MoveObstacle", [](void) -> Scheduler * { return new MoveObstacle(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "PICDissipation", [](void) -> Scheduler * { return new PICDissipation(); });
+    Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "PICDissipationByPIC", [](void) -> Scheduler * { return new PICDissipationByPIC(); });
+    // Alias names: keep backward compatibility while providing clearer semantics.
+    Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "PICDissipationPICRatio", [](void) -> Scheduler * { return new PICDissipationByPIC(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "RemoveObstacle", [](void) -> Scheduler * { return new RemoveObstacle(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(

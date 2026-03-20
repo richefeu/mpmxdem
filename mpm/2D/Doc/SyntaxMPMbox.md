@@ -84,6 +84,10 @@ List of parameters for each spyName:
 
 **`PICDissipation`** (*double*)`rateOfFLIP` (*double*)`endTime`
 
+**`PICDissipationByPIC`** (... list of pairs: (*double*)`t` (*double*)`ratioPIC` ...)
+
+Alias: **`PICDissipationPICRatio`** (same syntax)
+
 **`ReactivateCHCLBonds`**
 
 **`RemoveMaterialPoint`**

@@ -13,7 +13,9 @@
 
 \usepackage{comment}
 \usepackage{amsmath}
-
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{cleveref}
 
 \newenvironment{codeblock}
   {\par\vspace{0.75em}}
@@ -181,9 +183,16 @@ Here are the lists of parameters for each \syntax{\param{modelName}}:
 Material points can be added by placing them on a grid. The corresponding command in this case is: \\
 
 \begin{codeblock}
- \syntax{\keyword{set\_MP\_grid} \type{(int)}\param{group} \type{(string)}\param{modelIdentifier}}
-\end{codeblock}
+ \syntax{\keyword{set\_MP\_grid} \type{(int)}\param{group} \type{(string)}\param{modelIdentifier} \type{(double)}\param{$\rho$} \type{(double)}\param{$x_0$} \type{(double)}\param{$y_0$} \type{(double)}\param{$x_1$} \type{(double)}\param{$y_1$}}
+\label{setMPgrid}
+\end{codeblock} 
+where ($x_0,y_0$) denotes the coordinates of the beginning corner of the material points square grid and the opposite one is at ($x_1, y_1$). $\rho$ signifies the density of each material point and must be specified, except in the \texttt{CHCL\_DEM} model where it gets calculated automatically via the DEM configuration:
 
+\begin{equation}
+  \rho_{\text{mp}} = \dfrac{m_{\text{VER}}}{V_{\text{VER}}} = \dfrac{\det(h)}{V_s}
+  \label{}
+\end{equation}
+which the diagonal matrix \textit{h} denotes the periodic boundary domain.
 \begin{comment}
 **`set_MP_polygon`** (_int_)`group`  (_int_)`nbVertices`  (_string_)`modelName`  (_double_)`massDensity` (_double_)`sizeOfBoxes`  (... (_double_)`x` (_double_)`y` ...)
 
@@ -237,6 +246,10 @@ List of parameters for each spyName:
 
 **`PICDissipation`** (*double*)`rateOfFLIP` (*double*)`endTime`
 
+**`PICDissipationByPIC`** (... list of pairs: (*double*)`t` (*double*)`ratioPIC` ...)
+
+Alias: **`PICDissipationPICRatio`** (same syntax)
+
 **`ReactivateCHCLBonds`**
 
 **`RemoveMaterialPoint`**
@@ -247,9 +260,135 @@ List of parameters for each spyName:
 \end{comment}
 
 
+% ///////////////////////////////////////////////////////////////://
+\section{Coupling MPMxDEM}
+\begin{center}
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners, align=center, minimum width=3.6cm, minimum height=0.9cm},
+  arrow/.style={->, line width=0.5pt}
+]
+  % Level 1 (top)
+  \node[box] (mpm1) at (0, 0.8) {MPM};
 
+  % Level 2 (middle)
+  \node[box] (mc) at (-2.3, -0.9) {Mohr Coulomb};
+  \node[box] (mpmxdem) at (2.3, -0.9) {MPM$\times$DEM};
 
+  % Level 3 (bottom)
+  \node[box] (demtriax) at (-2.3, -2.7) {DEM triaxial};
+  \node[box] (demiso) at (2.3, -2.7) {DEM isotropic};
 
+  % Arrows upward
+  \draw[arrow] (mc) -- (mpm1);
+  \draw[arrow] (mpmxdem) -- (mpm1);
+  \draw[arrow] (demtriax) -- (mc);
+  \draw[arrow] (demiso) -- (mpmxdem);
+  \draw[arrow] (demiso) -- (demtriax);
+\end{tikzpicture}
+\end{center}
+\subsection{Discrete Element Method}
+\subsubsection{Isotropic Compression}
+Firstly, a sample of DEM is prapared by isotropic compression in order to: i) Serve as an VER which will be be integrated in every material points for the MPMxDEM stage. ii) The triaxial simulation will be conducted on this sample, to obtain the paramaters of the constitutive law Mohr Coulomn in MPM.
+Initial input parameters are shown in \cref{demParam} which satisfied the: i) Critical time step $dt <= dt_c =  2\pi \sqrt{m / k_n}$ ii) stiffness level $\kappa = k_n / (a \sigma_0) = 1000$
+\begin{table}[ht]
+\centering
+\caption{DEM Parameters}
+\vspace{.5em}
+\begin{tabular}{llll}
+\toprule
+\textbf{Symbol} & \textbf{Parameter} & \textbf{Value} & \textbf{Unit} \\
+\midrule
+$N$ & Number of particles & 125 &  \\
+$R$ & Particle diameter & $4.95 \div 5$ & mm \\
+$\rho$ & Density & 2650 & kg/m$^3$ \\
+$\sigma_{xx} = \sigma_{zz}$ & Isotropic stress & 5 & kPa \\
+$k_n = k_t$ & Normal/tangential stiffness & $10^5$ & N/m \\
+$\kappa$ & Stiffness ratio & 1000 &  \\
+$\mu_{\text{iso}}$ & Isotropic friction & 0.1 &  \\
+$\mu_{\text{triax}}$ & Triaxial friction & 0.5 &  \\
+$d_t$ & Time step & $10^{-5}$ & s \\
+$\alpha_{\text{iso}}$ & Numerical Damping & $0.7$ &  \\
+$\eta_{\text{triax}}$ & Viscous Damping & 0.9 &  \\
+$I$ & Inertia number & $10^{-4}$ &  \\
+\bottomrule
+\end{tabular}
+\label{demParam}
+\end{table}
+  \begin{figure}
+    \centering
+    \includegraphics[height = 6cm]{triaxialIdentify.png}
+    \caption{Identify E, $\nu$, $\psi$}
+\end{figure}
+
+\begin{align}
+  E = \dfrac{dq}{d \epsilon_{yy}}\\
+  \tan \alpha = \dfrac{2\sin \psi}{1 - \sin \psi} \\
+  \dfrac{d\epsilon_v}{d\epsilon_{yy}} = 1 - 2\nu
+  \label{}
+\end{align}
+\subsubsection{Triaxial Compression}
+$I$ is chosen via the velocity of deformation to be lower than $10^{-4}$ for quasi-static response.
+Thus the necessary parameters for MC model: $E$, $\nu$, $\varphi$, $c$, $\psi$ could be indentified. Based on the deviatoric stress peak of both compression and extension’s process, $\varphi = 35^\circ$ and $c = 0$, which corresponds to the initial configuration of dry material.
+Module Young is found to be 33 Mpa (\cref{triaxStress}), and based on the tangent of compression and dilation stage once could get $\nu$ and $\psi$ respectively.
+\begin{figure}[ht]
+  \centering
+  % Top row: two images side by side, each with its own caption
+  \begin{minipage}{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Contrainte_Deviatorique_Comparison.pdf}
+    \caption{Deviatoric stress}
+    \label{triaxStress}
+  \end{minipage}%
+  \hspace{0.04\textwidth}
+  \begin{minipage}{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Deformation_Volumique_Comparison.pdf}
+    \caption{Volumetric strain}
+        \label{triaxStrain}
+  \end{minipage}
+  % Bottom row: one image centered
+  \begin{minipage}{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{Mohr_Transitoire_Comparison.pdf}
+    \caption{Mohr’s transient envelope}
+        \label{triaxMohr}
+  \end{minipage}
+\end{figure}
+
+\subsection{MPM}
+
+\begin{table}[ht]
+\centering
+\caption{MPM Parameters}
+\vspace{.5em}
+\begin{tabular}{llll}
+\toprule
+\textbf{Symbol} & \textbf{Parameter} & \textbf{Value} & \textbf{Unit} \\
+\midrule
+$L$ & Length & 1.5 & m \\
+$H$ & Height & 1 & m \\
+$\rho$ & Density & 1079.64 & kg/m$^3$ \\
+$E$ & Young's modulus & $1 \times 10^{7}$ & Pa \\
+$\nu$ & Poisson's ratio & 0.316 &  \\
+$\varphi$ & Internal friction angle & 21.7 & $^\circ$ \\
+$\psi$ & Dilation angle & 0 & $^\circ$ \\
+$c$ & Cohesion & 3.9 & kPa \\
+$\mu$ & Wall--PM friction coefficient & 0 &  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Mohr Coulomb}
+\begin{equation}
+  F_{yy} = \rho g L H = 24.034 (kN)
+  \label{Force on the bottom wall}
+\end{equation}
+\begin{equation}
+  F_{xx} = \dfrac{1}{2} \dfrac{\nu}{1- \nu}\rho g H^2 = 3.77 (kN)
+  \label{Force on the right wall}
+\end{equation}
+\paragraph{MPMxDEM}
 
 
 %\begin{thebibliography}{9}
@@ -257,3 +396,7 @@ List of parameters for each spyName:
 %\end{thebibliography}
 
 \end{document}
+
+
+
+
