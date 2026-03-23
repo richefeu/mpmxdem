@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.22)
 
 message(STATUS "CMAKE_SYSTEM_NAME = " ${CMAKE_SYSTEM_NAME})
 message(STATUS "CMAKE_HOST_SYSTEM_NAME = " ${CMAKE_HOST_SYSTEM_NAME})
@@ -157,6 +157,7 @@ link_directories(${PLUGGED_DEM_INCLUDE_DIR})
 file(
   GLOB
   core_object_files
+  CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}
   BoundaryForceLaw/*.cpp
   ConstitutiveModels/*.cpp
