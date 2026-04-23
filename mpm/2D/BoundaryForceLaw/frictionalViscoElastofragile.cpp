@@ -45,7 +45,8 @@ void frictionalViscoElastofragile::computeForces(MPMbox &MPM, size_t o) {
       if (MPM.Obstacles[o]->Neighbors[nn].ft < -threshold) MPM.Obstacles[o]->Neighbors[nn].ft = -threshold;
       double visc = viscRate * 2.0 * sqrt(MPM.MP[pn].mass * kn);
       if (dn < 0) { // Check if there is contact
-        MPM.Obstacles[o]->Neighbors[nn].fn = std::max(0.0, -kn * dn - visc * normalVel);
+        double fn_trial                    = -kn * dn - visc * normalVel;
+        MPM.Obstacles[o]->Neighbors[nn].fn = fn_trial > 0.0 ? fn_trial : 0.0;
         MPM.Obstacles[o]->Neighbors[nn].dn = dn;
         vec2r lever                        = MPM.MP[pn].pos - MPM.Obstacles[o]->pos;
         // === Resultant force

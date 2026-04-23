@@ -5,8 +5,6 @@
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
 
-#include <algorithm>
-
 void frictionalViscoElastic::computeForces(MPMbox &MPM, size_t o) {
   double kn, kt, mu, viscRate;
 
@@ -34,7 +32,8 @@ void frictionalViscoElastic::computeForces(MPMbox &MPM, size_t o) {
       double normalVel = velRelative * N;
       double visc      = viscRate * 2.0 * sqrt(MPM.MP[pn].mass * kn);
       // Penalty contact has no adhesion: clamp tensile normal force to zero.
-      MPM.Obstacles[o]->Neighbors[nn].fn = std::max(0.0, -kn * dn - visc * normalVel);
+      double fn_trial                    = -kn * dn - visc * normalVel;
+      MPM.Obstacles[o]->Neighbors[nn].fn = fn_trial > 0.0 ? fn_trial : 0.0;
 
       MPM.Obstacles[o]->Neighbors[nn].dn = dn;
 
