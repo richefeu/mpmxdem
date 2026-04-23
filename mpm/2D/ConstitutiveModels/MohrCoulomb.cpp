@@ -40,7 +40,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   // Compute a strain increment (during dt) from the node-velocities
   // vec2r vn;
-  mat4r dstrain;
+  mat4r dstrain{};
   for (size_t r = 0; r < element::nbNodes; r++) {
     dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
     dstrain.xy +=
@@ -67,7 +67,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Trial stress
   MPM.MP[p].stress.xx += De11 * dstrain.xx + De12 * dstrain.yy;
   MPM.MP[p].stress.yy += De12 * dstrain.xx + De22 * dstrain.yy;
-  MPM.MP[p].stress.xy += 2 * De33 * dstrain.xy;
+  MPM.MP[p].stress.xy += De33 * dstrain.xy;
   MPM.MP[p].stress.yx = MPM.MP[p].stress.xy;
 
   double diff_3_1 = sqrt(4.0 * MPM.MP[p].stress.xy * MPM.MP[p].stress.xy +
@@ -75,7 +75,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
   double sum_1_3 = MPM.MP[p].stress.xx + MPM.MP[p].stress.yy;
   double yieldF = diff_3_1 + sum_1_3 * sinFrictionAngle - 2.0 * Cohesion * cosFrictionAngle;
 
-  mat4r deltaPlasticStrain;
+  mat4r deltaPlasticStrain{};
   if (yieldF > 0.0) {
 
     if (MPM.MP[p].plastic == false) MPM.MP[p].plastic = true;
@@ -111,8 +111,9 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
         deltaPlasticStrain.yy = lambda * gradgyy;
         deltaPlasticStrain.xy = 0.5 * lambda * gradgxy;
         deltaPlasticStrain.yx = deltaPlasticStrain.xy;
-
         MPM.MP[p].plasticStrain += deltaPlasticStrain;  // FIXME: INCREMENTED AT EACH ITERATION?
+        //std::cout << "increment strain: " << deltaPlasticStrain << std::endl;
+	//std::cout << "Plastic strain: " << MPM.MP[p].plasticStrain << std::endl;
 
         // Correcting state of stress
         mat4r delta_sigma_corrector;
@@ -122,10 +123,13 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
         delta_sigma_corrector.yx = delta_sigma_corrector.xy;
 
         // correcting the current state of stress
+        //std::cout << "increment sigma: " << delta_sigma_corrector << std::endl;
+        //std::cout << "sigma: " << MPM.MP[p].stress << std::endl;
         MPM.MP[p].stress -= delta_sigma_corrector;
 
         // saving the plastic stress to a mat4 variable
         MPM.MP[p].stressCorrection += delta_sigma_corrector;
+        //std::cout << "Total stress correction: " << MPM.MP[p].stressCorrection << std::endl;
 
         // New value of the yield function
         diff_3_1 = sqrt(4.0 * MPM.MP[p].stress.xy * MPM.MP[p].stress.xy +
