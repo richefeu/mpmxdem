@@ -12,7 +12,7 @@
 #include "PBC3D.hpp"
 
 std::string UpdateStressFirst::getRegistrationName() {
-3  return std::string("UpdateStressFirst");
+  return std::string("UpdateStressFirst");
 }
 
 int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
