@@ -242,10 +242,10 @@ void MPMbox::ExplicitRegistrations() {
       "MoveObstacle", [](void) -> Scheduler * { return new MoveObstacle(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "PICDissipation", [](void) -> Scheduler * { return new PICDissipation(); });
-    Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "PICDissipationByPIC", [](void) -> Scheduler * { return new PICDissipationByPIC(); });
-    // Alias names: keep backward compatibility while providing clearer semantics.
-    Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+  // Alias names: keep backward compatibility while providing clearer semantics.
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "PICDissipationPICRatio", [](void) -> Scheduler * { return new PICDissipationByPIC(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "RemoveObstacle", [](void) -> Scheduler * { return new RemoveObstacle(); });
@@ -494,7 +494,7 @@ void MPMbox::read(const char *name) {
         for (size_t n = 0; n < nbNeighbors; n++) {
           file >> N.PointNumber >> N.fn >> N.dn >> N.ft >> N.dt >> N.sigma_n;
           Obstacles[o]->getContactFrame(MP[N.PointNumber], Nvec, Tvec);
-          Obstacles[o]->force -= N.fn * Nvec + N.fn * Tvec;
+          Obstacles[o]->force -= N.fn * Nvec + N.ft * Tvec;
           Obstacles[o]->Neighbors.push_back(N);
         }
       }
@@ -747,16 +747,6 @@ void MPMbox::save(const char *name) {
   // Boudary Force Laws
   for (size_t i = 0; i < BFLCommandStored.size(); i++) { file << BFLCommandStored[i] << '\n'; }
 
-  // Obstacle Neighbors
-  for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
-    file << Obstacles[iObst]->Neighbors.size() << '\n';
-    for (size_t n = 0; n < Obstacles[iObst]->Neighbors.size(); n++) {
-      file << Obstacles[iObst]->Neighbors[n].PointNumber << ' ' << Obstacles[iObst]->Neighbors[n].fn << ' '
-           << Obstacles[iObst]->Neighbors[n].dn << ' ' << Obstacles[iObst]->Neighbors[n].ft << ' '
-           << Obstacles[iObst]->Neighbors[n].dt << ' ' << Obstacles[iObst]->Neighbors[n].sigma_n << '\n';
-    }
-  }
-
   // Material points
   file << "MPs " << MP.size() << '\n';
   file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
@@ -766,6 +756,17 @@ void MPMbox::save(const char *name) {
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].stressCorrection << ' '
          << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
          << '\n';
+  }
+
+  // Obstacle Neighbors
+  file << "ObstacleNeighbors\n";
+  for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
+    file << Obstacles[iObst]->Neighbors.size() << '\n';
+    for (size_t n = 0; n < Obstacles[iObst]->Neighbors.size(); n++) {
+      file << Obstacles[iObst]->Neighbors[n].PointNumber << ' ' << Obstacles[iObst]->Neighbors[n].fn << ' '
+           << Obstacles[iObst]->Neighbors[n].dn << ' ' << Obstacles[iObst]->Neighbors[n].ft << ' '
+           << Obstacles[iObst]->Neighbors[n].dt << ' ' << Obstacles[iObst]->Neighbors[n].sigma_n << '\n';
+    }
   }
 }
 

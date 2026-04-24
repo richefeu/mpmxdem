@@ -66,6 +66,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     if (!ADs.empty()) precomputeColors(9);
   } break;
 
+  case 'a': {
+    precomputeColors(11);
+  } break;
+
   case 'd': {
     show_node_dofs = 1 - show_node_dofs;
   } break;
@@ -514,7 +518,7 @@ void precomputeColors(int n) {
 
     for (size_t i = 0; i < Conf.MP.size(); i++) { colorTable.getRGB((float)Conf.MP[i].contactf.x, &precompColors[i]); }
   } break;
-  
+
   case 9: {
     colorBar.setTitle("fy");
     float fymax = -std::numeric_limits<float>::max();
@@ -557,6 +561,40 @@ void precomputeColors(int n) {
       float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
       float I    = (float)((ADs[i].Rmean / sqrt(d1 * d1 + d2 * d2)) / sqrt((abs(pres) + 1e-6) * SmoothedData[i].rho));
       colorTable.getRGB(I, &precompColors[i]);
+    }
+  } break;
+
+  case 11: {
+    colorBar.setTitle("sigma1/sigma3");
+    float ratioMax = -std::numeric_limits<float>::max();
+    float ratioMin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      const float sxx    = (float)SmoothedData[i].stress.xx;
+      const float syy    = (float)SmoothedData[i].stress.yy;
+      const float sxy    = 0.5f * (float)(SmoothedData[i].stress.xy + SmoothedData[i].stress.yx);
+      const float m      = 0.5f * (sxx + syy);
+      const float r      = sqrtf(0.25f * (sxx - syy) * (sxx - syy) + sxy * sxy);
+      const float sigma1 = m + r;
+      const float sigma3 = m - r;
+      const float ratio  = sigma1 / (sigma3 + 1.0e-12f);
+      if (ratio > ratioMax) ratioMax = ratio;
+      if (ratio < ratioMin) ratioMin = ratio;
+    }
+    colorTable.setMinMax(ratioMin, ratioMax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by sigma1/sigma3 (ratio_min = " << ratioMin << ", ratio_max = " << ratioMax << ")\n";
+
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      const float sxx    = (float)SmoothedData[i].stress.xx;
+      const float syy    = (float)SmoothedData[i].stress.yy;
+      const float sxy    = 0.5f * (float)(SmoothedData[i].stress.xy + SmoothedData[i].stress.yx);
+      const float m      = 0.5f * (sxx + syy);
+      const float r      = sqrtf(0.25f * (sxx - syy) * (sxx - syy) + sxy * sxy);
+      const float sigma1 = m + r;
+      const float sigma3 = m - r;
+      const float ratio  = sigma1 / (sigma3 + 1.0e-12f);
+      colorTable.getRGB(ratio, &precompColors[i]);
     }
   } break;
 
@@ -614,12 +652,10 @@ void drawStressDirections() {
 
 void drawMPs() {
   if (mouse_mode != NOTHING) {
-    if (show_grid == 0) {
-       drawGrid();
-    }
+    if (show_grid == 0) { drawGrid(); }
     return;
   }
-  
+
   glLineWidth(1.0f);
 
   for (size_t i = 0; i < Conf.MP.size(); ++i) {
@@ -868,6 +904,9 @@ void menu(int num) {
   case 210: {
     if (!ADs.empty()) precomputeColors(10);
   } break;
+  case 211: {
+    precomputeColors(11);
+  } break;
 
   // Grid informations
   case 300: {
@@ -879,11 +918,10 @@ void menu(int num) {
   case 302: {
     show_node_velocity_directions = 1 - show_node_velocity_directions;
   } break;
-  
+
   default: {
     std::cout << "Not yet plugged!" << std::endl;
   }
-  
 
   }; // end switch
 
@@ -910,12 +948,13 @@ void buildMenu() {
   glutAddMenuEntry("Fx (with Obstacle)", 208);
   glutAddMenuEntry("Fy (with Obstacle)", 209);
   glutAddMenuEntry("Inertial number (DEM)", 210);
-  
+  glutAddMenuEntry("Sigma1 / Sigma3", 211);
+
   int submenu300 = glutCreateMenu(menu); // Grid informations
   glutAddMenuEntry("Show/Hide Grid", 300);
   glutAddMenuEntry("Imposed DoF", 301);
   glutAddMenuEntry("Velocity Directions", 302);
-  
+
   int submenu400 = glutCreateMenu(menu); // Material Points informations
   glutAddMenuEntry("Bidon", 401);
   // ...
