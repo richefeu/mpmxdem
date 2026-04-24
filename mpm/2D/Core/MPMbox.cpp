@@ -540,7 +540,7 @@ void MPMbox::read(const char *name) {
       std::string modelName;
       for (size_t iMP = 0; iMP < nb; iMP++) {
         // FIXME
-        // Il faut changer le sorties suivantes (enlever stressCorrection, ajouter hardeningForce, mettre
+        // Il faut changer les sorties suivantes (enlever stressCorrection, ajouter hardeningForce, mettre
         // outOfPlaneStress à cote de stress)
         // Pas maintenant, pour ne pas casser la compatibilité...
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
@@ -597,6 +597,7 @@ void MPMbox::read(const char *name) {
   }
   dtInitial = dt;
 
+  // If at least one Mp is double-scale, so hasDoubleScale is true
   CHCL.hasDoubleScale = false;
   for (size_t p = 0; p < MP.size(); p++) {
     if (MP[p].isDoubleScale == true) {
@@ -738,16 +739,6 @@ void MPMbox::save(const char *name) {
   // Boudary Force Laws
   for (size_t i = 0; i < BFLCommandStored.size(); i++) { file << BFLCommandStored[i] << '\n'; }
 
-  // Obstacle Neighbors
-  for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
-    file << Obstacles[iObst]->Neighbors.size() << '\n';
-    for (size_t n = 0; n < Obstacles[iObst]->Neighbors.size(); n++) {
-      file << Obstacles[iObst]->Neighbors[n].PointNumber << ' ' << Obstacles[iObst]->Neighbors[n].fn << ' '
-           << Obstacles[iObst]->Neighbors[n].dn << ' ' << Obstacles[iObst]->Neighbors[n].ft << ' '
-           << Obstacles[iObst]->Neighbors[n].dt << ' ' << Obstacles[iObst]->Neighbors[n].sigma_n << '\n';
-    }
-  }
-
   // Material points
   file << "MPs " << MP.size() << '\n';
   file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
@@ -758,6 +749,17 @@ void MPMbox::save(const char *name) {
          << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
          << '\n';
   }
+  
+  // Obstacle Neighbors
+  for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
+    file << "ObstacleNeighbors " << Obstacles[iObst]->Neighbors.size() << '\n';
+    for (size_t n = 0; n < Obstacles[iObst]->Neighbors.size(); n++) {
+      file << Obstacles[iObst]->Neighbors[n].PointNumber << ' ' << Obstacles[iObst]->Neighbors[n].fn << ' '
+           << Obstacles[iObst]->Neighbors[n].dn << ' ' << Obstacles[iObst]->Neighbors[n].ft << ' '
+           << Obstacles[iObst]->Neighbors[n].dt << ' ' << Obstacles[iObst]->Neighbors[n].sigma_n << '\n';
+    }
+  }
+  
 }
 
 /**

@@ -174,7 +174,7 @@ add_library(core_obj OBJECT ${core_object_files})
 if(OpenMP_CXX_FOUND)
   add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
   target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY}
-  )# OpenMP::OpenMP_CXX)
+  )
 else()
   add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
   target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY})
@@ -183,7 +183,7 @@ endif()
 
 # ##############################################################################
 # see
-if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Linux") #=========
+if(${CMAKE_HOST_SYSTEM_NAME} MATCHES "Linux") # Linux =========
     
   add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
   target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR}

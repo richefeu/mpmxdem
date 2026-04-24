@@ -15,13 +15,13 @@
 #define FOR_CONTROL false
 
 struct ControlMP {
-  size_t PointNumber;  // Material Point number
+  size_t PointNumber{0}; // Material Point number
 
-	bool xcontrol;
-	bool ycontrol;
-  double xvalue;
-	double yvalue;
-  ControlMP();  // Ctor
+  bool xcontrol{FOR_CONTROL};
+  bool ycontrol{FOR_CONTROL};
+  double xvalue{0.0};
+  double yvalue{0.0};
+  ControlMP(); // Ctor
 };
 
 #endif /* end of include guard: CONTROL_MP_HPP */

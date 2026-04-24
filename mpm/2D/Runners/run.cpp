@@ -7,9 +7,6 @@
 #include "Spies/Spy.hpp"
 #include "stackTracer.hpp"
 
-//#include "spdlog/sinks/stdout_color_sinks.h"
-//#include "spdlog/spdlog.h"
-
 ExecChrono SimuChrono;
 MPMbox* SimuHandler;
 

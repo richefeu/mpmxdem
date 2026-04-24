@@ -138,7 +138,7 @@ void MohrCoulomb::updateStrainAndStress(MPMbox& MPM, size_t p) {
       MPM.MP[p].stress.xx = MPM.MP[p].stress.yy = apex;
       MPM.MP[p].stress.xy = MPM.MP[p].stress.yx = 0.0;
     }
-  }
+  } // end if (yieldD > 0.0)
 }
 
 void MohrCoulomb::init(MaterialPoint& MP) { MP.isDoubleScale = false; }

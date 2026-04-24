@@ -23,8 +23,8 @@
 //
 
 struct grid {
-  double lx, ly;  // Size of quad-elements (regular grid)
-  size_t Nx, Ny;  // Number of grid-elements (QUA4) along x and y directions
+  double lx{0.0}, ly{0.0};  // Size of quad-elements (regular grid)
+  size_t Nx{0}, Ny{0};  // Number of grid-elements (QUA4) along x and y directions
 
   grid();  // Ctor
 };

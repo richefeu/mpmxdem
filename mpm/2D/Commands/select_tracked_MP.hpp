@@ -10,10 +10,10 @@
 
 struct select_tracked_MP : public Command {
   select_tracked_MP();
-  void read(std::istream& is);
+  void read(std::istream &is);
   void exec();
 
- private:
+private:
   ElementSelector<MPMbox> MP_Selector;
 };
 
