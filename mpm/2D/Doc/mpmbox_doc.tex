@@ -13,7 +13,9 @@
 
 \usepackage{comment}
 \usepackage{amsmath}
-
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{cleveref}
 
 \newenvironment{codeblock}
   {\par\vspace{0.75em}}
@@ -181,9 +183,16 @@ Here are the lists of parameters for each \syntax{\param{modelName}}:
 Material points can be added by placing them on a grid. The corresponding command in this case is: \\
 
 \begin{codeblock}
- \syntax{\keyword{set\_MP\_grid} \type{(int)}\param{group} \type{(string)}\param{modelIdentifier}}
-\end{codeblock}
+ \syntax{\keyword{set\_MP\_grid} \type{(int)}\param{group} \type{(string)}\param{modelIdentifier} \type{(double)}\param{$\rho$} \type{(double)}\param{$x_0$} \type{(double)}\param{$y_0$} \type{(double)}\param{$x_1$} \type{(double)}\param{$y_1$}}
+\label{setMPgrid}
+\end{codeblock} 
+where ($x_0,y_0$) denotes the coordinates of the beginning corner of the material points square grid and the opposite one is at ($x_1, y_1$). $\rho$ signifies the density of each material point and must be specified, except in the \texttt{CHCL\_DEM} model where it gets calculated automatically via the DEM configuration:
 
+\begin{equation}
+  \rho_{\text{mp}} = \dfrac{m_{\text{VER}}}{V_{\text{VER}}} = \dfrac{\det(h)}{V_s}
+  \label{}
+\end{equation}
+which the diagonal matrix \textit{h} denotes the periodic boundary domain.
 \begin{comment}
 **`set_MP_polygon`** (_int_)`group`  (_int_)`nbVertices`  (_string_)`modelName`  (_double_)`massDensity` (_double_)`sizeOfBoxes`  (... (_double_)`x` (_double_)`y` ...)
 
@@ -237,17 +246,20 @@ List of parameters for each spyName:
 
 **`PICDissipation`** (*double*)`rateOfFLIP` (*double*)`endTime`
 
+**`PICDissipationByPIC`** (... list of pairs: (*double*)`t` (*double*)`ratioPIC` ...)
+
+Alias: **`PICDissipationPICRatio`** (same syntax)
+
 **`ReactivateCHCLBonds`**
 
 **`RemoveMaterialPoint`**
 
 **`RemoveObstacle`**
 
+**`MoveObstacle`** (_int_)`group` (... repeated: (_double_)`t` (_double_)`vx` (_double_)`vy` ...)
+
 
 \end{comment}
-
-
-
 
 
 
@@ -257,3 +269,7 @@ List of parameters for each spyName:
 %\end{thebibliography}
 
 \end{document}
+
+
+
+

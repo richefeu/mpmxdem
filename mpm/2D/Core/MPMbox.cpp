@@ -52,7 +52,9 @@
 #include "Spies/Work.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
+#include "Schedulers/MoveObstacle.hpp"
 #include "Schedulers/PICDissipation.hpp"
+#include "Schedulers/PICDissipationByPIC.hpp"
 #include "Schedulers/ReactivateCHCLBonds.hpp"
 #include "Schedulers/RemoveMaterialPoint.hpp"
 #include "Schedulers/RemoveObstacle.hpp"
@@ -237,7 +239,14 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "GravityRamp", [](void) -> Scheduler * { return new GravityRamp(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "MoveObstacle", [](void) -> Scheduler * { return new MoveObstacle(); });
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "PICDissipation", [](void) -> Scheduler * { return new PICDissipation(); });
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "PICDissipationByPIC", [](void) -> Scheduler * { return new PICDissipationByPIC(); });
+  // Alias names: keep backward compatibility while providing clearer semantics.
+  Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
+      "PICDissipationPICRatio", [](void) -> Scheduler * { return new PICDissipationByPIC(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
       "RemoveObstacle", [](void) -> Scheduler * { return new RemoveObstacle(); });
   Factory<Scheduler, std::string>::Instance()->RegisterFactoryFunction(
@@ -485,7 +494,7 @@ void MPMbox::read(const char *name) {
         for (size_t n = 0; n < nbNeighbors; n++) {
           file >> N.PointNumber >> N.fn >> N.dn >> N.ft >> N.dt >> N.sigma_n;
           Obstacles[o]->getContactFrame(MP[N.PointNumber], Nvec, Tvec);
-          Obstacles[o]->force -= N.fn * Nvec + N.fn * Tvec; 
+          Obstacles[o]->force -= N.fn * Nvec + N.ft * Tvec;
           Obstacles[o]->Neighbors.push_back(N);
         }
       }
@@ -749,17 +758,18 @@ void MPMbox::save(const char *name) {
          << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
          << '\n';
   }
-  
+
   // Obstacle Neighbors
+  file << "ObstacleNeighbors\n";
   for (size_t iObst = 0; iObst < Obstacles.size(); iObst++) {
-    file << "ObstacleNeighbors " << Obstacles[iObst]->Neighbors.size() << '\n';
+    file << Obstacles[iObst]->Neighbors.size() << '\n';
     for (size_t n = 0; n < Obstacles[iObst]->Neighbors.size(); n++) {
       file << Obstacles[iObst]->Neighbors[n].PointNumber << ' ' << Obstacles[iObst]->Neighbors[n].fn << ' '
            << Obstacles[iObst]->Neighbors[n].dn << ' ' << Obstacles[iObst]->Neighbors[n].ft << ' '
            << Obstacles[iObst]->Neighbors[n].dt << ' ' << Obstacles[iObst]->Neighbors[n].sigma_n << '\n';
     }
   }
-  
+
 }
 
 /**

@@ -137,14 +137,8 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     // sum of boundary and volume forces:
     nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].fb + nodes[liveNodeNum[n]].f;
-    if (!(nodes[liveNodeNum[n]].xfixed))
-      nodes[liveNodeNum[n]].q.x += nodes[liveNodeNum[n]].qdot.x * dt;
-    else
-      nodes[liveNodeNum[n]].qdot.x = 0.0;
-    if (!(nodes[liveNodeNum[n]].yfixed))
-      nodes[liveNodeNum[n]].q.y += nodes[liveNodeNum[n]].qdot.y * dt;
-    else
-      nodes[liveNodeNum[n]].qdot.y = 0.0;
+    if (nodes[liveNodeNum[n]].xfixed) nodes[liveNodeNum[n]].qdot.x = 0.0;
+    if (nodes[liveNodeNum[n]].yfixed) nodes[liveNodeNum[n]].qdot.y = 0.0;
     // nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].f;
     nodes[liveNodeNum[n]].q += nodes[liveNodeNum[n]].qdot * dt;
   }
