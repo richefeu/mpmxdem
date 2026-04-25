@@ -6,7 +6,7 @@
 #endif
 
 #ifdef __APPLE__
-#include <GL/freeglut.h>
+#include <GL/glut.h>
 #else
 #include <GL/freeglut.h>
 #include <GL/freeglut_std.h>

@@ -6,28 +6,25 @@ UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin) # ==========================================
 
-#The compiler to be used
-CXX = g++-15
-#GNU_GPP := $(shell ls /usr/local/bin/g++-* 2>/dev/null | grep -Eo 'g\+\+-([0-9]+)' | sort -V | tail -1)
-#CXX := $(if $(GNU_GPP),$(GNU_GPP),g++)
+  #The compiler to be used
+  CXX = g++-15
+  CXXFLAGS = -O3 -Wall -Wextra -Wshadow -std=c++17 -I ./toofus
 
-#The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -Wextra -Wshadow -std=c++17 -I ./toofus
-#Link flags for OpenGL and glut
-GLLINK = `pkg-config --libs gl glu glut`
-GLFLAGS = `pkg-config --cflags gl glu glut`
-#on apple, use brew to install freeglut and mesa-glu
+	# on apple, compile freeglut from source with this configuration:
+	# mkdir build
+	# cd build
+	# cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DFREEGLUT_COCOA=ON -DFREEGLUT_BUILD_DEMOS=OFF -DCMAKE_BUILD_TYPE=Release
+  # make
+	# sudo make install
+	
+  GLLINK = /usr/local/lib/libglut.a -framework Cocoa -framework CoreVideo -framework OpenGL -framework IOKit
+	GLFLAGS = -I/usr/local/include
 
 else # ==============================================================
 
-#The compiler to be used
-CXX = g++
-#The list of flags passed to the compiler
-CXXFLAGS = -O3 -Wall -std=c++17 -I ./toofus -I /usr/include -fopenmp
-#Link flags for OpenGL and glut
-GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread
-#GLFLAGS = `pkg - config-- cflags glut`
-#GLLINK = `pkg - config-- libs glut` - framework OpenGL
+  CXX = g++  
+  CXXFLAGS = -O3 -Wall -std=c++17 -I ./toofus -I /usr/include -fopenmp
+  GLLINK = -L/usr/X11R6/lib -lX11 -lXi -lglut -lGL -lGLU -lm -lpthread
 
 endif # =============================================================
 

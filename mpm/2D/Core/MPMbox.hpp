@@ -36,10 +36,6 @@
 
 #include <stdlib.h>
 
-// #define SPGLOG_HEADER_ONLY
-// #define FMT_HEADER_ONLY
-// #include "spdlog/fwd.h"
-
 #define FMT_HEADER_ONLY
 #include "fmtLogger.hpp"
 
