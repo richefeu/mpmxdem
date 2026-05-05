@@ -1,5 +1,4 @@
-#ifndef OBSTACLE_HPP
-#define OBSTACLE_HPP
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -30,7 +29,7 @@ struct Obstacle {
   double arot{0.0}; // angular acceleration
   double mom{0.0};  // resultant moment
 
-  BoundaryForceLaw *boundaryForceLaw;
+  BoundaryForceLaw *boundaryForceLaw{nullptr};
 
   std::vector<Neighbor> Neighbors; // MP neighbors
 
@@ -46,5 +45,3 @@ struct Obstacle {
   Obstacle();
   virtual ~Obstacle();
 };
-
-#endif /* end of include guard: OBSTACLE_HPP */

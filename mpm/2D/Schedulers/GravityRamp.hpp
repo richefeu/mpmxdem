@@ -1,5 +1,4 @@
-#ifndef GRAVITY_RAMP_HPP
-#define GRAVITY_RAMP_HPP
+#pragma once
 
 #include "Scheduler.hpp"
 
@@ -17,5 +16,3 @@ struct GravityRamp : public Scheduler {
   double rampStart;
   double rampStop;
 };
-
-#endif /* end of include guard: GRAVITY_RAMP_HPP */

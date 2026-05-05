@@ -1,19 +1,17 @@
-#ifndef SINFONIETTA_CLASSICA_HPP
-#define SINFONIETTA_CLASSICA_HPP
+#pragma once
 
-/**
- * @file SinfoniettaClassica.hpp
- * @brief Header file for the SinfoniettaClassica class.
- *
- * This file contains the declaration of the SinfoniettaClassica class, which is
- * a constitutive model for a material point.
- *
- * The SinfoniettaClassica model is a modified version of the SinfoniettaCrunch
- * model, which is used for the crushing of granular materials.
- *
- * The file also defines constants and includes necessary headers for the
- * implementation of SinfoniettaClassica.
- */
+// 
+// Header file for the SinfoniettaClassica class.
+// 
+// This file contains the declaration of the SinfoniettaClassica class, which is
+// a constitutive model for a material point.
+// 
+// The SinfoniettaClassica model is a modified version of the SinfoniettaCrunch
+// model, which is used for the crushing of granular materials.
+// 
+// The file also defines constants and includes necessary headers for the
+// implementation of SinfoniettaClassica.
+// 
 
 #include "ConstitutiveModel.hpp"
 
@@ -57,5 +55,3 @@ struct SinfoniettaClassica : public ConstitutiveModel {
   const double yield_tol{1e-8};
   double z;  // depends on varphi
 };
-
-#endif /* end of include guard: SINFONIETTA_CLASSICA_HPP */

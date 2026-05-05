@@ -1,5 +1,4 @@
-#ifndef PIC_DISSIPATION_BY_PIC_HPP
-#define PIC_DISSIPATION_BY_PIC_HPP
+#pragma once
 
 #include "Scheduler.hpp"
 
@@ -17,5 +16,3 @@ private:
   std::vector<double> times;
   std::vector<double> ratioPIC;
 };
-
-#endif /* end of include guard: PIC_DISSIPATION_BY_PIC_HPP */

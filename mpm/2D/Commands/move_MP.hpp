@@ -1,5 +1,4 @@
-#ifndef MOVE_MP_HPP
-#define MOVE_MP_HPP
+#pragma once
 
 #include "Command.hpp"
 
@@ -15,5 +14,3 @@ struct move_MP : public Command {
   double dy;
   double thetaDeg;
 };
-
-#endif /* end of include guard: MOVE_MP_HPP */

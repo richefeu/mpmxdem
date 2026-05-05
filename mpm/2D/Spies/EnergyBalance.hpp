@@ -1,5 +1,4 @@
-#ifndef ENERGY_BALANCE_HPP
-#define ENERGY_BALANCE_HPP
+#pragma once
 
 #include "Spy.hpp"
 
@@ -18,5 +17,3 @@ struct EnergyBalance : public Spy {
 
   double Wn_tot, Wt_tot, Wint_tot, Wp_tot;
 };
-
-#endif /* end of include guard: ENERGY_BALANCE_HPP */

@@ -1,5 +1,4 @@
-#ifndef SET_K0_STRESS_HPP
-#define SET_K0_STRESS_HPP
+#pragma once
 
 #include "Command.hpp"
 
@@ -10,5 +9,3 @@ struct set_K0_stress : public Command {
  private:
   double nu, rho0;
 };
-
-#endif /* end of include guard: SET_K0_STRESS_HPP */

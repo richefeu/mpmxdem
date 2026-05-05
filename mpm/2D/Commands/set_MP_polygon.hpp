@@ -1,5 +1,4 @@
-#ifndef SET_MP_POLYGON_HPP
-#define SET_MP_POLYGON_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -25,5 +24,3 @@ struct set_MP_polygon : public Command {
   double rho, size;
   std::vector<vec2r> vertices;
 };
-
-#endif /* end of include guard: SET_MP_POLYGON_HPP */

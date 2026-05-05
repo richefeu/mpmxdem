@@ -1,5 +1,4 @@
-#ifndef SET_NODE_GRIG_HPP
-#define SET_NODE_GRIG_HPP
+#pragma once
 
 #include "Command.hpp"
 
@@ -12,5 +11,3 @@ struct set_node_grid : public Command {
   size_t nbElemX, nbElemY;
   double lx, ly;
 };
-
-#endif /* end of include guard: SET_NODE_GRIG_HPP */

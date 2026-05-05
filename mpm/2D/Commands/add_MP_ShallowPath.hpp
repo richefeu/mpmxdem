@@ -1,5 +1,4 @@
-#ifndef ADD_MP_SHALLOWPATH_HPP
-#define ADD_MP_SHALLOWPATH_HPP
+#pragma once
 
 #include <string>
 #include <vector>
@@ -24,4 +23,3 @@ struct add_MP_ShallowPath : public Command {
   std::vector<vec2r> pathPoints;
 };
 
-#endif /* end of include guard: ADD_MP_SHALLOWPATH_HPP */

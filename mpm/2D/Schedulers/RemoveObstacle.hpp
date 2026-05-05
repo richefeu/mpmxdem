@@ -1,5 +1,4 @@
-#ifndef REMOVE_OBSTACLE_HPP
-#define REMOVE_OBSTACLE_HPP
+#pragma once
 
 #include "Scheduler.hpp"
 
@@ -15,6 +14,3 @@ struct RemoveObstacle : public Scheduler {
    int groupNumber;   // osbsacle group-number to be suppressed
    double removeTime; // time to remove the obstacle(s)
 };
-
-
-#endif /* end of include guard: REMOVE_OBSTACLE_HPP */

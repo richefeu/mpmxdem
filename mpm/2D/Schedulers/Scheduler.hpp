@@ -1,5 +1,4 @@
-#ifndef SCHEDULER_HPP
-#define SCHEDULER_HPP
+#pragma once
 
 class MPMbox;
 #include <fstream>
@@ -15,7 +14,3 @@ struct Scheduler {
 	
 	virtual ~Scheduler ();
 };
-
-
-
-#endif /* end of include guard: SCHEDULER_HPP */

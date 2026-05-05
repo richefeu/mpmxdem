@@ -1,5 +1,4 @@
-#ifndef WORK_HPP
-#define WORK_HPP
+#pragma once
 
 #include "Spy.hpp"
 
@@ -25,5 +24,3 @@ struct Work : public Spy {
 
   double Wn_tot, Wt_tot, Wint_tot, Wp_tot;
 };
-
-#endif /* end of include guard: WORK_HPP */

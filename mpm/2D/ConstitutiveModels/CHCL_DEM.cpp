@@ -66,12 +66,17 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   mat9r SigAvg;
 
   // clang-format off
-  MPM.MP[p].PBC->transform(Finc3D, MPM.dt, 
-	                         MPM.CHCL.minDEMstep, MPM.CHCL.rateAverage, MPM.CHCL.criticalDEMTimeStepFactor, 
-													 SigAvg);
+  MPM.MP[p].PBC->transform(
+    Finc3D, 
+    MPM.dt, 
+	  MPM.CHCL.minDEMstep, 
+    MPM.CHCL.rateAverage, 
+    MPM.CHCL.criticalDEMTimeStepFactor, 
+		SigAvg
+  );
   // clang-format on
 
-  // FIXME: maybe we should force the symmetry of the stress tensor
+  // We force the symmetry of the stress tensor
   // because it's ok for the DEM side, but probably not for MPM
   SigAvg.symmetrize();
 

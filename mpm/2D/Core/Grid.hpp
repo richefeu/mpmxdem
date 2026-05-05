@@ -1,14 +1,12 @@
-#ifndef GRID_HPP
-#define GRID_HPP
+#pragma once
 
-/**
- * @file
- * @brief   Geometric grid definition
- *
- * @details   This file contains the definition of the
- *            Geometric grid used in the simulations.
- *
- */
+//
+// Geometric grid definition
+//
+// This file contains the definition of the
+// Geometric grid used in the simulations.
+//
+//
 
 #include <cstddef>
 
@@ -23,10 +21,10 @@
 //
 
 struct grid {
-  double lx{0.0}, ly{0.0};  // Size of quad-elements (regular grid)
-  size_t Nx{0}, Ny{0};  // Number of grid-elements (QUA4) along x and y directions
+  double lx{1.0};
+  double ly{1.0}; // Size of quad-elements (regular grid)
+  size_t Nx{20};
+  size_t Ny{20}; // Number of grid-elements (QUA4) along x and y directions
 
-  grid();  // Ctor
+  grid(); // Ctor
 };
-
-#endif /* end of include guard: GRID_HPP */

@@ -1,5 +1,4 @@
-#ifndef PIC_DISSIPATION_HPP
-#define PIC_DISSIPATION_HPP
+#pragma once
 
 #include "Scheduler.hpp"
 
@@ -12,6 +11,3 @@ struct PICDissipation : public Scheduler {
  private:
   double endTime;
 };
-
-
-#endif /* end of include guard: PIC_DISSIPATION_HPP */

@@ -7,10 +7,10 @@ std::string Line::getRegistrationName() { return std::string("Line"); }
 void Line::read(std::istream& is) {
   vec2r end;
   is >> group >> pos >> end;
-  t = end - pos;
-  len = t.normalize();
-  n.x = t.y;
-  n.y = -t.x;  // so that n ^ t = z
+  udir = end - pos;
+  len = udir.normalize();
+  n.x = udir.y;
+  n.y = -udir.x;  // so that n ^ t = z
 
   std::string driveMode;
   is >> driveMode;
@@ -26,7 +26,7 @@ void Line::read(std::istream& is) {
 }
 
 void Line::write(std::ostream& os) {
-  os << group << ' ' << pos << ' ' << pos + t * len << ' ' << "velocity " << vel << '\n';
+  os << group << ' ' << pos << ' ' << pos + udir * len << ' ' << "velocity " << vel << '\n';
 }
 
 int Line::touch(MaterialPoint& MP, double& dn) {
@@ -35,7 +35,7 @@ int Line::touch(MaterialPoint& MP, double& dn) {
   double radiusMP = 0.5 * MP.size;
   dn = c * n - radiusMP;
   if (dn < 0.0) {
-    double proj = c * t;
+    double proj = c * udir;
     if (proj >= 0.0 && proj <= len) {
       Touch = 1;
     }
@@ -46,7 +46,7 @@ int Line::touch(MaterialPoint& MP, double& dn) {
 void Line::getContactFrame(MaterialPoint&, vec2r& N, vec2r& T) {
   // Remark: the line is not supposed to rotate
   N = n;
-  T = t;
+  T = udir;
 }
 
 void Line::checkProximity(MPMbox& MPM) {
@@ -64,7 +64,7 @@ void Line::checkProximity(MPMbox& MPM) {
       sumSecurDist = sumSecurDistMin;
     }
     c = MPM.MP[p].pos - pos;
-    double dstt = c * t;
+    double dstt = c * udir;
     if (dstt > -sumSecurDist && dstt < len + sumSecurDist) {
       double dstn = c * n;
       if (dstn < sumSecurDist) {

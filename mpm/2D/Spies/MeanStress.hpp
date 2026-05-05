@@ -1,5 +1,4 @@
-#ifndef MEAN_STRESS_HPP
-#define MEAN_STRESS_HPP
+#pragma once
 
 #include "Spy.hpp"
 
@@ -19,5 +18,3 @@ struct MeanStress : public Spy {
   std::ofstream file;
 	mat4r meanStress;
 };
-
-#endif /* end of include guard: MEAN_STRESS_HPP */

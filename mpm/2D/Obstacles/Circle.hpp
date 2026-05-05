@@ -1,18 +1,15 @@
-#ifndef OBSTACLE_CIRCLE_HPP
-#define OBSTACLE_CIRCLE_HPP
+#pragma once
 
 #include "Obstacle.hpp"
 
 struct Circle : public Obstacle {
-  double R;
+  double R{0.0};
 
   std::string getRegistrationName();
   virtual void read(std::istream& is);
   virtual void write(std::ostream& os);
   virtual void checkProximity(MPMbox& MPM);
   virtual int touch(MaterialPoint& MP, double& dn);
-  virtual void getContactFrame(MaterialPoint& MP, vec2r& n, vec2r& t);
+  virtual void getContactFrame(MaterialPoint& MP, vec2r& N, vec2r& T);
   virtual bool inside(vec2r& x);
 };
-
-#endif /* end of include guard: OBSTACLE_CIRCLE_HPP */

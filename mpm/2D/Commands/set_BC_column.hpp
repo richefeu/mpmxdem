@@ -1,5 +1,4 @@
-#ifndef SET_BC_COLUMN_HPP
-#define SET_BC_COLUMN_HPP
+#pragma once
 
 #include "Command.hpp"
 
@@ -12,5 +11,3 @@ struct set_BC_column : public Command {
   int column_num, line0, line1;
   bool Xfixed, Yfixed;
 };
-
-#endif /* end of include guard: SET_BC_COLUMN_HPP */

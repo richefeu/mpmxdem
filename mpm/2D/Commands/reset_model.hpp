@@ -1,5 +1,4 @@
-#ifndef RESET_MODEL_HPP
-#define RESET_MODEL_HPP
+#pragma once
 
 #include <string>
 
@@ -14,5 +13,3 @@ struct reset_model : public Command {
   int groupNb;
   double rho, x0, y0, x1, y1;
 };
-
-#endif /* end of include guard: RESET_MODEL_HPP */

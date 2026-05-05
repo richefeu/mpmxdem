@@ -1,5 +1,4 @@
-#ifndef SELECT_CONTROLLED_MP_HPP
-#define SELECT_CONTROLLED_MP_HPP
+#pragma once
 
 #include "Core/ControlMP.hpp"
 
@@ -20,5 +19,3 @@ struct select_controlled_MP : public Command {
 	
 	ElementSelector<MPMbox> MP_Selector;
 };
-
-#endif /* end of include guard: SELECT_CONTROLLED_MP_HPP */

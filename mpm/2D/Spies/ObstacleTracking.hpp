@@ -1,5 +1,4 @@
-#ifndef OBSTACLE_TRACKING_HPP
-#define OBSTACLE_TRACKING_HPP
+#pragma once
 
 #include "Spy.hpp"
 
@@ -23,5 +22,3 @@ private:
   std::string filename;
   std::ofstream file;
 };
-
-#endif /* end of include guard: OBSTACLE_TRACKING_HPP */

@@ -1,5 +1,4 @@
-#ifndef SET_MP_GRID_HPP
-#define SET_MP_GRID_HPP
+#pragma once
 
 #include "Command.hpp"
 
@@ -18,5 +17,3 @@ struct set_MP_grid : public Command {
   double size;
   //double etaDamping;
 };
-
-#endif /* end of include guard: SET_MP_GRID_HPP */

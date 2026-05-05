@@ -1,5 +1,4 @@
-#ifndef KELVIN_VOIGT_HPP
-#define KELVIN_VOIGT_HPP
+#pragma once
 
 #include "ConstitutiveModel.hpp"
 
@@ -21,5 +20,3 @@ private:
   Rigidity C;
   double eta;
 };
-
-#endif /* end of include guard: KELVIN_VOIGT_HPP */

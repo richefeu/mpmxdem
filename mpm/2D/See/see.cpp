@@ -7,20 +7,57 @@
 #include "Obstacles/Line.hpp"
 
 void printHelp() {
-  using namespace std;
-  cout << endl;
-  cout << "+         load next configuration file" << endl;
-  cout << "-         load previous configuration file" << endl;
-  cout << "=         fit the view" << endl;
-  cout << "q         quit" << endl;
-  // cout << "" << endl;
-  cout << endl;
+
+  std::cout << std::endl;
+  std::cout << "-KEY-----|--DESCRIPTION-----------------------------" << std::endl;
+  std::cout << " +       | load next configuration file" << std::endl;
+  std::cout << " -       | load previous configuration file" << std::endl;
+  std::cout << " =       | fit the view" << std::endl;
+  std::cout << " a       | MP colors = sig__/sig__ (key to be changed)" << std::endl;
+  std::cout << " b       | show/hide colored gradient background" << std::endl;
+  std::cout << " c       | show/hide MP contours" << std::endl;
+  std::cout << " d       | show/hide node DOFs" << std::endl;
+  // std::cout << " e       | ___" << std::endl;
+  // std::cout << " f       | ___" << std::endl;
+  std::cout << " g       | show/hide background grid" << std::endl;
+  std::cout << " h       | print this help" << std::endl;
+  std::cout << " i       | print info" << std::endl;
+  // std::cout << " j       | ___" << std::endl;
+  // std::cout << " k       | ___" << std::endl;
+  // std::cout << " l       | ___" << std::endl;
+  std::cout << " m       | show/hide Material Points" << std::endl;
+  std::cout << " n       | go to conf number (input in console)" << std::endl;
+  // std::cout << " o       | ___" << std::endl;
+  // std::cout << " p       | ___" << std::endl;
+  std::cout << " q       | quit" << std::endl;
+  // std::cout << " r       | ___" << std::endl;
+  std::cout << " s       | enable/disable MP representation with deformed box" << std::endl;
+  // std::cout << " t       | ___" << std::endl;
+  // std::cout << " u       | ___" << std::endl;
+  // std::cout << " v       | ___" << std::endl;
+  // std::cout << " w       | ___" << std::endl;
+  std::cout << " x       | show/hide MP stress directions" << std::endl;
+  // std::cout << " y       | ___" << std::endl;
+  std::cout << " z       | make a single screenshot" << std::endl;
+  std::cout << " Z       | make a series of screenshots" << std::endl;
+  std::cout << "---------|--MP COLORS-------------------------------" << std::endl;
+  std::cout << " 0       | none" << std::endl;
+  std::cout << " 1       | velocity magnitude" << std::endl;
+  std::cout << " 2       | pressure" << std::endl;
+  std::cout << " 3       | density" << std::endl;
+  std::cout << " 4       | sig_yy" << std::endl;
+  std::cout << " 5       | DEM-cell damage (MPMxDEM only)" << std::endl;
+  std::cout << " 6       | deps_q" << std::endl;
+  std::cout << " 7       | volume variation" << std::endl;
+  std::cout << " 8       | fx (with obstacles, for debug)" << std::endl;
+  std::cout << " 9       | fy (with obstacles, for debug)" << std::endl;
+  std::cout << "---------|--USE MENU FOR OTHER COLORS---------------" << std::endl;
+  std::cout << std::endl;
 }
 
 void printInfo() {
-  using namespace std;
-
-  cout << "\nCurrent Conf = " << confNum << "\n\n";
+  std::cout << "\nCurrent Conf = " << confNum << "\n\n";
+  // to be continued
 }
 
 void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
@@ -66,12 +103,8 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     if (!ADs.empty()) precomputeColors(9);
   } break;
 
-  case 'a': {
+  case 'a': { // tmp: change the key
     precomputeColors(11);
-  } break;
-
-  case 'd': {
-    show_node_dofs = 1 - show_node_dofs;
   } break;
 
   case 'b': {
@@ -80,6 +113,10 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
   case 'c': {
     MP_contour = 1 - MP_contour;
+  } break;
+
+  case 'd': {
+    show_node_dofs = 1 - show_node_dofs;
   } break;
 
   case 'g': {
@@ -145,21 +182,22 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     fit_view();
     reshape(width, height);
   } break;
-  };
+
+  } // end switch(Key)
 
   glutPostRedisplay();
 }
 
 void updateTextLine() {
   textZone.addLine("conf%d,  t = %0.4g s", confNum, Conf.t);
-  // textZone.addLine("%s - time = %.3G", file_name, Conf.t);
 }
 
 void mouse(int button, int state, int x, int y) {
 
   if (state == GLUT_UP) {
     mouse_mode = NOTHING;
-    display();
+    // display();
+    glutPostRedisplay();
   } else if (state == GLUT_DOWN) {
     mouse_start[0] = x;
     mouse_start[1] = y;
@@ -210,7 +248,8 @@ void motion(int x, int y) {
   mouse_start[1] = y;
 
   reshape(width, height);
-  display();
+  // display();
+  glutPostRedisplay();
 }
 
 void display() {
@@ -279,7 +318,7 @@ void reshape(int w, int h) {
   glLoadIdentity();
   gluOrtho2D(left, right, bottom, top);
 
-  glutPostRedisplay();
+  //glutPostRedisplay();
 }
 
 void drawGrid() {
@@ -339,7 +378,7 @@ void precomputeColors(int n) {
   precompColors.clear();
   precompColors.resize(SmoothedData.size());
 
-  if (n > 0 && color_option != n) { color_option = n; }
+  if (n >= 0 && color_option != n) { color_option = n; }
 
   switch (color_option) {
 
@@ -599,9 +638,9 @@ void precomputeColors(int n) {
   } break;
 
   default: {
-    for (size_t i = 0; i < SmoothedData.size(); i++) { precompColors[i].set(204, 204, 230, 255); }
+    for (size_t i = 0; i < Conf.MP.size() /*SmoothedData.size()*/; i++) { precompColors[i].set(204, 204, 230, 255); }
   } break;
-  }
+  } // end switch(color_option)
 }
 
 void setColor(int i, float alpha) {
@@ -728,8 +767,8 @@ void drawObstacles() {
       double w = (Conf.Grid.lx + Conf.Grid.ly) * 0.5;
       glBegin(GL_POLYGON);
       glVertex2d(L->pos.x, L->pos.y);
-      glVertex2d(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
-      glVertex2d(L->pos.x + L->len * L->t.x - w * L->n.x, L->pos.y + L->len * L->t.y - w * L->n.y);
+      glVertex2d(L->pos.x + L->len * L->udir.x, L->pos.y + L->len * L->udir.y);
+      glVertex2d(L->pos.x + L->len * L->udir.x - w * L->n.x, L->pos.y + L->len * L->udir.y - w * L->n.y);
       glVertex2d(L->pos.x - w * L->n.x, L->pos.y - w * L->n.y);
       glEnd();
 
@@ -737,7 +776,7 @@ void drawObstacles() {
       glLineWidth(2.0f);
       glBegin(GL_LINES);
       glVertex2d(L->pos.x, L->pos.y);
-      glVertex2d(L->pos.x + L->len * L->t.x, L->pos.y + L->len * L->t.y);
+      glVertex2d(L->pos.x + L->len * L->udir.x, L->pos.y + L->len * L->udir.y);
       glEnd();
     }
   }
@@ -923,9 +962,9 @@ void menu(int num) {
     std::cout << "Not yet plugged!" << std::endl;
   }
 
-  }; // end switch
+  } // end switch
 
-  glutPostRedisplay();
+  glutPostRedisplay();  
 }
 
 void buildMenu() {
@@ -942,12 +981,12 @@ void buildMenu() {
   glutAddMenuEntry("Pressure, tr(Sig)/3", 202);
   glutAddMenuEntry("Density", 203);
   glutAddMenuEntry("Sig yy", 204);
-  glutAddMenuEntry("DEM-cell damage (DEM)", 205);
+  glutAddMenuEntry("DEM-cell damage (MPMxDEM only)", 205);
   glutAddMenuEntry("Delta Eps Deviator", 206);
   glutAddMenuEntry("Volume Variation", 207);
   glutAddMenuEntry("Fx (with Obstacle)", 208);
   glutAddMenuEntry("Fy (with Obstacle)", 209);
-  glutAddMenuEntry("Inertial number (DEM)", 210);
+  glutAddMenuEntry("Inertial number (MPMxDEM only)", 210);
   glutAddMenuEntry("Sigma1 / Sigma3", 211);
 
   int submenu300 = glutCreateMenu(menu); // Grid informations

@@ -1,5 +1,4 @@
-#ifndef REMOVE_MP_HPP
-#define REMOVE_MP_HPP
+#pragma once
 
 #include "Scheduler.hpp"
 
@@ -17,5 +16,3 @@ struct RemoveMaterialPoint : public Scheduler {
   std::string CMkey;  // this is the key-name given to a ConstitutiveModel
   double removeTime;  // time of removal
 };
-
-#endif /* end of include guard: REMOVE_MP_HPP */

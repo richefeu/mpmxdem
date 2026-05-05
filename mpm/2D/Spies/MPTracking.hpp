@@ -1,5 +1,4 @@
-#ifndef MP_TRACKING_HPP
-#define MP_TRACKING_HPP
+#pragma once
 
 #include "Spy.hpp"
 
@@ -23,5 +22,3 @@ struct MPTracking : public Spy {
   mat4r meanStress;
   mat4r meanStrain;
 };
-
-#endif /* end of include guard: MP_TRACKING_HPP */

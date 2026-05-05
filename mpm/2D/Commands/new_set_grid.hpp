@@ -1,5 +1,4 @@
-#ifndef NEW_SET_GRID_HPP
-#define NEW_SET_GRID_HPP
+#pragma once
 
 #include "Command.hpp"
 
@@ -13,5 +12,3 @@ struct new_set_grid : public Command {
   double lengthY;
   double spacing;
 };
-
-#endif /* end of include guard: NEW_SET_GRID_HPP */

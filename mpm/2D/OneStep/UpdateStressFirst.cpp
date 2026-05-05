@@ -1,3 +1,6 @@
+// This file is actually NOT anymore used and thus NOT really maintained
+// AVOID TO USE IT
+
 #include "UpdateStressFirst.hpp"
 
 #include "ConstitutiveModels/ConstitutiveModel.hpp"

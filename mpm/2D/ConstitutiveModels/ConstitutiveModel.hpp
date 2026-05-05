@@ -1,5 +1,4 @@
-#ifndef CONSTITUTIVEMODEL_HPP
-#define CONSTITUTIVEMODEL_HPP
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -20,5 +19,3 @@ struct ConstitutiveModel {
   virtual double getPoisson();
   virtual void init(MaterialPoint & MP);
 };
-
-#endif /* end of include guard: CONSTITUTIVEMODEL_HPP */

@@ -1,5 +1,4 @@
-#ifndef VTKOUTPUT_HPP
-#define VTKOUTPUT_HPP
+#pragma once
 
 class MPMbox;
 #include <fstream>
@@ -14,5 +13,3 @@ struct VtkOutput {
 
   virtual ~VtkOutput();  // Dtor
 };
-
-#endif /* end of include guard: VTKOUTPUT_HPP */

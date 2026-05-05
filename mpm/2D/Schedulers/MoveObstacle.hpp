@@ -1,5 +1,4 @@
-#ifndef MOVE_OBSTACLE_HPP
-#define MOVE_OBSTACLE_HPP
+#pragma once
 
 #include "Scheduler.hpp"
 
@@ -21,5 +20,3 @@ private:
   std::vector<double> times;
   std::vector<vec2r> vels;
 };
-
-#endif /* end of include guard: MOVE_OBSTACLE_HPP */

@@ -1,5 +1,4 @@
-#ifndef REACTIVATE_CHCL_BONDS_HPP
-#define REACTIVATE_CHCL_BONDS_HPP
+#pragma once
 
 #include "Scheduler.hpp"
 
@@ -13,5 +12,3 @@ struct ReactivateCHCLBonds : public Scheduler {
   double bondingDistance;
   double timeBondReactivation;
 };
-
-#endif /* end of include guard: REACTIVATE_CHCL_BONDS_HPP */

@@ -1,10 +1,8 @@
-#ifndef ELEMENT_HPP
-#define ELEMENT_HPP
+#pragma once
 
-/**
- * @file Element.hpp
- * @brief Class and functions related to the FE mesh
- */
+//
+// Class and functions related to the FE mesh
+//
 
 #include <cstddef>
 
@@ -17,9 +15,15 @@ struct element {
   //    4  5  6  7
   // for RegularQuadLinear, we use the inner square only
   // for BSpline, we use the inner and outer square
-  size_t I[16];
 
-  element();  // Ctor
+  // clang-format off
+  size_t I[16]{
+    0, 0, 0, 0, 
+    0, 0, 0, 0, 
+    0, 0, 0, 0, 
+    0, 0, 0, 0
+  };
+  // clang-format on
+
+  element(); // Ctor
 };
-
-#endif /* end of include guard: ELEMENT_HPP */

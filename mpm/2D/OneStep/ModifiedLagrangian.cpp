@@ -15,14 +15,11 @@
 
 std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
 
-/**
- * @brief One step of the Modified Lagrangian or Modified Update Stress Last (MUSL) integration scheme.
- *
- * Updates the positions, velocities, deformation gradients, strains, and stresses of all MaterialPoints.
- *
- * @param MPM the MPMbox data structure containing all the relevant information.
- * @return 0 if the computation was successful, 1 otherwise.
- */
+// 
+// One step of the Modified Lagrangian or Modified Update Stress Last (MUSL) integration scheme.
+// 
+// Updates the positions, velocities, deformation gradients, strains, and stresses of all MaterialPoints.
+// 
 int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   START_TIMER("MUSL step");
 
@@ -100,12 +97,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       }
     }
   }
-  
-  // TODO TODO TODO TODO TODO TODO
-  // ==== compute node.q that are screened by obstacles
-  
-  
-  
 
   // ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
@@ -118,9 +109,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       nodes[I[r]].f += MP[p].mass * MPM.gravity * MP[p].N[r];
     }
   }
-
-  // Forces imposed to MP
-  // TODO !!!!!!
 
   // Updating free boundary conditions
   for (size_t o = 0; o < Obstacles.size(); ++o) {
@@ -209,7 +197,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   // ==== Update strain and stress
   {
-    if (MPM.CHCL.hasDoubleScale == true) {
+    if (MPM.CHCL.hasDoubleScale == true) { // ===================
       START_TIMER("updateStrainAndStress");
 
       // For parallel computing with openMP, we first identify the MPs that do or do not hold a CHCL
@@ -238,14 +226,14 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
                                       MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
       }
 
-    } else {
+    } else { // ===================
 
-      // Every MPs are single-scale
+      // Every MPs are single-scale with a constitutive model
       for (size_t p = 0; p < MP.size(); p++) {
         MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
       }
-      
-    }
+
+    } // ==================
   }
 
   // ==== Update positions avec le q provisoire

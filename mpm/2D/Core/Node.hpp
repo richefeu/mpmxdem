@@ -1,13 +1,8 @@
-#ifndef NODE_HPP
-#define NODE_HPP
+#pragma once
 
-/**
- * @file
- * @brief Header file for the Node struct.
- *
- * This file is part of the Encompass library, which is distributed under the
- * 3-Clause BSD license. See the LICENSE file for details.
- */
+// 
+// Header file for the Node struct.
+// 
 
 #include <cstddef>
 
@@ -15,23 +10,23 @@
 #include "vec2.hpp"
 
 struct node {
-  vec2r pos;    // Position
-  vec2r q;      // Momentum (mass * velocity)
-  vec2r qdot;   // Derivative of Momentum
-  vec2r f;      // Force (volumic and internal)
-  vec2r fb;     // Interfacial force
-  double mass;  // Mapped Mass
-  bool xfixed;  // Null-velocity boolean along x
-  bool yfixed;  // Null-velocity boolean along y
-  mat4r stress;  // Node-stress (used e.g. for smoothing)
-  double outOfPlaneStress; // third principal stress
-  vec2r vel;    // Node-velocity (used e.g. for smoothing)
-  size_t number;   // An identifier number
+  vec2r pos;                    // Position
+  vec2r q;                      // Momentum (mass * velocity)
+  vec2r qdot;                   // Derivative of Momentum
+  vec2r f;                      // Force (volumic and internal)
+  vec2r fb;                     // Interfacial force
+  double mass{0.0};             // Mapped Mass
+  bool xfixed{false};           // Null-velocity boolean along x
+  bool yfixed{false};           // Null-velocity boolean along y
+  mat4r stress;                 // Node-stress (used e.g. for smoothing)
+  double outOfPlaneStress{0.0}; // third principal stress
+  vec2r vel;                    // Node-velocity (used e.g. for smoothing)
+  size_t number{0};             // An identifier number
 
   // operator used to compare. This allows me to use std::sort in a vector made of nodes
-  bool operator<(const node& other) const { return number < other.number; }
+  bool operator<(const node &other) const {
+    return number < other.number;
+  }
 
-  node();  // Ctor
+  node(); // Ctor
 };
-
-#endif /* end of include guard: NODE_HPP */

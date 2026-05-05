@@ -1,14 +1,15 @@
-#ifndef CHCL_DEM_HPP
-#define CHCL_DEM_HPP
+#pragma once
 
+//
 // This is Computationally Homogenised Constitutive Law (CHCL) with DEM
+//
 
 #include "ConstitutiveModel.hpp"
 #include "PBC3D.hpp"
 
 struct CHCL_DEM : public ConstitutiveModel {
   CHCL_DEM();
-  std::string fileName;  // file name of the initial configuration
+  std::string fileName{""};  // file name of the initial configuration
 	
   // Different MP can use the same initial conf,
   // but each MP holds its own simulation
@@ -21,5 +22,3 @@ struct CHCL_DEM : public ConstitutiveModel {
   void write(std::ostream& os);
   void init(MaterialPoint & MP);
 };
-
-#endif /* end of include guard: CHCL_DEM_HPP */

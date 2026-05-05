@@ -1,19 +1,17 @@
-#ifndef SINFONIETTA_CRUSH_HPP
-#define SINFONIETTA_CRUSH_HPP
+#pragma once
 
-/**
- * @file SinfoniettaCrush.hpp
- * @brief Header file for the SinfoniettaCrush class.
- *
- * This file contains the declaration of the SinfoniettaCrush class, which is
- * a constitutive model for a material point.
- *
- * The SinfoniettaCrush model is an extension of the SinfoniettaClassica model,
- * which is used for the crushing of granular materials.
- *
- * The file also defines constants and includes necessary headers for the
- * implementation of SinfoniettaCrush.
- */
+// 
+// Header file for the SinfoniettaCrush class.
+// 
+// This file contains the declaration of the SinfoniettaCrush class, which is
+// a constitutive model for a material point.
+// 
+// The SinfoniettaCrush model is an extension of the SinfoniettaClassica model,
+// which is used for the crushing of granular materials.
+// 
+// The file also defines constants and includes necessary headers for the
+// implementation of SinfoniettaCrush.
+// 
 
 #include "ConstitutiveModel.hpp"
 
@@ -58,5 +56,3 @@ struct SinfoniettaCrush : public ConstitutiveModel {
   const double yield_tol{1e-8};
   double z{0.0};  // depends on varphi
 };
-
-#endif /* end of include guard: SINFONIETTA_CRUSH_HPP */
