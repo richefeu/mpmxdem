@@ -23,6 +23,7 @@
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
 #include "ConstitutiveModels/HookeElasticity.hpp"
 #include "ConstitutiveModels/KelvinVoigt.hpp"
+#include "ConstitutiveModels/DruckerPrager.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
 #include "ConstitutiveModels/SinfoniettaClassica.hpp"
 #include "ConstitutiveModels/SinfoniettaCrush.hpp"
@@ -45,11 +46,16 @@
 
 #include "Spies/ElasticBeamDev.hpp"
 #include "Spies/EnergyBalance.hpp"
+#include "Spies/Energies.hpp"
 #include "Spies/MPTracking.hpp"
 #include "Spies/MeanStress.hpp"
+#include "Spies/MeanStressPQ_2D.hpp"
 #include "Spies/ObstacleTracking.hpp"
 #include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
+#include "Spies/DPPlotSingle.hpp"
+#include "Spies/SigmaN_vs_fN.hpp"
+
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/MoveObstacle.hpp"
@@ -180,7 +186,8 @@ void MPMbox::ExplicitRegistrations() {
       "SinfoniettaClassica", [](void) -> ConstitutiveModel * { return new SinfoniettaClassica(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "SinfoniettaCrush", [](void) -> ConstitutiveModel * { return new SinfoniettaCrush(); });
-
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "DruckerPrager", [](void) -> ConstitutiveModel * { return new DruckerPrager(); });
   // Obstacle ==================
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
                                                                       [](void) -> Obstacle * { return new Circle(); });
@@ -230,12 +237,20 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Work", [](void) -> Spy * { return new Work(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("EnergyBalance",
                                                                  [](void) -> Spy * { return new EnergyBalance(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("Energies",
+                                                                 [](void) -> Spy * { return new Energies(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MeanStress",
                                                                  [](void) -> Spy * { return new MeanStress(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MeanStressPQ_2D",
+                                                                 [](void) -> Spy * { return new MeanStressPQ_2D(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("MPTracking",
                                                                  [](void) -> Spy * { return new MPTracking(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("ElasticBeamDev",
                                                                  [](void) -> Spy * { return new ElasticBeamDev(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPPlotSingle",
+                                                                 [](void) -> Spy * { return new DPPlotSingle(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("SigmaN_vs_fN",
+                                                                 [](void) -> Spy * { return new SigmaN_vs_fN(); });                                                                                                                          
 }
 
 //
@@ -784,7 +799,10 @@ void MPMbox::init() {
     }
   }
 
-  for (size_t p = 0; p < MP.size(); p++) { MP[p].prev_pos = MP[p].pos; }
+  for (size_t p = 0; p < MP.size(); p++) { 
+    MP[p].prev_pos = MP[p].pos;
+    MP[p].prev_vel = MP[p].vel; 
+    }
 }
 
 //

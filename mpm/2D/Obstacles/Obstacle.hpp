@@ -23,6 +23,7 @@ struct Obstacle {
   vec2r vel;   // velocity
   vec2r acc;   // acceleration
   vec2r force; // resultant force
+  vec2r normal;
 
   double rot{0.0};  // angular position
   double vrot{0.0}; // angular velocity
@@ -31,8 +32,7 @@ struct Obstacle {
 
   BoundaryForceLaw *boundaryForceLaw{nullptr};
 
-  std::vector<Neighbor> Neighbors; // MP neighbors
-
+  std::vector<Neighbor> Neighbors; // MP neighbors 
   virtual std::string getRegistrationName()                           = 0;
   virtual void read(std::istream &is)                                 = 0;
   virtual void write(std::ostream &os)                                = 0;

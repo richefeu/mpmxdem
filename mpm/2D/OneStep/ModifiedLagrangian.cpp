@@ -110,6 +110,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
+  
+
   // Updating free boundary conditions
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
@@ -125,7 +127,16 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       nodes[I[r]].fb += MP[p].f * MP[p].N[r];
     }
   }
-
+  
+  // for (size_t p = 0; p < MP.size(); p++) {
+  //     I = &(Elem[MP[p].e].I[0]);
+  //     for (size_t r = 0; r < element::nbNodes; r++) {
+  //         if (nodes[I[r]].mass > MPM.tolmass) {
+  //           MP[p].f += MP[p].N[r] * nodes[I[r]].f;
+  //           }
+  //       }
+  //   }
+  
   // ==== Compute rate of momentum and update nodes
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     // sum of boundary and volume forces:
@@ -143,7 +154,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // ==== Calculate velocity in MP (to then update q). sort of smoothing
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-
+    MP[p].prev_vel = MP[p].vel;
     if (MPM.activePIC) {
       double invmass;
       vec2r PICvelocity;
@@ -186,7 +197,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
         nodes[I[r]].vel += invmass * MP[p].N[r] * MP[p].vel * MP[p].mass;
-      } else {
+      } 
+      else {
         nodes[I[r]].vel.reset();
       }
     }
@@ -239,6 +251,10 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
+    // if (p==MP.size()-1) {
+    //   std::cout<<"Step : "<<MP[p].prev_pos<<" "<<MP[p].pos<<std::endl;
+    //   }
+    MP[p].prev_pos = MP[p].pos;
     double invmass;
     for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {

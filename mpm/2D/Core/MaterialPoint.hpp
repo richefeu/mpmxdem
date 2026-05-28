@@ -60,9 +60,11 @@ struct MaterialPoint {
 
   vec2r prev_pos; // Position at the previous time step
   mat4r prev_F;   // Deformation gradient at the previous step
+  vec2r prev_vel; // Velocity at the previous step
 
   bool plastic{false}; // checks if the point was plastified (TO BE REMOVED ?)
   vec2r contactf;      // resultant force due to contacts only
+  vec2r fn;
 
   ConstitutiveModel *constitutiveModel{nullptr}; // Pointer to the constitutive model
   bool isDoubleScale{false};                     // use of numerically homogeneized law if true

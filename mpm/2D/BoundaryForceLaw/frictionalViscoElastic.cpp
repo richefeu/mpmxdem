@@ -44,9 +44,9 @@ void frictionalViscoElastic::computeForces(MPMbox &MPM, size_t o) {
       // Coulomb threshold is non-negative because fn is clamped to compression only.
       if (MPM.Obstacles[o]->Neighbors[nn].ft > threshold) MPM.Obstacles[o]->Neighbors[nn].ft = threshold;
       if (MPM.Obstacles[o]->Neighbors[nn].ft < -threshold) MPM.Obstacles[o]->Neighbors[nn].ft = -threshold;
-
       // === Resultant force
-      vec2r f             = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
+      vec2r f  = MPM.Obstacles[o]->Neighbors[nn].fn * N + MPM.Obstacles[o]->Neighbors[nn].ft * T;
+      MPM.MP[pn].fn = MPM.Obstacles[o]->Neighbors[nn].fn * N;
       MPM.MP[pn].contactf = -f; // useful for display
       MPM.MP[pn].f += f;
       MPM.Obstacles[o]->force -= f;

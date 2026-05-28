@@ -9,8 +9,8 @@ void Line::read(std::istream& is) {
   is >> group >> pos >> end;
   udir = end - pos;
   len = udir.normalize();
-  n.x = udir.y;
-  n.y = -udir.x;  // so that n ^ t = z
+  normal.x = udir.y;
+  normal.y = -udir.x;  // so that n ^ t = z
 
   std::string driveMode;
   is >> driveMode;
@@ -33,7 +33,7 @@ int Line::touch(MaterialPoint& MP, double& dn) {
   int Touch = -1;
   vec2r c = MP.pos - pos;
   double radiusMP = 0.5 * MP.size;
-  dn = c * n - radiusMP;
+  dn = c *normal- radiusMP;
   if (dn < 0.0) {
     double proj = c * udir;
     if (proj >= 0.0 && proj <= len) {
@@ -45,7 +45,7 @@ int Line::touch(MaterialPoint& MP, double& dn) {
 
 void Line::getContactFrame(MaterialPoint&, vec2r& N, vec2r& T) {
   // Remark: the line is not supposed to rotate
-  N = n;
+  N = normal;
   T = udir;
 }
 
@@ -66,7 +66,7 @@ void Line::checkProximity(MPMbox& MPM) {
     c = MPM.MP[p].pos - pos;
     double dstt = c * udir;
     if (dstt > -sumSecurDist && dstt < len + sumSecurDist) {
-      double dstn = c * n;
+      double dstn = c * normal;
       if (dstn < sumSecurDist) {
         N.PointNumber = p;
         Neighbors.push_back(N);
@@ -93,5 +93,5 @@ void Line::checkProximity(MPMbox& MPM) {
 
 bool Line::inside(vec2r& x) {
   vec2r l = x - pos;
-  return (l * n < 0.0);
+  return (l * normal < 0.0);
 }

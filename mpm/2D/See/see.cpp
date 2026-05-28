@@ -768,8 +768,8 @@ void drawObstacles() {
       glBegin(GL_POLYGON);
       glVertex2d(L->pos.x, L->pos.y);
       glVertex2d(L->pos.x + L->len * L->udir.x, L->pos.y + L->len * L->udir.y);
-      glVertex2d(L->pos.x + L->len * L->udir.x - w * L->n.x, L->pos.y + L->len * L->udir.y - w * L->n.y);
-      glVertex2d(L->pos.x - w * L->n.x, L->pos.y - w * L->n.y);
+      glVertex2d(L->pos.x + L->len * L->udir.x - w * L->normal.x, L->pos.y + L->len * L->udir.y - w * L->normal.y);
+      glVertex2d(L->pos.x - w * L->normal.x, L->pos.y - w * L->normal.y);
       glEnd();
 
       glColor4f(0.5f, 0.0f, 0.0f, 1.0f);

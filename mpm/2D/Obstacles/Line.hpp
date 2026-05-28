@@ -4,7 +4,7 @@
 
 struct Line : public Obstacle {
   double len;
-  vec2r n; // unit normal oriented 'towards the left' when going from start to end 
+  
 	vec2r udir; // rename udir
   
   std::string getRegistrationName();

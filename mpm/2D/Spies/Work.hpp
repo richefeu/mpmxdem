@@ -18,9 +18,13 @@ struct Work : public Spy {
   std::string filename;
   std::ofstream fileSlices;
   std::ofstream file;
+  std::string plotType;
 
   slicedRange<double> Range;
   std::vector<double> Wn, Wt, Wint;
 
-  double Wn_tot, Wt_tot, Wint_tot, Wp_tot;
+  double Xmin, Xmax;
+  unsigned int nbSlices;
+  double Wn_tot, Wt_tot, Wint_tot, Wp_tot, KEr_tot;
+  bool start;
 };

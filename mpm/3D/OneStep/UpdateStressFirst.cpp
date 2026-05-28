@@ -166,6 +166,7 @@ void UpdateStressFirst::advanceOneStep (MPMbox & MPM)
 
 	//Start of smoothVelocity
 	for (size_t p = 0 ; p < MP.size() ; p++) {
+		MP[p].prev_vel = MP[p].vel;
 		I = &(Elem[MP[p].e].I[0]);
 		for (int r = 0 ; r < 8 ; r++) {
 			nodes[I[r]].vel += MP[p].N[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
