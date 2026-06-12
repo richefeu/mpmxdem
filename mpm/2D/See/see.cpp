@@ -1,10 +1,105 @@
 #include "see.hpp"
 
+#include <fstream>
 #include <limits>
 #include <typeinfo>
 
 #include "Obstacles/Circle.hpp"
 #include "Obstacles/Line.hpp"
+
+namespace {
+
+struct RheologyData {
+  double pressure{0.0};
+  double shearStress{0.0};
+  double shearRate{0.0};
+  double grainDensity{0.0};
+  double diameter{0.0};
+  double inertialNumber{std::numeric_limits<double>::quiet_NaN()};
+  double frictionCoefficient{std::numeric_limits<double>::quiet_NaN()};
+  bool stressValid{false};
+  bool inertialNumberValid{false};
+};
+
+RheologyData computeRheologyData(size_t i) {
+  RheologyData data;
+
+  const double sigmaXX = SmoothedData[i].stress.xx;
+  const double sigmaYY = SmoothedData[i].stress.yy;
+  const double sigmaZZ = SmoothedData[i].outOfPlaneStress;
+  const double sigmaXY = 0.5 * (SmoothedData[i].stress.xy + SmoothedData[i].stress.yx);
+
+  // MPM uses negative stress in compression. The DEM REV is three-dimensional,
+  // even though its macroscopic kinematics are plane strain.
+  data.pressure = -(sigmaXX + sigmaYY + sigmaZZ) / 3.0;
+  const double compressionXX = -sigmaXX;
+  const double compressionYY = -sigmaYY;
+  const double compressionZZ = -sigmaZZ;
+  const double inPlaneRadius =
+      std::sqrt(0.25 * (compressionXX - compressionYY) * (compressionXX - compressionYY) + sigmaXY * sigmaXY);
+  const double minimumCompressiveStress =
+      std::min(0.5 * (compressionXX + compressionYY) - inPlaneRadius, compressionZZ);
+  if (std::isfinite(data.pressure) && data.pressure > 0.0 && minimumCompressiveStress > 0.0) {
+    const double devXX = sigmaXX + data.pressure;
+    const double devYY = sigmaYY + data.pressure;
+    const double devZZ = sigmaZZ + data.pressure;
+    data.shearStress =
+        std::sqrt(0.5 * (devXX * devXX + devYY * devYY + devZZ * devZZ + 2.0 * sigmaXY * sigmaXY));
+    data.frictionCoefficient = data.shearStress / data.pressure;
+    data.stressValid = std::isfinite(data.frictionCoefficient);
+  }
+
+  const double Dxx = SmoothedData[i].velGrad.xx;
+  const double Dyy = SmoothedData[i].velGrad.yy;
+  const double Dzz = 0.0;  // plane strain
+  const double Dxy = 0.5 * (SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
+  const double meanD = (Dxx + Dyy + Dzz) / 3.0;
+  const double devDxx = Dxx - meanD;
+  const double devDyy = Dyy - meanD;
+  const double devDzz = Dzz - meanD;
+  data.shearRate =
+      std::sqrt(2.0 * (devDxx * devDxx + devDyy * devDyy + devDzz * devDzz + 2.0 * Dxy * Dxy));
+
+  if (data.stressValid && i < ADs.size() && ADs[i].Vsolid > 0.0 && ADs[i].Vcell > 0.0 &&
+      ADs[i].Rmean > 0.0) {
+    const double solidFraction = ADs[i].Vsolid / ADs[i].Vcell;
+    data.grainDensity = SmoothedData[i].rho / solidFraction;
+    data.diameter = 2.0 * ADs[i].Rmean;
+    if (std::isfinite(data.grainDensity) && data.grainDensity > 0.0) {
+      data.inertialNumber = data.diameter * data.shearRate * std::sqrt(data.grainDensity / data.pressure);
+      data.inertialNumberValid = std::isfinite(data.inertialNumber);
+    }
+  }
+
+  return data;
+}
+
+void smoothOutOfPlaneStress(MPMbox &box) {
+  std::vector<double> nodalMass(box.nodes.size(), 0.0);
+  std::vector<double> nodalStress(box.nodes.size(), 0.0);
+
+  for (size_t p = 0; p < box.MP.size(); p++) {
+    const size_t *nodeIndices = &(box.Elem[box.MP[p].e].I[0]);
+    for (size_t r = 0; r < (size_t)element::nbNodes; r++) {
+      const double weightedMass = box.MP[p].N[r] * box.MP[p].mass;
+      nodalMass[nodeIndices[r]] += weightedMass;
+      nodalStress[nodeIndices[r]] += weightedMass * box.MP[p].outOfPlaneStress;
+    }
+  }
+
+  for (size_t p = 0; p < box.MP.size(); p++) {
+    const size_t *nodeIndices = &(box.Elem[box.MP[p].e].I[0]);
+    SmoothedData[p].outOfPlaneStress = 0.0;
+    for (size_t r = 0; r < (size_t)element::nbNodes; r++) {
+      const size_t node = nodeIndices[r];
+      if (nodalMass[node] > box.tolmass) {
+        SmoothedData[p].outOfPlaneStress += box.MP[p].N[r] * nodalStress[node] / nodalMass[node];
+      }
+    }
+  }
+}
+
+}  // namespace
 
 void printHelp() {
 
@@ -28,9 +123,8 @@ void printHelp() {
   std::cout << " m       | show/hide Material Points" << std::endl;
   std::cout << " n       | go to conf number (input in console)" << std::endl;
   // std::cout << " o       | ___" << std::endl;
-  // std::cout << " p       | ___" << std::endl;
+  std::cout << " p       | save I, mu_stress, mu_rheology to file" << std::endl;
   std::cout << " q       | quit" << std::endl;
-  // std::cout << " r       | ___" << std::endl;
   std::cout << " s       | enable/disable MP representation with deformed box" << std::endl;
   // std::cout << " t       | ___" << std::endl;
   // std::cout << " u       | ___" << std::endl;
@@ -52,12 +146,39 @@ void printHelp() {
   std::cout << " 8       | fx (with obstacles, for debug)" << std::endl;
   std::cout << " 9       | fy (with obstacles, for debug)" << std::endl;
   std::cout << "---------|--USE MENU FOR OTHER COLORS---------------" << std::endl;
+  std::cout << " I       | show Inertial Number (MPMxDEM)" << std::endl;
+  std::cout << " M       | show rheology mu = tau/p" << std::endl;
   std::cout << std::endl;
 }
 
 void printInfo() {
   std::cout << "\nCurrent Conf = " << confNum << "\n\n";
   // to be continued
+}
+
+void printInertialNumbers() {
+  char fileName[256];
+  snprintf(fileName, 256, "rheology_conf%d.txt", confNum);
+  std::ofstream outFile(fileName);
+
+  if (!outFile.is_open()) {
+    std::cout << "Error: Cannot open file " << fileName << " for writing.\n";
+    return;
+  }
+
+  outFile << "# MP_index MP_x MP_y I mu pressure tau shear_rate grain_density diameter valid_I valid_mu\n";
+  std::cout << "Exporting 3D-invariant I and mu = tau/p from smoothed data\n";
+
+  for (size_t i = 0; i < Conf.MP.size(); i++) {
+    const RheologyData data = computeRheologyData(i);
+    outFile << i << ' ' << Conf.MP[i].pos.x << ' ' << Conf.MP[i].pos.y << ' ' << data.inertialNumber << ' '
+            << data.frictionCoefficient << ' ' << data.pressure << ' ' << data.shearStress << ' ' << data.shearRate
+            << ' ' << data.grainDensity << ' ' << data.diameter << ' ' << data.inertialNumberValid << ' '
+            << data.stressValid << '\n';
+  }
+
+  outFile.close();
+  std::cout << "Data saved to " << fileName << " (" << Conf.MP.size() << " MPs)\n";
 }
 
 void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
@@ -129,6 +250,18 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
 
   case 'i': {
     printInfo();
+  } break;
+
+  case 'I': {
+    precomputeColors(10);
+  } break;
+
+  case 'M': {
+    precomputeColors(11);
+  } break;
+
+  case 'p': {
+    printInertialNumbers();
   } break;
 
   case 'm': {
@@ -450,18 +583,18 @@ void precomputeColors(int n) {
   } break;
 
   case 4: {
-    colorBar.setTitle("sig_yy");
+    colorBar.setTitle("sig_xx");
     float pmax = -std::numeric_limits<float>::max();
     float pmin = std::numeric_limits<float>::max();
     for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float p = (float)SmoothedData[i].stress.yy;
+      float p = (float)SmoothedData[i].stress.xx;
       if (p > pmax) pmax = p;
       if (p < pmin) pmin = p;
     }
     colorTable.setMinMax(pmin, pmax);
     colorTable.setTableID(3);
     colorTable.Rebuild();
-    std::cout << "MP colored by sig_yy (s_yy_min = " << pmin << ", s_yy_max = " << pmax << ")\n";
+    std::cout << "MP colored by sig_xx (s_xx_min = " << pmin << ", s_xx_max = " << pmax << ")\n";
 
     for (size_t i = 0; i < SmoothedData.size(); i++) {
       float p = (float)SmoothedData[i].stress.xx;
@@ -576,64 +709,70 @@ void precomputeColors(int n) {
   } break;
 
   case 10: {
-    if (ADs.empty()) break;
-
+    std::vector<float> inertialNumber(Conf.MP.size(), 0.0f);
+    std::vector<bool> valid(Conf.MP.size(), false);
     colorBar.setTitle("Inertial number (DEM)");
-    float Imax = -std::numeric_limits<float>::max();
     float Imin = std::numeric_limits<float>::max();
+    float Imax = -std::numeric_limits<float>::max();
+
     for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float d1   = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
-      float d2   = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
-      float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
-      float I = (float)((2 * ADs[i].Rmean * sqrt(d1 * d1 + d2 * d2)) / sqrt((abs(pres) + 1e-6) / SmoothedData[i].rho));
-      if (I > Imax) Imax = I;
-      if (I < Imin) Imin = I;
+      const RheologyData data = computeRheologyData(i);
+      if (data.inertialNumberValid) {
+        inertialNumber[i] = (float)data.inertialNumber;
+        valid[i] = true;
+        Imin = std::min(Imin, inertialNumber[i]);
+        Imax = std::max(Imax, inertialNumber[i]);
+      }
+    }
+
+    if (Imin > Imax) {
+      std::cout << "Cannot compute I: positive pressure and DEM additional data are required\n";
+      break;
     }
     colorTable.setMinMax(Imin, Imax);
     colorTable.setTableID(3);
     colorTable.Rebuild();
     std::cout << "MP colored by Inertial Number (I_min = " << Imin << ", I_max = " << Imax << ")\n";
-
-    for (size_t i = 0; i < SmoothedData.size(); i++) {
-      float d1   = (float)(SmoothedData[i].velGrad.xx - SmoothedData[i].velGrad.yy);
-      float d2   = (float)(SmoothedData[i].velGrad.xy + SmoothedData[i].velGrad.yx);
-      float pres = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
-      float I    = (float)((ADs[i].Rmean / sqrt(d1 * d1 + d2 * d2)) / sqrt((abs(pres) + 1e-6) * SmoothedData[i].rho));
-      colorTable.getRGB(I, &precompColors[i]);
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      if (valid[i]) {
+        colorTable.getRGB(inertialNumber[i], &precompColors[i]);
+      } else {
+        precompColors[i].set(128, 128, 128, 255);
+      }
     }
   } break;
 
   case 11: {
-    colorBar.setTitle("sigma1/sigma3");
-    float ratioMax = -std::numeric_limits<float>::max();
-    float ratioMin = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < Conf.MP.size(); i++) {
-      const float sxx    = (float)SmoothedData[i].stress.xx;
-      const float syy    = (float)SmoothedData[i].stress.yy;
-      const float sxy    = 0.5f * (float)(SmoothedData[i].stress.xy + SmoothedData[i].stress.yx);
-      const float m      = 0.5f * (sxx + syy);
-      const float r      = sqrtf(0.25f * (sxx - syy) * (sxx - syy) + sxy * sxy);
-      const float sigma1 = m + r;
-      const float sigma3 = m - r;
-      const float ratio  = sigma1 / (sigma3 + 1.0e-12f);
-      if (ratio > ratioMax) ratioMax = ratio;
-      if (ratio < ratioMin) ratioMin = ratio;
-    }
-    colorTable.setMinMax(ratioMin, ratioMax);
-    colorTable.setTableID(3);
-    colorTable.Rebuild();
-    std::cout << "MP colored by sigma1/sigma3 (ratio_min = " << ratioMin << ", ratio_max = " << ratioMax << ")\n";
+    colorBar.setTitle("rheology mu = tau/p");
+    std::vector<float> frictionCoefficient(Conf.MP.size(), 0.0f);
+    std::vector<bool> valid(Conf.MP.size(), false);
+    float mumin = std::numeric_limits<float>::max();
+    float mumax = -std::numeric_limits<float>::max();
 
     for (size_t i = 0; i < Conf.MP.size(); i++) {
-      const float sxx    = (float)SmoothedData[i].stress.xx;
-      const float syy    = (float)SmoothedData[i].stress.yy;
-      const float sxy    = 0.5f * (float)(SmoothedData[i].stress.xy + SmoothedData[i].stress.yx);
-      const float m      = 0.5f * (sxx + syy);
-      const float r      = sqrtf(0.25f * (sxx - syy) * (sxx - syy) + sxy * sxy);
-      const float sigma1 = m + r;
-      const float sigma3 = m - r;
-      const float ratio  = sigma1 / (sigma3 + 1.0e-12f);
-      colorTable.getRGB(ratio, &precompColors[i]);
+      const RheologyData data = computeRheologyData(i);
+      if (data.stressValid) {
+        frictionCoefficient[i] = (float)data.frictionCoefficient;
+        valid[i] = true;
+        mumin = std::min(mumin, frictionCoefficient[i]);
+        mumax = std::max(mumax, frictionCoefficient[i]);
+      }
+    }
+
+    if (mumin > mumax) {
+      std::cout << "Cannot compute mu: positive mean pressure is required\n";
+      break;
+    }
+    colorTable.setMinMax(mumin, mumax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by 3D invariant mu = tau/p (mu_min = " << mumin << ", mu_max = " << mumax << ")\n";
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      if (valid[i]) {
+        colorTable.getRGB(frictionCoefficient[i], &precompColors[i]);
+      } else {
+        precompColors[i].set(128, 128, 128, 255);
+      }
     }
   } break;
 
@@ -804,12 +943,15 @@ void readConf(const char *file_name, const char *co_file_name, MPMbox &CF) {
   CF.clean();
   CF.read(file_name);
   CF.postProcess(SmoothedData);
-  precomputeColors(color_option);
-  textZone.addLine("conf%d,  t = %0.4g s", CF.iconf, CF.t);
+  smoothOutOfPlaneStress(CF);
   if (fileTool::fileExists(co_file_name)) {
     std::cout << "  with additional data in file " << co_file_name << std::endl;
     readAdditionalData(co_file_name);
+  } else {
+    ADs.clear();
   }
+  precomputeColors(color_option);
+  textZone.addLine("conf%d,  t = %0.4g s", CF.iconf, CF.t);
   if (MPREF.empty()) { MPREF = CF.MP; }
 }
 
@@ -819,10 +961,13 @@ void readAdditionalData(const char *fileName) {
   getline(is, lineTop);
   ADs.clear();
   additionalData D;
-  while (is.good()) {
-    is >> D.MP_x >> D.MP_y >> D.NInt >> D.NB >> D.TF >> D.FF >> D.Rmean >> D.Vmean >> D.VelMean >> D.VelMin >>
-        D.VelMax >> D.VelVar >> D.Vsolid >> D.Vcell >> D.h_xx >> D.h_xy >> D.h_yx >> D.h_yy >> D.ReducedPartDistMean;
+  while (is >> D.MP_x >> D.MP_y >> D.NInt >> D.NB >> D.TF >> D.FF >> D.Rmean >> D.Vmean >> D.VelMean >> D.VelMin >>
+         D.VelMax >> D.VelVar >> D.Vsolid >> D.Vcell >> D.h_xx >> D.h_xy >> D.h_yx >> D.h_yy >>
+         D.ReducedPartDistMean) {
     ADs.push_back(D);
+  }
+  if (ADs.size() != Conf.MP.size()) {
+    std::cout << "Warning: additional data contains " << ADs.size() << " rows for " << Conf.MP.size() << " MPs\n";
   }
 
   if (ADsREF.empty()) {
@@ -941,7 +1086,7 @@ void menu(int num) {
     precomputeColors(9);
   } break;
   case 210: {
-    if (!ADs.empty()) precomputeColors(10);
+    precomputeColors(10);
   } break;
   case 211: {
     precomputeColors(11);
@@ -980,14 +1125,14 @@ void buildMenu() {
   glutAddMenuEntry("Velocity Magnitude", 201);
   glutAddMenuEntry("Pressure, tr(Sig)/3", 202);
   glutAddMenuEntry("Density", 203);
-  glutAddMenuEntry("Sig yy", 204);
-  glutAddMenuEntry("DEM-cell damage (MPMxDEM only)", 205);
+  glutAddMenuEntry("Sig xx", 204);
+  glutAddMenuEntry("DEM-cell damage (DEM)", 205);
   glutAddMenuEntry("Delta Eps Deviator", 206);
   glutAddMenuEntry("Volume Variation", 207);
   glutAddMenuEntry("Fx (with Obstacle)", 208);
   glutAddMenuEntry("Fy (with Obstacle)", 209);
-  glutAddMenuEntry("Inertial number (MPMxDEM only)", 210);
-  glutAddMenuEntry("Sigma1 / Sigma3", 211);
+  glutAddMenuEntry("Inertial Number (MPMxDEM)", 210);
+  glutAddMenuEntry("Rheology mu = tau/p", 211);
 
   int submenu300 = glutCreateMenu(menu); // Grid informations
   glutAddMenuEntry("Show/Hide Grid", 300);
