@@ -1,0 +1,14 @@
+#pragma once
+
+#include "Command.hpp"
+
+struct new_set_grid : public Command {
+  void read(std::istream& is);
+  void exec();
+
+ private:
+  //int groupNb;
+  double lengthX;
+  double lengthY;
+  double spacing;
+};

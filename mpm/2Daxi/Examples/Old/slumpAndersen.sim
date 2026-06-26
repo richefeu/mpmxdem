@@ -1,0 +1,61 @@
+# Plane strain (uncomment to set, default is plane stress)
+# planeStrain
+
+result_folder ./slumpAndersen
+
+# Mass tolerance
+tolmass 1.e-6
+
+# Gravity    gx   gy
+gravity      0.0  -9.81
+
+# Number of steps to be done
+nstep 25000
+
+# Period of storing (in number of steps)
+vtkPeriod 100
+
+proxPeriod 200
+
+# Time increment
+dt 0.0001
+
+# Current time
+t 0.0
+
+# MP display style
+parallelogramMP 	1
+
+# shape function
+ShapeFunction RegularQuadLinear
+
+# Materials
+#                                          Young     Poisson
+model HookeElasticity           Elast      200.0e6   0.42
+#     modelID                   modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
+model MohrCoulomb               MC         20.0e6    0.42       0.9           1.0e3      0.01
+
+#           Nx  Ny  grid spacing
+set_grid    95  31  0.25 0.25
+
+#            		modelName       mass_density(kg/m3)    	x0   	y0   	x1   	y1   	size of boxes
+
+set_MP_grid  	0	MC		    	2700.           		10.0  	0.0  	13.75  	7.5  	0.125
+#reset_model        Elast           2700.          			11.75	2       12.75	4.5
+
+#		  x0	y0		dx		dy		theta (neg rotates clockwise)  if you dont want any movement, set everything to 0
+#move_MP  3		0.5  	-0.0	0 		0
+
+#			   		x0		y0		x1		y1
+Obstacle Line  0 	23.75 	0.0    	0.0 	0.0   freeze
+
+
+#properties			     mu		Kn		e2
+set_properties	   	0.6 	1e7		1       1e4
+
+
+#set_K0_stress 0.42  2700.
+
+# Adaptative refinement
+splitting 	0
+splitCriterionValue 4.0

@@ -20,4 +20,5 @@ struct Polygon : public Obstacle {
   bool pointinPolygon(vec2r& point, MaterialPoint& MP, double& testdn);
   virtual void createPolygon(std::vector<vec2r>& vect);
   virtual double Area();
+  virtual void updateImposedVelocity(MPMbox& MPM);
 };

@@ -1,0 +1,17 @@
+#pragma once
+
+#include "Command.hpp"
+
+#include <string>
+#include <vector>
+
+#include "ElementSelector.hpp"
+
+struct select_tracked_MP : public Command {
+  select_tracked_MP();
+  void read(std::istream &is);
+  void exec();
+
+private:
+  ElementSelector<MPMbox> MP_Selector;
+};

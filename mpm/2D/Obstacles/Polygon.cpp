@@ -180,6 +180,8 @@ double Polygon::Area() {
   return 0.5 * sum;
 }
 
+void Polygon::updateImposedVelocity(MPMbox &MPM) {}
+
 void Polygon::createPolygon(std::vector<vec2r>& vect) {
 
   vec2r P;

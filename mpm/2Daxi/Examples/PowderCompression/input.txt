@@ -1,0 +1,45 @@
+oneStepType ModifiedLagrangian
+result_folder .
+tolmass 1.e-5	
+gravity 0.0  -9.81
+finalTime 2.5
+confPeriod 5000
+proxPeriod 10
+dt 2e-5
+t 0.0
+ShapeFunction RegularQuadLinear
+splitting 0
+enablePIC 0.01
+
+
+#     modelID          modelName  Young   Poisson  
+model HookeElasticity  HE         1e7     0.3    
+
+# Place the nodes
+set_node_grid  W.H.lx.ly  0.11  0.23  0.01 0.01
+
+# Place the MPs
+#            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
+set_MP_grid  0       HE            2700.0        0.0    0.01    0.1    0.21    0.005
+
+#                group  x0    y0     x1     y1    driveMode
+Obstacle Line    1      0.1   0.22   0.1    0.01  freeze
+Obstacle Line    1      0.1   0.01   0.0    0.01  freeze
+Obstacle Line    1      0.0   0.01   0.0    0.22  freeze
+Obstacle Line	 1	0.0   0.22   0.1    0.22  freeze
+
+# Obstacles of groupe 1 use this force law
+# (this command needs to be placed after the Obstacles)
+BoundaryForceLaw frictionalViscoElastic 1
+
+# Set the properties that will be used between Obstacles and MPs
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0.1
+set              kn         0         1          1e7
+set              kt         0         1          1e7
+set              viscRate   0         1          0.98
+
+#set_K0_stress 0.3 2700
+
+
+

@@ -24,6 +24,8 @@
 #include "ConstitutiveModels/HookeElasticity.hpp"
 #include "ConstitutiveModels/KelvinVoigt.hpp"
 #include "ConstitutiveModels/DruckerPrager.hpp"
+#include "ConstitutiveModels/DruckerPragerCap.hpp"
+#include "ConstitutiveModels/DruckerPragerCapNoDensification.hpp"
 #include "ConstitutiveModels/MohrCoulomb.hpp"
 #include "ConstitutiveModels/SinfoniettaClassica.hpp"
 #include "ConstitutiveModels/SinfoniettaCrush.hpp"
@@ -55,7 +57,7 @@
 #include "Spies/Work.hpp"
 #include "Spies/DPPlotSingle.hpp"
 #include "Spies/SigmaN_vs_fN.hpp"
-
+#include "Spies/DPCPlotSingle.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/MoveObstacle.hpp"
@@ -188,6 +190,10 @@ void MPMbox::ExplicitRegistrations() {
       "SinfoniettaCrush", [](void) -> ConstitutiveModel * { return new SinfoniettaCrush(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "DruckerPrager", [](void) -> ConstitutiveModel * { return new DruckerPrager(); });
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "DruckerPragerCap", [](void) -> ConstitutiveModel * { return new DruckerPragerCap(); });    
+  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
+      "DruckerPragerCapNoDensification", [](void) -> ConstitutiveModel * { return new DruckerPragerCapNoDensification(); });    
   // Obstacle ==================
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
                                                                       [](void) -> Obstacle * { return new Circle(); });
@@ -250,7 +256,9 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPPlotSingle",
                                                                  [](void) -> Spy * { return new DPPlotSingle(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("SigmaN_vs_fN",
-                                                                 [](void) -> Spy * { return new SigmaN_vs_fN(); });                                                                                                                          
+                                                                 [](void) -> Spy * { return new SigmaN_vs_fN(); });  
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPCPlotSingle",
+                                                                 [](void) -> Spy * { return new DPCPlotSingle(); });                                                                                                                        
 }
 
 //

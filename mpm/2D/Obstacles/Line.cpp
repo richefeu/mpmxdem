@@ -19,7 +19,19 @@ void Line::read(std::istream& is) {
     vel.reset();
   } else if (driveMode == "velocity") {
     isFree = false;
+    steps = 1;
     is >> vel;
+  }  else if (driveMode == "Steps") {
+    isFree = false;
+    is >> steps;
+    for (int i = 0; i < steps ; i++) {
+      double stepTime;
+      vec2r impVel;
+      is >> stepTime >> impVel;
+      stepTimes.push_back(stepTime);
+      impVels.push_back(impVel);
+    }
+    vel = impVels[0];
   } else {
     std::cerr << "@Line::read, driveMode " << driveMode << " is not allowed!" << std::endl;
   }
@@ -87,6 +99,15 @@ void Line::checkProximity(MPMbox& MPM) {
     if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
       Neighbors[inew] = Store[istore];
       ++istore;
+    }
+  }
+}
+
+void Line::updateImposedVelocity(MPMbox& MPM) {
+  for (int i = 0; i < steps ; i++) {
+    if (MPM.t <= MPM.finalTime * stepTimes [i]){
+      vel = impVels[i];
+      break;
     }
   }
 }

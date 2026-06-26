@@ -23,7 +23,7 @@ DruckerPrager::DruckerPrager(double young, double poisson, double frictionAngle,
 
 void DruckerPrager::read(std::istream& is) {
   is >> Young >> Poisson >> FrictionAngle >> Cohesion;
-  double sinFrictionAngle = sin(FrictionAngle);
+  sinFrictionAngle = sin(FrictionAngle);
   cosFrictionAngle = cos(FrictionAngle);
   alpha = 2*sinFrictionAngle/(sqrt(3)*(3-sinFrictionAngle));
 	k = 6*Cohesion*cosFrictionAngle/(sqrt(3)*(3-sinFrictionAngle));
@@ -75,7 +75,7 @@ void DruckerPrager::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Trial stress
   MPM.MP[p].stress.xx += De11 * dstrain.xx + De12 * dstrain.yy;
   MPM.MP[p].stress.yy += De12 * dstrain.xx + De22 * dstrain.yy;
-  MPM.MP[p].stress.xy += 2 * De33 * dstrain.xy;
+  MPM.MP[p].stress.xy += De33 * dstrain.xy;
   MPM.MP[p].stress.yx = MPM.MP[p].stress.xy;
 
   // q = sqrt(3/2*s:s) = ((sigxx - sigyy)/2)^2 + sigxy^2 

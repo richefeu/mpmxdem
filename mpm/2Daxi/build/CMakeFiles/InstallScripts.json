@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/ab287450/Codes/mpmxdem/mpm/2Daxi/build/cmake_install.cmake",
+		"/home/ab287450/Codes/mpmxdem/mpm/2Daxi/deps/toofus-build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

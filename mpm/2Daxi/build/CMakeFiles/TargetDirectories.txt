@@ -1,0 +1,7 @@
+/home/ab287450/Codes/mpmxdem/mpm/2Daxi/build/CMakeFiles/core_obj.dir
+/home/ab287450/Codes/mpmxdem/mpm/2Daxi/build/CMakeFiles/mpmbox.dir
+/home/ab287450/Codes/mpmxdem/mpm/2Daxi/build/CMakeFiles/see.dir
+/home/ab287450/Codes/mpmxdem/mpm/2Daxi/build/CMakeFiles/edit_cache.dir
+/home/ab287450/Codes/mpmxdem/mpm/2Daxi/build/CMakeFiles/rebuild_cache.dir
+/home/ab287450/Codes/mpmxdem/mpm/2Daxi/deps/toofus-build/CMakeFiles/edit_cache.dir
+/home/ab287450/Codes/mpmxdem/mpm/2Daxi/deps/toofus-build/CMakeFiles/rebuild_cache.dir

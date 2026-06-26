@@ -14,4 +14,5 @@ struct Line : public Obstacle {
   virtual int touch(MaterialPoint& MP, double& dn);
   virtual void getContactFrame(MaterialPoint& MP, vec2r& N, vec2r& T);
 	virtual bool inside(vec2r& x);
+  virtual void updateImposedVelocity(MPMbox& MPM);
 };

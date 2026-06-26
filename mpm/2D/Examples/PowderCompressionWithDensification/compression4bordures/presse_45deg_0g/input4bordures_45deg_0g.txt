@@ -1,0 +1,59 @@
+oneStepType ModifiedLagrangian
+result_folder .
+tolmass 1.e-5	
+gravity 0.0  0.0
+finalTime 30
+confPeriod 20000
+proxPeriod 10
+dt 2e-5
+t 0.0
+ShapeFunction BSpline
+splitting 0
+enablePIC 0.01
+
+#     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
+model MohrCoulomb    MC         1.0e9     0.42      0.3            1e2        0.01
+
+#     modelID             modelName  Young   Poisson  beta  beta_p  kappa  varphiDeg  pc0
+model SinfoniettaClassica SC         1e7     0.25     1.2   0.01    0.0    38.5       1e3
+
+#     modelID          modelName  Young   Poisson  
+model HookeElasticity  HE         1e7     0.3    
+
+#     modelID          modelName  Young   Poisson  FrictionAngle  Cohesion
+model DruckerPrager    DP         1e7     0.3      0.52    	  1
+
+#     modelID          modelName  Young(E)   Poisson(ν)  FrictionAngle(β)  Cohesion(d)  HydroConsolStress(Pb)  CapEccentricity(R)
+model DruckerPragerCap DPC       46.9e6     0.3      	 1.221	     	   0.295 	3.345e3		       0.56
+
+# Place the nodes
+set_node_grid  W.H.lx.ly  0.24  0.34  0.01 0.01
+
+# Place the MPs
+#            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
+set_MP_grid  0       DPC           4388.0       0.02   0.02   0.12    0.22    0.005
+
+#                group  x0    y0     x1     y1    driveMode  
+Obstacle Line    1      0.12   0.32  0.12   0.02  freeze
+Obstacle Line    1      0.22   0.02  0.02   0.02  freeze
+Obstacle Line    1      0.02   0.02  0.02   0.22  freeze
+#							    nbsteps  endtime1 velocity1  endtime2  velocity2  duration3  velocity3 
+Obstacle Line	 1	0.02   0.22  0.12   0.32  Steps	    2        0.5      0.0 -4e-3  1         0.0 2e-3   #1         0.0 0.0
+
+# Obstacles of groupe 1 use this force law
+# (this command needs to be placed after the Obstacles)
+BoundaryForceLaw frictionalViscoElastic 1
+
+# Set the properties that will be used between Obstacles and MPs
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0.1
+set              kn         0         1          1e7
+set              kt         0         1          1e7
+set              viscRate   0         1          0.98
+
+#Spy DPCPlotSingle 5000 DPCPlotSingleMP40.txt 40
+#Spy DPCPlotSingle 5000 DPCPlotSingleMP59.txt 59
+#Spy DPCPlotSingle 5000 DPCPlotSingleMP39.txt 39
+Spy DPCPlotSingle 5000 DPCPlotSingleMP340.txt 340
+Spy DPCPlotSingle 5000 DPCPlotSingleMP350.txt 350
+Spy DPCPlotSingle 5000 DPCPlotSingleMP359.txt 359

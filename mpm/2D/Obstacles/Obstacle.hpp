@@ -6,6 +6,7 @@
 #include "BoundaryForceLaw/BoundaryForceLaw.hpp"
 #include "Core/Neighbor.hpp"
 #include "vec2.hpp"
+#include <vector>
 
 class MPMbox;
 struct MaterialPoint;
@@ -15,7 +16,8 @@ struct Obstacle {
   int group{0};          // group for interaction parameters
   double securDist{0.0}; // security distance for detecting contact with MPs (seen as a disk)
   bool isFree{false};    // true -> x, y, and rot free; false -> vx and vy imposed, and vrot = 0
-
+  
+  
   double mass{0.0}; // mass is requiered when free motion is allowed
   double I{0.0};    // Inertia is requiered when rotation free motion is allowed
 
@@ -24,6 +26,10 @@ struct Obstacle {
   vec2r acc;   // acceleration
   vec2r force; // resultant force
   vec2r normal;
+
+  int steps{0};  // if > 1 -> vx and vy are each imposed during multiple steps (useful for loading then unloading)
+  std::vector<vec2r> impVels;    // Vector to stock imposed velocities
+  std::vector<double> stepTimes; // Vector to stock the duration of the steps as fractions of the total time
 
   double rot{0.0};  // angular position
   double vrot{0.0}; // angular velocity
@@ -39,6 +45,7 @@ struct Obstacle {
   virtual void checkProximity(MPMbox &MPM)                            = 0;
   virtual int touch(MaterialPoint &MP, double &dn)                    = 0;
   virtual void getContactFrame(MaterialPoint &MP, vec2r &n, vec2r &t) = 0;
+  virtual void updateImposedVelocity(MPMbox &MPM)                     = 0;
 
   virtual bool inside(vec2r &x);
 

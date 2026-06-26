@@ -22,7 +22,7 @@ void OneStep::moveDEM1(Obstacle* obst, double dt) {
     obst->vrot += obst->arot * dt_2;
 		
   } else {  // velocity is imposed (rotations are supposed blocked)
-		
+  
     obst->pos += obst->vel * dt;
   
 	}

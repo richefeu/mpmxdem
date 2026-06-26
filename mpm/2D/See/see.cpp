@@ -163,11 +163,11 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     // if the process if too long
     while (try_to_readConf(confNum + 1, Conf, confNum)) {
       char name[256];
-      snprintf(name, 256, "shot%d.tga", confNum);
+      snprintf(name, 256, "./screenshots/shot%d.tga", confNum);
       display();
       screenshot(name);
     }
-    std::cout << "series of images saved in 'shot<n>.tga'\n";
+    std::cout << "series of images saved in ./screenshots/shot<n>.tga'\n";
   } break;
 
   case '-': {
@@ -413,7 +413,7 @@ void precomputeColors(int n) {
     float pmax = -std::numeric_limits<float>::max();
     float pmin = std::numeric_limits<float>::max();
     for (size_t i = 0; i < Conf.MP.size(); i++) {
-      float p = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+      float p = -0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
       if (p > pmax) pmax = p;
       if (p < pmin) pmin = p;
     }
@@ -423,7 +423,7 @@ void precomputeColors(int n) {
     std::cout << "MP colored by pressure (pmin = " << pmin << ", pmax = " << pmax << ")\n";
 
     for (size_t i = 0; i < SmoothedData.size(); i++) {
-      float p = 0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
+      float p = -0.5f * (float)(SmoothedData[i].stress.xx + SmoothedData[i].stress.yy);
       colorTable.getRGB(p, &precompColors[i]);
     }
   } break;

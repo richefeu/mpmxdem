@@ -15,16 +15,16 @@ void BSpline::computeInterpolationValues(MPMbox& MPM, size_t p) {
   invL[0] = 1.0f / MPM.Grid.lx;
   invL[1] = 1.0f / MPM.Grid.ly;
 
+
   MPM.MP[p].e = (size_t)(trunc(MPM.MP[p].pos.x * invL[0]) + trunc(MPM.MP[p].pos.y * invL[1]) * (double)MPM.Grid.Nx);
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
+
 
   std::vector<double> localCoord;
   std::vector<double> Phi;      // we calculate for 1D and then we multiply when we calculate the N vector
   std::vector<double> PhiGrad;  // same procedure as for Phi
 
-  for (int i = 0; i < 16; i++) {
-    localCoord.push_back((MPM.MP[p].pos.x - MPM.nodes[I[i]].pos.x) * invL[0]);
-    localCoord.push_back((MPM.MP[p].pos.y - MPM.nodes[I[i]].pos.y) * invL[1]);
+  for (int i = 0; i < 16; i++) {    localCoord.push_back((MPM.MP[p].pos.x - MPM.nodes[I[i]].pos.x) * invL[0]);    localCoord.push_back((MPM.MP[p].pos.y - MPM.nodes[I[i]].pos.y) * invL[1]);  
   }
 
   // Be careful when finding the gradient. Don't derive using local coordinates.

@@ -110,11 +110,14 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-  
 
   // Updating free boundary conditions
+
   for (size_t o = 0; o < Obstacles.size(); ++o) {
     Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
+    if (Obstacles[o]->steps > 1) {
+      Obstacles[o]->updateImposedVelocity(MPM);
+    }
   }
 
   for (size_t o = 0; o < Obstacles.size(); ++o) {
@@ -187,8 +190,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       MP[MPM.controlledMP[cMP].PointNumber].vel.y = MPM.controlledMP[cMP].yvalue;
     }
   }
-#endif
 
+#endif 
   // ==== Calculate updated velocity in nodes to compute deformation
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -205,9 +208,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Deformation gradient
-  MPM.updateTransformationGradient();
-
-  // ==== Update strain and stress
+  MPM.updateTransformationGradient();    // ==== Update strain and stress  
   {
     if (MPM.CHCL.hasDoubleScale == true) { // ===================
       START_TIMER("updateStrainAndStress");
@@ -246,7 +247,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       }
 
     } // ==================
-  }
+  } 
 
   // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {

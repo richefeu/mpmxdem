@@ -99,3 +99,5 @@ bool Circle::inside(vec2r& x) {
   vec2r l = x - pos;
   return (norm2(l) < R * R);
 }
+
+void Circle::updateImposedVelocity(MPMbox &MPM) {}

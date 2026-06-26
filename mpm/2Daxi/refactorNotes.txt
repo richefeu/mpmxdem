@@ -1,0 +1,20 @@
+Pour la gestion des contact entre les 'Obstacles' et les MPs, il y a de grosses "erreurs".
+Donc, j'en profite pour réécrire / réorganiser en profondeur.
+
+X. BoundaryType -> BoundaryForceLaw
+X. KelvinVoigt -> frictionalViscoElastic
+X. IncrementalLinear -> frictionalNormalRestitution
+X. dans BoundaryForceLaw : calculateContactForces(...) -> computeForces(MPMbox & MPM, size_t o)
+
+X. supression des 'Obstacles' où je n'ai pas confiance : CircleInside, IrregularPolygon, LeftBilinear, LineMP 
+
+X. revision des lois de forces (frictionalViscoElastic et frictionalNormalRestitution)
+X. revision ou suppression des commandes obsoletes 
+X. suppression des modèles constitutifs qui ne fonctionne pas
+
+X. faire un visualiseur pour remplacer paraview
+
+
+
+
+ATTENTION frottement MP <-> DEM a un problème il faudrait ft = mu 2sqrt(V/pi) |sig.n|

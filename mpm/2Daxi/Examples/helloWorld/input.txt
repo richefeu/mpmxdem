@@ -1,0 +1,56 @@
+oneStepType ModifiedLagrangian
+result_folder .
+tolmass 1.e-5	
+gravity 0.0  -9.81
+finalTime 2.5
+confPeriod 5000
+proxPeriod 10
+dt 2e-5
+t 0.0
+ShapeFunction BSpline
+splitting 0
+enablePIC 0.01
+
+#     modelID        modelName  Young     Poisson   FrictionAngle  Cohesion   DilatancyAngle
+model MohrCoulomb    MC         1.0e9     0.42      0.3            1e2        0.01
+
+#     modelID             modelName  Young   Poisson  beta  beta_p  kappa  varphiDeg  pc0
+model SinfoniettaClassica SC         1e7     0.25     1.2   0.01    0.0    38.5       1e3
+
+#     modelID          modelName  Young   Poisson  
+model HookeElasticity  HE         1e7     0.3    
+
+#     modelID          modelName  Young   Poisson  FrictionAngle  Cohesion
+model DruckerPrager    DP         1e7     0.3      0.52    	  1
+
+# Place the nodes
+set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
+
+# Place the MPs
+#            group   modelName     mass_density  x0     y0      x1     y1      size of MPs
+set_MP_grid  0       DP            2700.0        0.15   0.04    0.25   0.14    0.0025
+
+#                group  x0    y0     x1     y1    driveMode
+Obstacle Line    1      0.36  0.26   0.36   0.04  freeze
+Obstacle Line    1      0.36  0.04   0.04   0.04  freeze
+Obstacle Line    1      0.04  0.04   0.04   0.26  freeze
+
+# Obstacles of groupe 1 use this force law
+# (this command needs to be placed after the Obstacles)
+BoundaryForceLaw frictionalViscoElastic 1
+
+# Set the properties that will be used between Obstacles and MPs
+#properties      parameter  groupMP   groupObst  value
+set              mu         0         1          0.1
+set              kn         0         1          1e7
+set              kt         0         1          1e7
+set              viscRate   0         1          0.98
+
+set_K0_stress 0.3 2700
+
+#Spy MeanStressPQ_2D 100 meanstressPQ.txt
+#Spy Energies 100 Energies.txt
+Spy Work line 100 Work.txt 0.04 0.36 90
+#Spy MPTracking 100 MPTracking.txt BOX 
+#Spy DPPlotSingle 1000 DPPlotSingle.txt 9 0.52 1
+Spy SigmaN_vs_fN 100 SigmaNfN.txt 9
