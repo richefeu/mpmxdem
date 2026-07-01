@@ -19,17 +19,11 @@
 #include "Commands/set_node_grid.hpp"
 #include "Commands/set_uniform_pressure.hpp"
 
-#include "ConstitutiveModels/CHCL_DEM.hpp"
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
 #include "ConstitutiveModels/HookeElasticity.hpp"
-#include "ConstitutiveModels/KelvinVoigt.hpp"
 #include "ConstitutiveModels/DruckerPrager.hpp"
 #include "ConstitutiveModels/DruckerPragerCap.hpp"
 #include "ConstitutiveModels/DruckerPragerCapNoDensification.hpp"
-#include "ConstitutiveModels/MohrCoulomb.hpp"
-#include "ConstitutiveModels/SinfoniettaClassica.hpp"
-#include "ConstitutiveModels/SinfoniettaCrush.hpp"
-#include "ConstitutiveModels/VonMisesElastoPlasticity.hpp"
 
 #include "Obstacles/Circle.hpp"
 #include "Obstacles/Line.hpp"
@@ -58,6 +52,7 @@
 #include "Spies/DPPlotSingle.hpp"
 #include "Spies/SigmaN_vs_fN.hpp"
 #include "Spies/DPCPlotSingle.hpp"
+#include "Spies/DPCPlot.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/MoveObstacle.hpp"
@@ -174,20 +169,9 @@ void MPMbox::ExplicitRegistrations() {
       "set_uniform_pressure", [](void) -> Command * { return new set_uniform_pressure(); });
 
   // ConstitutiveModel =========
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "CHCL_DEM", [](void) -> ConstitutiveModel * { return new CHCL_DEM(); });
+  
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "HookeElasticity", [](void) -> ConstitutiveModel * { return new HookeElasticity(); });
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "KelvinVoigt", [](void) -> ConstitutiveModel * { return new KelvinVoigt(); });
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "MohrCoulomb", [](void) -> ConstitutiveModel * { return new MohrCoulomb(); });
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "VonMisesElastoPlasticity", [](void) -> ConstitutiveModel * { return new VonMisesElastoPlasticity(); });
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "SinfoniettaClassica", [](void) -> ConstitutiveModel * { return new SinfoniettaClassica(); });
-  Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "SinfoniettaCrush", [](void) -> ConstitutiveModel * { return new SinfoniettaCrush(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "DruckerPrager", [](void) -> ConstitutiveModel * { return new DruckerPrager(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
@@ -258,7 +242,9 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("SigmaN_vs_fN",
                                                                  [](void) -> Spy * { return new SigmaN_vs_fN(); });  
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPCPlotSingle",
-                                                                 [](void) -> Spy * { return new DPCPlotSingle(); });                                                                                                                        
+                                                                 [](void) -> Spy * { return new DPCPlotSingle(); });      
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPCPlot",
+                                                                 [](void) -> Spy * { return new DPCPlot(); });                                                                                                                                                                                    
 }
 
 //

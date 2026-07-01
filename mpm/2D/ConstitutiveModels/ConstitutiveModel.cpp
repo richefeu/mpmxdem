@@ -13,3 +13,8 @@ double ConstitutiveModel::getPoisson() {
 }
 
 void ConstitutiveModel::init([[maybe_unused]] MaterialPoint & MP) { }
+
+std::vector<double> ConstitutiveModel::getOtherParams(size_t p) {
+  p++;
+  std::cout<< "getOtherParams() not defined for the specified constitutive model"<<std::endl;
+}

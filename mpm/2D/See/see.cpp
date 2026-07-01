@@ -26,6 +26,7 @@ void printHelp() {
   // std::cout << " k       | ___" << std::endl;
   // std::cout << " l       | ___" << std::endl;
   std::cout << " m       | show/hide Material Points" << std::endl;
+  std::cout << " M       | toggle highlighting for a specific MP (input in console)" << std::endl;
   std::cout << " n       | go to conf number (input in console)" << std::endl;
   // std::cout << " o       | ___" << std::endl;
   // std::cout << " p       | ___" << std::endl;
@@ -135,12 +136,19 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
     show_MPs = 1 - show_MPs;
   } break;
 
+  case 'M':{
+    std::cout<<"id of the MP to highlight : ";
+    size_t p;
+    std::cin>>p;
+    MP_is_tracked[p] = 1 - MP_is_tracked[p];
+  } break;
+
   case 'n': {
     std::cout << "number: ";
     int num;
     std::cin >> num;
     try_to_readConf(num, Conf, confNum);
-  } break;
+  } break; 
 
   case 'q': {
     exit(0);
@@ -711,7 +719,12 @@ void drawMPs() {
       glEnd();
 
       if (MP_contour == 1) {
-        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+        if (MP_is_tracked[i] == 1){
+          glColor4f(255.0f, 0.0f, 0.0f, 1.0f);
+        }
+        else{
+          glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+        }
         glBegin(GL_LINE_LOOP);
         for (size_t r = 0; r < 4; r++) { glVertex2d(SmoothedData[i].corner[r].x, SmoothedData[i].corner[r].y); }
         glEnd();
@@ -727,12 +740,24 @@ void drawMPs() {
       glEnd();
 
       if (MP_contour == 1) {
-        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
-        glBegin(GL_LINE_LOOP);
-        for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
-          glVertex2d(xc + R * cos(angle), yc + R * sin(angle));
+        if (MP_is_tracked[i] == 1){
+          glColor4f(255.0f, 0.0f, 0.0f, 1.0f);
+          glBegin(GL_LINE_LOOP);
+          for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+            glVertex2d(xc + R * cos(angle), yc + R * sin(angle));
+            glVertex2d(xc + 1.2 * R * cos(angle), yc + 1.2 * R * sin(angle));
+          }
+          glEnd();
         }
-        glEnd();
+        
+        else{
+          glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+          glBegin(GL_LINE_LOOP);
+          for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
+            glVertex2d(xc + R * cos(angle), yc + R * sin(angle));
+          }
+          glEnd();
+        }
       }
     }
   }
@@ -1020,6 +1045,10 @@ int main(int argc, char *argv[]) {
   } else if (argc == 2) {
     confNum = 0;
     readConf(argv[1], "###", Conf);
+  }
+
+  for (size_t p = 0 ; p<Conf.MP.size() ; p++){
+    MP_is_tracked.push_back(0);
   }
 
   mouse_mode = NOTHING;

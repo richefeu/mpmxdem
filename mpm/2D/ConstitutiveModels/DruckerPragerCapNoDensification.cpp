@@ -146,3 +146,13 @@ void DruckerPragerCapNoDensification::updateStrainAndStress(MPMbox& MPM, size_t 
 }
 
 void DruckerPragerCapNoDensification::init(MaterialPoint& MP) { MP.isDoubleScale = false; }
+
+std::vector<double> DruckerPragerCapNoDensification::getOtherParams(size_t p) {
+  p++;
+  std::vector<double> params;
+  params.push_back(Pb);
+  params.push_back(R);
+  params.push_back(Beta);
+  params.push_back(d);
+  return params ;
+}

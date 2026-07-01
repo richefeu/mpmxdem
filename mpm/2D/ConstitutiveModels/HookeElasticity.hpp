@@ -7,6 +7,7 @@
 #include "ConstitutiveModel.hpp"
 
 #include "Rigidity.hpp"
+#include <vector>
 
 struct HookeElasticity : public ConstitutiveModel {
 
@@ -17,6 +18,7 @@ struct HookeElasticity : public ConstitutiveModel {
   void updateStrainAndStress(MPMbox& MPM, size_t p);
   double getYoung();
   double getPoisson();
+  std::vector<double> getOtherParams(size_t p);
 
 private:
   double Young;

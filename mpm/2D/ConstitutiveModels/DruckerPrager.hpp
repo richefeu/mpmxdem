@@ -45,6 +45,7 @@ struct DruckerPrager : public ConstitutiveModel {
   double getYield(double P, double Q);
   void updateStrainAndStress(MPMbox& MPM, size_t p);
   void init(MaterialPoint & MP);
+  virtual std::vector<double> getOtherParams(size_t p);
 };
 
 #endif /* end of include guard: DRUCKERPRAGER5_HPP */

@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <vector>
 
 #include "ColorTable.hpp"
 #include "fileTool.hpp"
@@ -80,6 +81,7 @@ int show_node_velocity_directions = 0;
 
 int MP_deformed_shape = 0;
 int MP_contour        = 1;
+std::vector<int> MP_is_tracked;
 
 int color_option = 0;
 ColorTable colorTable;

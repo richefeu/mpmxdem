@@ -25,7 +25,7 @@ struct DruckerPragerCap : public ConstitutiveModel {
  private:
   double tanBeta;
   // Parameters for the evolution of the yield surface, 
-  // all values are taken from the results of B.Spanu et al. from UO2 powders ground at 80 rpm (Cauchy stress post-processing)
+  // all values are taken from the results of B.Spanu et al. from UO2 powders ground at 80 rpm post-processed with Cauchy Stress
     double E1 = 0.07e6;
     double E2 = 21.01; 
     double Nu1 = -0.37;
@@ -74,6 +74,7 @@ struct DruckerPragerCap : public ConstitutiveModel {
   double getYield(double P, double Q, size_t p);
   void updateStrainAndStress(MPMbox& MPM, size_t p);
   void init(MaterialPoint & MP);
+  std::vector<double> getOtherParams(size_t p);
 };
 
 #endif /* end of include guard: DRUCKERPRAGER5_HPP */

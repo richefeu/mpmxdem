@@ -151,3 +151,11 @@ void DruckerPrager::updateStrainAndStress(MPMbox& MPM, size_t p) {
 }
 
 void DruckerPrager::init(MaterialPoint& MP) { MP.isDoubleScale = false; }
+
+std::vector<double> DruckerPrager::getOtherParams(size_t p) {
+  p++;
+  std::vector<double> params;
+  params.push_back(FrictionAngle);
+  params.push_back(Cohesion);
+  return params;
+}

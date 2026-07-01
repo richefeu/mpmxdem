@@ -61,9 +61,6 @@ void DruckerPragerCap::updateStrainAndStress(MPMbox& MPM, size_t p) {
   Pa[p] = (Pb[p] - R[p]*d[p])/(1+R[p]*tanBeta);
   }
 
-  if (p==359 and MPM.step%MPM.confPeriod == 0) {
-    std::cout<<"E = "<<E[p]<< ", Pb = "<< Pb[p] <<std::endl;
-  }
 
   // Get pointer to the first of the nodes
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
@@ -171,3 +168,12 @@ void DruckerPragerCap::updateStrainAndStress(MPMbox& MPM, size_t p) {
 }
 
 void DruckerPragerCap::init(MaterialPoint& MP) { MP.isDoubleScale = false; }
+
+std::vector<double> DruckerPragerCap::getOtherParams(size_t p) {
+  std::vector<double> params;
+  params.push_back(Pb[p]);
+  params.push_back(R[p]);
+  params.push_back(Beta);
+  params.push_back(d[p]);
+  return params;
+}

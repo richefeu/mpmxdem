@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+
 
 class MPMbox;
 struct MaterialPoint;
@@ -18,4 +20,5 @@ struct ConstitutiveModel {
   virtual double getYoung();
   virtual double getPoisson();
   virtual void init(MaterialPoint & MP);
+  virtual std::vector<double> getOtherParams(size_t p) = 0;
 };

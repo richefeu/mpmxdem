@@ -52,3 +52,8 @@ void HookeElasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 double HookeElasticity::getYoung() { return Young; }
 
 double HookeElasticity::getPoisson() { return Poisson; }
+
+std::vector<double> HookeElasticity::getOtherParams(size_t p) {
+  p++;
+  return std::vector<double>();
+}

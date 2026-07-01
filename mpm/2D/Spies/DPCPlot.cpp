@@ -2,40 +2,98 @@
 
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
+#include "ConstitutiveModels/ConstitutiveModel.hpp"
 
 #include "fileTool.hpp"
 
 void DPCPlot::read(std::istream& is) {
-  std::string Filename;
-  is >> nrec >> Filename >> MP_id;
+  is >> nrec >> curve_period >> nMP;
   nstep = nrec;
 
-  filename = box->result_folder + fileTool::separator() + Filename;
-  std::cout << "DPCPlot: filename is " << filename << std::endl;
-  std::cout << "DPCPlot: Tracked MP initial coordinates : " << box->MP[MP_id].pos.x << ", " << box->MP[MP_id].pos.y << std::endl;
-  file.open(filename.c_str());
+  Pvals.resize(nMP);
+  Qvals.resize(nMP);
+  Pbvals.resize(nMP);
+  betavals.resize(nMP);
+  Rvals.resize(nMP);
+  dvals.resize(nMP);
+
+  PQ_files.resize(nMP);
+  PQ_filenames.resize(nMP);
+  parameters_files.resize(nMP);
+  parameters_filenames.resize(nMP);
   
+  for (int i=0 ; i<nMP ; i++){
+    size_t MP_id;
+    is >> MP_id;
+    tracked_MPs.push_back(MP_id);
+
+    std::string PQ_filename = box->result_folder + fileTool::separator() + "DPCPlotPQ_MP" + std::to_string(MP_id) + ".txt";
+    std::string parameters_filename = box->result_folder + fileTool::separator() + "DPCPlotParams_MP" + std::to_string(MP_id) + ".txt";
+
+    PQ_filenames.push_back(PQ_filename);
+    parameters_filenames.push_back(PQ_filename);
+
+    std::cout << "DPCPlot, MP n°"<< MP_id << ": filenames are " << PQ_filename <<", " << parameters_filename << std::endl;
+    std::cout << "DPCPlot, MP n°"<< MP_id << ": initial coordinates are " << box->MP[MP_id].pos.x << ", " << box->MP[MP_id].pos.y << std::endl;
+    
+    PQ_files[i] = new std::ofstream(PQ_filename.c_str());
+    parameters_files[i] = new std::ofstream(parameters_filename.c_str());
+
+  }
 }
 
 void DPCPlot::exec() {
-  MPStress.reset();
-  MPStrain.reset();
+  
   size_t nbMP = box->MP.size();
   if (0 == nbMP) {return;}
- 
-  MPStress = box->MP[MP_id].stress;
-  MPStrain = box->MP[MP_id].strain;
 
-  double diff_xx_yy = MPStress.xx-MPStress.yy;
-  P = -0.5*(MPStress.xx + MPStress.yy);
-  Q = sqrt(3*(0.25*diff_xx_yy*diff_xx_yy + MPStress.xy*MPStress.xy));
+  for (int i = 0 ; i < nMP ; i++) {
+    size_t MP_id = tracked_MPs[i];
 
+    MPStress = box->MP[MP_id].stress;
+    MPStrain = box->MP[MP_id].strain;
+    
+    double diff_xx_yy = MPStress.xx-MPStress.yy;
+    Pvals[i] = -0.5*(MPStress.xx + MPStress.yy);
+    Qvals[i] = sqrt(3*(0.25*diff_xx_yy*diff_xx_yy + MPStress.xy*MPStress.xy));
+
+    if (box->MP[MP_id].constitutiveModel->getRegistrationName() == "DruckerPragerCap") {
+      std::vector<double> params = box->MP[MP_id].constitutiveModel->getOtherParams(MP_id);
+      Pbvals[i] = params[0];
+      Rvals[i] = params[1];
+      betavals[i] = params[2];
+      dvals[i] = params[3];
+    }
+    else {
+      std::cout<<"Error : MP n°"<< MP_id << " does not follow the DPC constitutive model" << std::endl;
+    }
+  }
 }
 
 void DPCPlot::record() {
-  file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-  file << box->t << ' ' << P << ' ' << Q << std::endl;  
+  if (iter == 0) {
+    for (int i = 0 ; i < nMP ; i++) {
+      (*PQ_files[i]) << "#t(s)\t P(N/m²)\t Q(N/m²)" << std::endl; 
+      (*parameters_files[i]) << "#Pb(N/m²)\t R(1)\t beta(rad)\t d(N/m²)" << std::endl;
+    }
+  }
+
+  for (int i = 0 ; i < nMP ; i++) {
+    (*PQ_files[i]) << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+    (*PQ_files[i]) << box->t << ' ' << Pvals[i] << ' ' << Qvals[i] << std::endl; 
+
+    if (iter % curve_period == 0 || box->t >= box->finalTime) {
+      (*parameters_files[i]) << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+      (*parameters_files[i]) << Pbvals[i] << " " << Rvals[i] <<" " << betavals[i] << " " << dvals[i] << std::endl;
+    } 
+  }
+  iter++;
 }
 
-void DPCPlot::end() { file.close(); }
+void DPCPlot::end() { 
+  for (int i = 0 ; i < nMP ; i++) {
+    PQ_files[i]->close(); 
+    parameters_files[i]->close();
+  }
+}
 
