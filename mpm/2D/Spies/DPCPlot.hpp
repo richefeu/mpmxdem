@@ -13,6 +13,7 @@ struct DPCPlot : public Spy {
   void exec();
   void record();
   void end();
+  std::vector<size_t> tracked_MPs;
 
  private:
   int nMP;
@@ -22,7 +23,6 @@ struct DPCPlot : public Spy {
   mat4r MPStress;
   mat4r MPStrain;
 
-  std::vector<size_t> tracked_MPs;
   std::vector<std::string> PQ_filenames;
   std::vector<std::ofstream*> PQ_files;
   std::vector<std::string> parameters_filenames;

@@ -745,6 +745,18 @@ void MPMbox::save(const char *name) {
       }
     }
   }
+
+  // // Spies
+  // if (!Spies.empty()){
+  //   file << "Spies\n";
+  //   for (size_t iSpies = 0; iSpies < Spies.size(); iSpies++) {
+  //     nb_tracked_MPs = Spies[iSpies]->tracked_MPs.size();
+  //     if (nb_tracked_MPs > 0){
+  //       file << Spies[iSpies]->
+  //       for (int j ; j < nb_tracked_MPs;j++)
+  //     }
+  //   }
+  // }
 }
 
 //

@@ -2,12 +2,14 @@
 
 class MPMbox;
 #include <fstream>
+#include <vector>
 
 struct Spy {
   MPMbox* box{nullptr};
 
   int nstep{0};  // Period for exec
   int nrec{0};   // Period for record
+  // virtual std::vector<size_t> tracked_MPs; // Vector registering tracked MPs (useful in MPMbox::read())
 
   virtual void plug(MPMbox* Box);
 

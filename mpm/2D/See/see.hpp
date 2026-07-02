@@ -24,6 +24,7 @@
 #include "geoTool.hpp"
 #include "glTools.hpp"
 #include "message.hpp"
+#include "vec2.hpp"
 
 #include "Core/MPMbox.hpp"
 #include "Core/MaterialPoint.hpp"
@@ -82,6 +83,7 @@ int show_node_velocity_directions = 0;
 int MP_deformed_shape = 0;
 int MP_contour        = 1;
 std::vector<int> MP_is_tracked;
+int show_MP_ids = 0;
 
 int color_option = 0;
 ColorTable colorTable;

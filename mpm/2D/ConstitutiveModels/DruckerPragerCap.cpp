@@ -34,10 +34,8 @@ double DruckerPragerCap::getPoisson() { return Nu0; }
 double DruckerPragerCap::getYield(double P, double Q, size_t p) {
   if (P < Pa[p]) {
     return Q - P*tanBeta - d[p] ;
-  } 
-  else {
-    return sqrt((P-Pa[p])*(P-Pa[p]) + R[p]*R[p]*Q*Q) - R[p]*(d[p]+Pa[p]*tanBeta) ;
   }
+  return sqrt((P-Pa[p])*(P-Pa[p]) + R[p]*R[p]*Q*Q) - R[p]*(d[p]+Pa[p]*tanBeta) ;
 }
 
 void DruckerPragerCap::updateStrainAndStress(MPMbox& MPM, size_t p) {

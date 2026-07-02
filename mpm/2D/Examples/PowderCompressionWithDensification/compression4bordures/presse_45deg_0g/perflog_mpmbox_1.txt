@@ -1,7 +1,7 @@
-root 1 1112.88
-   run 1 1112.86
-      convergenceConditions 1500001 4.89168
-      checkProximity 150001 1.75383
-      MUSL step 1500001 1105.47
-         updateTransformationGradient 1500001 17.8209
-            updateVelocityGradient 1500001 14.0204
+root 1 2802.71
+   run 1 2802.71
+      convergenceConditions 3000001 11.5023
+      checkProximity 300001 4.56668
+      MUSL step 3000001 2784.57
+         updateTransformationGradient 3000001 40.0058
+            updateVelocityGradient 3000001 31.7171

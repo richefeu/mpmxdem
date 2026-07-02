@@ -137,7 +137,7 @@ void keyboard(unsigned char Key, int /*x*/, int /*y*/) {
   } break;
 
   case 'M':{
-    std::cout<<"id of the MP to highlight : ";
+    std::cout<<"ID of the MP to highlight : ";
     size_t p;
     std::cin>>p;
     MP_is_tracked[p] = 1 - MP_is_tracked[p];
@@ -645,6 +645,27 @@ void precomputeColors(int n) {
     }
   } break;
 
+  case 12: {
+    colorBar.setTitle("Relative density");
+    float rhoTh = 10.97e3;
+    float RDmax = 0.0f;
+    float RDmin = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < Conf.MP.size(); i++) {
+      float RD = (float)SmoothedData[i].rho/rhoTh;
+      if (RD > RDmax) RDmax = RD;
+      if (RD < RDmin) RDmin = RD;
+    }
+    colorTable.setMinMax(RDmin, RDmax);
+    colorTable.setTableID(3);
+    colorTable.Rebuild();
+    std::cout << "MP colored by density (RDmin = " << RDmin << ", RDmax = " << RDmax << ")\n";
+
+    for (size_t i = 0; i < SmoothedData.size(); i++) {
+      float RD = (float)SmoothedData[i].rho/rhoTh;
+      colorTable.getRGB(RD, &precompColors[i]);
+    }
+  } break;
+
   default: {
     for (size_t i = 0; i < Conf.MP.size() /*SmoothedData.size()*/; i++) { precompColors[i].set(204, 204, 230, 255); }
   } break;
@@ -703,8 +724,8 @@ void drawMPs() {
     return;
   }
 
-  glLineWidth(1.0f);
 
+  
   for (size_t i = 0; i < Conf.MP.size(); ++i) {
 
     double xc = Conf.MP[i].pos.x;
@@ -720,9 +741,11 @@ void drawMPs() {
 
       if (MP_contour == 1) {
         if (MP_is_tracked[i] == 1){
+          glLineWidth(2.0f);
           glColor4f(255.0f, 0.0f, 0.0f, 1.0f);
         }
-        else{
+        else{  
+          glLineWidth(1.0f);
           glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
         }
         glBegin(GL_LINE_LOOP);
@@ -741,16 +764,17 @@ void drawMPs() {
 
       if (MP_contour == 1) {
         if (MP_is_tracked[i] == 1){
+          glLineWidth(2.0f);
           glColor4f(255.0f, 0.0f, 0.0f, 1.0f);
           glBegin(GL_LINE_LOOP);
           for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
             glVertex2d(xc + R * cos(angle), yc + R * sin(angle));
-            glVertex2d(xc + 1.2 * R * cos(angle), yc + 1.2 * R * sin(angle));
           }
           glEnd();
         }
         
         else{
+          glLineWidth(1.0f);
           glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
           glBegin(GL_LINE_LOOP);
           for (double angle = 0.0; angle < 2.0 * M_PI; angle += 0.05 * M_PI) {
@@ -759,6 +783,59 @@ void drawMPs() {
           glEnd();
         }
       }
+    }
+  }
+  
+  for (size_t i = 0; i < Conf.MP.size(); ++i) {
+
+    if (show_MP_ids == 1 && MP_is_tracked[i] == 0 && i%(Conf.Grid.Nx-4) == 0) {
+      vec2r text_corners[4];
+      text_corners[0] = Conf.MP[i].pos ;
+      text_corners[1] = Conf.MP[i].pos + vec2r(0, 0.005);
+      text_corners[2] = Conf.MP[i].pos + vec2r(0.015, 0.005);
+      text_corners[3] = Conf.MP[i].pos + vec2r(0.015, 0);
+
+      glPointSize(3.0f);
+      glColor4f(255.0f, 0.0f, 0.0f, 1.0f);
+      glBegin(GL_POINTS);
+      glVertex2d((GLdouble)text_corners[0].x, (GLdouble)text_corners[0].y);
+      glEnd();
+
+      glLineWidth(1.0f);
+      glColor4f(255.0f, 255.0f, 255.0f, 0.6f);
+
+      glBegin(GL_POLYGON);
+      for (int r = 0; r < 4 ; r++) {
+        glVertex2d((GLdouble)text_corners[r].x, (GLdouble)text_corners[r].y);
+      }
+      glEnd();
+
+      glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+      char strMP_id[64];
+      snprintf(strMP_id, 64, "%ld", i);
+      glText::print((GLfloat)text_corners[0].x,(GLfloat)text_corners[0].y+Conf.MP[i].size/16,(GLfloat)0,strMP_id);
+    
+    } else if (MP_is_tracked[i] == 1) {
+
+      vec2r text_corners[4];
+      text_corners[0] = Conf.MP[i].pos ;
+      text_corners[1] = Conf.MP[i].pos + vec2r(0, 0.005);
+      text_corners[2] = Conf.MP[i].pos + vec2r(0.015, 0.005);
+      text_corners[3] = Conf.MP[i].pos + vec2r(0.015, 0);
+
+      glLineWidth(1.0f);
+      glColor4f(255.0f, 255.0f, 255.0f, 0.6f);
+
+      glBegin(GL_POLYGON);
+      for (int r = 0; r < 4 ; r++) {
+        glVertex2d((GLdouble)text_corners[r].x, (GLdouble)text_corners[r].y);
+      }
+      glEnd();
+
+      glColor4f(255.0f, 0.0f, 0.0f, 1.0f);
+      char strMP_id[64];
+      snprintf(strMP_id, 64, "%ld", i);
+      glText::print((GLfloat)text_corners[0].x,(GLfloat)text_corners[0].y,(GLfloat)0,strMP_id);
     }
   }
 }
@@ -933,6 +1010,9 @@ void menu(int num) {
   case 104: {
     show_stress_directions = 1 - show_stress_directions;
   } break;
+  case 105:{
+    show_MP_ids = 1 - show_MP_ids;
+  } break;
 
   // Color Material Points
   case 200: {
@@ -971,6 +1051,9 @@ void menu(int num) {
   case 211: {
     precomputeColors(11);
   } break;
+  case 212: {
+    precomputeColors(12);
+  } break;
 
   // Grid informations
   case 300: {
@@ -999,6 +1082,7 @@ void buildMenu() {
   glutAddMenuEntry("Show/Hide MP Contours", 102);
   glutAddMenuEntry("Show/Hide MP Deformed Shape", 103);
   glutAddMenuEntry("Show/Hide MP Stress Directions", 104);
+  glutAddMenuEntry("Show/Hide MP IDs", 105);
 
   int submenu200 = glutCreateMenu(menu); // Color Material Points
   glutAddMenuEntry("None", 200);
@@ -1013,6 +1097,7 @@ void buildMenu() {
   glutAddMenuEntry("Fy (with Obstacle)", 209);
   glutAddMenuEntry("Inertial number (MPMxDEM only)", 210);
   glutAddMenuEntry("Sigma1 / Sigma3", 211);
+  glutAddMenuEntry("Relative Density", 212);
 
   int submenu300 = glutCreateMenu(menu); // Grid informations
   glutAddMenuEntry("Show/Hide Grid", 300);
