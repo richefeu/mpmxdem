@@ -10,17 +10,11 @@ std::string RegularQuadLinear::getRegistrationName() { return std::string("Regul
 RegularQuadLinear::RegularQuadLinear() { element::nbNodes = 4; }
 
 void RegularQuadLinear::computeInterpolationValues(MPMbox& MPM, size_t p) {
-
-  if (MPM.MP[p].pos.x < 0.0 && MPM.MP[p].pos.x > (double)MPM.Grid.Nx * MPM.Grid.lx && MPM.MP[p].pos.y < 0.0 &&
-      MPM.MP[p].pos.y > (double)MPM.Grid.Ny * MPM.Grid.ly) {
-    std::cerr << "@RegularQuadLinear::computeInterpolationValues: the sum of shape functions does not equals 1!"
-              << std::endl;
-    std::cerr << "MPs could be outside the grid." << std::endl;
-    std::cerr << "Check MP number " << p << ", at position " << MPM.MP[p].pos << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  MPM.MP[p].e = (size_t)(trunc(MPM.MP[p].pos.x / MPM.Grid.lx) + trunc(MPM.MP[p].pos.y / MPM.Grid.ly) * (double)MPM.Grid.Nx);
+  // The guard that used to sit here could never be true: it required the
+  // position to be at the same time negative AND beyond the far side of the
+  // grid. It is now in ShapeFunction::locateElement, which also checks the
+  // resulting element number.
+  locateElement(MPM, p);
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   double invx = 1.0 / MPM.Grid.lx;

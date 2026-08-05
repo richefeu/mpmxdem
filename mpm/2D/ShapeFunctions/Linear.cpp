@@ -22,7 +22,7 @@ Linear::Linear() { element::nbNodes = 4; }
 //   I[0] +-------+ I[1]
 //
 void Linear::computeInterpolationValues(MPMbox& MPM, size_t p) {
-  MPM.MP[p].e = (size_t)(trunc(MPM.MP[p].pos.x / MPM.Grid.lx) + trunc(MPM.MP[p].pos.y / MPM.Grid.ly) * (double)MPM.Grid.Nx);
+  locateElement(MPM, p);
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   // d(xi)/dx and d(eta)/dy

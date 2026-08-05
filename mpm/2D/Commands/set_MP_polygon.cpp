@@ -19,7 +19,9 @@ void set_MP_polygon::exec() {
 
   auto itCM = box->models.find(modelName);
   if (itCM == box->models.end()) {
-    std::cerr << "@set_MP_polygon::exec, model " << modelName << " not found" << std::endl;
+    Logger::critical("@set_MP_polygon::exec, the model '{}' is not defined", modelName);
+    Logger::critical("  A 'model' line has to declare it before this command");
+    exit(EXIT_FAILURE);
   }
   ConstitutiveModel* CM = itCM->second;
   // finding max and min in each direction

@@ -45,6 +45,16 @@ struct MaterialPoint {
   mat4r stressCorrection;       // Plastic Stress (REMARQUE à enlever ou renomer). C'est la correction plastic en
                                 // fait. Ce truc avait été ajouté par Fabio.
   double outOfPlaneStress{0.0}; // Out-of-plane total stress component
+
+  // Viscous part of the total stress (KelvinVoigt only). Unlike the elastic
+  // part, which is integrated increment by increment, this one is an
+  // INSTANTANEOUS quantity: eta times the current strain rate. It is kept here
+  // so that the value of the previous step can be removed from 'stress' before
+  // the new one is added -- otherwise the viscous term accumulates and behaves
+  // as an extra stiffness eta/dt instead of a damper.
+  // (NOT saved in the conf-files yet, see C3 in Doc/BUGS.md)
+  mat4r viscousStress;
+  double outOfPlaneViscousStress{0.0};
   double hardeningForce{0.0};   // memory for hardening
 
   double N[16];    // Value of shape function according to the position of the Material Point

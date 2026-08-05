@@ -47,10 +47,11 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   MPM.number_MP_before_any_split = MPM.MP.size();
 
-  // ==== Reset the resultant forces and velGrad of MPs
+  // ==== Reset the resultant forces of MPs
+  // (velGrad is cleared by MPMbox::updateVelocityGradient, so that no
+  //  integration scheme can forget it)
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].f.reset();
-    MP[p].velGrad.reset();
   }
 
   // ==== Delete computed resultants (force and moment) of rigid obstacles
@@ -141,30 +142,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Calculate velocity in MP (to then update q). sort of smoothing
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-
-    if (MPM.activePIC) {
-      double invmass;
-      vec2r PICvelocity;
-      for (size_t r = 0; r < element::nbNodes; r++) {
-        if (nodes[I[r]].mass > MPM.tolmass) {
-          invmass = 1.0f / nodes[I[r]].mass;
-          PICvelocity += MP[p].N[r] * nodes[I[r]].q * invmass;
-          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
-        }
-      }
-      MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelocity;
-    } else {
-      double invmass;
-      for (size_t r = 0; r < element::nbNodes; r++) {
-        if (nodes[I[r]].mass > MPM.tolmass) {
-          invmass = 1.0f / nodes[I[r]].mass;
-          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
-        }
-      }
-    }
-  }
+  OneStep::updateMPVelocity(MPM);
 
   // ==== We may impose x- or y-velocity of some MP (it will overwrite those just computed)
 #if 0
@@ -196,48 +174,16 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   MPM.updateTransformationGradient();
 
   // ==== Update strain and stress
-  {
-    if (MPM.CHCL.hasDoubleScale == true) { // ===================
-      START_TIMER("updateStrainAndStress");
-
-      // For parallel computing with openMP, we first identify the MPs that do or do not hold a CHCL
-      std::vector<size_t> simpleScaleVector;
-      std::vector<size_t> doubleScaleVector;
-      for (size_t p = 0; p < MP.size(); p++) {
-        if (MP[p].isDoubleScale) {
-          doubleScaleVector.push_back(p);
-        } else {
-          simpleScaleVector.push_back(p);
-        }
-      }
-
-      // Single-scale MPs
-#pragma omp parallel for default(shared)
-      for (size_t q = 0; q < simpleScaleVector.size(); q++) {
-        MP[simpleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, simpleScaleVector[q]);
-      }
-
-      // Two-scale MPs
-#pragma omp parallel for default(shared)
-      for (size_t q = 0; q < doubleScaleVector.size(); q++) {
-        MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
-        Logger::trace("Stress for MP #{} = xx={} / xy={} / yx={} / yy={}", doubleScaleVector[q],
-                                      MP[doubleScaleVector[q]].stress.xx, MP[doubleScaleVector[q]].stress.xy,
-                                      MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
-      }
-
-    } else { // ===================
-
-      // Every MPs are single-scale with a constitutive model
-      for (size_t p = 0; p < MP.size(); p++) {
-        MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
-      }
-
-    } // ==================
-  }
+  OneStep::updateStrainAndStress(MPM);
 
   // ==== Update positions avec le q provisoire
   for (size_t p = 0; p < MP.size(); p++) {
+    // Same place as in UpdateStressFirst and UpdateStressLast: prev_pos holds
+    // the position at the end of the previous step, so that pos - prev_pos is
+    // a genuine displacement increment. Without it, frictionalNormalRestitution
+    // built its tangential force on the displacement since t = 0, and the Work
+    // and EnergyBalance spies summed that same total at every step.
+    MP[p].prev_pos = MP[p].pos;
     I = &(Elem[MP[p].e].I[0]);
     double invmass;
     for (size_t r = 0; r < element::nbNodes; r++) {
@@ -252,8 +198,13 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy + MP[p].deltaStrain.det();
     MP[p].vol *= (1.0 + volumetricdStrain);
-    MP[p].density /= (1.0 + volumetricdStrain);
   }
+  OneStep::updateDensityFromVolume(MPM);
+
+  // ==== Update the corner positions of the MPs
+  // They are what Polygon::getContactFrame builds its contact frame on, and
+  // this scheme was the only one not refreshing them.
+  for (size_t p = 0; p < MP.size(); p++) { MP[p].updateCornersFromF(); }
 
   return 0;
 }

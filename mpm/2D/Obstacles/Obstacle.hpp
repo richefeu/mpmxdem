@@ -44,4 +44,10 @@ struct Obstacle {
 
   Obstacle();
   virtual ~Obstacle();
+
+ protected:
+  // To be called at the end of checkProximity, once Neighbors has been rebuilt,
+  // with the list as it stood before. It carries the contact history (forces,
+  // overlaps) over to the neighbours that are still there.
+  void restoreNeighborHistory(const std::vector<Neighbor> &previous);
 };

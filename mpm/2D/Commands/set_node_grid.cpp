@@ -40,7 +40,13 @@ void set_node_grid::read(std::istream& is) {
 void set_node_grid::exec() {
   if (box->shapeFunction == nullptr) {
     Logger::critical("@set_node_grid::exec(), ShapeFunction has to be set BEFORE set_node_grid");
-    exit(0);
+    Logger::critical("  It decides whether an element holds 4 or 16 nodes");
+    exit(EXIT_FAILURE);
+  }
+  if (nbElemX == 0 || nbElemY == 0 || lx <= 0.0 || ly <= 0.0) {
+    Logger::critical("@set_node_grid::exec(), invalid grid: Nx = {}, Ny = {}, lx = {}, ly = {}", nbElemX, nbElemY, lx,
+                     ly);
+    exit(EXIT_FAILURE);
   }
 
   box->Grid.Nx = nbElemX;

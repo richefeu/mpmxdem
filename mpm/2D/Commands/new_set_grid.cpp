@@ -6,8 +6,14 @@ void new_set_grid::read(std::istream& is) { is >> lengthX >> lengthY >> spacing;
 void new_set_grid::exec() {
 
   if (box->shapeFunction == nullptr) {
-    std::cerr << "@new_set_grid::exec, ShapeFunction has to be set BEFORE set_grid." << std::endl;
-    exit(0);
+    Logger::critical("@new_set_grid::exec, ShapeFunction has to be set BEFORE new_set_grid");
+    Logger::critical("  It decides whether an element holds 4 or 16 nodes");
+    exit(EXIT_FAILURE);
+  }
+  if (spacing <= 0.0 || lengthX < spacing || lengthY < spacing) {
+    Logger::critical("@new_set_grid::exec, invalid grid: lengthX = {}, lengthY = {}, spacing = {}", lengthX, lengthY,
+                     spacing);
+    exit(EXIT_FAILURE);
   }
 
   box->Grid.Nx = static_cast<int>(floor(lengthX / spacing));

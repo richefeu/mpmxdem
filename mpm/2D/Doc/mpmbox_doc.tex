@@ -99,9 +99,9 @@ points, the blue ones the grid.}
 \end{figure}
 
 The available integration schemes (\cref{fig:structure-onestep}) all follow this same
-cycle; they differ in the moment at which the stress is updated. Note that
-\texttt{ModifiedLagrangian} is the only one that supports the double-scale MPM$\times$DEM
-computation.
+cycle; they differ in the moment at which the stress is updated. They share the same
+features -- FLIP/PIC blending, double-scale models, adaptive splitting --
+\texttt{ModifiedLagrangian} remaining the reference and the best tested of the three.
 
 \begin{figure}[H]
 \centering
@@ -790,6 +790,10 @@ The ratio can be changed during the run with the \keyword{PICDissipation} and
 \keyword{PICDissipationByPIC} schedulers -- for instance a strong damping during a
 consolidation phase, then almost none during the phase of interest.
 
+The blending is applied by the three integration schemes alike. Beware that
+\keyword{PICDissipation} takes a FLIP ratio, that is $\alpha$, where \keyword{enablePIC} and
+\keyword{PICDissipationByPIC} take a PIC ratio, that is $1-\alpha$.
+
 \subsection{Adaptive splitting}
 \label{sec:splitting}
 
@@ -933,9 +937,16 @@ start from the same microstructure but then evolve independently.
       is a deprecated form of the first two, kept for compatibility.
 \end{itemize}
 
-Two constraints are worth remembering: only \keyword{ModifiedLagrangian} supports double-scale
-computations, and the cost is that of a full DEM simulation per material point and per time
-step -- start with a few hundred points, not a few thousand.
+The constraint worth remembering is the cost: a full DEM simulation per material point and
+per time step -- start with a few hundred points, not a few thousand. The material points
+carrying a computationally homogenised law are gathered in their own loop, parallelised
+with OpenMP, so that they are not slowed down by the others.
+
+The three integration schemes accept double-scale models, with one reserve on
+\keyword{UpdateStressLast}: it computes the deformation gradient at the end of the step, so
+the DEM time-step limiter (\keyword{CHCL.limitTimeStepFactor}) only constrains the following
+step. Prefer \keyword{ModifiedLagrangian}, or \keyword{UpdateStressFirst}; a warning is
+issued at the first step if you do otherwise.
 
 
 \section{Output files and restart}

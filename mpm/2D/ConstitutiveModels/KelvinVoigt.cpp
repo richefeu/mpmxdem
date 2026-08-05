@@ -38,8 +38,31 @@ void KelvinVoigt::updateStrainAndStress(MPMbox& MPM, size_t p) {
                    dstrain.yx, dstrain.yy, 0.0,
                    0.0,        0.0,        0.0);
   // clang-format on
-  Sigma += C.getStress(dstrain3x3);      // elastic part
-  Sigma += (eta / MPM.dt) * dstrain3x3;  // viscuous part
+
+  // sigma_n = (sigma_{n-1} - eta*epsdot_{n-1}) + C:deps_n + eta*epsdot_n
+  //
+  // The viscous part is INSTANTANEOUS: it is eta times the current strain rate,
+  // and has no business being accumulated. It used to be simply added to the
+  // running total at every step, which summed to eta*epsilon_total/dt -- an
+  // extra stiffness of modulus eta/dt, all the larger as the time step is
+  // small, and not a damper at all. The contribution of the previous step is
+  // therefore removed before the new one is added.
+  Sigma.xx -= MPM.MP[p].viscousStress.xx;
+  Sigma.xy -= MPM.MP[p].viscousStress.xy;
+  Sigma.yx -= MPM.MP[p].viscousStress.yx;
+  Sigma.yy -= MPM.MP[p].viscousStress.yy;
+  Sigma.zz -= MPM.MP[p].outOfPlaneViscousStress;
+
+  Sigma += C.getStress(dstrain3x3); // elastic part, incremental
+
+  mat9r viscous = (eta / MPM.dt) * dstrain3x3; // viscous part, instantaneous
+  Sigma += viscous;
+
+  MPM.MP[p].viscousStress.xx        = viscous.xx;
+  MPM.MP[p].viscousStress.xy        = viscous.xy;
+  MPM.MP[p].viscousStress.yx        = viscous.yx;
+  MPM.MP[p].viscousStress.yy        = viscous.yy;
+  MPM.MP[p].outOfPlaneViscousStress = viscous.zz;
 
   MPM.MP[p].stress.xx = Sigma.xx;
   MPM.MP[p].stress.yy = Sigma.yy;

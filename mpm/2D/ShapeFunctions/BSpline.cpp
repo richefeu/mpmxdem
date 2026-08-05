@@ -15,7 +15,7 @@ void BSpline::computeInterpolationValues(MPMbox& MPM, size_t p) {
   invL[0] = 1.0f / MPM.Grid.lx;
   invL[1] = 1.0f / MPM.Grid.ly;
 
-  MPM.MP[p].e = (size_t)(trunc(MPM.MP[p].pos.x * invL[0]) + trunc(MPM.MP[p].pos.y * invL[1]) * (double)MPM.Grid.Nx);
+  locateElement(MPM, p);
   size_t* I = &(MPM.Elem[MPM.MP[p].e].I[0]);
 
   std::vector<double> localCoord;

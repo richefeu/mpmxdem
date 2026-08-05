@@ -1,5 +1,10 @@
-// This file is actually NOT anymore used and thus NOT really maintained
-// AVOID TO USE IT
+// USF -- Update Stress First.
+//
+// The stress is computed at the BEGINNING of the step, from the nodal
+// velocities obtained by mapping the Material Point momenta, and the internal
+// forces are then built on that fresh stress. ModifiedLagrangian remains the
+// reference scheme, in particular for double-scale computations (see below),
+// but this one is maintained and usable.
 
 #include "UpdateStressFirst.hpp"
 
@@ -19,6 +24,8 @@ std::string UpdateStressFirst::getRegistrationName() {
 }
 
 int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
+  START_TIMER("USF step");
+
   // Defining aliases =============================
   std::vector<node> &nodes           = MPM.nodes;
   std::vector<size_t> &liveNodeNum   = MPM.liveNodeNum;
@@ -30,7 +37,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
   vec2r &gravity                     = MPM.gravity;
   // End of aliases ================================
 
-  if (MPM.step == 0) std::cout << "Running UpdateStressFirst" << std::endl;
+  if (MPM.step == 0) { Logger::info("Running UpdateStressFirst"); }
   size_t *I; // use as node index
 
   // ==== Discard previous grid
@@ -46,7 +53,8 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
 
   MPM.number_MP_before_any_split = MPM.MP.size();
 
-  // ==== Reset the resultant forces on MPs and velGrad
+  // ==== Reset the resultant forces on MPs
+  // (velGrad is cleared by MPMbox::updateVelocityGradient)
   for (size_t p = 0; p < MP.size(); p++) { MP[p].f.reset(); }
 
   // ==== Delete computed resultants (force and moment) of rigid obstacles
@@ -92,11 +100,15 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
   }
 
   // ==== Deformation gradient and Volume (C)
+  // This is also where the DEM time-step limiter acts, through
+  // MPMbox::limitTimeStepForDEM: it comes before dt is used further down, so
+  // double-scale computations are consistent with this scheme.
   MPM.updateTransformationGradient();
   for (size_t p = 0; p < MP.size(); p++) { MP[p].vol = MP[p].F.det() * MP[p].vol0; }
+  OneStep::updateDensityFromVolume(MPM);
 
-  // ==== Update strain and stress
-  for (size_t p = 0; p < MP.size(); p++) { MP[p].constitutiveModel->updateStrainAndStress(MPM, p); }
+  // ==== Update strain and stress (CHCL models included)
+  OneStep::updateStrainAndStress(MPM);
 
   // ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
@@ -130,7 +142,10 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
     nodes[liveNodeNum[n]].q += nodes[liveNodeNum[n]].qdot * dt; // newline! we were not updating the q (21-02-2017)
   }
 
-  // ==== Update positions and velocities of the MPs
+  // ==== Update velocities of the MPs (FLIP/PIC blending)
+  OneStep::updateMPVelocity(MPM);
+
+  // ==== Update positions of the MPs
   for (size_t p = 0; p < MP.size(); p++) {
     I              = &(Elem[MP[p].e].I[0]);
     MP[p].prev_pos = MP[p].pos;
@@ -138,7 +153,6 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
     for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > tolmass) {
         invmass = 1.0 / nodes[I[r]].mass;
-        MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;
         MP[p].pos += dt * MP[p].N[r] * nodes[I[r]].q * invmass;
       }
     }

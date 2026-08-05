@@ -74,21 +74,8 @@ void Line::checkProximity(MPMbox& MPM) {
     }
   }
 
-  // Get the known forces back in the vector 'Neighbors'
-  size_t istore = 0;
-  for (size_t inew = 0; inew < Neighbors.size(); inew++) {
-    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) {
-      ++istore;
-    }
-    if (istore == Store.size()) {
-      break;
-    }
-
-    if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
-      Neighbors[inew] = Store[istore];
-      ++istore;
-    }
-  }
+  // Get the contact history back in the vector 'Neighbors'
+  restoreNeighborHistory(Store);
 }
 
 bool Line::inside(vec2r& x) {

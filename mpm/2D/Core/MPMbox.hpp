@@ -117,7 +117,11 @@ public:
   bool extremeShearing{false};     // Extreme shearing
   double extremeShearingval{0.0};  // Extreme shearing val is max ratio xx/xy or yy/yx that can be reached
   double splitCriterionValue{2.0}; // Elongation ratio for activating a split (whatever the direction)
-  double shearLimit{0.0};          // max Fxy or Fyx value. After this F becomes Identity matrix
+  double shearLimit{-1.0};         // max Fxy or Fyx value. After this F becomes Identity matrix.
+                                   // A negative value disables the mechanism: with the former
+                                   // default of 0.0 the condition |F.xy| > shearLimit was true as
+                                   // soon as the shear was not exactly zero, so enabling 'splitting'
+                                   // reset F to identity at every single step.
   int MaxSplitNumber{5};           // The maximum number of splits
 
   // integration scheme dissipation
@@ -158,6 +162,7 @@ public:
   void init();
 
   void MPinGridCheck();
+  void checkSettings();
   void convergenceConditions();
   void run();
 

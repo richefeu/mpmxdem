@@ -9,7 +9,9 @@ void reset_model::read(std::istream& is) { is >> groupNb >> modelName >> rho >> 
 void reset_model::exec() {
   auto itCM = box->models.find(modelName);
   if (itCM == box->models.end()) {
-    std::cerr << "@add_MP_ShallowPath::exec, model " << modelName << " not found" << std::endl;
+    Logger::critical("@reset_model::exec, the model '{}' is not defined", modelName);
+    Logger::critical("  A 'model' line has to declare it before this command");
+    exit(EXIT_FAILURE);
   }
   ConstitutiveModel* CM = itCM->second;
 

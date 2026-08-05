@@ -337,6 +337,11 @@ void MPMbox::read(const char *name) {
         oneStep = nullptr;
       }
       oneStep = Factory<OneStep>::Instance()->Create(typeOneStep);
+      if (oneStep == nullptr) {
+        Logger::critical("@MPMbox::read, oneStepType '{}' is unknown", typeOneStep);
+        Logger::critical("  Known types: ModifiedLagrangian, UpdateStressFirst, UpdateStressLast");
+        exit(EXIT_FAILURE);
+      }
     } else if (token == "planeStrain") {
       planeStrain = true;
     } else if (token == "tolmass") {
@@ -390,6 +395,15 @@ void MPMbox::read(const char *name) {
       size_t g1, g2; // g1 corresponds to MPgroup and g2 to obstacle group
       double value;
       file >> param >> g1 >> g2 >> value;
+      // DataTable::set silently CREATES the parameter when the name is unknown,
+      // so a typo used to be accepted without a word while the intended
+      // parameter stayed at zero. The seven usable names are the ones added by
+      // the constructor of MPMbox.
+      if (!dataTable.exists(param)) {
+        Logger::critical("@MPMbox::read, unknown interaction parameter in 'set {} {} {} {}'", param, g1, g2, value);
+        Logger::critical("  Known parameters: kn, kt, en2, mu, viscRate, dn0, dt0");
+        exit(EXIT_FAILURE);
+      }
       dataTable.set(param, g1, g2, value);
     } else if (token == "prescribedVelocity") { // TODO (V) -> Move it as a command
       int groupNb;
@@ -408,6 +422,11 @@ void MPMbox::read(const char *name) {
         shapeFunction = nullptr;
       }
       shapeFunction = Factory<ShapeFunction>::Instance()->Create(shapeFunctionName);
+      if (shapeFunction == nullptr) {
+        Logger::critical("@MPMbox::read, ShapeFunction '{}' is unknown", shapeFunctionName);
+        Logger::critical("  Known shape functions: Linear, RegularQuadLinear, BSpline");
+        exit(EXIT_FAILURE);
+      }
     } else if (token == "model") {
       std::string modelName, modelID;
       file >> modelID >> modelName;
@@ -441,9 +460,32 @@ void MPMbox::read(const char *name) {
       snprintf(StoredCommand, 256, "BoundaryForceLaw %s %d", boundaryName.c_str(), obstacleGroup);
       BFLCommandStored.push_back(std::string(StoredCommand));
 
-      BoundaryForceLaw *bType = Factory<BoundaryForceLaw>::Instance()->Create(boundaryName);
+      // A first instance is created only to check the name: an unknown name
+      // used to give a null pointer, quietly assigned to the obstacles and
+      // dereferenced at the first time step.
+      BoundaryForceLaw *probe = Factory<BoundaryForceLaw>::Instance()->Create(boundaryName);
+      if (probe == nullptr) {
+        Logger::critical("@MPMbox::read, BoundaryForceLaw '{}' is unknown", boundaryName);
+        Logger::critical("  Known laws: frictionalNormalRestitution, frictionalViscoElastic, "
+                         "frictionalViscoElastofragile");
+        exit(EXIT_FAILURE);
+      }
+      delete probe;
+
+      // One instance per obstacle. Sharing a single one between the obstacles
+      // of a group would make the ownership ambiguous, and the default law set
+      // by the constructor of Obstacle has to be released.
+      size_t nbAssigned = 0;
       for (size_t o = 0; o < Obstacles.size(); o++) {
-        if (Obstacles[o]->group == obstacleGroup) { Obstacles[o]->boundaryForceLaw = bType; }
+        if (Obstacles[o]->group == obstacleGroup) {
+          delete Obstacles[o]->boundaryForceLaw;
+          Obstacles[o]->boundaryForceLaw = Factory<BoundaryForceLaw>::Instance()->Create(boundaryName);
+          nbAssigned++;
+        }
+      }
+      if (nbAssigned == 0) {
+        Logger::warn("@MPMbox::read, 'BoundaryForceLaw {} {}': no obstacle belongs to group {}", boundaryName,
+                     obstacleGroup, obstacleGroup);
       }
     } else if (token == "ObstacleNeighbors") {
       // This has to be defined after defining the obstacles
@@ -489,19 +531,30 @@ void MPMbox::read(const char *name) {
         Logger::warn("Spy {} is unknown!", spyName);
       }
     } else if (token == "Nodes") {
-      if (nodes.empty()) {
-        Logger::warn("You need to set the nodes BEFORE reading their datasets (e.g., use set_nodes_grid before)");
-      }
       size_t nb;
       file >> nb;
+      if (nodes.empty()) {
+        Logger::critical("@MPMbox::read, 'Nodes' comes before the grid is defined");
+        Logger::critical("  The grid has to be built first, with set_node_grid");
+        exit(EXIT_FAILURE);
+      }
       size_t in;
       for (size_t n = 0; n < nb; n++) {
         file >> in;
+        if (in >= nodes.size()) {
+          Logger::critical("@MPMbox::read, node number {} is outside the grid ({} nodes)", in, nodes.size());
+          exit(EXIT_FAILURE);
+        }
         file >> nodes[in].q >> nodes[in].f >> nodes[in].fb >> nodes[in].mass >> nodes[in].xfixed >> nodes[in].yfixed;
       }
     } else if (token == "Elem") {
       size_t nb;
       file >> element::nbNodes >> nb;
+      if (element::nbNodes != 4 && element::nbNodes != 16) {
+        Logger::critical("@MPMbox::read, 'Elem' declares {} nodes per element; only 4 and 16 are possible",
+                         element::nbNodes);
+        exit(EXIT_FAILURE);
+      }
       Elem.clear();
       element E;
       for (size_t e = 0; e < nb; e++) {
@@ -525,7 +578,11 @@ void MPMbox::read(const char *name) {
             P.contactf;
 
         auto itCM = models.find(modelName);
-        if (itCM == models.end()) { Logger::warn("@MPMbox::read, model {} not found", modelName); }
+        if (itCM == models.end()) {
+          Logger::critical("@MPMbox::read, Material Point {} refers to the model '{}', which is not defined", iMP,
+                           modelName);
+          exit(EXIT_FAILURE);
+        }
         P.constitutiveModel = itCM->second;
         P.constitutiveModel->init(P);
         P.constitutiveModel->key = modelName;
@@ -640,6 +697,11 @@ void MPMbox::save(const char *name) {
   file << "dt " << dt << '\n';
   file << "t " << t << '\n';
   file << "splitting " << splitting << '\n';
+  // Without these three, a restart of a computation with splitting silently
+  // used the default values instead of the ones that were in force.
+  file << "splitCriterionValue " << splitCriterionValue << '\n';
+  file << "MaxSplitNumber " << MaxSplitNumber << '\n';
+  file << "shearLimit " << shearLimit << '\n';
   file << "securDistFactor " << securDistFactor << '\n';
   file << "ShapeFunction " << shapeFunction->getRegistrationName() << '\n';
 
@@ -804,6 +866,9 @@ void MPMbox::init() {
 void MPMbox::run() {
   START_TIMER("run");
 
+  // Check the settings that would make the time loop misbehave
+  checkSettings();
+
   // Check wether the MPs stand inside the grid area
   MPinGridCheck();
 
@@ -882,6 +947,76 @@ void MPMbox::checkProximity() {
 }
 
 //
+// Check the settings that the time loop cannot cope with.
+//
+// It is called by run(), and not by read(), so that the viewer -- which reads
+// conf-files but never runs anything -- is never stopped by these checks.
+//
+// Two families:
+//   - the periods used as a modulo. A zero period is an integer division by
+//     zero, whose behaviour depends on the processor: SIGFPE on x86-64, but a
+//     silent zero on AArch64, which makes the condition always true (a
+//     conf-file written at every single step).
+//   - the interaction parameters. DataTable::get does no bound checking at all,
+//     and the number of groups only grows through the 'set' keyword: a group
+//     that never appears in a 'set' line reads outside the vectors.
+//
+void MPMbox::checkSettings() {
+  if (confPeriod <= 0) {
+    Logger::critical("@MPMbox::checkSettings, confPeriod = {}; it is used as a modulo and has to be at least 1",
+                     confPeriod);
+    exit(EXIT_FAILURE);
+  }
+  if (proxPeriod <= 0) {
+    Logger::critical("@MPMbox::checkSettings, proxPeriod = {}; it is used as a modulo and has to be at least 1",
+                     proxPeriod);
+    exit(EXIT_FAILURE);
+  }
+  for (size_t s = 0; s < Spies.size(); s++) {
+    if (Spies[s]->nstep <= 0 || Spies[s]->nrec <= 0) {
+      Logger::critical("@MPMbox::checkSettings, Spy #{} has nstep = {} and nrec = {}; both are used as a modulo "
+                       "and have to be at least 1",
+                       s, Spies[s]->nstep, Spies[s]->nrec);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  if (Obstacles.empty() || MP.empty()) { return; }
+
+  std::set<int> groupsMP;
+  std::set<int> groupsObs;
+  for (size_t p = 0; p < MP.size(); p++) { groupsMP.insert(MP[p].groupNb); }
+  for (size_t o = 0; o < Obstacles.size(); o++) { groupsObs.insert(Obstacles[o]->group); }
+
+  const size_t ngroup = dataTable.get_ngroup();
+  for (std::set<int>::iterator g1 = groupsMP.begin(); g1 != groupsMP.end(); ++g1) {
+    for (std::set<int>::iterator g2 = groupsObs.begin(); g2 != groupsObs.end(); ++g2) {
+      if (*g1 < 0 || *g2 < 0 || (size_t)(*g1) >= ngroup || (size_t)(*g2) >= ngroup) {
+        Logger::critical("@MPMbox::checkSettings, no interaction parameter has ever been set for the pair "
+                         "(MP group {}, obstacle group {})",
+                         *g1, *g2);
+        Logger::critical("  The table holds {} group(s). Add the missing 'set' lines, e.g. 'set kn {} {} 1e6'",
+                         ngroup, *g1, *g2);
+        exit(EXIT_FAILURE);
+      }
+      // The pair is inside the table, so reading it is safe; a parameter left
+      // undefined is zero, which is legitimate for some laws (viscRate) but
+      // almost never for kn.
+      if (!dataTable.isDefined(id_kn, *g1, *g2)) {
+        Logger::warn("@MPMbox::checkSettings, 'set kn {} {} ...' is missing; the normal stiffness between MP group "
+                     "{} and obstacle group {} is zero, so the contact will not push back",
+                     *g1, *g2, *g1, *g2);
+      }
+      if (!dataTable.isDefined(id_mu, *g1, *g2)) {
+        Logger::warn("@MPMbox::checkSettings, 'set mu {} {} ...' is missing; the friction between MP group {} and "
+                     "obstacle group {} is zero",
+                     *g1, *g2, *g1, *g2);
+      }
+    }
+  }
+}
+
+//
 // Check if any Material Point is outside the grid before the start of the simulation.
 //
 // This function will check if any Material Point is outside the grid before the start of the simulation. If any
@@ -889,9 +1024,12 @@ void MPMbox::checkProximity() {
 //
 void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
+  // The bounds are the same as in ShapeFunction::locateElement (the far sides
+  // are excluded), so that this warning agrees with the check that will stop
+  // the computation at the first step.
   for (size_t p = 0; p < MP.size(); p++) {
-    if (MP[p].pos.x > (double)Grid.Nx * Grid.lx || MP[p].pos.x < 0.0 || MP[p].pos.y > (double)Grid.Ny * Grid.ly ||
-        MP[p].pos.y < 0.0) {
+    if (MP[p].pos.x >= (double)Grid.Nx * Grid.lx || MP[p].pos.x < 0.0 ||
+        MP[p].pos.y >= (double)Grid.Ny * Grid.ly || MP[p].pos.y < 0.0) {
       Logger::warn("@MPMbox::MPinGridCheck, Check before simulation: MP position (x={}, y={}) is not inside the grid",
                    MP[p].pos.x, MP[p].pos.y);
     }
@@ -950,36 +1088,69 @@ void MPMbox::convergenceConditions() {
     }
   }
 
-  // compute the 3 timestep conditions
-  double collision_crit_dt  = sqrt(massMin / knMax);
-  double passthough_crit_dt = collision_crit_dt;
-  if (velMax > 1e-6) { passthough_crit_dt = rayMin / velMax; }
-  double cfl_crit_dt;
-  if (YoungMax >= 0 && PoissonMax >= 0) {
-    double Kmax = YoungMax / (1.0 - 2.0 * PoissonMax);
-    cfl_crit_dt = rayMin / sqrt(Kmax / rhoMin);
-  } else {
-    cfl_crit_dt = passthough_crit_dt;
+  // Collect the criteria that can actually be evaluated. Each of them is an
+  // UPPER bound on the time step, so the binding one is the SMALLEST -- which
+  // is what the comment below has always said, while the code took the largest.
+  //
+  // A criterion is left out rather than replaced by a fallback when the data it
+  // needs is missing. Taking sqrt(massMin / knMax) with no obstacle at all used
+  // to give sqrt of a negative number, since knMax was still at -DBL_MAX: the
+  // resulting NaN then propagated into the comparison, whose outcome is not
+  // specified.
+  std::vector<double> crits;
+  std::vector<std::string> names;
+
+  // Passthrough: a Material Point must not jump over its own size in one step.
+  if (velMax > 1e-6) {
+    crits.push_back(rayMin / velMax);
+    names.push_back("passthrough velocity");
   }
 
-  // Choosing critical dt as the smallest
-  double criticalDt = std::max({passthough_crit_dt, collision_crit_dt, cfl_crit_dt});
+  // Collision: period of the oscillator made of a MP and the contact stiffness.
+  if (knMax > 0.0) {
+    crits.push_back(sqrt(massMin / knMax));
+    names.push_back("collision");
+  }
+
+  // CFL: the elastic wave must not cross a Material Point in one step. CHCL_DEM
+  // returns -1 by convention for both moduli, and a Poisson ratio of 0.5 makes
+  // the bulk modulus infinite.
+  if (YoungMax > 0.0 && PoissonMax >= 0.0 && PoissonMax < 0.5) {
+    double Kmax = YoungMax / (1.0 - 2.0 * PoissonMax);
+    crits.push_back(rayMin / sqrt(Kmax / rhoMin));
+    names.push_back("CFL");
+  }
+
+  if (crits.empty()) { return; }
+
+  size_t iworst = 0;
+  for (size_t i = 1; i < crits.size(); i++) {
+    if (crits[i] < crits[iworst]) { iworst = i; }
+  }
+  const double criticalDt = crits[iworst];
 
   if (step == 0) {
-    Logger::debug("Current dt:                        {}", dt);
-    Logger::debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
-    Logger::debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
-    Logger::debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
+    Logger::debug("Current dt: {}", dt);
+    for (size_t i = 0; i < crits.size(); i++) {
+      Logger::debug("dt_crit/dt ({}): {:.3f}", names[i], crits[i] / dt);
+    }
   }
 
-  if (dt > 0.5 * criticalDt) {
-    Logger::info("@MPMbox::convergenceConditions, timestep {} seems too large!", dt);
-    dt        = 0.5 * criticalDt;
+  // A 1 % margin, without which the adjustment fires again at the very next
+  // step: dt has just been set to 0.5 * criticalDt, and criticalDt moves in its
+  // last digits from one step to the next (the volume of the Material Points
+  // changes). Without the margin, a single run logs hundreds of thousands of
+  // adjustments of one part in 1e12.
+  const double dtMax = 0.5 * criticalDt;
+  if (dt > 1.01 * dtMax) {
+    Logger::info("@MPMbox::convergenceConditions, timestep {} is too large for the '{}' criterion (step {})", dt,
+                 names[iworst], step);
+    dt        = dtMax;
     dtInitial = dt;
     Logger::info("--> Adjusting time step to {}", dt);
-    Logger::debug("dt_crit/dt (passthrough velocity): {:.3f}", passthough_crit_dt / dt);
-    Logger::debug("dt_crit/dt (collision):            {:.3f}", collision_crit_dt / dt);
-    Logger::debug("dt_crit/dt (CFL):                  {:.3f}", cfl_crit_dt / dt);
+    for (size_t i = 0; i < crits.size(); i++) {
+      Logger::debug("dt_crit/dt ({}): {:.3f}", names[i], crits[i] / dt);
+    }
   }
 }
 
@@ -999,6 +1170,14 @@ void MPMbox::convergenceConditions() {
 //
 void MPMbox::updateVelocityGradient() {
   START_TIMER("updateVelocityGradient");
+
+  // The reset belongs here, and not in the integration schemes: the loop below
+  // accumulates, so a scheme that forgets to clear velGrad sums the gradients
+  // of every step since the beginning. UpdateStressFirst and UpdateStressLast
+  // did exactly that -- their comment announced the reset, the code did not do
+  // it -- and their deformation gradient diverged in a few thousand steps.
+  for (size_t p = 0; p < MP.size(); p++) { MP[p].velGrad.reset(); }
+
   size_t *I;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
@@ -1093,11 +1272,39 @@ void MPMbox::updateTransformationGradient() {
 //
 void MPMbox::adaptativeRefinement() {
   START_TIMER("adaptativeRefinement");
-  for (size_t p = 0; p < MP.size(); p++) {
+
+  // The number of Material Points grows inside the loop. The bound is fixed
+  // beforehand so that a point created here is examined at the NEXT call and
+  // not in the same pass: it used to be split again straight away, as many
+  // times as MaxSplitNumber allowed, and the outcome depended on the order in
+  // which the points happened to be stored.
+  const size_t nbBefore = MP.size();
+
+  // Next free identifier. MP2 used to inherit the number of the point it comes
+  // from, so the numbers were no longer unique.
+  size_t nextNumber = 0;
+  for (size_t p = 0; p < MP.size(); p++) { nextNumber = std::max(nextNumber, MP[p].nb + 1); }
+
+  for (size_t p = 0; p < nbBefore; p++) {
     if (MP[p].splitCount > MaxSplitNumber) continue;
 
+    // Splitting a Material Point that carries a DEM cell would leave the two
+    // halves sharing the same PBC3Dbox: the same cell would be deformed twice
+    // per step, and by two threads at once in the OpenMP loop of
+    // ModifiedLagrangian.
+    if (MP[p].isDoubleScale == true) {
+      static bool warned = false;
+      if (!warned) {
+        Logger::warn("@MPMbox::adaptativeRefinement, double-scale Material Points are not split "
+                     "(their DEM cell cannot be duplicated)");
+        warned = true;
+      }
+      continue;
+    }
+
     // setting F to identity if shearing is too large
-    if (fabs(MP[p].F.xy) > shearLimit or fabs(MP[p].F.yx) > shearLimit) {
+    // (shearLimit < 0 disables the mechanism, which is the default)
+    if (shearLimit > 0.0 && (fabs(MP[p].F.xy) > shearLimit or fabs(MP[p].F.yx) > shearLimit)) {
       MP[p].F.xx = 1;
       MP[p].F.xy = 0;
       MP[p].F.yx = 0;
@@ -1120,8 +1327,15 @@ void MPMbox::adaptativeRefinement() {
 
       // All properties are copied thank to the auto-generated copy-ctor
       MaterialPoint MP2 = MP[p];
+      MP2.nb            = nextNumber++;
       // MP[p] will go to the left or bottom
       // and MP2 will go to the right or top
+      //
+      // Remark: vol0 and size are deliberately left untouched. The reference
+      // footprint stays the same and it is F that carries the division, so the
+      // current area |det F| * size^2 is indeed halved -- which is also what
+      // makes 'vol = F.det() * vol0' hold in UpdateStressFirst/Last, and what
+      // makes 'size = sqrt(vol0)' still correct when the conf-file is read back.
 
       if (critX == true) { // -> left-right splitting
         vec2r sx = MP[p].F * vec2r(halfSizeMP, 0.0);

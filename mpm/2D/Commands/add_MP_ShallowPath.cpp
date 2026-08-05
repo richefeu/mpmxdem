@@ -19,7 +19,9 @@ void add_MP_ShallowPath::exec() {
 
   auto itCM = box->models.find(modelName);
   if (itCM == box->models.end()) {
-    std::cerr << "@add_MP_ShallowPath::exec, model " << modelName << " not found" << std::endl;
+    Logger::critical("@add_MP_ShallowPath::exec, the model '{}' is not defined", modelName);
+    Logger::critical("  A 'model' line has to declare it before this command");
+    exit(EXIT_FAILURE);
   }
   ConstitutiveModel* CM = itCM->second;
 
