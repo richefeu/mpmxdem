@@ -2,20 +2,31 @@
 
 \usepackage{tikz}
 
-\title{\texttt{MPMbox}}
+\title{User manual of \texttt{MPMbox}}
 
-\doofustitle{Reference of \texttt{mpdemix}}
+\doofustitle{User manual of \texttt{MPMbox}}
 \doofussubtitle{Material Point Method connected with Discrete Element Method}
 \doofusauthor{Vincent Richefeu}
 \doofusdate{}
 \doofuslogo{./mpmxdem_logo.png} % Optional, remove or leave empty
 
 
+\usepackage{float}
 \usepackage{comment}
 \usepackage{amsmath}
 \usepackage{booktabs}
+\usepackage{longtable}
 \usepackage{xcolor}
 \usepackage{cleveref}
+
+% A multi-line variant of \syntax: the content wraps inside the box
+\newcommand{\syntaxml}[1]{%
+  \par\noindent
+  \colorbox{backcolour}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+      \ttfamily\small\raggedright #1}}%
+  \par
+}
 
 \newenvironment{codeblock}
   {\par\vspace{0.75em}}
@@ -25,30 +36,376 @@
 
 \begin{document}
 
+\sloppy
+
 \makedoofustitle
 
 \begin{abstract}
-TODO
+This document is the \emph{user manual} of \texttt{MPMbox}: how the code is organised, how a
+simulation is described in an input file, how it is run, and what it writes. It documents the
+use of the code, not the modelling behind it -- the formulation of the Material Point Method,
+the constitutive laws and the DEM homogenisation are only mentioned to the extent needed to
+choose a keyword and its parameters. The theory behind them is to be found in the references
+attached to each model.
+
+The reference part is derived from the source code itself: for every keyword, the arguments
+listed here are those actually read by the corresponding \texttt{read()} method. Keywords that
+the parser accepts but that currently have no effect are listed apart, in \cref{sec:inactive}.
 \end{abstract}
 
 \setcounter{tocdepth}{2}
-\tableofcontents
+{\small\tableofcontents}
 \newpage
 
 
-\section{Syntax for files \texttt{input.txt} or \texttt{conf}$\langle n \rangle$\texttt{.txt}}
+\section{Code structure}
+\label{sec:structure}
 
-\subsection{Simulation core settings}
+\texttt{MPMbox} is the conductor: it reads the input, marches in time and writes the
+results. Everything that amounts to a \emph{modelling choice} -- the material behaviour,
+the shape functions, the integration scheme, the contact law, the way the scene is built,
+watched and exported -- is an interchangeable ingredient. Each of these families is defined
+by a base class stating what the ingredient must be able to do, and by as many variants as
+there are available choices. The core never knows which variant is in use: it is the input
+file that names it (\cref{fig:structure-overview}).
+
+Because of that, the class names appearing in the diagrams of this section are also the
+keywords to be used in the input file, whose syntax is detailed in \cref{sec:syntax}.
+Adding a new physics means writing one more variant and registering it under a name; no
+part of the core has to be modified.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{structure/tikz/en/fig1_overview.pdf}
+\caption{Overall layout of the code: the simulated state on the left, the interchangeable
+ingredients on the right.}
+\label{fig:structure-overview}
+\end{figure}
+
+\subsection{One time step}
+
+The matter is carried by \emph{material points} that move freely -- they transport mass,
+velocity, strain and stress -- while spatial derivatives are computed on a \emph{fixed
+grid} that is reset at every step. The whole method consists in going back and forth
+between the two (\cref{fig:structure-cycle}). Since the grid never deforms, the method
+remains robust at very large strains.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\linewidth]{structure/tikz/en/fig5b_cycle.pdf}
+\caption{The six stages of a time step. The sand-coloured stages concern the material
+points, the blue ones the grid.}
+\label{fig:structure-cycle}
+\end{figure}
+
+The available integration schemes (\cref{fig:structure-onestep}) all follow this same
+cycle; they differ in the moment at which the stress is updated. Note that
+\texttt{ModifiedLagrangian} is the only one that supports the double-scale MPM$\times$DEM
+computation.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\linewidth]{structure/tikz/en/fig5_onestep.pdf}
+\caption{The \texttt{OneStep} family: time integration schemes.}
+\label{fig:structure-onestep}
+\end{figure}
+
+\subsection{Material behaviour}
+
+Given the strain increment of a material point, a constitutive model returns its stress
+(\cref{fig:structure-constitutive}). Each material point carries its own model.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.66\linewidth]{structure/tikz/en/fig2_constitutive.pdf}
+\caption{The \texttt{ConstitutiveModel} family. \texttt{CHCL\_DEM} is the entry point of
+the MPM$\times$DEM coupling.}
+\label{fig:structure-constitutive}
+\end{figure}
+
+\texttt{CHCL\_DEM} (Computationally Homogenised Constitutive Law) deserves a word: the
+material point follows no law written beforehand. It holds a periodic 3D granular sample
+(\texttt{PBC3Dbox}) which is subjected to the strain of the point, and from which the
+average stress is read back. Nothing has to be calibrated, but a full DEM computation is
+performed for each such point, at every time step.
+
+\subsection{Boundaries and contact}
+
+Two separate questions: what the shape of the obstacle is, and what happens when a
+material point touches it (\cref{fig:structure-obstacles}). Each obstacle carries its own
+contact law. An obstacle is either driven -- its velocity is imposed -- or free, in which
+case it responds to the contact forces with its mass and its inertia.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.70\linewidth]{structure/tikz/en/fig3_obstacles.pdf}
+\caption{The \texttt{Obstacle} and \texttt{BoundaryForceLaw} families.}
+\label{fig:structure-obstacles}
+\end{figure}
+
+\subsection{From the points to the grid}
+
+Shape functions give the weight of each neighbouring node in the transfer, together with
+the gradients used to compute the strains (\cref{fig:structure-shapefunctions}). This
+choice governs much of the numerical noise observed when a material point crosses an
+element boundary.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.70\linewidth]{structure/tikz/en/fig4_shapefunctions.pdf}
+\caption{The \texttt{ShapeFunction} family.}
+\label{fig:structure-shapefunctions}
+\end{figure}
+
+\subsection{Setting up the model and writing a scenario}
+
+A \texttt{Command} acts \emph{once}, when the input file is read; a \texttt{Scheduler} is
+checked at \emph{every} time step and acts when its condition is met
+(\cref{fig:structure-commands}). A scenario is written by stacking schedulers: let the
+sample consolidate, then remove the wall, then switch the damping off.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.74\linewidth]{structure/tikz/en/fig6_commands_schedulers.pdf}
+\caption{The \texttt{Command} and \texttt{Scheduler} families. The commands are grouped
+here by role.}
+\label{fig:structure-commands}
+\end{figure}
+
+\subsection{Observing the simulation}
+
+Scalar measurements taken while the computation runs are written as text files by the
+spies (\cref{fig:structure-outputs}). The fields over the whole scene do not go through a
+spy: they are contained in the conf-files, saved every \texttt{confPeriod} steps, which are
+also what the viewer displays and what a restart reads back (\cref{sec:outputs}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\linewidth]{structure/tikz/en/fig7_spies.pdf}
+\caption{The \texttt{Spy} family: the measurements that can be recorded while the
+computation runs.}
+\label{fig:structure-outputs}
+\end{figure}
+
+\clearpage
+
+
+\section{Getting started}
+\label{sec:start}
+
+\subsection{Building the code}
+
+The build is driven by CMake ($\geq 3.22$) and a C++17 compiler. On macOS the
+\texttt{CMakeLists.txt} looks for the most recent \texttt{g++-<n>} installed by Homebrew and
+uses it; elsewhere the default compiler is used.
+
+Two dependencies are downloaded automatically at configure time (\texttt{FetchContent}, into
+the \texttt{deps/} folder): \textsc{toofus} (the utility headers: \texttt{vec2}, \texttt{mat4},
+\texttt{DataTable}, \texttt{factory}, \dots), \textsc{tclap} and \textsc{fmt}. Three
+dependencies must be available beforehand:
 
 \begin{itemize}
-\item \syntax{\keyword{dt} \type{(double)}\param{value}} Time step increments.
-\item \syntax{\keyword{t} \type{(double)}\param{value}} Current time 
-\item \syntax{\keyword{finalTime} \type{(double)}\param{value}} Final time at which the simulation will stop
+\item \textbf{The DEM library} \texttt{libPBC3D.a}, expected in
+      \texttt{../../dem/3D\_sandstone} relative to the \texttt{2D} folder. It must be compiled
+      first, \emph{even if no double-scale computation is intended}: it is linked into every
+      executable.
+\item \textbf{OpenMP}, optional. When found, the material-point loops are parallelised and the
+      \texttt{-j} option becomes meaningful.
+\item \textbf{OpenGL and GLUT}, required by the viewer \texttt{see} (\cref{sec:see}).
 \end{itemize}
 
-\subsection{Node grid}
+\begin{lstlisting}[style=mystyle,numbers=none]
+mkdir build && cd build
+cmake ..
+make -j
+\end{lstlisting}
 
-In MPMbox, the fixe grid can only be regular. It can be set with the command  \syntax{\keyword{set\_node\_grid}} to allocate the nodes. Depending on the token that follows the command, the parameters used to set the grid differ. The options are:  \syntax{\keyword{Nx.Ny.lx.ly}}, \syntax{\keyword{W.H.lx.ly}} or \syntax{\keyword{W.H.Nx.Ny}}. Note that the bottom-left corner is placed at the origine $O(0,\, 0)$.\\
+Two executables are produced: \texttt{mpmbox}, which runs a simulation, and \texttt{see},
+which displays the results.
+
+\subsection{Running a simulation}
+\label{sec:running}
+
+\begin{lstlisting}[style=mystyle,numbers=none]
+mpmbox <conf-file> [-j <nbThreads>] [-v <level>] [-c] [-b]
+\end{lstlisting}
+
+\begin{itemize}
+\item \param{conf-file} is the name of the input file. It defaults to \texttt{conf0}, so the
+      name is in practice always given explicitly (\texttt{input.txt}, \texttt{conf12.txt}, \dots).
+\item \syntax{-j \param{nbThreads}} number of OpenMP threads (default 1). Without OpenMP the
+      option is accepted but ignored.
+\item \syntax{-v \param{level}} verbosity, from 0 (silent) to 6 (trace). The useful levels are
+      4 (\texttt{info}, the default of the option) and 5 (\texttt{debug}), the latter printing
+      the time-step diagnostics of \cref{sec:timestep}.
+\item \syntax{-c} \emph{clean and leave}: deletes \texttt{conf<n>.txt} and
+      \texttt{perflog\_*\_<n>.txt} in the current directory, then exits. Nothing is computed.
+      Use it between two runs to avoid mixing old and new results.
+\item \syntax{-b} prints the banner and leaves.
+\end{itemize}
+
+The run stops when \param{t} exceeds \keyword{finalTime}. It can be interrupted with
+\texttt{Ctrl-C}: the signal handler closes the spy files properly before exiting, so the
+measurements recorded up to that point remain usable.
+
+\subsection{A first input file, line by line}
+\label{sec:firstinput}
+
+The example below is \texttt{Examples/helloWorld/input.txt}. It drops a small block of
+Mohr--Coulomb material inside a box made of three walls.
+
+\begin{lstlisting}[style=mystyle]
+oneStepType ModifiedLagrangian
+result_folder .
+tolmass 1.e-5
+gravity 0.0  -9.81
+finalTime 2.5
+confPeriod 5000
+proxPeriod 10
+dt 1e-5
+t 0.0
+ShapeFunction BSpline
+splitting 0
+enablePIC 0.01
+
+#     modelID      modelName  Young  Poisson  FrictionAngle  Cohesion  DilatancyAngle
+model MohrCoulomb  MC         1.0e9  0.42     0.3            1e2       0.01
+
+# Place the nodes
+set_node_grid  W.H.lx.ly  0.4  0.3  0.01 0.01
+
+# Place the MPs
+#            group  modelID  rho     x0    y0    x1   y1    size
+set_MP_grid  0      MC       2700.0  0.04  0.04  0.1  0.20  0.005
+
+#                group  x0    y0    x1    y1    driveMode
+Obstacle Line    1      0.36  0.26  0.36  0.04  freeze
+Obstacle Line    1      0.36  0.04  0.04  0.04  freeze
+Obstacle Line    1      0.04  0.04  0.04  0.26  freeze
+
+# Obstacles of group 1 use this force law
+# (this command must come after the Obstacles)
+BoundaryForceLaw frictionalViscoElastic 1
+
+# Interaction parameters between MP-group 0 and obstacle-group 1
+set  mu        0  1  0.4
+set  kn        0  1  1e7
+set  kt        0  1  1e7
+set  viscRate  0  1  0.98
+\end{lstlisting}
+
+Reading it from the top:
+
+\begin{itemize}
+\item The first block fixes the \emph{numerical} choices: the integration scheme, where the
+      results go, the time step and the final time, how often a conf-file is written
+      (every 5000 steps) and how often the neighbour lists are rebuilt (every 10 steps).
+\item \keyword{ShapeFunction} must appear \emph{before} the grid is created, because it decides
+      whether an element has 4 or 16 nodes.
+\item \keyword{model} declares a material law and gives it the identifier \texttt{MC}. Nothing
+      is created yet: the identifier is what the material points will refer to.
+\item \keyword{set\_node\_grid} builds the grid: a $0.4 \times 0.3$~m domain paved with
+      $0.01 \times 0.01$~m elements, the bottom-left corner at the origin.
+\item \keyword{set\_MP\_grid} fills a rectangle with material points of size 0.005~m, four per
+      element, all using the model \texttt{MC} with a mass density of 2700~kg/m$^3$.
+\item The three \keyword{Obstacle} lines make an open box. They all belong to group 1, which is
+      what the next two blocks refer to.
+\item \keyword{BoundaryForceLaw} assigns the contact law to every obstacle of group 1, and the
+      four \keyword{set} lines give the parameters used between material points of group 0 and
+      obstacles of group 1.
+\end{itemize}
+
+Run it, then look at the result:
+
+\begin{lstlisting}[style=mystyle,numbers=none]
+cd Examples/helloWorld
+../../build/mpmbox input.txt -j 4 -v 5
+../../build/see conf1.txt
+\end{lstlisting}
+
+
+\section{The input file}
+\label{sec:syntax}
+
+\subsection{General rules}
+\label{sec:rules}
+
+The input file is a free-format list of \emph{keywords}, each followed by its arguments. Line
+breaks and indentation are irrelevant; only the order of the tokens matters.
+
+\begin{itemize}
+\item Anything on a line starting with \texttt{\#}, \texttt{//} or \texttt{!} is a comment.
+      Note that the whole line is skipped, so a comment cannot start in the middle of a line
+      of parameters.
+\item An unknown keyword is not a fatal error: the parser looks it up in the command factory
+      and, if nothing matches, prints a warning \texttt{what do you mean by '\dots'?} and moves
+      on. A typo therefore results in a silently ignored line -- check the warnings.
+\item \textbf{Units are SI}: metres, seconds, kilograms, hence Pa for stresses, N for forces
+      and kg/m$^3$ for mass densities. The code never converts anything.
+\item \textbf{Angles are not homogeneous}: \keyword{MohrCoulomb} expects its friction and
+      dilatancy angles \emph{in radians}, whereas \keyword{SinfoniettaClassica},
+      \keyword{SinfoniettaCrush}, \keyword{Polygon} and \keyword{move\_MP} expect
+      \emph{degrees}. Each entry below states which.
+\item \textbf{Order matters} in four places, listed here once and repeated in context:
+      \begin{enumerate}
+      \item \keyword{ShapeFunction} before any grid command;
+      \item \keyword{model} before the commands that create material points;
+      \item \keyword{Obstacle} before \keyword{BoundaryForceLaw} and before
+            \keyword{ObstacleNeighbors};
+      \item the commands creating material points before \keyword{set\_K0\_stress},
+            \keyword{set\_uniform\_pressure}, \keyword{move\_MP},
+            \keyword{select\_tracked\_MP} and \keyword{prescribedVelocity}, all of which act on
+            points that must already exist.
+      \end{enumerate}
+\item The same syntax describes both a hand-written input file and a conf-file saved by the
+      code. This is what makes a restart possible (\cref{sec:restart}).
+\end{itemize}
+
+\subsection{Core settings}
+\label{sec:core}
+
+\begin{itemize}
+\item \syntax{\keyword{oneStepType} \type{(string)}\param{name}} Integration scheme:
+      \texttt{ModifiedLagrangian}, \texttt{UpdateStressFirst} or \texttt{UpdateStressLast}
+      (\cref{fig:structure-onestep}). Required.
+\item \syntax{\keyword{dt} \type{(double)}\param{value}} Time step, in seconds. See
+      \cref{sec:timestep} for how to choose it.
+\item \syntax{\keyword{t} \type{(double)}\param{value}} Current time. Zero for a new
+      simulation; a conf-file carries the time it was saved at.
+\item \syntax{\keyword{finalTime} \type{(double)}\param{value}} Time at which the run stops.
+\item \syntax{\keyword{gravity} \type{(vec2r)}\param{gx gy}} Gravity vector, m/s$^2$. Default
+      $(0,0)$.
+\item \syntax{\keyword{result\_folder} \type{(string)}\param{path}} Where conf-files, spy files
+      and DEM sub-folders are written. Created if missing. Default \texttt{.}
+\item \syntax{\keyword{confPeriod} \type{(int)}\param{n}} A conf-file is saved every \param{n}
+      steps. Default 5000.
+\item \syntax{\keyword{proxPeriod} \type{(int)}\param{n}} The material-point/obstacle neighbour
+      lists are rebuilt every \param{n} steps. Default 100. Too large a value combined with a
+      too small \keyword{securDistFactor} lets points cross a wall unnoticed.
+\item \syntax{\keyword{securDistFactor} \type{(double)}\param{value}} Safety factor applied to
+      the shapes when looking for neighbours. Default 2.0. Increase it if points tunnel through
+      obstacles between two proximity checks.
+\item \syntax{\keyword{tolmass} \type{(double)}\param{value}} Nodal mass below which a node is
+      considered empty and skipped. Default $10^{-6}$. It filters out the numerical noise
+      produced by nodes barely covered by a material point.
+\item \syntax{\keyword{planeStrain}} No argument. Switches to the plane-strain assumption.
+      Default is plane stress.
+\end{itemize}
+
+\subsection{The grid}
+\label{sec:grid}
+
+The background grid is always regular, aligned with the axes, with its bottom-left corner at
+the origin $O(0,0)$. It is created by:
+
+\begin{codeblock}
+\syntaxml{\keyword{set\_node\_grid} \keyword{Nx.Ny.lx.ly} \type{(int)}\param{Nx} \type{(int)}\param{Ny} \type{(double)}\param{lx} \type{(double)}\param{ly}}
+\syntaxml{\keyword{set\_node\_grid} \keyword{W.H.lx.ly} \type{(double)}\param{W} \type{(double)}\param{H} \type{(double)}\param{lx} \type{(double)}\param{ly}}
+\syntaxml{\keyword{set\_node\_grid} \keyword{W.H.Nx.Ny} \type{(double)}\param{W} \type{(double)}\param{H} \type{(int)}\param{Nx} \type{(int)}\param{Ny}}
+\end{codeblock}
+
+The three forms differ only in what is given and what is deduced: the number of elements and
+their size, the total size and the element size, or the total size and the number of elements.
 
 \begin{center}
 \begin{tikzpicture}[scale=0.8, every node/.style={font=\small}]
@@ -57,7 +414,7 @@ In MPMbox, the fixe grid can only be regular. It can be set with the command  \s
   \def\rows{4}
   \def\cellx{1.6}
   \def\celly{0.9}
-  
+
   \pgfmathtruncatemacro{\lastcol}{\cols-1}
   \pgfmathtruncatemacro{\lastrow}{\rows-1}
 
@@ -75,14 +432,14 @@ In MPMbox, the fixe grid can only be regular. It can be set with the command  \s
   \node at (2.5*\cellx,1.5*\celly) {elem.};
 
   \draw[<->, thick] (0,-1.4) -- (\cols*\cellx,-1.4)
-    node[midway, below] {\texttt{L} = \texttt{Nx} $\times$ \texttt{lx} $\quad$ (\texttt{Nx} elements)};
+    node[midway, below] {\texttt{W} = \texttt{Nx} $\times$ \texttt{lx} $\quad$ (\texttt{Nx} elements)};
   \draw[<->, thick] (\cols*\cellx+1.4,0) -- (\cols*\cellx+1.4,\rows*\celly)
     node[midway, right] {\texttt{H} = \texttt{Ny} $\times$ \texttt{ly} $\quad$ (\texttt{Ny} elements)};
 
   \draw[<->, thick] (0, -0.5) -- (\cellx, -0.5) node[midway, below] {\texttt{lx}};
   \draw[<->, thick] (-0.5, 0) -- (-0.5, \celly) node[midway, left] {\texttt{ly}};
   \node[below left] (0.1, 0.1)  {O};
-  
+
   \pgfmathtruncatemacro{\nx}{\cols+1}
   \pgfmathtruncatemacro{\ny}{\rows+1}
   \pgfmathtruncatemacro{\numnodes}{\nx*\ny}
@@ -97,22 +454,33 @@ In MPMbox, the fixe grid can only be regular. It can be set with the command  \s
 \end{tikzpicture}
 \end{center}
 
-% example
+Nodes are numbered from the bottom-left corner, row by row: node $(i,j)$ has the number
+$j\,(\texttt{Nx}+1) + i$. There are $(\texttt{Nx}+1)(\texttt{Ny}+1)$ nodes for
+$\texttt{Nx} \times \texttt{Ny}$ elements. This numbering is what
+\keyword{set\_BC\_line} and \keyword{set\_BC\_column} refer to.
 
-Some data in the nodes are stored with the conf-file (after the nodes have been set, for example with the command \syntax{\keyword{set\_node\_grid}}). The syntax is as follows:
+\begin{itemize}
+\item \textbf{\keyword{ShapeFunction} must be set before this command.} The number of nodes per
+      element (4 or 16) is decided by the shape function, and the elements cannot be built
+      without it. The code stops with an explicit message otherwise.
+\item A second command does the same thing with square elements only:
+      \syntaxml{\keyword{new\_set\_grid} \type{(double)}\param{lengthX} \type{(double)}\param{lengthY} \type{(double)}\param{spacing}}
+      It is kept for compatibility;
+      \keyword{set\_node\_grid} covers all cases.
+\end{itemize}
+
+\subsubsection{Nodal degrees of freedom}
+
+The $x$ and/or $y$ velocity components of a node can be blocked, line by line or column by
+column:
+
 \begin{codeblock}
-\syntax{\keyword{Nodes} \type{(int)}\param{nbNodes}} \\
-$\Big[$ \syntax{\type{(int)}\param{nodeId} \type{(vec2r)}\param{q} \type{(vec2r)}\param{f} \type{(vec2r)}\param{fb} \type{(double)}\param{mass} \type{(0/1)}\param{xfixed} \type{(0/1)}\param{yfixed}} $\Big]_{\times \text{\param{nbNodes}}}$ 
+\syntaxml{\keyword{set\_BC\_line} \type{(int)}\param{line\_num} \type{(int)}\param{column0} \type{(int)}\param{column1} \type{(0/1)}\param{Xfixed}  \type{(0/1)}\param{Yfixed}}
+\syntaxml{\keyword{set\_BC\_column} \type{(int)}\param{column\_num} \type{(int)}\param{line0} \type{(int)}\param{line1} \type{(0/1)}\param{Xfixed}  \type{(0/1)}\param{Yfixed}}
 \end{codeblock}
 
-% [...]
-
-The $x$ and/or $y$ velocity components can be assigned to nodes on a line-by-line or column-by-column basis:
-%
-\begin{codeblock}
-\syntax{\keyword{set\_BC\_column} \type{(int)}\param{column\_num} \type{(int)}\param{line0} \type{(int)}\param{line1} \type{(0/1)}\param{Xfixed}  \type{(0/1)}\param{Yfixed} } \\
-\syntax{\keyword{set\_BC\_line} \type{(int)}\param{line\_num} \type{(int)}\param{column0} \type{(int)}\param{column1} \type{(0/1)}\param{Xfixed}  \type{(0/1)}\param{Yfixed} } 
-\end{codeblock}
+Both bounds are inclusive. Line and column indices run from 0 to \texttt{Ny} and from 0 to
+\texttt{Nx} respectively, as shown below.
 
 \begin{center}
 \begin{tikzpicture}[scale=0.8, every node/.style={font=\small}]
@@ -121,7 +489,7 @@ The $x$ and/or $y$ velocity components can be assigned to nodes on a line-by-lin
   \def\rows{4}
   \def\cellx{1.6}
   \def\celly{0.9}
-  
+
   \pgfmathtruncatemacro{\lastcol}{\cols-1}
   \pgfmathtruncatemacro{\lastrow}{\rows-1}
 
@@ -130,7 +498,7 @@ The $x$ and/or $y$ velocity components can be assigned to nodes on a line-by-lin
   \foreach \x in {1,...,\lastcol} {
     \draw ({\x*\cellx},0) -- ({\x*\cellx},{\rows*\celly});
   }
-  
+
    \foreach \x in {0,...,\cols} {
     \node[fill=white, inner sep=1pt] at ({\x*\cellx},-0.3) {\tiny \x};
   }
@@ -138,7 +506,7 @@ The $x$ and/or $y$ velocity components can be assigned to nodes on a line-by-lin
   \foreach \y in {1,...,\lastrow} {
     \draw (0,{\y*\celly}) -- ({\cols*\cellx},{\y*\celly});
   }
-  
+
   \foreach \y in {0,...,\rows} {
     \node[fill=white, inner sep=1pt] at (-0.3,{\y*\celly}) {\tiny \y};
   }
@@ -146,130 +514,759 @@ The $x$ and/or $y$ velocity components can be assigned to nodes on a line-by-lin
 \end{tikzpicture}
 \end{center}
 
+A typical closed box is obtained with a fixed bottom line and two fixed columns:
 
-\subsection{Shape functions}
+\begin{lstlisting}[style=mystyle,numbers=none]
+set_BC_line    0  0  40  1 1     # bottom: both components blocked
+set_BC_column  0  0  30  1 0     # left wall: no horizontal motion
+set_BC_column 40  0  30  1 0     # right wall
+\end{lstlisting}
 
-
-\syntax{\keyword{ShapeFunction} \type{(string)}\param{shapeFunction}}
-
-
-%**`ShapeFunction`** (_string_)shapeFunction
-%shapeFunction can be either `Linear`, `RegularQuadLinear` or `BSpline`
-
-
-\subsection{Constitutive Models}
-
-
-Before using a constitutive model, you must first create one by assigning it an identifier, specifying the model type, and providing the corresponding parameters.
+Nodal quantities are also stored in the conf-files, with the keyword \keyword{Nodes}; this
+block is written by the code and is not meant to be typed by hand:
 
 \begin{codeblock}
-\syntax{\keyword{model} \type{(string)}\param{modelIdentifier} \type{(string)}\param{modelName} (...list of parameters...)}
+\syntax{\keyword{Nodes} \type{(int)}\param{nbNodes}} \\
+\syntaxml{\type{(int)}\param{nodeId} \type{(vec2r)}\param{q} \type{(vec2r)}\param{f} \type{(vec2r)}\param{fb} \type{(double)}\param{mass} \type{(0/1)}\param{xfixed} \type{(0/1)}\param{yfixed}}
+\emph{\small the last line is repeated \param{nbNodes} times}
 \end{codeblock}
 
-Each material point will then be associated with the model through its identifier.
-Here are the lists of parameters for each \syntax{\param{modelName}}:
+Only the nodes carrying a non-zero quantity are saved, which is why \param{nbNodes} is usually
+much smaller than the number of nodes of the grid.
+
+\subsection{Shape functions}
+\label{sec:shapefunctions}
+
+\begin{codeblock}
+\syntax{\keyword{ShapeFunction} \type{(string)}\param{name}}
+\end{codeblock}
+
 \begin{itemize}
-\item  \syntax{\keyword{HookeElasticity}}: \syntax{\type{(double)}\param{Young} \type{(double)}\param{Poisson}}
-\item  \syntax{\keyword{VonMisesElastoPlasticity}}: \syntax{\type{(double)}\param{Young} \type{(double)}\param{Poisson} \type{(double)}\param{PlasticYieldStress}}
-\item  \syntax{\keyword{MohrCoulomb}}: \syntax{\type{(double)}\param{Young} \type{(double)}\param{Poisson} \type{(double)}\param{FrictionAngle}}\\ 
-\syntax{\type{(double)}\param{Cohesion} \type{(double)}\param{DilatancyAngle}}
-\item  \syntax{\keyword{CHCL\_DEM}}: \syntax{\type{(string)}\param{conf-filename}}
+\item \keyword{RegularQuadLinear} -- linear interpolation over the 4 nodes of the element.
+      The cheapest choice, and the one to start with.
+\item \keyword{BSpline} -- quadratic B-splines over 16 nodes. Smoother transfers, markedly less
+      cell-crossing noise, roughly four times more work per point. This is the choice made in
+      most of the delivered examples.
+\item \keyword{Linear} -- the same bilinear interpolation as \keyword{RegularQuadLinear},
+      written in the reduced coordinates $(\xi,\eta)$ of the element rather than from the
+      distances to the nodes. The two give the same numbers; keep \keyword{RegularQuadLinear}
+      unless the reduced-coordinate form is more convenient to build upon.
+\end{itemize}
+
+The shape function is a global choice: all material points use the same one.
+
+\subsection{Constitutive models}
+\label{sec:models}
+
+A model is first \emph{declared} with an identifier, then referred to by that identifier when
+material points are created. Several models can coexist in the same simulation.
+
+\begin{codeblock}
+\syntaxml{\keyword{model} \type{(string)}\param{modelName} \type{(string)}\param{modelIdentifier} (\dots parameters, see below\dots)}
+\end{codeblock}
+
+\param{modelName} is the name of the class (the second column of the list below);
+\param{modelIdentifier} is any name of your choosing, used later by \keyword{set\_MP\_grid} and
+friends.
+
+\begin{itemize}
+\item \syntax{\keyword{HookeElasticity} \type{(double)}\param{Young} \type{(double)}\param{Poisson}}
+      Linear elasticity. \param{Young} in Pa.
+\item \syntaxml{\keyword{KelvinVoigt} \type{(double)}\param{Young} \type{(double)}\param{Poisson} \type{(double)}\param{eta}}
+      Linear elasticity with a viscous term; \param{eta} is the viscosity in Pa$\cdot$s.
+\item \syntaxml{\keyword{VonMisesElastoPlasticity} \type{(double)}\param{Young} \type{(double)}\param{Poisson} \type{(double)}\param{PlasticYieldStress}}
+      Perfect plasticity with a von~Mises criterion; the yield stress is in Pa.
+\item \syntaxml{\keyword{MohrCoulomb} \type{(double)}\param{Young} \type{(double)}\param{Poisson} \type{(double)}\param{FrictionAngle} \type{(double)}\param{Cohesion} \type{(double)}\param{DilatancyAngle}}
+      \textbf{The two angles are in radians}, the cohesion in Pa. A dilatancy angle of exactly
+      zero is best avoided; the examples use a small value such as $0.01$.
+\item \syntaxml{\keyword{SinfoniettaClassica} \type{(double)}\param{Young} \type{(double)}\param{Poisson} \type{(double)}\param{beta} \type{(double)}\param{beta\_p} \type{(double)}\param{kappa} \type{(double)}\param{varphiDeg} \type{(double)}\param{pc0}}
+      Advanced soil model. \param{varphiDeg} is the friction angle \textbf{in degrees};
+      \param{pc0} is the initial preconsolidation pressure in Pa.
+\item \syntaxml{\keyword{SinfoniettaCrush} \dots \type{(double)}\param{phiStar0} \type{(double)}\param{epv0} \type{(double)}\param{l0} \type{(double)}\param{ginf}}
+      Same seven parameters as \keyword{SinfoniettaClassica}, followed by four parameters
+      governing grain crushing.
+\item \syntax{\keyword{CHCL\_DEM} \type{(string)}\param{DEMconfFile}}
+      Double-scale law: each material point using this model loads its own copy of the given
+      DEM configuration file. See \cref{sec:doublescale}.
+\end{itemize}
+
+The elastic constants are used for two purposes: by the model itself, and by the code to
+estimate a critical time step (\cref{sec:timestep}). \keyword{CHCL\_DEM} returns $-1$ for both,
+which disables the CFL estimate -- with a double-scale model the time step must be chosen by
+hand.
+
+\subsection{Creating material points}
+\label{sec:mps}
+
+All three commands below take a \param{group} number, a model identifier, a mass density
+$\rho$ (kg/m$^3$) and the side length \param{size} of the square points. The \emph{group} is
+what the interaction parameters of \cref{sec:contact} refer to.
+
+\begin{codeblock}
+\syntaxml{\keyword{set\_MP\_grid} \type{(int)}\param{group} \type{(string)}\param{modelIdentifier} \type{(double)}\param{rho} \type{(double)}\param{x0} \type{(double)}\param{y0} \type{(double)}\param{x1} \type{(double)}\param{y1} \type{(double)}\param{size}}
+\end{codeblock}
+
+Fills the rectangle $(x_0,y_0)$--$(x_1,y_1)$ with a regular array of material points. The
+number of points along each direction is rounded to the nearest integer, so the filled area may
+differ slightly from the requested rectangle.
+
+\begin{itemize}
+\item The ratio between the element size and the point size must be at least 2 -- in other
+      words, at least $2\times2$ material points per element. The run stops otherwise.
+      Four points per element ($\texttt{lx}/\texttt{size} = 2$) is the usual choice.
+\item Every point must lie inside the grid; this is checked and the run stops if not.
+\item With \keyword{CHCL\_DEM} the density given here is overridden by the one computed from
+      the DEM sample:
+      \begin{equation}
+        \rho_{\text{mp}} = \frac{m_{\text{REV}}}{V_{\text{REV}}}
+                         = \frac{\rho_{\text{grains}} \, V_s}{\det(h)}
+      \end{equation}
+      where $h$ is the matrix of the periodic cell and $V_s$ the volume of solid it contains.
+\end{itemize}
+
+\begin{codeblock}
+\syntaxml{\keyword{set\_MP\_polygon} \type{(int)}\param{group} \type{(int)}\param{nbVertices} \type{(string)}\param{modelIdentifier} \type{(double)}\param{rho} \type{(double)}\param{size}}
+\syntax{\type{(double)}\param{x} \type{(double)}\param{y}} \emph{\small $\times$ \param{nbVertices}}
+\end{codeblock}
+
+Same thing inside an arbitrary polygon: the bounding box of the vertices is paved, and only the
+points falling inside the outline are kept. The vertices are given in order along the contour.
+
+\begin{codeblock}
+\syntaxml{\keyword{add\_MP\_ShallowPath} \type{(int)}\param{group} \type{(int)}\param{nbPathPoints} \type{(double)}\param{height} \type{(string)}\param{modelIdentifier} \type{(double)}\param{rho} \type{(double)}\param{size}}
+\syntax{\type{(double)}\param{x} \type{(double)}\param{y}} \emph{\small $\times$ \param{nbPathPoints}}
+\end{codeblock}
+
+Lays a layer of constant thickness \param{height} above a polyline -- the natural way to build a
+shallow deposit over a slope. The polyline must be given from left to right.
+
+\subsubsection{Modifying existing points}
+
+\begin{itemize}
+\item \syntaxml{\keyword{move\_MP} \type{(int)}\param{group} \type{(double)}\param{x0} \type{(double)}\param{y0} \type{(double)}\param{dx} \type{(double)}\param{dy} \type{(double)}\param{thetaDeg}}
+      Translates by $(dx,dy)$ and rotates by \param{thetaDeg} \textbf{degrees} about
+      $(x_0,y_0)$ every point of the given group. A negative angle rotates clockwise.
+\item \syntaxml{\keyword{reset\_model} \type{(int)}\param{group} \type{(string)}\param{modelIdentifier} \type{(double)}\param{rho} \type{(double)}\param{x0} \type{(double)}\param{y0} \type{(double)}\param{x1} \type{(double)}\param{y1}}
+      Reassigns the group, the model and the density of every point inside the rectangle. Useful
+      to carve a different material out of a block that has already been filled.
+\item \syntax{\keyword{prescribedVelocity} \type{(int)}\param{group} \type{(vec2r)}\param{vx vy}}
+      Sets the velocity of a whole group. This acts \emph{once}, when the line is read: it is an
+      initial condition, not a driving condition.
+\end{itemize}
+
+\subsubsection{Initial stress}
+
+Two commands set a stress state on the points that already exist:
+
+\begin{itemize}
+\item \syntax{\keyword{set\_uniform\_pressure} \type{(double)}\param{pressure}}
+      Isotropic compression: $\sigma_{xx} = \sigma_{yy} = \sigma_{zz} = -p$, no shear.
+\item \syntax{\keyword{set\_K0\_stress} \type{(double)}\param{Poisson} \type{(double)}\param{rho}}
+      Geostatic state at rest. The free surface is located automatically as the point highest
+      along the direction opposite to gravity, and for a depth $d$ below it,
+      \begin{equation}
+        \sigma_{yy} = -\rho \, g \, d, \qquad
+        \sigma_{xx} = K_0 \, \sigma_{yy}, \qquad
+        K_0 = \frac{\nu}{1-\nu}
+      \end{equation}
+      Requires \keyword{gravity} to have been set first.
+\end{itemize}
+
+Starting a computation from a stress-free state under gravity produces a violent transient.
+Either set an initial stress with one of these commands, or ramp the gravity up with the
+\keyword{GravityRamp} scheduler (\cref{sec:schedulers}).
+
+\subsection{Obstacles}
+\label{sec:obstacles}
+
+\begin{codeblock}
+\syntaxml{\keyword{Obstacle} \type{(string)}\param{shape} \type{(int)}\param{group} (\dots geometry\dots) \type{(string)}\param{driveMode} (\dots)}
+\end{codeblock}
+
+The \param{group} number identifies a set of obstacles sharing the same contact law and the
+same interaction parameters. Several obstacles may share a group.
+
+\begin{itemize}
+\item \syntaxml{\keyword{Line} \type{(int)}\param{group} \type{(vec2r)}\param{start} \type{(vec2r)}\param{end} \type{(string)}\param{driveMode}}
+      A segment. The contact normal points to the left of the \param{start}$\to$\param{end}
+      direction, so the order of the two ends decides which side is the active one.
+\item \syntaxml{\keyword{Circle} \type{(int)}\param{group} \type{(vec2r)}\param{centre} \type{(double)}\param{R} \type{(string)}\param{driveMode}}
+\item \syntaxml{\keyword{Polygon} \type{(int)}\param{group} \type{(int)}\param{nVertices} \type{(vec2r)}\param{centre} \type{(double)}\param{rotDeg} \type{(double)}\param{R} \type{(string)}\param{driveMode}}
+      A regular polygon with \param{nVertices} vertices inscribed in a circle of radius $R$,
+      rotated by \param{rotDeg} \textbf{degrees}.
+\end{itemize}
+
+\param{driveMode} is one of:
+
+\begin{itemize}
+\item \keyword{freeze} -- the obstacle does not move. No further parameter.
+\item \syntax{\keyword{velocity} \type{(vec2r)}\param{vx vy}} -- imposed constant velocity; the
+      obstacle does not respond to the contact forces. Use the \keyword{MoveObstacle} scheduler
+      to change this velocity during the run.
+\item \syntaxml{\keyword{free} \type{(double)}\param{density} \type{(vec2r)}\param{vx vy} \type{(double)}\param{vrot}}
+      The obstacle is a rigid body responding to the contact forces, with a mass and an inertia
+      deduced from its geometry and the given density. \emph{Available for \keyword{Circle} and
+      \keyword{Polygon} only}; a \keyword{Line} can only be frozen or velocity-driven.
+\end{itemize}
+
+The resultant forces on the obstacles, and the state of every contact, are saved in the
+conf-files under the keyword \keyword{ObstacleNeighbors}. That block is written by the code and
+must come after the obstacles and the material points.
+
+\subsection{Contact laws and interaction parameters}
+\label{sec:contact}
+
+A contact law is assigned to a whole group of obstacles:
+
+\begin{codeblock}
+\syntaxml{\keyword{BoundaryForceLaw} \type{(string)}\param{lawName} \type{(int)}\param{obstacleGroup}}
+\end{codeblock}
+
+\textbf{This line must come after the obstacles it applies to}, since it walks the list of
+already-declared obstacles. A warning is printed if no obstacle exists yet, and the law is then
+silently attached to nothing.
+
+The parameters themselves are not given to the law: they are stored in a table indexed by the
+pair (material-point group, obstacle group), so that different materials may interact
+differently with the same wall.
+
+\begin{codeblock}
+\syntaxml{\keyword{set} \type{(string)}\param{parameter} \type{(int)}\param{MPgroup} \type{(int)}\param{obstacleGroup} \type{(double)}\param{value}}
+\end{codeblock}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{Parameter} & \textbf{Meaning} & \textbf{Unit} & \textbf{Used by}\\
+\midrule
+\texttt{kn}       & normal stiffness            & N/m & all three laws \\
+\texttt{kt}       & tangential stiffness        & N/m & all three laws \\
+\texttt{mu}       & friction coefficient        & --  & all three laws \\
+\texttt{viscRate} & normal damping (fraction of critical) & -- & the two viscoelastic laws \\
+\texttt{en2}      & squared restitution coefficient & -- & \texttt{frictionalNormalRestitution} \\
+\bottomrule
+\end{tabular}
+\caption{Interaction parameters set with the \keyword{set} keyword.}
+\label{tab:setparams}
+\end{table}
+
+The three available laws are:
+
+\begin{itemize}
+\item \keyword{frictionalViscoElastic} -- linear spring, viscous damper and Coulomb friction.
+      The damping coefficient is $\texttt{viscRate} \times 2\sqrt{m\,\texttt{kn}}$, so
+      $\texttt{viscRate}=1$ means critical damping. Uses \texttt{kn}, \texttt{kt}, \texttt{mu},
+      \texttt{viscRate}.
+\item \keyword{frictionalViscoElastofragile} -- same law, but a contact that opens loses its
+      history: the friction force is reset and does not build up again from its previous value.
+      Same parameters.
+\item \keyword{frictionalNormalRestitution} -- the normal force is computed so as to restore a
+      prescribed restitution coefficient at each collision. Uses \texttt{kn}, \texttt{kt},
+      \texttt{mu}, \texttt{en2}.
+\end{itemize}
+
+The friction threshold is built from the local stress of the material point rather than from the
+normal force itself: $f_t^{\max} = \mu \, \|\bm{\sigma}\cdot\bm{n}\| \, V_0$. This makes the
+friction independent of the contact stiffness.
+
+\subsection{Numerical damping (PIC/FLIP)}
+\label{sec:pic}
+
+The velocities transferred back to the material points are a blend of the FLIP form (which
+preserves energy but is noisy) and the PIC form (which is smooth but dissipative):
+\begin{equation}
+  \bm{v}_p = \alpha \, \bm{v}_p^{\text{FLIP}} + (1-\alpha) \, \bm{v}_p^{\text{PIC}}
+\end{equation}
+
+\begin{itemize}
+\item \syntax{\keyword{enablePIC} \type{(double)}\param{ratioPIC}} sets $1-\alpha$, between 0
+      and 1. A few percent ($0.01$--$0.05$) is enough to kill the numerical noise in most
+      simulations; the delivered examples use $0.01$.
+\item \syntax{\keyword{disablePIC}} switches the blending off, i.e. pure FLIP.
+\end{itemize}
+
+The ratio can be changed during the run with the \keyword{PICDissipation} and
+\keyword{PICDissipationByPIC} schedulers -- for instance a strong damping during a
+consolidation phase, then almost none during the phase of interest.
+
+\subsection{Adaptive splitting}
+\label{sec:splitting}
+
+Under large stretching a material point can be split in two, so that the resolution follows the
+deformation.
+
+\begin{itemize}
+\item \syntax{\keyword{splitting} \type{(0/1)}\param{active}} Master switch. Off by default.
+\item \syntax{\keyword{splitCriterionValue} \type{(double)}\param{ratio}} Elongation ratio above
+      which a point is split, whatever the direction. Default 2.0.
+\item \syntax{\keyword{MaxSplitNumber} \type{(int)}\param{n}} Maximum number of successive splits
+      of a given point. Default 5. Without this bound the number of points can grow without
+      limit.
+\item \syntax{\keyword{shearLimit} \type{(double)}\param{value}} Above this value of $F_{xy}$ or
+      $F_{yx}$, the deformation gradient of the point is reset to the identity.
+\item \syntaxml{\keyword{splittingExtremeShearing} \type{(0/1)}\param{active} \type{(double)}\param{maxRatio}}
+      Additional criterion based on the ratio $F_{xx}/F_{xy}$ (or $F_{yy}/F_{yx}$).
+\end{itemize}
+
+Splitting changes the number of material points during the run, which forces a rebuild of the
+neighbour lists; this is handled automatically.
+
+\subsection{Schedulers}
+\label{sec:schedulers}
+
+A scheduler is checked at every time step and acts when its own condition is met. This is how a
+scenario is written.
+
+\begin{codeblock}
+\syntax{\keyword{Scheduled} \type{(string)}\param{schedulerName} (\dots parameters\dots)}
+\end{codeblock}
+
+\begin{itemize}
+\item \syntaxml{\keyword{GravityRamp} \type{(vec2r)}\param{gravityFrom} \type{(double)}\param{rampStart} \type{(vec2r)}\param{gravityTo} \type{(double)}\param{rampStop}}
+      Gravity is held at \param{gravityFrom} until \param{rampStart}, interpolated linearly up to
+      \param{gravityTo} at \param{rampStop}, and held afterwards. The standard way to settle a
+      sample without a shock.
+\item \syntax{\keyword{MoveObstacle} \type{(int)}\param{group}} followed by triplets
+      \syntax{\type{(double)}\param{t} \type{(double)}\param{vx} \type{(double)}\param{vy}}
+      \emph{on the same line}
+      Piecewise-constant velocity imposed to every obstacle of the group: the initial velocity is
+      kept until $t_0$, then $(v_{x,i}, v_{y,i})$ applies over $[t_i, t_{i+1})$, and the last
+      pair applies for ever. The triplets must all be on the line of the keyword -- the parser
+      reads to the end of the line.
+\item \syntax{\keyword{RemoveObstacle} \type{(int)}\param{group} \type{(double)}\param{removeTime}}
+      Removes every obstacle of the group at the given time. This is how a retaining wall is
+      released.
+\item \syntaxml{\keyword{RemoveMaterialPoint} \type{(string)}\param{modelIdentifier} \type{(double)}\param{removeTime}}
+      Removes every material point using the given model. Typically used to make a temporary
+      support vanish.
+\item \syntax{\keyword{PICDissipation} \type{(double)}\param{ratioFLIP} \type{(double)}\param{endTime}}
+      Imposes the FLIP ratio $\alpha$ (\emph{not} the PIC ratio) until \param{endTime}.
+\item \syntax{\keyword{PICDissipationByPIC}} followed by pairs
+      \syntax{\type{(double)}\param{t} \type{(double)}\param{ratioPIC}} \emph{on the same line}
+      Same idea, expressed with the PIC ratio $1-\alpha$ and with as many stages as wanted.
+      \keyword{PICDissipationPICRatio} is an accepted alias.
+\item \syntaxml{\keyword{ReactivateCHCLBonds} \type{(double)}\param{bondingDistance} \type{(double)}\param{time}}
+      Double-scale only: re-creates the cohesive bonds closer than \param{bondingDistance} in
+      every DEM sample, at the given time.
+\end{itemize}
+
+\subsection{Spies}
+\label{sec:spies}
+
+A spy performs a measurement during the run and writes it to a text file in
+\keyword{result\_folder}.
+
+\begin{codeblock}
+\syntax{\keyword{Spy} \type{(string)}\param{spyName} (\dots parameters\dots)}
+\end{codeblock}
+
+Most spies start with a recording period \param{nrec}, in number of steps, and a file name.
+The columns produced are listed in \cref{sec:spyfiles}.
+
+\begin{itemize}
+\item \syntax{\keyword{MeanStress} \type{(int)}\param{nrec} \type{(string)}\param{fileName}}
+\item \syntax{\keyword{EnergyBalance} \type{(int)}\param{nrec} \type{(string)}\param{fileName}}
+\item \syntaxml{\keyword{Work} \type{(int)}\param{nrec} \type{(string)}\param{fileName} \type{(double)}\param{Xmin} \type{(double)}\param{Xmax} \type{(int)}\param{nbSlices}}
+      Also writes a second file, named after the first with \texttt{Slices} appended, holding the
+      same quantities cut into \param{nbSlices} vertical slices between \param{Xmin} and
+      \param{Xmax}.
+\item \syntaxml{\keyword{MPTracking} \type{(int)}\param{nrec} \type{(string)}\param{fileName} (\dots selector\dots)}
+      Mean stress and strain over the selected points; see \cref{sec:selectors} for the selector.
+\item \syntaxml{\keyword{ObstacleTracking} \type{(int)}\param{obstacleNumber} \type{(int)}\param{nrec} \type{(string)}\param{fileName}}
+      \param{obstacleNumber} is the rank of the obstacle in the input file, counting from 0.
+\item \syntax{\keyword{ElasticBeamDev} \type{(int)}\param{nrec} \type{(string)}\param{fileName}}
+      Deflection of a cantilever beam; a validation case rather than a general-purpose spy.
+\end{itemize}
+
+\keyword{EnergyBalance} and \keyword{Work} evaluate their quantities at \emph{every} step
+whatever \param{nrec} is, because they accumulate increments; \param{nrec} only controls how
+often a line is written. The others evaluate and write at the same rate.
+
+\subsection{Selecting material points}
+\label{sec:selectors}
+
+Some commands act on a subset of the material points. They all share the same selector syntax,
+which comes last on the line:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Selector} & \textbf{Meaning}\\
+\midrule
+\texttt{NONE}                                   & no point (this is also the fallback for an unknown selector) \\
+\texttt{ALL}                                    & every point \\
+\texttt{ID} \param{n}                           & the point of index \param{n} \\
+\texttt{LIST} \param{nb} \param{id$_1$ \dots}   & an explicit list of \param{nb} indices \\
+\texttt{BOX} \param{x0 y0 x1 y1}                & every point inside the rectangle \\
+\texttt{GRID} \param{x0 y0 lx ly tol}           & the points close to the lines of a virtual grid \\
+\bottomrule
+\end{tabular}
+\caption{Selector syntax, shared by \keyword{select\_tracked\_MP} and \keyword{MPTracking}.}
+\label{tab:selectors}
+\end{table}
+
+\begin{itemize}
+\item \syntax{\keyword{select\_tracked\_MP} (\dots selector\dots)}
+      Marks points as \emph{tracked}. For a double-scale computation, the DEM configuration of
+      each tracked point is saved in its own sub-folder (\cref{sec:demfiles}). Tracking a few
+      points is cheap; tracking all of them writes an enormous amount of data.
+\end{itemize}
+
+\subsection{Double-scale settings (MPM$\times$DEM)}
+\label{sec:doublescale}
+
+A material point becomes double-scale as soon as its model is \keyword{CHCL\_DEM}. The DEM
+configuration file given to the model is loaded once per point, so all points sharing the model
+start from the same microstructure but then evolve independently.
+
+\begin{itemize}
+\item \syntax{\keyword{CHCL.minDEMstep} \type{(int)}\param{n}} Minimum number of DEM steps used
+      for the linear regression that extracts the stress. Default 5.
+\item \syntax{\keyword{CHCL.rateAverage} \type{(double)}\param{value}} Fraction of the MPM step,
+      counted from its end, over which the DEM stress is averaged. Default 0.
+\item \syntax{\keyword{CHCL.limitTimeStepFactor} \type{(double)}\param{value}} Default $10^{-3}$.
+\item \syntax{\keyword{CHCL.criticalDEMTimeStepFactor} \type{(double)}\param{value}} Fraction of
+      the critical DEM time step actually used. Default 0.01.
+\item \syntax{\keyword{demavg} \type{(int)}\param{minDEMstep} \type{(double)}\param{rateAverage}}
+      is a deprecated form of the first two, kept for compatibility.
+\end{itemize}
+
+Two constraints are worth remembering: only \keyword{ModifiedLagrangian} supports double-scale
+computations, and the cost is that of a full DEM simulation per material point and per time
+step -- start with a few hundred points, not a few thousand.
+
+
+\section{Output files and restart}
+\label{sec:outputs}
+
+\subsection{Conf-files}
+\label{sec:conffiles}
+
+Every \keyword{confPeriod} steps, a file \texttt{conf<n>.txt} is written in
+\keyword{result\_folder}, numbered from 0. It contains the complete state of the simulation:
+the settings, the models, the grid, the nodal quantities, the obstacles with their contacts,
+and every material point.
+
+The material points are written as one line each, in this order:
+
+\begin{codeblock}
+\syntax{\keyword{MPs} \type{(int)}\param{nbMP}} \\
+\syntaxml{\type{(string)}\param{modelId} \type{(int)}\param{nb} \type{(int)}\param{group} \type{(double)}\param{vol0} \type{(double)}\param{vol} \type{(double)}\param{rho} \type{(vec2r)}\param{pos} \type{(vec2r)}\param{vel} \type{(mat4r)}\param{strain} \type{(mat4r)}\param{plasticStrain} \type{(mat4r)}\param{stress} \type{(mat4r)}\param{stressCorrection} \type{(int)}\param{splitCount} \type{(mat4r)}\param{F} \type{(double)}\param{outOfPlaneStress} \type{(vec2r)}\param{contactf}}
+\emph{\small the last line is repeated \param{nbMP} times}
+\end{codeblock}
+
+A \texttt{vec2r} is two numbers, a \texttt{mat4r} four ($xx$, $xy$, $yx$, $yy$). Everything is
+written in scientific notation with full double precision, so a conf-file is an exact snapshot,
+not a rounded one. This is the file to post-process for the fields (stress, strain, velocity
+maps) -- there is no other field output.
+
+\subsection{Restarting a computation}
+\label{sec:restart}
+
+Since a conf-file uses exactly the same syntax as an input file, restarting is simply:
+
+\begin{lstlisting}[style=mystyle,numbers=none]
+mpmbox conf12.txt
+\end{lstlisting}
+
+The run resumes at the time stored in the file and stops at \keyword{finalTime}. Two points
+deserve attention:
+
+\begin{itemize}
+\item \textbf{The conf-file numbering restarts from 0}, so a restart overwrites the existing
+      \texttt{conf0.txt}, \texttt{conf1.txt}\dots{} Change \keyword{result\_folder} in the
+      conf-file before restarting, or move the previous results away.
+\item \textbf{The spies are not saved} in the conf-file. To keep recording, add the
+      \keyword{Spy} lines to the conf-file by hand; note that the spy files are then reopened in
+      truncation mode.
+\end{itemize}
+
+To carry on further in time, edit \keyword{finalTime} in the conf-file. Everything else -- the
+schedulers, the models, the contact parameters -- is already there.
+
+\subsection{Spy files}
+\label{sec:spyfiles}
+
+All spy files are plain text, one line per record, the first column being the time.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Spy} & \textbf{Columns}\\
+\midrule
+\texttt{MeanStress}       & \texttt{t} \quad meanStress \\
+\texttt{MPTracking}       & \texttt{t} \quad meanStress \quad meanStrain \\
+\texttt{ObstacleTracking} & \texttt{t} \quad pos$_x$ pos$_y$ \quad vel$_x$ vel$_y$ \quad force$_x$ force$_y$ \\
+\texttt{EnergyBalance}    & \texttt{t} \quad $-W_n$ \quad $-W_t$ \quad $W_{\text{int}}$ \quad $-W_n-W_t+W_{\text{int}}$ \quad $W_p$ \\
+\bottomrule
+\end{tabular}
+\caption{Content of the files written by the spies.}
+\label{tab:spycolumns}
+\end{table}
+
+For \keyword{EnergyBalance}, $W_n$ and $W_t$ are the works of the normal and tangential contact
+forces, $W_{\text{int}}$ the internal work and $W_p$ its plastic part; the fifth column is the
+balance, which should stay close to zero.
+
+\subsection{DEM sub-configurations}
+\label{sec:demfiles}
+
+For a double-scale run, each material point marked by \keyword{select\_tracked\_MP} gets a
+folder \texttt{DEM\_MP<p>/} inside \keyword{result\_folder}, where \texttt{<p>} is the index of
+the point. A DEM configuration \texttt{conf<n>} is written there at the same rate as the
+MPM conf-files, and can be examined with the tools of the DEM code.
+
+
+\section{Visualising with \texttt{see}}
+\label{sec:see}
+
+\begin{lstlisting}[style=mystyle,numbers=none]
+see conf12.txt
+\end{lstlisting}
+
+The viewer opens the given conf-file and lets you step through the whole series. It reads the
+same files as the solver, so nothing has to be converted.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Key} & \textbf{Action}\\
+\midrule
+\texttt{+} / \texttt{-} & load the next / previous conf-file \\
+\texttt{n}              & jump to a given conf number (typed in the terminal) \\
+\texttt{=}              & fit the view \\
+\texttt{m}              & show/hide the material points \\
+\texttt{c}              & show/hide the outlines of the material points \\
+\texttt{s}              & draw the points as deformed boxes (following $F$) \\
+\texttt{g}              & show/hide the background grid \\
+\texttt{d}              & show/hide the blocked nodal degrees of freedom \\
+\texttt{x}              & show/hide the principal stress directions \\
+\texttt{b}              & show/hide the gradient background \\
+\texttt{i}              & print information in the terminal \\
+\texttt{h}              & print the key bindings \\
+\texttt{z} / \texttt{Z} & one screenshot / a series of screenshots \\
+\texttt{q}              & quit \\
+\bottomrule
+\end{tabular}
+\caption{Keyboard shortcuts of \texttt{see}.}
+\label{tab:seekeys}
+\end{table}
+
+The number keys choose what the colour of a material point represents: \texttt{0} none,
+\texttt{1} velocity magnitude, \texttt{2} pressure, \texttt{3} density, \texttt{4}
+$\sigma_{yy}$, \texttt{5} DEM-cell damage (double-scale only), \texttt{6} $\Delta\varepsilon_q$,
+\texttt{7} volume change, \texttt{8} and \texttt{9} the contact force components (for
+debugging). Further colour fields are available through the right-click menu.
+
+Screenshots are written as image files in the current directory; \texttt{Z} combined with
+\texttt{+} is the usual way to produce a series for a movie.
+
+
+\section{Choosing the numerical parameters}
+\label{sec:timestep}
+
+\subsection{The time step}
+
+MPMbox is fully explicit: the time step is not adapted, and an excessive value simply makes the
+computation diverge. At the first step, and with a verbosity of 5 or more, three ratios are
+printed:
+
+\begin{lstlisting}[style=mystyle,numbers=none]
+Current dt:                        1e-05
+dt_crit/dt (passthrough velocity): 12.500
+dt_crit/dt (collision):            3.200
+dt_crit/dt (CFL):                  1.800
+\end{lstlisting}
+
+They correspond to three independent limits:
+
+\begin{itemize}
+\item \textbf{CFL}: an elastic wave must not cross a material point in one step,
+      $\Delta t_{\text{CFL}} = r_{\min} / \sqrt{K_{\max}/\rho_{\min}}$ with
+      $K = E / (1-2\nu)$. This is usually the binding one for a stiff material.
+\item \textbf{Collision}: the contact oscillator must be resolved,
+      $\Delta t_{\text{coll}} = \sqrt{m_{\min}/k_{n,\max}}$. Binding when the contact stiffness
+      is high compared with the mass of a point.
+\item \textbf{Passthrough}: a point must not travel further than its own size in one step,
+      $\Delta t_{\text{pass}} = r_{\min} / v_{\max}$. Binding in fast flows.
+\end{itemize}
+
+All three ratios must stay comfortably above 1 -- a factor of 5 to 10 is a reasonable target.
+A ratio below 1 means the time step is too large for that criterion. With a
+\keyword{CHCL\_DEM} model the CFL ratio is meaningless, because the model does not expose
+elastic constants.
+
+\subsection{Sizes and periods}
+
+\begin{itemize}
+\item \textbf{Element size / point size}: at least 2, i.e. at least four material points per
+      element; this is checked. Finer than 2 is possible but rarely useful.
+\item \textbf{\keyword{proxPeriod} and \keyword{securDistFactor}} work together: the neighbour
+      list built every \keyword{proxPeriod} steps must remain valid until the next rebuild. If
+      points cross an obstacle without interacting, decrease the period or increase the factor.
+\item \textbf{\keyword{confPeriod}} controls both the size of the output and the time resolution
+      available for post-processing. A conf-file holds the entire state, so it is not small.
 \end{itemize}
 
 
-\subsection{Adding material points}
+\appendix
+\renewcommand{\thesection}{\Alph{section}}
+\setcounter{section}{0}
+
+\section{Keyword index}
+\label{sec:index}
+
+Every keyword understood by the parser, where it is documented, and where it is implemented.
+The last column is the entry point to read when the behaviour of a keyword has to be checked
+against the code.
+
+\begin{center}
+\begin{longtable}{lll}
+\toprule
+\textbf{Keyword} & \textbf{Section} & \textbf{Implementation}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Keyword} & \textbf{Section} & \textbf{Implementation}\\
+\midrule
+\endhead
+\multicolumn{3}{r}{\emph{continued on next page}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+
+\multicolumn{3}{l}{\emph{Core settings} -- read directly by \texttt{MPMbox::read()}}\\
+\midrule
+\texttt{oneStepType}      & \ref{sec:core}        & \texttt{OneStep/} \\
+\texttt{dt}               & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{t}                & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{finalTime}        & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{gravity}          & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{result\_folder}   & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{confPeriod}       & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{proxPeriod}       & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{securDistFactor}  & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{tolmass}          & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{planeStrain}      & \ref{sec:core}        & \texttt{Core/MPMbox.cpp} \\
+\texttt{ShapeFunction}    & \ref{sec:shapefunctions} & \texttt{ShapeFunctions/} \\
+\texttt{model}            & \ref{sec:models}      & \texttt{ConstitutiveModels/} \\
+\texttt{Obstacle}         & \ref{sec:obstacles}   & \texttt{Obstacles/} \\
+\texttt{BoundaryForceLaw} & \ref{sec:contact}     & \texttt{BoundaryForceLaw/} \\
+\texttt{set}              & \ref{sec:contact}     & \texttt{Core/MPMbox.cpp} \\
+\texttt{Scheduled}        & \ref{sec:schedulers}  & \texttt{Schedulers/} \\
+\texttt{Spy}              & \ref{sec:spies}       & \texttt{Spies/} \\
+\texttt{enablePIC}        & \ref{sec:pic}         & \texttt{Core/MPMbox.cpp} \\
+\texttt{disablePIC}       & \ref{sec:pic}         & \texttt{Core/MPMbox.cpp} \\
+\texttt{splitting}        & \ref{sec:splitting}   & \texttt{Core/MPMbox.cpp} \\
+\texttt{splitCriterionValue} & \ref{sec:splitting} & \texttt{Core/MPMbox.cpp} \\
+\texttt{MaxSplitNumber}   & \ref{sec:splitting}   & \texttt{Core/MPMbox.cpp} \\
+\texttt{shearLimit}       & \ref{sec:splitting}   & \texttt{Core/MPMbox.cpp} \\
+\texttt{splittingExtremeShearing} & \ref{sec:splitting} & \texttt{Core/MPMbox.cpp} \\
+\texttt{prescribedVelocity} & \ref{sec:mps}       & \texttt{Core/MPMbox.cpp} \\
+\texttt{CHCL.*}           & \ref{sec:doublescale} & \texttt{Core/MPMbox.cpp} \\
+\texttt{demavg}           & \ref{sec:doublescale} & deprecated \\
+\midrule
+\multicolumn{3}{l}{\emph{Commands} -- one class each in \texttt{Commands/}}\\
+\midrule
+\texttt{set\_node\_grid}       & \ref{sec:grid} & \texttt{set\_node\_grid.cpp} \\
+\texttt{new\_set\_grid}        & \ref{sec:grid} & \texttt{new\_set\_grid.cpp} \\
+\texttt{set\_BC\_line}         & \ref{sec:grid} & \texttt{set\_BC\_line.cpp} \\
+\texttt{set\_BC\_column}       & \ref{sec:grid} & \texttt{set\_BC\_column.cpp} \\
+\texttt{set\_MP\_grid}         & \ref{sec:mps}  & \texttt{set\_MP\_grid.cpp} \\
+\texttt{set\_MP\_polygon}      & \ref{sec:mps}  & \texttt{set\_MP\_polygon.cpp} \\
+\texttt{add\_MP\_ShallowPath}  & \ref{sec:mps}  & \texttt{add\_MP\_ShallowPath.cpp} \\
+\texttt{move\_MP}              & \ref{sec:mps}  & \texttt{move\_MP.cpp} \\
+\texttt{reset\_model}          & \ref{sec:mps}  & \texttt{reset\_model.cpp} \\
+\texttt{set\_uniform\_pressure} & \ref{sec:mps} & \texttt{set\_uniform\_pressure.cpp} \\
+\texttt{set\_K0\_stress}       & \ref{sec:mps}  & \texttt{set\_K0\_stress.cpp} \\
+\texttt{select\_tracked\_MP}   & \ref{sec:selectors} & \texttt{select\_tracked\_MP.cpp} \\
+\texttt{select\_controlled\_MP} & \ref{sec:inactive} & \texttt{select\_controlled\_MP.cpp} \\
+\midrule
+\multicolumn{3}{l}{\emph{Blocks written by the code in the conf-files}}\\
+\midrule
+\texttt{Nodes}             & \ref{sec:grid}      & \texttt{Core/MPMbox.cpp} \\
+\texttt{Elem}              & \ref{sec:conffiles} & \texttt{Core/MPMbox.cpp} \\
+\texttt{MPs}               & \ref{sec:conffiles} & \texttt{Core/MPMbox.cpp} \\
+\texttt{ObstacleNeighbors} & \ref{sec:obstacles} & \texttt{Core/MPMbox.cpp} \\
+\end{longtable}
+\end{center}
 
 
-Material points can be added by placing them on a grid. The corresponding command in this case is: \\
+\section{Keywords that are parsed but currently inactive}
+\label{sec:inactive}
 
-\begin{codeblock}
- \syntax{\keyword{set\_MP\_grid} \type{(int)}\param{group} \type{(string)}\param{modelIdentifier} \type{(double)}\param{$\rho$} \type{(double)}\param{$x_0$} \type{(double)}\param{$y_0$} \type{(double)}\param{$x_1$} \type{(double)}\param{$y_1$}}
-\label{setMPgrid}
-\end{codeblock} 
-where ($x_0,y_0$) denotes the coordinates of the beginning corner of the material points square grid and the opposite one is at ($x_1, y_1$). $\rho$ signifies the density of each material point and must be specified, except in the \texttt{CHCL\_DEM} model where it gets calculated automatically via the DEM configuration:
+The following behaviours are accepted by the parser but do nothing, or not what their name
+suggests, in the present state of the code. They are listed here so that a simulation is not
+built on them by mistake.
 
-\begin{equation}
-  \rho_{\text{mp}} = \dfrac{m_{\text{VER}}}{V_{\text{VER}}} = \dfrac{\det(h)}{V_s}
-  \label{}
-\end{equation}
-which the diagonal matrix \textit{h} denotes the periodic boundary domain.
-\begin{comment}
-**`set_MP_polygon`** (_int_)`group`  (_int_)`nbVertices`  (_string_)`modelName`  (_double_)`massDensity` (_double_)`sizeOfBoxes`  (... (_double_)`x` (_double_)`y` ...)
+\begin{itemize}
 
+\item \textbf{\texttt{select\_controlled\_MP}} -- the command is registered, its arguments are
+      read and the list of controlled points is filled, but no integration scheme applies it:
+      the only piece of code that would impose the velocity of a controlled point sits inside a
+      disabled block of \texttt{ModifiedLagrangian.cpp}, and the two other schemes ignore the
+      list entirely. Imposing a velocity on a set of points therefore has to go through
+      \texttt{prescribedVelocity} (initial condition) or through an obstacle.
 
-**`add_MP_ShallowPath`** (_int_)group  (_int_)nbPathPoints (_double_)height (_string_)modelName (_double_)rho (_double_)size (...list of nbPathPoints (_vec2r_)point...)
-\end{comment}
+\item \textbf{\texttt{set dn0} and \texttt{set dt0}} -- the two parameters exist in the
+      interaction table and are saved in the conf-files, but no contact law reads them.
 
+\item \textbf{The \texttt{VtkOutputs/} directory} -- it contains a family of field exporters
+      (velocity, stresses, strains, contact forces\dots) with the same plug-in structure as the
+      rest of the code, but the directory is not part of the source list of
+      \texttt{CMakeLists.txt} and no keyword creates such an object. The fields have to be read
+      from the conf-files (\cref{sec:conffiles}).
 
+\end{itemize}
 
-\begin{comment}
-**`move_MP`**   (_double_)x0  (_double_)y0  (_double_)dx  (_double_)dy  (_double_)theta
-> Note that a negative value of theta rotates clockwise.
-
-**`reset_model`**  (_int_)group  (_string__)modelName  (_double_)rho  (_double_)x0 (_double_)y0 (_double_)x1 (_double_)y1
-\end{comment}
-
-
-
-%\subsection{Splitting}
-%**`splitting`**  (_bool_)Active (_bool_)splitTouchingMP (_double_)SplitValue
+A keyword removed from this appendix is a keyword that has become usable; the entry should then
+move to the corresponding section of \cref{sec:syntax}.
 
 
+\section{Notes for maintainers}
+\label{sec:maintainers}
 
+\subsection{Adding a variant}
 
-\subsection{Obstacles (Rigid Bodies)}
+Each of the seven families of \cref{sec:structure} is extended in the same way. Taking a
+constitutive model as the example:
 
-%**`Obstacle`** (_string_)type (...list of parameters that depend on type...)
-%List of parameters for each type:
-%  - `Line`: (_double_)x0 (_double_)y0 (_double_)x1 (_double_)y1
-% - `Circle`: (_vec2r_)center (_double_)R
+\begin{enumerate}
+\item Write \texttt{ConstitutiveModels/MyModel.hpp} and \texttt{.cpp}, deriving from
+      \texttt{ConstitutiveModel} and implementing at least \texttt{getRegistrationName()},
+      \texttt{read()}, \texttt{write()} and \texttt{updateStrainAndStress()}.
+\item Make \texttt{write()} the exact inverse of \texttt{read()}. This is what keeps the restart
+      of \cref{sec:restart} working: a conf-file is re-read by the same parser.
+\item Register the class in \texttt{MPMbox::ExplicitRegistrations()}
+      (\texttt{Core/MPMbox.cpp}). The name given there is the keyword the user will type.
+\item Nothing to do in \texttt{CMakeLists.txt} as long as the file lands in one of the globbed
+      directories -- but a \emph{new directory} has to be added to the \texttt{file(GLOB ...)}
+      list, which is precisely what was forgotten for \texttt{VtkOutputs/}.
+\end{enumerate}
 
-\subsection{Boundary Force Laws}
+\subsection{Keeping this document in step with the code}
 
-% need to be set after the Obstacles have been set
+The reference part of this manual is derived from the code, not from an independent
+specification. When a class is added or its \texttt{read()} changes:
 
-\subsection{Spies (Processing)}
+\begin{itemize}
+\item update the corresponding subsection of \cref{sec:syntax} -- the argument list is exactly
+      what \texttt{read()} extracts, in the same order;
+\item add a row to the index of \cref{sec:index};
+\item add the variant to the family diagram. The figures are TikZ sources under
+      \texttt{Doc/structure/tikz/en/}, one file per family, compiled by
+      \texttt{Doc/structure/tikz/en/build.sh}. A French version of the same figures, together
+      with a Mermaid and an HTML version of \cref{sec:structure}, lives in
+      \texttt{Doc/structure/}.
+\end{itemize}
 
-\begin{comment}
-**`Spy`** (_string_)`spyName` (...list of parameters that depend on spyName...)
+The single source of truth for the list of available variants is
+\texttt{MPMbox::ExplicitRegistrations()}: anything registered there is a keyword a user can
+type, and anything a user can type should appear in this document.
 
-List of parameters for each spyName:
-
-  - `Work`:  (_int_)`recordPeriod`  (_string_)`fileName` (_double_)`Xmin` (_double_)`Xmax` (_int_)`nbBins`
-\end{comment}
-
-\subsection{Schedulers}
-
-
-\begin{comment}
-**`GravityRampe`** (_vec2r_)`gravityFrom`  (_double_)`rampStart` (_vec2r_)`gravityTo` (_double_)`rampStop`
-
-**`PICDissipation`** (*double*)`rateOfFLIP` (*double*)`endTime`
-
-**`PICDissipationByPIC`** (... list of pairs: (*double*)`t` (*double*)`ratioPIC` ...)
-
-Alias: **`PICDissipationPICRatio`** (same syntax)
-
-**`ReactivateCHCLBonds`**
-
-**`RemoveMaterialPoint`**
-
-**`RemoveObstacle`**
-
-**`MoveObstacle`** (_int_)`group` (... repeated: (_double_)`t` (_double_)`vx` (_double_)`vy` ...)
-
-
-\end{comment}
-
-
-
-
-%\begin{thebibliography}{9}
-%\bibitem{ref1} Author, A. and Author, B., "Title of the paper," Journal Name, vol. 1, no. 1, pp. 1-10, Year.
-%\end{thebibliography}
 
 \end{document}
-
-
-
-

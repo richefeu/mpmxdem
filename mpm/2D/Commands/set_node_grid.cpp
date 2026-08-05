@@ -29,7 +29,7 @@ void set_node_grid::read(std::istream& is) {
     nbElemY = static_cast<size_t>(fabs(round(H / ly)));
   } else if (inputChoice == "W.H.Nx.Ny") {
     double W, H;
-    is >> W >> H >> nbElemX >> nbElemX;
+    is >> W >> H >> nbElemX >> nbElemY;
     lx = W / (double)nbElemX;
     ly = H / (double)nbElemY;
   } else {
