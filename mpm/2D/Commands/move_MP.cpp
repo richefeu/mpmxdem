@@ -13,21 +13,6 @@ void move_MP::exec() {
   rotation.yx = sin(theta);
   rotation.yy = cos(theta);
 
-  // FIXME: I DON'T UNDERSTAND WHY WE DO THAT ????????
-  /*
-  for (size_t p = 0; p < box->MP.size(); p++) {
-    if (box->MP[p].groupNb == groupNb) {
-      box->MP[p].corner[0].x = -0.5 * box->MP[p].size;
-      box->MP[p].corner[0].y = -0.5 * box->MP[p].size;
-      box->MP[p].corner[1].x = +0.5 * box->MP[p].size;
-      box->MP[p].corner[1].y = -0.5 * box->MP[p].size;
-      box->MP[p].corner[2].x = +0.5 * box->MP[p].size;
-      box->MP[p].corner[2].y = +0.5 * box->MP[p].size;
-      box->MP[p].corner[3].x = -0.5 * box->MP[p].size;
-      box->MP[p].corner[3].y = +0.5 * box->MP[p].size;
-    }
-  }
-  */
   
   double newx, newy;
   for (size_t p = 0; p < box->MP.size(); p++) {
@@ -40,18 +25,9 @@ void move_MP::exec() {
       box->MP[p].pos.x = newx;
       box->MP[p].pos.y = newy;
 
-      // box->MP[p].updateCornersFromF();
-      // TODO: to be improved (look into box->MP[p].updateCornersFromF(); to see if you can use it)
-      for (int c = 0; c < 4; c++) {
-
-        newx = box->MP[p].pos.x + (box->MP[p].corner[c].x) * rotation.xx + (box->MP[p].corner[c].y) * rotation.xy;
-        newy = box->MP[p].pos.y + (box->MP[p].corner[c].x) * rotation.yx + (box->MP[p].corner[c].y) * rotation.yy;
-        box->MP[p].corner[c].x = newx;
-        box->MP[p].corner[c].y = newy;
-
-        // or this one line should work
-        // box->	MP[p].corner[c] = box->MP[p].pos + box->MP[p].F*box->	MP[p].corner[c];
-      }
+      // Les coins n'existent plus dans MaterialPoint : ils etaient recalcules
+      // depuis F a chaque pas, et la rotation qui se trouvait ici etait fausse
+      // (defaut D7). F porte desormais seul l'orientation du point.
     }
   }
 }

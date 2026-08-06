@@ -54,9 +54,9 @@
 #include "Grid.hpp"
 #include "Neighbor.hpp"
 #include "Node.hpp"
+#include "MaterialPoint.hpp"
 #include "ProcessedDataMP.hpp"
 
-struct MaterialPoint;
 struct Obstacle;
 struct Command;
 struct Spy;
@@ -84,8 +84,6 @@ public:
   std::vector<ControlMP> controlledMP; // force or velocity controls on some MP
 
   bool computationMode{true}; // true for computation; false for visualisation
-  bool needMPCorners{false};  // true only if an obstacle reads MaterialPoint::corner[]
-                             // (Polygon does; see recomputes them in postProcess)
 
   std::string result_folder{"."}; // The folder into which the result files will be saved
   bool planeStrain{false};        // Plane strain assumption
@@ -156,10 +154,23 @@ public:
   std::vector<double> shapeN;
   std::vector<vec2r> shapeGradN;
 
+  // State owned by the constitutive models (see MPModelState), one entry per
+  // Material Point. Out of MaterialPoint for the same reason as the shape
+  // functions: it is only read inside updateStrainAndStress, which is a tenth
+  // of a time step.
+  std::vector<MPModelState> modelStateStore;
+
+  // Deformation gradient at the previous step. Only CHCL_DEM reads it, so the
+  // array is only allocated for a double-scale computation.
+  std::vector<mat4r> prevFstore;
+
   // Shape functions of the Material Point p: nbNodes values, indexed by the
   // local node number.
   inline double *N(size_t p) { return shapeN.data() + p * element::nbNodes; }
   inline vec2r *gradN(size_t p) { return shapeGradN.data() + p * element::nbNodes; }
+
+  inline MPModelState &modelState(size_t p) { return modelStateStore[p]; }
+  inline mat4r &prevF(size_t p) { return prevFstore[p]; }
 
   size_t number_MP_before_any_split; // used to check proximity if # of MP has changed
                                      // (some "unknown" points could enter the obstacle and suddenly be detected
@@ -187,7 +198,7 @@ public:
   void run();
 
   // Functions called in OneStep
-  void resizeShapeArrays();
+  void resizeMPArrays();
   void updateLiveNodeList();
   void updateVelocityGradient();
   void limitTimeStepForDEM();

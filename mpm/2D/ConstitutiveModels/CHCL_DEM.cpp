@@ -52,7 +52,7 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].strain += dstrain;
   MPM.MP[p].deltaStrain = dstrain;
 
-  mat4r prev_F_inv = MPM.MP[p].prev_F;
+  mat4r prev_F_inv = MPM.prevF(p);
   prev_F_inv.inverse();
   mat4r Finc2D = MPM.MP[p].F * prev_F_inv;
 

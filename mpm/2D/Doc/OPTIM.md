@@ -12,7 +12,7 @@ d'emploi est en fin de document.
 > absolus, non.
 >
 > **État au 2026-08-05** : cinq pistes en place. **×3,2** sur le cas de
-> référence `bspline`, **×1,13 de plus** sur le cas réaliste `bigspline`. Le § 1 décrit le profil de départ ; le § 3.2 celui du cas
+> référence `bspline`, et **×1,13 puis ×1,08** sur le cas réaliste `bigspline`. Le § 1 décrit le profil de départ ; le § 3.2 celui du cas
 > réellement utilisé (`BSpline` à l'échelle) ; le § 3.4 le facteur limitant qui
 > reste, mesuré. **Le § 5 dit quoi faire ensuite.**
 >
@@ -576,13 +576,52 @@ préchargeur.
 transformation a été mécanique. Ni le format des conf-files ni `see` n'étaient
 concernés — ni `N` ni `gradN` n'y figurent.
 
-### 4.3bis Aller plus loin : structure de tableaux
+### 4.3bis Sortir l'état conditionnel — ✅ **fait le 2026-08-06**, ×1,08
 
-Si le § 4.3 ne suffit pas, l'étape d'après est de traiter de la même façon les
-autres champs chauds (`pos`, `vel`, `mass`, `stress`), c'est-à-dire de passer
-d'un tableau de structures à une structure de tableaux. Gain potentiel
-supérieur, vectorisation possible, mais refonte de tout le code. À ne pas
-entreprendre avant d'avoir mesuré ce que le § 4.3 donne.
+Suite du § 4.3, sur les champs que la plupart des calculs n'ouvrent jamais.
+`sizeof(MaterialPoint)` passe de **600 à 432 octets** (−28 %) et le cas
+`bigspline` de 1,42 à **1,31 s** — mesuré en A/B entrelacé, trois tours,
+dispersion inférieure à 1,5 %.
+
+| Champ | taille | devenu |
+|---|---:|---|
+| `q` | 16 o | **supprimé** : lu par personne (défaut D13) |
+| `corner[4]` | 64 o | **supprimé**, voir ci-dessous |
+| `viscousStress`, `outOfPlaneViscousStress`, `outOfPlaneEp`, `hardeningForce` | 56 o | `MPMbox::modelState(p)`, tableau de `MPModelState` |
+| `prev_F` | 32 o | `MPMbox::prevF(p)`, alloué **seulement en double échelle** |
+
+**Les coins ont disparu, et c'est mieux ainsi.** Ils étaient rafraîchis depuis
+`F` à chaque pas, et un seul consommateur les lisait pendant le pas :
+`Polygon::pointinPolygon`, qui en tire la tangente de contact
+`corner[2] - corner[3]`. Or
+
+$$\text{corner}[2] - \text{corner}[3] = F \cdot (s, 0)$$
+
+`Polygon` n'a donc jamais eu besoin des coins : `F` suffit. Il les lit
+maintenant depuis `F`, ce qui est **plus juste** — c'était précisément le défaut
+**B4**, les coins n'étant pas rafraîchis par `ModifiedLagrangian`. Avec eux
+disparaissent `MaterialPoint::updateCornersFromF()`, le drapeau
+`needMPCorners`, l'initialisation redondante de `set_MP_grid`, les
+manipulations de coins du découpage adaptatif — écrasées au pas suivant — et le
+bloc de rotation de `move_MP`, qui était de toute façon faux (**D7**).
+
+Deux points de mise en œuvre :
+
+- `ConstitutiveModel::init(MaterialPoint&)` ne peut pas atteindre
+  `modelState(p)` : elle travaille sur un point qui n'est pas encore dans le
+  tableau. L'initialisation de `hardeningForce` de `SinfoniettaClassica` et
+  `SinfoniettaCrush` a donc été déplacée au premier usage, dans
+  `updateStrainAndStress` — ce que le test contre zéro faisait déjà.
+- `MPMbox::resizeMPArrays()` dimensionne les trois tableaux annexes au début de
+  chaque pas et de `postProcess`.
+
+**Ce qui n'a pas été touché** : `strain`, `plasticStrain` et `stressCorrection`
+(96 o) sont dans le format des conf-files. Les sortir demande de modifier la
+lecture et l'écriture, ce qui relève du chantier **C3** et non d'une
+optimisation. `deltaStrain` reste également en place : elle est lue hors des
+modèles, par la mise à jour du volume et par les spies d'énergie.
+
+### 4.3ter Aller plus loin : structure de tableaux
 
 ### 4.4 `element::nbNodes` est une variable statique
 
@@ -624,11 +663,11 @@ Cumul sur `bspline` : **3,43 s → 1,08 s, soit ×3,2**.
 
 5. ~~**Sortir `N` et `gradN` de `MaterialPoint`**~~ — **fait le 2026-08-05**,
    ×1,24 sur le cas réaliste, structure ramenée de 984 à 600 octets.
-6. **Sortir les 232 octets conditionnels du § 3.5** — `corner[4]`, `prev_F`,
-   `viscousStress`, `stressCorrection`, `hardeningForce` — et retirer `q`, qui
-   est mort (D13). La structure tomberait à ~360 octets. Même geste que le
-   § 4.3, mais chaque champ demande de décider où le loger : un tableau annexe
-   alloué seulement si le modèle ou l'obstacle concerné est présent.
+6. ~~**Sortir l'état conditionnel**~~ — **fait le 2026-08-06** (§ 4.3bis),
+   ×1,08, structure ramenée de 600 à 432 octets.
+7. Il reste `strain`, `plasticStrain` et `stressCorrection` (96 o), qui sont
+   dans le format des conf-files : à traiter avec le chantier **C3**, pas
+   isolément. Au-delà, c'est la structure de tableaux (§ 4.3ter).
 6. Re-mesurer. Si le tableau des points repasse sous la falaise, le profil
    changera encore et il faudra refaire le § 3.2.
 7. Fusionner les boucles qui se suivent et parcourent les mêmes données —

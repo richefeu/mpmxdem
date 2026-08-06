@@ -60,10 +60,6 @@ void set_MP_grid::exec() {
   }
 
   for (size_t p = 0; p < box->MP.size(); p++) {
-    box->MP[p].updateCornersFromF();
-  }
-
-  for (size_t p = 0; p < box->MP.size(); p++) {
     if (box->MP[p].pos.x > (double)box->Grid.Nx * box->Grid.lx || box->MP[p].pos.x < 0.0 ||
         box->MP[p].pos.y > (double)box->Grid.Ny * box->Grid.ly || box->MP[p].pos.y < 0.0) {
       Logger::critical("@set_MP_grid::exec, the Material Point {} at ({}, {}) is outside the grid [0, {}] x [0, {}]", p,

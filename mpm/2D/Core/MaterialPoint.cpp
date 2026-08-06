@@ -18,23 +18,5 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
   vol    = vol0;
   mass   = vol0 * density;
   F      = mat4r::unit();
-  prev_F = F;
 
-  corner[0].reset();
-  corner[1].reset();
-  corner[2].reset();
-  corner[3].reset();
-}
-
-void MaterialPoint::updateCornersFromF() {
-  // TODO: This is wrong if it's to be used in move_MP.cpp
-  // FIXME: it assumes that the reference shape is an axis aligned rectangle
-  // -> faire une fonction updateCornersFromFincrement
-
-  double halfSizeMP = 0.5 * size;
-
-  corner[0] = pos + F * vec2r(-halfSizeMP, -halfSizeMP);
-  corner[1] = pos + F * vec2r(halfSizeMP, -halfSizeMP);
-  corner[2] = pos + F * vec2r(halfSizeMP, halfSizeMP);
-  corner[3] = pos + F * vec2r(-halfSizeMP, halfSizeMP);
 }

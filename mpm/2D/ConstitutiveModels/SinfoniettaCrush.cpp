@@ -26,11 +26,11 @@ void SinfoniettaCrush::write(std::ostream& os) {
   os << ' ' << phiStar0 << ' ' << epv0 << ' ' << l0 << ' ' << ginf << '\n';
 }
 
-void SinfoniettaCrush::init(MaterialPoint& MP) {
-  if (MP.hardeningForce == 0.0) {
-    MP.hardeningForce = -log(pc0);
-  }
-}
+// The hardening force now lives in MPMbox::modelState(p), which init() cannot
+// reach -- it works on a Material Point that is not in the array yet. It is
+// therefore initialised on first use, in updateStrainAndStress, which is what
+// the test against zero already did here.
+void SinfoniettaCrush::init(MaterialPoint&) {}
 
 double SinfoniettaCrush::func_f(mat9r Sigma, double q) {
   double p = -Sigma.trace() / 3.0 + 1e-13;
@@ -106,10 +106,12 @@ void SinfoniettaCrush::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   SigmaTrial += C.getStress(dstrain3x3);
 
-  double qTrial = MPM.MP[p].hardeningForce;
+  double &hardening = MPM.modelState(p).hardeningForce;
+  if (hardening == 0.0) { hardening = -log(pc0); } // first use
+  double qTrial = hardening;
   mat9r EpTrial(MPM.MP[p].plasticStrain.xx, MPM.MP[p].plasticStrain.xy, 0.0,
                 MPM.MP[p].plasticStrain.xx, MPM.MP[p].plasticStrain.xy, 0.0,
-                0.0,                        0.0,                        MPM.MP[p].outOfPlaneEp);
+                0.0,                        0.0,                        MPM.modelState(p).outOfPlaneEp);
   // clang-format on
   double fTrial = func_f(SigmaTrial, qTrial);
 
@@ -143,12 +145,12 @@ void SinfoniettaCrush::updateStrainAndStress(MPMbox& MPM, size_t p) {
     MPM.MP[p].stress.yy = Sigma.yy;
     MPM.MP[p].outOfPlaneStress = Sigma.zz;
 
-    MPM.MP[p].hardeningForce = q;
+    hardening = q;
 
     MPM.MP[p].plasticStrain.xx = Ep.xx;
     MPM.MP[p].plasticStrain.xy = MPM.MP[p].plasticStrain.yx = Ep.xy;
     MPM.MP[p].plasticStrain.yy = Ep.yy;
-    MPM.MP[p].outOfPlaneEp = Ep.zz;
+    MPM.modelState(p).outOfPlaneEp = Ep.zz;
 
   } else { // we are inside the surface!
 

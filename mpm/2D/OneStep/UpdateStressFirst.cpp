@@ -54,7 +54,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
   MPM.number_MP_before_any_split = MPM.MP.size();
 
   // shapeN / shapeGradN suivent le nombre de points
-  MPM.resizeShapeArrays();
+  MPM.resizeMPArrays();
 
   // ==== Reset the resultant forces on MPs
   // (velGrad is cleared by MPMbox::updateVelocityGradient)
@@ -160,10 +160,6 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
     }
   }
 
-  // ==== Update the corner positions of the MPs
-  if (MPM.needMPCorners) {
-    for (size_t p = 0; p < MP.size(); p++) { MP[p].updateCornersFromF(); }
-  }
 
   return 0;
 }

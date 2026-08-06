@@ -50,7 +50,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   MPM.number_MP_before_any_split = MPM.MP.size();
 
   // shapeN / shapeGradN suivent le nombre de points
-  MPM.resizeShapeArrays();
+  MPM.resizeMPArrays();
 
   // ==== Reset the resultant forces of MPs
   // (velGrad is cleared by MPMbox::updateVelocityGradient, so that no
@@ -228,12 +228,6 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
   OneStep::updateDensityFromVolume(MPM);
 
-  // ==== Update the corner positions of the MPs
-  // They are what Polygon::getContactFrame builds its contact frame on, and
-  // this scheme was the only one not refreshing them.
-  if (MPM.needMPCorners) {
-    for (size_t p = 0; p < MP.size(); p++) { MP[p].updateCornersFromF(); }
-  }
   }
 
   return 0;

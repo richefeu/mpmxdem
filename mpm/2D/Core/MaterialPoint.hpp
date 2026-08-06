@@ -20,6 +20,30 @@
 
 struct ConstitutiveModel;
 
+//
+// State that belongs to the constitutive model of a Material Point, and to it
+// alone: nothing outside updateStrainAndStress reads or writes it.
+//
+// It sits in an array of MPMbox rather than in MaterialPoint so that the loops
+// which walk the points at every step -- the transfers to and from the grid,
+// which are the bulk of a time step -- do not drag it through the cache. It is
+// reached with MPMbox::modelState(p).
+//
+struct MPModelState {
+  // Viscous part of the total stress (KelvinVoigt only). Unlike the elastic
+  // part, which is integrated increment by increment, this one is an
+  // INSTANTANEOUS quantity: eta times the current strain rate. It is kept so
+  // that the value of the previous step can be removed from 'stress' before the
+  // new one is added -- otherwise the viscous term accumulates and behaves as an
+  // extra stiffness eta/dt instead of a damper.
+  // (NOT saved in the conf-files yet, see C3 in Doc/BUGS.md)
+  mat4r viscousStress;
+  double outOfPlaneViscousStress{0.0};
+
+  double outOfPlaneEp{0.0};   // Out-of-plane plastic strain component (Sinfonietta)
+  double hardeningForce{0.0}; // memory for hardening (Sinfonietta)
+};
+
 struct MaterialPoint {
   size_t nb{0};        // Number of the Material Point
   int groupNb{0};      // Group Number
@@ -33,11 +57,9 @@ struct MaterialPoint {
 
   double securDist{0.0}; // Security distance for contact detection (it is updated as a function of MP velocity)
   vec2r f;               // Force
-  vec2r q;               // Momentum (mass times velocity)
 
   mat4r strain;             // Total strain
   mat4r plasticStrain;      // Plastic Strain
-  double outOfPlaneEp{0.0}; // Out-of-plane plastic strain component
   mat4r deltaStrain;        // Increment of strain (it is computed in ConstitutiveModel for processing purpose)
                             // (FIXME: remove?)
 
@@ -45,17 +67,6 @@ struct MaterialPoint {
   mat4r stressCorrection;       // Plastic Stress (REMARQUE à enlever ou renomer). C'est la correction plastic en
                                 // fait. Ce truc avait été ajouté par Fabio.
   double outOfPlaneStress{0.0}; // Out-of-plane total stress component
-
-  // Viscous part of the total stress (KelvinVoigt only). Unlike the elastic
-  // part, which is integrated increment by increment, this one is an
-  // INSTANTANEOUS quantity: eta times the current strain rate. It is kept here
-  // so that the value of the previous step can be removed from 'stress' before
-  // the new one is added -- otherwise the viscous term accumulates and behaves
-  // as an extra stiffness eta/dt instead of a damper.
-  // (NOT saved in the conf-files yet, see C3 in Doc/BUGS.md)
-  mat4r viscousStress;
-  double outOfPlaneViscousStress{0.0};
-  double hardeningForce{0.0};   // memory for hardening
 
   // The shape functions N and their gradients gradN used to live here, as
   // double N[16] and vec2r gradN[16], i.e. 384 bytes -- 43 % of this structure.
@@ -66,13 +77,12 @@ struct MaterialPoint {
   mat4r F;         // Deformation gradient matrix
   mat4r velGrad;   // Gradient of velocity (required eg. for computation of F)
 
-  // vec2r refShape[4];
-  //  bool hasRefShape;
-  vec2r corner[4];   // Four corners according to F (positions expressed in the global frame)
+  // The four corners of the point used to be stored here, and refreshed at
+  // every step from F. Nothing needed them: Polygon builds its contact frame
+  // from F directly, and the viewer recomputes them into ProcessedDataMP.
   int splitCount{1}; // Generation number caused by successive to splits
 
   vec2r prev_pos; // Position at the previous time step
-  mat4r prev_F;   // Deformation gradient at the previous step
 
   bool plastic{false}; // checks if the point was plastified (TO BE REMOVED ?)
   vec2r contactf;      // resultant force due to contacts only
@@ -84,7 +94,4 @@ struct MaterialPoint {
 
   // Ctor
   MaterialPoint(int Group = 0, double Size = 0.0, double Rho = 0.0, ConstitutiveModel *CM = nullptr);
-
-  // Some useful method(s)
-  void updateCornersFromF();
 };

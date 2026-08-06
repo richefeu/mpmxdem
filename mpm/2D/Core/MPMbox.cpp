@@ -962,14 +962,6 @@ void MPMbox::checkProximity() {
 //     that never appears in a 'set' line reads outside the vectors.
 //
 void MPMbox::checkSettings() {
-  // Refreshing MaterialPoint::corner[] at every step costs four matrix-vector
-  // products and 64 bytes written per point. Only Polygon::getContactFrame
-  // reads them during the step -- the viewer recomputes them in postProcess.
-  needMPCorners = false;
-  for (size_t o = 0; o < Obstacles.size(); o++) {
-    if (Obstacles[o]->getRegistrationName() == "Polygon") { needMPCorners = true; }
-  }
-
   if (confPeriod <= 0) {
     Logger::critical("@MPMbox::checkSettings, confPeriod = {}; it is used as a modulo and has to be at least 1",
                      confPeriod);
@@ -1167,7 +1159,8 @@ void MPMbox::convergenceConditions() {
 // ===================================================
 
 //
-// Make room in shapeN and shapeGradN for the current number of Material Points.
+// Make room in the side arrays -- shape functions, model state, previous
+// deformation gradient -- for the current number of Material Points.
 //
 // Called at the beginning of each time step and of postProcess. The test costs
 // nothing, and the arrays only grow when points are created -- by a command, by
@@ -1175,11 +1168,15 @@ void MPMbox::convergenceConditions() {
 // nodes per element. The values themselves are recomputed at every step by
 // computeInterpolationValues, so there is nothing to preserve.
 //
-void MPMbox::resizeShapeArrays() {
+void MPMbox::resizeMPArrays() {
   const size_t need = MP.size() * element::nbNodes;
   if (shapeN.size() != need) {
     shapeN.resize(need, 0.0);
     shapeGradN.resize(need);
+  }
+  if (modelStateStore.size() != MP.size()) { modelStateStore.resize(MP.size()); }
+  if (CHCL.hasDoubleScale == true && prevFstore.size() != MP.size()) {
+    prevFstore.resize(MP.size(), mat4r::unit());
   }
 }
 
@@ -1322,8 +1319,8 @@ void MPMbox::updateTransformationGradient() {
   // pour rien, dans un calcul simple echelle.
   if (CHCL.hasDoubleScale == true) {
     for (size_t p = 0; p < MP.size(); p++) {
-      MP[p].prev_F = MP[p].F;
-      MP[p].F      = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
+      prevF(p) = MP[p].F;
+      MP[p].F  = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
     }
   } else {
     for (size_t p = 0; p < MP.size(); p++) { MP[p].F = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F; }
@@ -1424,15 +1421,6 @@ void MPMbox::adaptativeRefinement() {
         MP2.F.xx = MP[p].F.xx;
         MP2.F.yx = MP[p].F.yx;
 
-        // MP[p]     MP2
-        // 3 - <-2   3-> - 2
-        // |     |   |     |
-        // 0 - <-1   0-> - 1
-        MP[p].corner[1] -= sx;
-        MP[p].corner[2] -= sx;
-        MP2.corner[0] += sx;
-        MP2.corner[3] += sx;
-
         MP.push_back(MP2);
       } else { // -> top-bottom splitting
         vec2r sy = MP[p].F * vec2r(0.0, halfSizeMP);
@@ -1444,18 +1432,6 @@ void MPMbox::adaptativeRefinement() {
 
         MP2.F.xy = MP[p].F.xy;
         MP2.F.yy = MP[p].F.yy;
-
-        // 3 - 2
-        // ^   ^  MP2
-        // 0 - 1
-        //
-        // 3 - 2
-        // v   v  MP[p]
-        // 0 - 1
-        MP[p].corner[2] -= sy;
-        MP[p].corner[3] -= sy;
-        MP2.corner[0] += sy;
-        MP2.corner[1] += sy;
 
         MP.push_back(MP2);
       }
@@ -1488,7 +1464,7 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
 
   // Preparation for smoothed data
   size_t *I;
-  resizeShapeArrays();
+  resizeMPArrays();
   for (size_t p = 0; p < MP.size(); p++) { shapeFunction->computeInterpolationValues(*this, p); }
 
   // Update Vector of node indices

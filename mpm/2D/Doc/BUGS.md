@@ -397,7 +397,7 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | ~~B1~~ | ~~`shearLimit` vaut 0 par défaut → `F` remis à l'identité à chaque pas~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:1100` |
 | ~~B2~~ | ~~`velGrad` jamais remis à zéro dans `UpdateStressFirst` / `UpdateStressLast`~~ — **corrigé le 2026-08-05** | `OneStep/UpdateStressFirst.cpp:49` |
 | ~~B3~~ | ~~`prev_pos` jamais mis à jour par `ModifiedLagrangian`~~ — **corrigé le 2026-08-05** | `OneStep/ModifiedLagrangian.cpp` |
-| ~~B4~~ | ~~`corner[]` jamais mis à jour par `ModifiedLagrangian`~~ — **corrigé le 2026-08-05** | `OneStep/ModifiedLagrangian.cpp` |
+| ~~B4~~ | ~~`corner[]` jamais mis à jour par `ModifiedLagrangian`~~ — **corrigé le 2026-08-05**, puis rendu sans objet le 2026-08-06 (champ supprimé) | `OneStep/ModifiedLagrangian.cpp` |
 | ~~B5~~ | ~~`convergenceConditions` : `std::max` au lieu de `std::min`, et `knMax` négatif sans obstacle~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:966` |
 | ~~B6~~ | ~~`GravityRamp` : interpolation sans le terme constant~~ — **corrigé le 2026-08-05** | `Schedulers/GravityRamp.cpp:31` |
 | ~~B7~~ | ~~`KelvinVoigt` : la contrainte visqueuse est cumulée au lieu d'être instantanée~~ — **corrigé le 2026-08-05** | `ConstitutiveModels/KelvinVoigt.cpp:42` |
@@ -430,12 +430,12 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | **D4** | `VonMises` interpole `q/masse` là où les autres modèles utilisent `nodes[].vel` | `ConstitutiveModels/VonMisesElastoPlasticity.cpp:26` |
 | **D5** | Commentaire de la matrice `De` faux | `ConstitutiveModels/MohrCoulomb.cpp:64` |
 | ~~D6~~ | ~~`set_MP_grid` : message inversé et `exit(0)` sur une erreur~~ — **corrigé le 2026-08-05** | `Commands/set_MP_grid.cpp:12` |
-| **D7** | `move_MP` : coins traités comme des coordonnées locales | `Commands/move_MP.cpp:45` |
+| ~~D7~~ | ~~`move_MP` : coins traités comme des coordonnées locales~~ — **corrigé le 2026-08-06** | `Commands/move_MP.cpp:45` |
 | **D8** | Rayon du MP : `sqrt(vol)` pour `Circle`, `size` pour `Line` | `Obstacles/Circle.cpp:43` |
 | **D9** | `cut.cpp` : `max(norm(d1), norm(d1))`, `sprintf` | `See/cut.cpp:68` |
 | **D10** | `Neighbor::dt` jamais alimenté, `contactf` écrasé | `BoundaryForceLaw/frictionalViscoElastic.cpp:60` |
 | **D11** | `t += dt` : le dernier conf-file peut manquer | `Core/MPMbox.cpp:857` |
-| **D13** | `MaterialPoint::q` n'est utilisé nulle part | `Core/MaterialPoint.hpp:36` |
+| ~~D13~~ | ~~`MaterialPoint::q` n'est utilisé nulle part~~ — **corrigé le 2026-08-06** | `Core/MaterialPoint.hpp:36` |
 | **D12** | Rappel des défauts déjà documentés (annexe B du manuel) | — |
 
 ---
@@ -2418,7 +2418,9 @@ Le test rejette un rapport **inférieur** à 2, le message dit « ne devrait pas
 Même remarque pour les `exit(0)` de `set_node_grid.cpp:43`, `new_set_grid.cpp:10` et
 `set_MP_grid.cpp:62`. Utiliser `Logger::critical` + `exit(EXIT_FAILURE)`.
 
-## D7 — `move_MP` : les coins sont traités comme des coordonnées locales
+## ~~D7~~ — `move_MP` : les coins sont traités comme des coordonnées locales
+
+> **CORRIGÉ le 2026-08-06** : le champ `MaterialPoint::corner[4]` a été supprimé (voir `Doc/OPTIM.md`, § 4.3bis), et avec lui le bloc fautif.
 
 `Commands/move_MP.cpp:45-54`. `corner[c]` contient des coordonnées **globales** (posées par
 `updateCornersFromF`), mais la rotation leur est appliquée comme s'il s'agissait de
@@ -2471,7 +2473,9 @@ save(iconf);   // état final, toujours
 Attention : `dt` n'est pas constant en double échelle (`limitTimeStepForDEM`), donc
 `t = step*dt` n'est pas généralisable — la sauvegarde finale inconditionnelle l'est.
 
-## D13 — `MaterialPoint::q` n'est utilisé nulle part
+## ~~D13~~ — `MaterialPoint::q` n'est utilisé nulle part
+
+> **CORRIGÉ le 2026-08-06** : champ supprimé (voir `Doc/OPTIM.md`, § 4.3bis).
 
 **Fichier** : `Core/MaterialPoint.hpp:36`
 

@@ -48,22 +48,22 @@ void KelvinVoigt::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // extra stiffness of modulus eta/dt, all the larger as the time step is
   // small, and not a damper at all. The contribution of the previous step is
   // therefore removed before the new one is added.
-  Sigma.xx -= MPM.MP[p].viscousStress.xx;
-  Sigma.xy -= MPM.MP[p].viscousStress.xy;
-  Sigma.yx -= MPM.MP[p].viscousStress.yx;
-  Sigma.yy -= MPM.MP[p].viscousStress.yy;
-  Sigma.zz -= MPM.MP[p].outOfPlaneViscousStress;
+  Sigma.xx -= MPM.modelState(p).viscousStress.xx;
+  Sigma.xy -= MPM.modelState(p).viscousStress.xy;
+  Sigma.yx -= MPM.modelState(p).viscousStress.yx;
+  Sigma.yy -= MPM.modelState(p).viscousStress.yy;
+  Sigma.zz -= MPM.modelState(p).outOfPlaneViscousStress;
 
   Sigma += C.getStress(dstrain3x3); // elastic part, incremental
 
   mat9r viscous = (eta / MPM.dt) * dstrain3x3; // viscous part, instantaneous
   Sigma += viscous;
 
-  MPM.MP[p].viscousStress.xx        = viscous.xx;
-  MPM.MP[p].viscousStress.xy        = viscous.xy;
-  MPM.MP[p].viscousStress.yx        = viscous.yx;
-  MPM.MP[p].viscousStress.yy        = viscous.yy;
-  MPM.MP[p].outOfPlaneViscousStress = viscous.zz;
+  MPM.modelState(p).viscousStress.xx        = viscous.xx;
+  MPM.modelState(p).viscousStress.xy        = viscous.xy;
+  MPM.modelState(p).viscousStress.yx        = viscous.yx;
+  MPM.modelState(p).viscousStress.yy        = viscous.yy;
+  MPM.modelState(p).outOfPlaneViscousStress = viscous.zz;
 
   MPM.MP[p].stress.xx = Sigma.xx;
   MPM.MP[p].stress.yy = Sigma.yy;
