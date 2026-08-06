@@ -1,0 +1,34 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+\node[base=6.0cm, anchor=north west] (B) at (0,0)
+  {\classname{ConstitutiveModel}{le comportement du matériau :\\ de la déformation vers la contrainte}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  HookeElasticity/élasticité linéaire,
+  KelvinVoigt/élasticité et viscosité,
+  VonMisesElastoPlasticity/plasticité des métaux,
+  MohrCoulomb/plasticité frottante des sols,
+  SinfoniettaClassica/loi avancée pour les sols,
+  SinfoniettaCrush/idem{,} avec écrasement des grains%
+} {
+  \node[deriv=7.8cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+\node[accent=7.8cm, anchor=north west] (D7) at ($(S)+(0.9cm,-0.85cm*7+0.52cm)$)
+  {\variant{CHCL\_DEM}{aucune loi écrite à l'avance : un échantillon
+   granulaire 3D (DEM) est déformé et rend sa contrainte moyenne}};
+\draw[spine] (S) |- (D7.west);
+
+\node[mpmcap, anchor=north west, text width=7.8cm] at ($(D7.south west)+(0,-0.15cm)$)
+  {c'est la porte d'entrée du couplage MPM$\times$DEM};
+
+\end{tikzpicture}
+\end{document}

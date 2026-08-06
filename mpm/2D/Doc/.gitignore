@@ -1,0 +1,11 @@
+# Produits de compilation LaTeX
+mpmbox_doc.pdf
+*.aux
+*.log
+*.toc
+*.out
+
+# Figures de structure : régénérées par structure/tikz/build.sh
+# (et structure/tikz/en/build.sh pour la version anglaise)
+structure/tikz/*.pdf
+structure/tikz/en/*.pdf

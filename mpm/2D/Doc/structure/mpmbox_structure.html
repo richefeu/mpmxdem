@@ -1,0 +1,709 @@
+<title>La structure de MPMbox</title>
+
+<style>
+  :root {
+    --ground:      #FBFAF8;
+    --panel:       #FFFFFF;
+    --ink:         #15202D;
+    --ink-soft:    #55616F;
+    --rule:        #DFDCD5;
+    --grid:        #2F6690;   /* la grille, le calcul */
+    --matter:      #9A6534;   /* la matière, les points */
+    --accent:      #A6432F;   /* le couplage MPM x DEM */
+    --grid-wash:   #EDF3F8;
+    --matter-wash: #F8F1E8;
+    --accent-wash: #FAEDEA;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:      #11171E;
+      --panel:       #171F28;
+      --ink:         #E4EAF0;
+      --ink-soft:    #97A3B0;
+      --rule:        #2B3641;
+      --grid:        #7FB3D8;
+      --matter:      #D6A16A;
+      --accent:      #E08872;
+      --grid-wash:   #1A2735;
+      --matter-wash: #2A2118;
+      --accent-wash: #2E1C18;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #11171E;
+    --panel:       #171F28;
+    --ink:         #E4EAF0;
+    --ink-soft:    #97A3B0;
+    --rule:        #2B3641;
+    --grid:        #7FB3D8;
+    --matter:      #D6A16A;
+    --accent:      #E08872;
+    --grid-wash:   #1A2735;
+    --matter-wash: #2A2118;
+    --accent-wash: #2E1C18;
+  }
+  :root[data-theme="light"] {
+    --ground:      #FBFAF8;
+    --panel:       #FFFFFF;
+    --ink:         #15202D;
+    --ink-soft:    #55616F;
+    --rule:        #DFDCD5;
+    --grid:        #2F6690;
+    --matter:      #9A6534;
+    --accent:      #A6432F;
+    --grid-wash:   #EDF3F8;
+    --matter-wash: #F8F1E8;
+    --accent-wash: #FAEDEA;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 4vw, 2.5rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  p, li { max-width: 62ch; }
+
+  h1, h2, h3 {
+    font-family: var(--serif);
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.2;
+  }
+  h1 { font-size: clamp(2rem, 5vw, 2.9rem); letter-spacing: -0.01em; }
+  h2 { font-size: clamp(1.35rem, 3vw, 1.7rem); }
+  h3 { font-size: 1.05rem; }
+
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  code, .kw {
+    font-family: var(--mono);
+    font-size: 0.86em;
+  }
+
+  /* ---------- en-tête ---------- */
+  header.masthead { display: flex; flex-direction: column; gap: 1rem; }
+  header.masthead .lede {
+    font-family: var(--serif);
+    font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0;
+  }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 1.1rem; }
+  section > p { margin: 0; }
+
+  .section-head { display: flex; flex-direction: column; gap: 0.35rem; }
+  .section-head::after {
+    content: "";
+    height: 2px;
+    width: 3rem;
+    background: var(--fam, var(--grid));
+    margin-top: 0.5rem;
+  }
+
+  /* ---------- figures ---------- */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+  .figbox { overflow-x: auto; }
+  figure svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+  figcaption {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    max-width: 62ch;
+  }
+
+  /* ---------- carte de famille ---------- */
+  .family {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--fam, var(--grid));
+    border-radius: 2px;
+    padding: 1.1rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .family__base { display: flex; flex-direction: column; gap: 0.3rem; }
+  .family__base h3 { font-family: var(--mono); font-size: 1rem; color: var(--fam, var(--grid)); }
+  .family__base .contract { margin: 0; font-size: 0.92rem; color: var(--ink-soft); }
+
+  .variants { list-style: none; margin: 0; padding: 0 0 0 1.1rem; border-left: 1px solid var(--rule); display: flex; flex-direction: column; gap: 0.45rem; }
+  .variants li {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.7rem;
+    max-width: none;
+    font-size: 0.93rem;
+  }
+  .variants li::before {
+    content: "";
+    position: absolute;
+    left: -1.1rem;
+    top: 0.72em;
+    width: 0.7rem;
+    height: 1px;
+    background: var(--rule);
+  }
+  .variants .kw { color: var(--ink); font-weight: 600; }
+  .variants .what { color: var(--ink-soft); }
+  .variants li.is-accent {
+    background: var(--accent-wash);
+    margin-left: -0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 2px;
+  }
+  .variants li.is-accent .kw { color: var(--accent); }
+
+  .group-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    min-width: 11rem;
+  }
+
+  /* ---------- plan général ---------- */
+  .plan { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 52rem) { .plan { grid-template-columns: 1fr 1fr; } }
+  .plan__col { display: flex; flex-direction: column; gap: 0.6rem; }
+  .plan__col h3 { font-family: var(--sans); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft); }
+  .tile {
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--fam);
+    background: var(--panel);
+    border-radius: 2px;
+    padding: 0.6rem 0.8rem;
+  }
+  .tile .kw { display: block; font-weight: 600; }
+  .tile span.what { font-size: 0.85rem; color: var(--ink-soft); }
+  .tiles { display: grid; gap: 0.5rem; grid-template-columns: 1fr; }
+  @media (min-width: 34rem) { .tiles { grid-template-columns: 1fr 1fr; } }
+
+  /* ---------- cycle ---------- */
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; counter-reset: s; }
+  .steps li { display: flex; gap: 0.7rem; max-width: 62ch; font-size: 0.93rem; }
+  .steps li::before {
+    counter-increment: s;
+    content: counter(s);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 1.45rem; height: 1.45rem;
+    display: grid; place-items: center;
+    flex: none;
+  }
+
+  /* ---------- encart ---------- */
+  .aside {
+    background: var(--accent-wash);
+    border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem;
+    border-radius: 2px;
+  }
+  .aside p { margin: 0; font-size: 0.93rem; }
+  .aside strong { color: var(--accent); }
+
+  /* ---------- fin ---------- */
+  .takeaways { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8rem; }
+  .takeaways li { display: flex; gap: 0.8rem; align-items: baseline; }
+  .takeaways b { font-family: var(--serif); font-size: 1.02rem; }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1rem; color: var(--ink-soft); font-size: 0.82rem; }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">MPMbox &middot; code de calcul 2D</p>
+    <h1>La structure du code, sans le jargon</h1>
+    <p class="lede">Un moteur unique fait avancer la matière ; tout ce qui relève d'un choix de
+      modélisation est un ingrédient interchangeable, désigné par un mot-clé dans le fichier
+      d'entrée.</p>
+  </header>
+
+  <!-- ===================== 1. le principe ===================== -->
+  <section>
+    <div class="section-head" style="--fam: var(--matter)">
+      <p class="eyebrow">le principe</p>
+      <h2>Deux descriptions de la même matière</h2>
+    </div>
+    <p>La matière est portée par des <strong>points matériels</strong> qui se déplacent librement :
+      ils transportent la masse, la vitesse, la déformation et la contrainte. Les dérivées spatiales,
+      elles, se calculent sur une <strong>grille fixe</strong> qui ne se déforme jamais. Toute la
+      méthode consiste à faire l'aller-retour entre les deux.</p>
+
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 620 300" role="img" width="620"
+             aria-label="Une grille régulière fixe, un amas de points matériels posés dessus et une paroi rigide inclinée ; les points se déplacent, la grille reste en place.">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <!-- grille -->
+          <g style="stroke:var(--grid)" stroke-opacity="0.45" stroke-width="1">
+            <line x1="60" y1="40" x2="60" y2="250"></line>
+            <line x1="120" y1="40" x2="120" y2="250"></line>
+            <line x1="180" y1="40" x2="180" y2="250"></line>
+            <line x1="240" y1="40" x2="240" y2="250"></line>
+            <line x1="300" y1="40" x2="300" y2="250"></line>
+            <line x1="360" y1="40" x2="360" y2="250"></line>
+            <line x1="420" y1="40" x2="420" y2="250"></line>
+            <line x1="60" y1="40" x2="420" y2="40"></line>
+            <line x1="60" y1="82" x2="420" y2="82"></line>
+            <line x1="60" y1="124" x2="420" y2="124"></line>
+            <line x1="60" y1="166" x2="420" y2="166"></line>
+            <line x1="60" y1="208" x2="420" y2="208"></line>
+            <line x1="60" y1="250" x2="420" y2="250"></line>
+          </g>
+          <!-- noeuds -->
+          <g style="fill:var(--grid)">
+            <circle cx="120" cy="124" r="2.6"></circle>
+            <circle cx="180" cy="124" r="2.6"></circle>
+            <circle cx="240" cy="124" r="2.6"></circle>
+            <circle cx="120" cy="166" r="2.6"></circle>
+            <circle cx="180" cy="166" r="2.6"></circle>
+            <circle cx="240" cy="166" r="2.6"></circle>
+          </g>
+
+          <!-- points materiels -->
+          <g style="fill:var(--matter)" fill-opacity="0.85">
+            <rect x="94" y="98" width="13" height="13"></rect>
+            <rect x="112" y="98" width="13" height="13"></rect>
+            <rect x="130" y="98" width="13" height="13"></rect>
+            <rect x="94" y="116" width="13" height="13"></rect>
+            <rect x="112" y="116" width="13" height="13"></rect>
+            <rect x="130" y="116" width="13" height="13"></rect>
+            <rect x="148" y="116" width="13" height="13"></rect>
+            <rect x="94" y="134" width="13" height="13"></rect>
+            <rect x="112" y="134" width="13" height="13"></rect>
+            <rect x="130" y="134" width="13" height="13"></rect>
+            <rect x="148" y="134" width="13" height="13"></rect>
+            <rect x="166" y="134" width="13" height="13"></rect>
+            <rect x="112" y="152" width="13" height="13"></rect>
+            <rect x="130" y="152" width="13" height="13"></rect>
+            <rect x="148" y="152" width="13" height="13"></rect>
+            <rect x="166" y="152" width="13" height="13"></rect>
+            <rect x="184" y="152" width="13" height="13"></rect>
+            <rect x="202" y="152" width="13" height="13"></rect>
+          </g>
+
+          <!-- obstacle -->
+          <line x1="255" y1="150" x2="420" y2="248" style="stroke:var(--ink)" stroke-width="3" stroke-linecap="round"></line>
+
+          <!-- fleche de mouvement -->
+          <path d="M226,168 q34,14 62,34" fill="none" style="stroke:var(--matter)" stroke-width="1.6"
+                marker-end="url(#ar)"></path>
+
+          <!-- annotations -->
+          <g font-family="-apple-system, sans-serif" font-size="12" fill="currentColor">
+            <text x="452" y="60" style="fill:var(--grid)">grille fixe</text>
+            <text x="452" y="76" fill="currentColor" opacity="0.7">support du calcul,</text>
+            <text x="452" y="92" fill="currentColor" opacity="0.7">remise à zéro à chaque pas</text>
+
+            <text x="452" y="132" style="fill:var(--matter)">points matériels</text>
+            <text x="452" y="148" fill="currentColor" opacity="0.7">porteurs de la matière,</text>
+            <text x="452" y="164" fill="currentColor" opacity="0.7">ils se déplacent</text>
+
+            <text x="452" y="204">obstacle rigide</text>
+            <text x="452" y="220" fill="currentColor" opacity="0.7">borne l'écoulement</text>
+          </g>
+          <g stroke="currentColor" stroke-opacity="0.35" stroke-width="1">
+            <line x1="424" y1="56" x2="440" y2="56"></line>
+            <line x1="424" y1="128" x2="440" y2="128"></line>
+            <line x1="424" y1="200" x2="440" y2="200"></line>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Les points traversent la grille sans jamais la distordre : c'est ce qui rend la
+        méthode robuste en très grandes déformations.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== 2. le plan du code ===================== -->
+  <section>
+    <div class="section-head" style="--fam: var(--grid)">
+      <p class="eyebrow">le plan du code</p>
+      <h2>Un chef d'orchestre et des ingrédients</h2>
+    </div>
+    <p>La classe <code>MPMbox</code> lit les données, boucle en temps et écrit les résultats. Elle ne
+      connaît que des <em>familles</em> d'ingrédients — jamais la variante réellement choisie. C'est
+      le fichier d'entrée qui nomme celle qu'on veut.</p>
+
+    <div class="plan">
+      <div class="plan__col">
+        <h3>ce qui est simulé</h3>
+        <div class="tiles" style="grid-template-columns: 1fr;">
+          <div class="tile" style="--fam: var(--matter)">
+            <span class="kw">MaterialPoint</span>
+            <span class="what">les points matériels : masse, position, vitesse, déformation, contrainte</span>
+          </div>
+          <div class="tile" style="--fam: var(--grid)">
+            <span class="kw">grid &middot; node &middot; element</span>
+            <span class="what">la grille fixe et ses nœuds, remis à zéro à chaque pas</span>
+          </div>
+          <div class="tile" style="--fam: var(--ink-soft)">
+            <span class="kw">Obstacle</span>
+            <span class="what">les corps rigides qui bornent ou pilotent l'écoulement</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="plan__col">
+        <h3>ce que l'utilisateur choisit</h3>
+        <div class="tiles">
+          <div class="tile" style="--fam: var(--matter)">
+            <span class="kw">ConstitutiveModel</span>
+            <span class="what">comportement du matériau</span>
+          </div>
+          <div class="tile" style="--fam: var(--grid)">
+            <span class="kw">ShapeFunction</span>
+            <span class="what">transfert points ↔ grille</span>
+          </div>
+          <div class="tile" style="--fam: var(--grid)">
+            <span class="kw">OneStep</span>
+            <span class="what">schéma d'intégration</span>
+          </div>
+          <div class="tile" style="--fam: var(--ink-soft)">
+            <span class="kw">BoundaryForceLaw</span>
+            <span class="what">loi de contact</span>
+          </div>
+          <div class="tile" style="--fam: var(--ink-soft)">
+            <span class="kw">Command</span>
+            <span class="what">mise en données</span>
+          </div>
+          <div class="tile" style="--fam: var(--ink-soft)">
+            <span class="kw">Scheduler</span>
+            <span class="what">scénario au cours du temps</span>
+          </div>
+          <div class="tile" style="--fam: var(--ink-soft)">
+            <span class="kw">Spy</span>
+            <span class="what">mesures pendant le calcul</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 3. le pas de temps ===================== -->
+  <section>
+    <div class="section-head" style="--fam: var(--grid)">
+      <p class="eyebrow">la boucle</p>
+      <h2>Ce qui se passe pendant un pas de temps</h2>
+    </div>
+
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 640 500" role="img" width="640"
+             aria-label="Cycle en six étapes : points vers grille, forces aux nœuds, résolution, grille vers points, déformation et contrainte, remise à zéro de la grille, puis retour au début.">
+          <defs>
+            <marker id="cyc" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <circle cx="320" cy="250" r="170" fill="none" stroke="currentColor"
+                  stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3 6"></circle>
+
+          <!-- sens de rotation : six pointes tangentes -->
+          <g fill="currentColor" fill-opacity="0.5">
+            <polygon points="0,-5 10,0 0,5" transform="translate(467,164) rotate(60)"></polygon>
+            <polygon points="0,-5 10,0 0,5" transform="translate(490,250) rotate(90)"></polygon>
+            <polygon points="0,-5 10,0 0,5" transform="translate(467,336) rotate(120)"></polygon>
+            <polygon points="0,-5 10,0 0,5" transform="translate(173,336) rotate(240)"></polygon>
+            <polygon points="0,-5 10,0 0,5" transform="translate(150,250) rotate(270)"></polygon>
+            <polygon points="0,-5 10,0 0,5" transform="translate(173,164) rotate(300)"></polygon>
+          </g>
+
+          <g font-family="-apple-system, sans-serif" font-size="12.5" text-anchor="middle">
+            <!-- 1 haut -->
+            <rect x="235" y="55" width="170" height="46" rx="3" style="fill:var(--matter-wash);stroke:var(--matter)"></rect>
+            <text x="320" y="74" font-weight="600" style="fill:var(--matter)">1. points → grille</text>
+            <text x="320" y="91" fill="currentColor" opacity="0.75">masse et quantité de mvt</text>
+
+            <!-- 2 haut-droite -->
+            <rect x="405" y="128" width="170" height="46" rx="3" style="fill:var(--grid-wash);stroke:var(--grid)"></rect>
+            <text x="490" y="147" font-weight="600" style="fill:var(--grid)">2. forces aux nœuds</text>
+            <text x="490" y="164" fill="currentColor" opacity="0.75">internes et externes</text>
+
+            <!-- 3 bas-droite -->
+            <rect x="405" y="326" width="170" height="46" rx="3" style="fill:var(--grid-wash);stroke:var(--grid)"></rect>
+            <text x="490" y="345" font-weight="600" style="fill:var(--grid)">3. résolution</text>
+            <text x="490" y="362" fill="currentColor" opacity="0.75">vitesses des nœuds</text>
+
+            <!-- 4 bas -->
+            <rect x="235" y="399" width="170" height="46" rx="3" style="fill:var(--matter-wash);stroke:var(--matter)"></rect>
+            <text x="320" y="418" font-weight="600" style="fill:var(--matter)">4. grille → points</text>
+            <text x="320" y="435" fill="currentColor" opacity="0.75">vitesses et positions</text>
+
+            <!-- 5 bas-gauche -->
+            <rect x="65" y="326" width="170" height="46" rx="3" style="fill:var(--matter-wash);stroke:var(--matter)"></rect>
+            <text x="150" y="345" font-weight="600" style="fill:var(--matter)">5. contrainte</text>
+            <text x="150" y="362" fill="currentColor" opacity="0.75">le modèle entre en jeu</text>
+
+            <!-- 6 haut-gauche -->
+            <rect x="65" y="128" width="170" height="46" rx="3" style="fill:var(--grid-wash);stroke:var(--grid)"></rect>
+            <text x="150" y="147" font-weight="600" style="fill:var(--grid)">6. grille oubliée</text>
+            <text x="150" y="164" fill="currentColor" opacity="0.75">remise à zéro</text>
+
+            <!-- centre -->
+            <text x="320" y="240" font-size="14" font-weight="600" fill="currentColor">un pas de temps</text>
+            <text x="320" y="262" fill="currentColor" opacity="0.7">la grille ne se déforme jamais</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Les étapes en teinte sable concernent les points matériels, celles en bleu la
+        grille. Le choix du schéma (<code>OneStep</code>) ne change pas le cycle : il change le
+        moment où la contrainte est réactualisée.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== 4. les familles ===================== -->
+  <section>
+    <div class="section-head" style="--fam: var(--matter)">
+      <p class="eyebrow">famille</p>
+      <h2>Le comportement du matériau</h2>
+    </div>
+    <p>C'est la physique du matériau : à partir de l'incrément de déformation d'un point matériel,
+      on en déduit sa contrainte. Chaque point matériel porte son modèle.</p>
+
+    <div class="family" style="--fam: var(--matter)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>ConstitutiveModel</h3>
+        <p class="contract">le contrat : rendre une contrainte à partir d'une déformation</p>
+      </div>
+      <ul class="variants">
+        <li><span class="kw">HookeElasticity</span><span class="what">élasticité linéaire</span></li>
+        <li><span class="kw">KelvinVoigt</span><span class="what">élasticité et viscosité</span></li>
+        <li><span class="kw">VonMisesElastoPlasticity</span><span class="what">plasticité des métaux</span></li>
+        <li><span class="kw">MohrCoulomb</span><span class="what">plasticité frottante des sols</span></li>
+        <li><span class="kw">SinfoniettaClassica</span><span class="what">loi avancée pour les sols</span></li>
+        <li><span class="kw">SinfoniettaCrush</span><span class="what">la même, avec écrasement des grains</span></li>
+        <li class="is-accent"><span class="kw">CHCL_DEM</span><span class="what">aucune loi écrite à l'avance : un échantillon granulaire 3D est déformé et rend sa contrainte moyenne</span></li>
+      </ul>
+    </div>
+
+    <div class="aside">
+      <p><strong>C'est ici qu'entre le couplage MPM×DEM.</strong> Le point matériel qui utilise
+        <code>CHCL_DEM</code> embarque un échantillon périodique de grains (<code>PBC3Dbox</code>).
+        On lui impose la déformation du point, on relit la contrainte moyenne qui en sort. Pas de
+        loi analytique à calibrer — mais un calcul DEM complet par point, à chaque pas.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head" style="--fam: var(--ink-soft)">
+      <p class="eyebrow">famille</p>
+      <h2>Les frontières et le contact</h2>
+    </div>
+    <p>Deux questions séparées : quelle est la forme de l'obstacle, et que se passe-t-il quand un
+      point matériel le touche. Chaque obstacle porte sa loi de contact.</p>
+
+    <div class="family" style="--fam: var(--ink-soft)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>Obstacle</h3>
+        <p class="contract">le contrat : où je suis, qui me touche, comment je bouge</p>
+      </div>
+      <ul class="variants">
+        <li><span class="kw">Line</span><span class="what">paroi droite</span></li>
+        <li><span class="kw">Circle</span><span class="what">disque</span></li>
+        <li><span class="kw">Polygon</span><span class="what">contour polygonal quelconque</span></li>
+      </ul>
+    </div>
+
+    <div class="family" style="--fam: var(--ink-soft)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>BoundaryForceLaw</h3>
+        <p class="contract">le contrat : quelle force pour quel recouvrement</p>
+      </div>
+      <ul class="variants">
+        <li><span class="kw">frictionalViscoElastic</span><span class="what">ressort, amortisseur et frottement</span></li>
+        <li><span class="kw">frictionalViscoElastofragile</span><span class="what">la même, avec rupture de cohésion</span></li>
+        <li><span class="kw">frictionalNormalRestitution</span><span class="what">frottement et restitution au choc</span></li>
+      </ul>
+    </div>
+    <p>Un obstacle peut être piloté — vitesse imposée — ou libre : il répond alors aux forces de
+      contact avec sa masse et son inertie.</p>
+  </section>
+
+  <section>
+    <div class="section-head" style="--fam: var(--grid)">
+      <p class="eyebrow">famille</p>
+      <h2>Le lien entre les points et la grille</h2>
+    </div>
+    <p>Les fonctions de forme donnent le poids de chaque nœud voisin dans le transfert, et le
+      gradient qui sert à calculer les déformations.</p>
+
+    <div class="family" style="--fam: var(--grid)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>ShapeFunction</h3>
+        <p class="contract">le contrat : les poids d'interpolation d'un point et leurs gradients</p>
+      </div>
+      <ul class="variants">
+        <li><span class="kw">Linear</span><span class="what">interpolation linéaire sur 4 nœuds</span></li>
+        <li><span class="kw">RegularQuadLinear</span><span class="what">la même, optimisée pour une grille régulière</span></li>
+        <li><span class="kw">BSpline</span><span class="what">support étendu à 16 nœuds : plus régulier, moins de bruit</span></li>
+      </ul>
+    </div>
+    <p>C'est ce choix qui gouverne une bonne part du bruit numérique observé quand un point traverse
+      une frontière d'élément.</p>
+  </section>
+
+  <section>
+    <div class="section-head" style="--fam: var(--grid)">
+      <p class="eyebrow">famille</p>
+      <h2>La marche en temps</h2>
+    </div>
+
+    <div class="family" style="--fam: var(--grid)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>OneStep</h3>
+        <p class="contract">le contrat : faire avancer toute la simulation d'un pas</p>
+      </div>
+      <ul class="variants">
+        <li><span class="kw">UpdateStressFirst</span><span class="what">USF : la contrainte est actualisée avant le mouvement</span></li>
+        <li><span class="kw">UpdateStressLast</span><span class="what">USL : la contrainte est actualisée après le mouvement</span></li>
+        <li class="is-accent"><span class="kw">ModifiedLagrangian</span><span class="what">MUSL, variante lissée ; seul schéma compatible avec le couplage MPM×DEM</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head" style="--fam: var(--ink-soft)">
+      <p class="eyebrow">famille</p>
+      <h2>La mise en données et le scénario</h2>
+    </div>
+    <p>Une <code>Command</code> agit <strong>une seule fois</strong>, au moment où le fichier
+      d'entrée est lu. Un <code>Scheduler</code> est <strong>consulté à chaque pas</strong> et agit
+      quand sa condition est remplie.</p>
+
+    <div class="family" style="--fam: var(--ink-soft)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>Command</h3>
+        <p class="contract">le contrat : construire ou retoucher la scène, une fois pour toutes</p>
+      </div>
+      <ul class="variants">
+        <li><span class="group-label">créer la matière</span><span class="kw">set_MP_grid &nbsp; set_MP_polygon &nbsp; add_MP_ShallowPath</span></li>
+        <li><span class="group-label">définir la grille</span><span class="kw">new_set_grid &nbsp; set_node_grid</span></li>
+        <li><span class="group-label">conditions aux limites</span><span class="kw">set_BC_line &nbsp; set_BC_column</span></li>
+        <li><span class="group-label">état initial</span><span class="kw">set_K0_stress &nbsp; set_uniform_pressure</span></li>
+        <li><span class="group-label">retouches</span><span class="kw">move_MP &nbsp; reset_model</span></li>
+        <li><span class="group-label">marquer des points</span><span class="kw">select_tracked_MP &nbsp; select_controlled_MP</span></li>
+      </ul>
+    </div>
+
+    <div class="family" style="--fam: var(--ink-soft)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>Scheduler</h3>
+        <p class="contract">le contrat : à chaque pas, décider s'il faut agir</p>
+      </div>
+      <ul class="variants">
+        <li><span class="kw">GravityRamp</span><span class="what">la gravité est montée progressivement</span></li>
+        <li><span class="kw">MoveObstacle</span><span class="what">déclenche le mouvement d'un obstacle</span></li>
+        <li><span class="kw">RemoveObstacle</span><span class="what">retire une paroi, provoque un lâcher</span></li>
+        <li><span class="kw">RemoveMaterialPoint</span><span class="what">évacue des points matériels</span></li>
+        <li><span class="kw">PICDissipation</span><span class="what">dose l'amortissement numérique</span></li>
+        <li><span class="kw">PICDissipationByPIC</span><span class="what">la même chose, avec un autre critère</span></li>
+        <li><span class="kw">ReactivateCHCLBonds</span><span class="what">recolle les liens dans les échantillons DEM</span></li>
+      </ul>
+    </div>
+    <p>Un scénario s'écrit en empilant des <code>Scheduler</code> : laisser consolider, puis retirer
+      la paroi, puis couper l'amortissement.</p>
+  </section>
+
+  <section>
+    <div class="section-head" style="--fam: var(--ink-soft)">
+      <p class="eyebrow">famille</p>
+      <h2>Regarder ce qui se passe</h2>
+    </div>
+    <p>Les sondes écrivent des mesures scalaires au fil du temps, dans des fichiers texte.
+      Les champs sur toute la scène ne passent pas par une sonde : ils sont dans les
+      <em>conf-files</em>, sauvés tous les <code>confPeriod</code> pas.</p>
+
+    <div class="family" style="--fam: var(--ink-soft)">
+      <div class="family__base">
+        <p class="eyebrow">classe de base</p>
+        <h3>Spy</h3>
+        <p class="contract">le contrat : mesurer périodiquement, écrire un fichier texte</p>
+      </div>
+      <ul class="variants">
+        <li><span class="kw">MeanStress</span><span class="what">contrainte moyenne</span></li>
+        <li><span class="kw">Work</span><span class="what">travail des efforts</span></li>
+        <li><span class="kw">EnergyBalance</span><span class="what">bilan d'énergie</span></li>
+        <li><span class="kw">MPTracking</span><span class="what">suivi de points matériels choisis</span></li>
+        <li><span class="kw">ObstacleTracking</span><span class="what">efforts et mouvement d'une paroi</span></li>
+        <li><span class="kw">ElasticBeamDev</span><span class="what">flèche d'une poutre, cas test</span></li>
+      </ul>
+    </div>
+
+      </section>
+
+  <!-- ===================== 5. retenir ===================== -->
+  <section>
+    <div class="section-head" style="--fam: var(--accent)">
+      <p class="eyebrow">en résumé</p>
+      <h2>Ce qu'il faut retenir</h2>
+    </div>
+    <ul class="takeaways">
+      <li><span><b>Un seul cœur, beaucoup d'ingrédients.</b> Le moteur ne connaît que des contrats —
+        « un modèle sait rendre une contrainte », « un obstacle sait dire si on le touche » — jamais
+        la variante réellement utilisée.</span></li>
+      <li><span><b>Le fichier d'entrée choisit par le nom.</b> <code>MohrCoulomb</code>,
+        <code>BSpline</code>, <code>Circle</code> sont des mots-clés qui désignent directement une
+        classe du code.</span></li>
+      <li><span><b>Ajouter une physique ne touche pas au moteur.</b> On écrit une variante de plus,
+        on l'enregistre sous un nom, elle devient disponible pour tout le monde.</span></li>
+      <li><span><b>Le couplage MPM×DEM entre par la même porte.</b> <code>CHCL_DEM</code> n'est
+        qu'une loi de comportement de plus — c'est ce qui rend le double changement d'échelle
+        indolore pour le reste du code.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    MPMbox 2D — diagrammes établis à partir des classes de base et de leurs variantes enregistrées
+    dans <code>MPMbox::ExplicitRegistrations()</code>.
+  </footer>
+
+</div>

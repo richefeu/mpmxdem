@@ -1,0 +1,28 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+\node[base=6.4cm, anchor=north west] (B) at (0,0)
+  {\classname{ShapeFunction}{the link between a material point and its neighbouring nodes:\\
+   interpolation weights and their gradients}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  Linear/linear interpolation over 4 nodes,
+  RegularQuadLinear/the same{,} optimised for a regular grid,
+  BSpline/support extended to 16 nodes: smoother{,} less noise%
+} {
+  \node[deriv=8.4cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+\node[mpmcap, anchor=north west, text width=8.8cm] at ($(D3.south west)+(0,-0.2cm)$)
+  {this choice governs much of the numerical noise observed when a material point
+   crosses an element boundary};
+
+\end{tikzpicture}
+\end{document}

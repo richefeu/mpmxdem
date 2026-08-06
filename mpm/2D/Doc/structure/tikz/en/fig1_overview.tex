@@ -1,0 +1,46 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+% ---- the conductor
+\node[base=5.0cm] (BOX) at (1.0, 3.6)
+  {\classname{MPMbox}{reads the input, marches in time, writes the results}};
+
+% ---- what is simulated
+\node[data=4.6cm] (MP)   at (-3.4, 0.9) {{\bfseries MaterialPoint}\\ material points carrying the matter (mass, velocity, stress)};
+\node[data=4.6cm] (GRID) at (-3.4,-1.1) {{\bfseries grid / node / element}\\ fixed computational grid, reset at every step};
+\node[data=4.6cm] (OBS)  at (-3.4,-3.1) {{\bfseries Obstacle}\\ rigid bodies bounding or driving the flow};
+
+% ---- the interchangeable ingredients
+\node[base=3.8cm] (CM)  at (2.8, 1.15) {{\bfseries ConstitutiveModel}\\[1pt]{\scriptsize\itshape material behaviour\\ one per material point}};
+\node[base=3.8cm] (SF)  at (2.8,-0.55) {{\bfseries ShapeFunction}\\[1pt]{\scriptsize\itshape points $\leftrightarrow$ grid transfer}};
+\node[base=3.8cm] (OS)  at (2.8,-2.05) {{\bfseries OneStep}\\[1pt]{\scriptsize\itshape time integration scheme}};
+\node[base=3.8cm] (BFL) at (2.8,-3.55) {{\bfseries BoundaryForceLaw}\\[1pt]{\scriptsize\itshape contact law\\ one per obstacle}};
+
+\node[base=3.8cm] (CMD) at (7.4, 1.15) {{\bfseries Command}\\[1pt]{\scriptsize\itshape model setup}};
+\node[base=3.8cm] (SCH) at (7.4,-0.55) {{\bfseries Scheduler}\\[1pt]{\scriptsize\itshape scenario over time}};
+\node[base=3.8cm] (SPY) at (7.4,-2.05) {{\bfseries Spy}\\[1pt]{\scriptsize\itshape measurements during the run}};
+% ---- group titles (inside the frames)
+\node[font=\sffamily\small\bfseries, text=mpmData, anchor=south west] (TD)
+  at ($(MP.north west)+(0,0.28cm)$) {what is simulated};
+\node[font=\sffamily\small\bfseries, text=mpmBase, anchor=south west] (TC)
+  at ($(CM.north west)+(0,0.28cm)$) {what the user picks, with a keyword of the input file};
+
+% ---- groups
+\begin{scope}[on background layer]
+  \node[draw=mpmData, densely dashed, rounded corners=4pt, inner sep=8pt,
+        fit=(MP)(GRID)(OBS)(TD)] (GDATA) {};
+  \node[draw=mpmBase, densely dashed, rounded corners=4pt, inner sep=8pt,
+        fit=(CM)(BFL)(CMD)(SPY)(TC)] (GCHOIX) {};
+\end{scope}
+
+\draw[link, line width=1pt] (BOX.south) to[out=-135,in=90] ($(GDATA.north)+(-0.6cm,0.02cm)$);
+\draw[link, line width=1pt] (BOX.south) to[out=-45,in=90] ($(GCHOIX.north)+(0.6cm,0.02cm)$);
+
+\node[mpmcap, anchor=north, text width=13cm, align=center] at (1.6,-5.3)
+  {the core of the code only knows the families shown here,
+   never the variant that is actually selected};
+
+\end{tikzpicture}
+\end{document}

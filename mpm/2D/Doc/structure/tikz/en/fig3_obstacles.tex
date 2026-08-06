@@ -1,0 +1,49 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+% ================= Obstacle =================
+\node[base=6.4cm, anchor=north west] (B) at (0,0)
+  {\classname{Obstacle}{the shape and motion of a rigid boundary:\\ where is it, who touches it?}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  Line/straight wall (plane),
+  Circle/disk,
+  Polygon/arbitrary polygonal outline%
+} {
+  \node[deriv=8.8cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+\node[mpmcap, anchor=north west, text width=9.0cm] at ($(D3.south west)+(0,-0.15cm)$)
+  {an obstacle is either driven (imposed velocity) or free, in which case it responds
+   to the contact forces};
+
+% ================= BoundaryForceLaw =================
+\node[base=6.4cm, anchor=north west] (C) at (0,-6.3)
+  {\classname{BoundaryForceLaw}{what happens at a contact:\\ which force for which overlap?}};
+
+\coordinate (T) at ($(C.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (T) -- ($(C.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  frictionalViscoElastic/spring + dashpot + friction,
+  frictionalViscoElastofragile/the same{,} with cohesion breakage,
+  frictionalNormalRestitution/friction + normal restitution%
+} {
+  \node[deriv=8.8cm, anchor=north west] (E\i) at ($(T)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (T) |- (E\i.west);
+}
+
+% ================= relation =================
+\node[font=\sffamily\scriptsize\itshape, text=mpmGrey, anchor=south west]
+  at ($(C.north west)+(0,0.12cm)$) {each \textbf{Obstacle} owns one \textbf{BoundaryForceLaw}:};
+
+\end{tikzpicture}
+\end{document}

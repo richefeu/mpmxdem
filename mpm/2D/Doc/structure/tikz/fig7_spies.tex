@@ -1,0 +1,31 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+\node[base=6.4cm, anchor=north west] (B) at (0,0)
+  {\classname{Spy}{observer le calcul en cours :\\ des mesures scalaires écrites dans des fichiers texte}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  MeanStress/contrainte moyenne sur les points matériels,
+  Work/travail des forces de contact et internes{,} par tranches en x,
+  EnergyBalance/bilan d'énergie de l'ensemble du système,
+  MPTracking/contrainte et déformation moyennes de points choisis,
+  ObstacleTracking/position{,} vitesse et force d'un obstacle,
+  ElasticBeamDev/flèche d'une poutre (cas test)%
+} {
+  \node[deriv=9.8cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+\node[mpmcap, anchor=north west, text width=10.0cm] at ($(D6.south west)+(0,-0.2cm)$)
+  {chaque sonde a sa propre période d'enregistrement ; les champs de toute la scène ne
+   sont pas écrits par une sonde mais par les conf-files, sauvés tous les
+   \texttt{confPeriod} pas};
+
+\end{tikzpicture}
+\end{document}

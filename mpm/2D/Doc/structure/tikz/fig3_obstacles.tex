@@ -1,0 +1,48 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+% ================= Obstacle =================
+\node[base=5.6cm, anchor=north west] (B) at (0,0)
+  {\classname{Obstacle}{la forme et le mouvement d'une frontière rigide :\\ où est-elle, qui la touche ?}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  Line/paroi droite (plan),
+  Circle/disque,
+  Polygon/contour polygonal quelconque%
+} {
+  \node[deriv=6.2cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+\node[mpmcap, anchor=north west, text width=6.6cm] at ($(D3.south west)+(0,-0.2cm)$)
+  {un obstacle peut être piloté (vitesse imposée)\\ ou libre (il répond aux forces de contact)};
+
+% ================= BoundaryForceLaw =================
+\node[base=5.6cm, anchor=north west] (C) at (9.6,0)
+  {\classname{BoundaryForceLaw}{ce qui se passe au contact :\\ quelle force pour quel recouvrement ?}};
+
+\coordinate (T) at ($(C.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (T) -- ($(C.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  frictionalViscoElastic/ressort + amortisseur + frottement,
+  frictionalViscoElastofragile/idem{,} avec rupture de cohésion,
+  frictionalNormalRestitution/frottement + restitution au choc%
+} {
+  \node[deriv=8.8cm, anchor=north west] (E\i) at ($(T)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (T) |- (E\i.west);
+}
+
+% ================= relation =================
+\draw[dashlink] (B.east) -- node[above, font=\sffamily\scriptsize, text=mpmGrey]
+  {chaque obstacle possède une} (C.west);
+
+\end{tikzpicture}
+\end{document}

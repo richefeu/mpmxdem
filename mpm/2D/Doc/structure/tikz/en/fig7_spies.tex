@@ -1,0 +1,30 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+\node[base=6.4cm, anchor=north west] (B) at (0,0)
+  {\classname{Spy}{watching the running computation:\\ scalar measurements written as text files}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  MeanStress/average stress over the material points,
+  Work/work of the contact and internal forces{,} sliced along x,
+  EnergyBalance/energy balance of the whole system,
+  MPTracking/mean stress and strain over selected points,
+  ObstacleTracking/position{,} velocity and force of one obstacle,
+  ElasticBeamDev/deflection of a beam (test case)%
+} {
+  \node[deriv=9.6cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+\node[mpmcap, anchor=north west, text width=9.8cm] at ($(D6.south west)+(0,-0.2cm)$)
+  {each spy has its own recording period; the fields of the whole scene are not written
+   by a spy but by the conf-files, saved every \texttt{confPeriod} steps};
+
+\end{tikzpicture}
+\end{document}
