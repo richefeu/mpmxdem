@@ -46,4 +46,9 @@ Obstacle::Obstacle() : isFree(false), pos(), vel(), acc(), force() {
 }
 
 // Dtor
-Obstacle::~Obstacle() {}
+// Each obstacle builds its own contact law in the constructor above, and
+// MPMbox::read replaces it with delete + create; it is never shared.
+Obstacle::~Obstacle() {
+  delete boundaryForceLaw;
+  boundaryForceLaw = nullptr;
+}

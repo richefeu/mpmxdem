@@ -16,7 +16,10 @@ void ElasticBeamDev::read(std::istream& is) {
   filename = box->result_folder + fileTool::separator() + Filename;
   std::cout << "KinTotal: filename is " << filename << std::endl;
  
-  file.open(filename.c_str());
+  // In visualisation mode -- see, cut -- MPMbox::read runs this very function on
+  // the conf-file, and opening the output file in write mode TRUNCATES it. The
+  // results of a computation must survive being looked at.
+  if (box->computationMode == true) { file.open(filename.c_str()); }
   file << std::scientific << std::setprecision(15);
 }
 
@@ -32,6 +35,7 @@ void ElasticBeamDev::exec() {
 }
 
 void ElasticBeamDev::record() {
+  if (file.is_open() == false) { return; }
   file << box->t << " " << KinEnergyTot << std::endl;
 }
 

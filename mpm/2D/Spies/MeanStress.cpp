@@ -12,7 +12,10 @@ void MeanStress::read(std::istream& is) {
 
   filename = box->result_folder + fileTool::separator() + Filename;
   std::cout << "MeanStress: filename is " << filename << std::endl;
-  file.open(filename.c_str());
+  // In visualisation mode -- see, cut -- MPMbox::read runs this very function on
+  // the conf-file, and opening the output file in write mode TRUNCATES it. The
+  // results of a computation must survive being looked at.
+  if (box->computationMode == true) { file.open(filename.c_str()); }
 }
 
 void MeanStress::exec() {
@@ -27,10 +30,11 @@ void MeanStress::exec() {
 }
 
 void MeanStress::record() {
+  if (file.is_open() == false) { return; }
 	file << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
   file << box->t << ' ' << meanStress << std::endl;
 }
 
 void MeanStress::end() {
-	file.close();
+  if (file.is_open()) { file.close(); }
 }

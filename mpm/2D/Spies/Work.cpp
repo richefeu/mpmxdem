@@ -92,6 +92,8 @@ void Work::record() {
 }
 
 void Work::end() {
+  // fileSlices is opened only in computation mode, like file
+  if (fileSlices.is_open() == false) { return; }
   double bin = Range.getStep();
   double vmin = Range.getLeftValue();
   for (int i = 0; i < Range.getNumberOfSlices(); i++) {

@@ -406,10 +406,10 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | ~~B15~~ | ~~`UpdateStressLast` diverge : la vitesse nodale n'est pas rafraîchie avant la mise à jour des contraintes~~ — **corrigé le 2026-08-05** | `OneStep/UpdateStressLast.cpp:98` |
 | ~~B10~~ | ~~`Circle` / `Polygon` ne restaurent que `fn` et `ft`~~ — **corrigé le 2026-08-05** | `Obstacles/Circle.cpp:90` |
 | ~~B11~~ | ~~Découpage : `nb` dupliqué, borne de boucle mouvante, `PBC` partagé~~ — **corrigé le 2026-08-05** (le point sur `vol0`/`size` était **erroné**) | `Core/MPMbox.cpp:1094` |
-| **B12** | Les spies ouvrent (donc vident) leurs fichiers en mode visualisation | `Spies/MeanStress.cpp:15` |
+| ~~**B12**~~ | ~~Les spies ouvrent (donc vident) leurs fichiers en mode visualisation~~ **corrigé** | `Spies/*.cpp`, `See/cut.cpp` |
 | **B13** | `add_MP_ShallowPath` : borne en x fausse et `init()` du modèle non appelée | `Commands/add_MP_ShallowPath.cpp:31` |
 | **B14** | `set_MP_polygon` : un `PBC3Dbox` alloué et chargé pour chaque point rejeté | `Commands/set_MP_polygon.cpp:40` |
-| **C1** | `clean()` ne libère ni les spies, ni les schedulers, ni la fonction de forme… | `Core/MPMbox.cpp:293` |
+| ~~**C1**~~ | ~~`clean()` ne libère ni les spies, ni les schedulers, ni la fonction de forme…~~ **corrigé** | `Core/MPMbox.cpp` |
 | **C2** | `Elem` non vidé (cas 16 nœuds) et `liveNodeNum` empilé sans remise à zéro | `Commands/set_node_grid.cpp:75` |
 | **C3** | `save()` incomplet : écrouissage, points suivis, paramètres de splitting, état DEM | `Core/MPMbox.cpp:614` |
 | **C4** | `Polygon` : `rot` écrit en radians, relu en degrés ; `Area()` fausse | `Obstacles/Polygon.cpp:45` |
@@ -436,7 +436,7 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | **D10** | `Neighbor::dt` jamais alimenté, `contactf` écrasé | `BoundaryForceLaw/frictionalViscoElastic.cpp:60` |
 | **D11** | `t += dt` : le dernier conf-file peut manquer | `Core/MPMbox.cpp:857` |
 | ~~D13~~ | ~~`MaterialPoint::q` n'est utilisé nulle part~~ — **corrigé le 2026-08-06** | `Core/MaterialPoint.hpp:36` |
-| **D14** | Un plantage sort avec le code de retour 0 | `Runners/run.cpp` |
+| ~~**D14**~~ | ~~Un plantage sort avec le code de retour 0~~ **corrigé** | `Runners/run.cpp` |
 | **D15** | Deuxième lecteur de `Nodes`, inatteignable | `Core/MPMbox.cpp:594` |
 | **D12** | Rappel des défauts déjà documentés (annexe B du manuel) | — |
 
@@ -1471,7 +1471,9 @@ if (MP[p].isDoubleScale) continue;   // le découpage d'une cellule DEM n'a pas 
 
 ---
 
-## B12 — Les spies vident leurs fichiers en mode visualisation
+## ~~B12~~ — Les spies vident leurs fichiers en mode visualisation
+
+> **CORRIGÉ le 2026-08-06** — voir le journal en tête du document. Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichiers** : `Spies/MeanStress.cpp:15`, `Spies/MPTracking.cpp:26`,
 `Spies/EnergyBalance.cpp:19`, `Spies/ElasticBeamDev.cpp:19` ; `See/cut.cpp:8-15`
@@ -1650,7 +1652,9 @@ vecteur à chaque appel, soit une copie par point candidat. Passer par
 
 # C — Moyen (robustesse, reprise, fuites)
 
-## C1 — `clean()` ne libère qu'une partie des ressources
+## ~~C1~~ — `clean()` ne libère qu'une partie des ressources
+
+> **CORRIGÉ le 2026-08-06** — voir le journal en tête du document. Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichier** : `Core/MPMbox.cpp:293-304`
 
@@ -2508,7 +2512,9 @@ ni affiché, la suppression est donc sans effet de bord.
 
 ---
 
-## D14 — Un plantage sort avec le code de retour 0
+## ~~D14~~ — Un plantage sort avec le code de retour 0
+
+> **CORRIGÉ le 2026-08-06** — voir le journal en tête du document. Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichier** : `Runners/run.cpp` (`mySigHandler`), `deps/toofus-src/stackTracer.hpp`
 
@@ -2573,6 +2579,58 @@ ci-dessus :
 
 Deux candidats à ajouter à cette annexe : `planeStrain` (**D2**) et
 `splittingExtremeShearing` (**D3**).
+
+### 2026-08-06 — B12, C1, D14 : ne pas perdre ce qu'on a produit
+
+Trois défauts sans rapport de mécanique, mais de même nature : le calcul détruisait ou
+dissimulait ses propres résultats. **Aucun ne change la physique.**
+
+**B12 — les espions vidaient leurs fichiers quand on regardait le calcul.** Quatre espions
+sur six ouvraient leur fichier de sortie sans consulter `computationMode`. Or `see` et `cut`
+lisent les conf-files avec le même `MPMbox::read`, qui exécute `spy->read(file)` : ouvrir
+dans `see` une configuration portant une ligne `Spy` — ce que prescrit la procédure de
+reprise du manuel — ouvrait le fichier de résultats en écriture, donc le **vidait**. Mesuré
+par le test T31 avant correction : 2460 octets avant, **0 après**.
+
+La garde de `Work` et `ObstacleTracking` est désormais partout, à l'ouverture comme à
+l'écriture et à la fermeture (`Work::end` écrivait dans `fileSlices` sans vérifier
+`is_open`). `See/cut.cpp` pose maintenant `computationMode = false` avant de lire, ce qu'il
+ne faisait nulle part — même `Work` y écrasait son fichier.
+
+**C1 — `clean()` ne libérait qu'une partie de ce que `read()` construit.** Sans conséquence
+pour `mpmbox`, qui lit une fois ; déterminante pour `see`, qui appelle `clean()` puis
+`read()` à chaque changement de conf-file, de sorte que ce qui reste ne fuit pas une fois
+mais **s'accumule**. Cent conf-files parcourus, cent instances de chaque espion et de chaque
+ordonnanceur — et chaque nouvel espion rouvrait, donc revidait, son fichier : c'est ce qui
+faisait de B12 une perte répétée.
+
+Sont maintenant libérés ou vidés : `Spies`, `Scheduled`, `shapeFunction`, `oneStep`,
+`liveNodeNum`, `controlledMP`, `BFLCommandStored`, et les échantillons DEM des points double
+échelle (`MaterialPoint::PBC`), que `MP.clear()` détruisait sans y toucher.
+`Obstacle::~Obstacle`, qui était vide, libère la loi de contact que le constructeur crée —
+c'est possible sans risque depuis la correction d'**A6**, qui a fait de chaque obstacle le
+propriétaire de la sienne. `clean()` reste idempotent : le destructeur de `MPMbox` l'appelle.
+
+**D14 — un plantage sortait avec le code 0.** La cause était `StackTracer::defaultSigHandler`,
+qui imprime la trace de pile puis appelle `exit(EXIT_SUCCESS)`. Elle est dans
+`deps/toofus-src/stackTracer.hpp`, que CMake va chercher : ce n'est pas à ce dépôt de la
+rustiner. `mySigHandler` imprime donc lui-même le nom du signal et la trace, puis termine par
+`std::_Exit(128 + sig)` — `_Exit` et non `exit`, parce qu'on est dans un gestionnaire de
+signal, où les destructeurs et les `atexit` ne sont pas sûrs.
+
+*(La correction de fond a sa place dans toofus : `defaultSigHandler` ne devrait pas sortir sur
+un succès.)*
+
+À connaître : un calcul interrompu par Ctrl-C rend désormais 130, et par `SIGTERM` 143, là où
+il rendait 0. Un script qui enchaînait sans se soucier de l'interruption va maintenant
+s'arrêter — c'est le but.
+
+**Tests T31** (le fichier d'un espion est intact après un passage dans `see`) et **T32** (un
+calcul interrompu par `SIGTERM` rend 143). Suite à **32 PASS**, en construction ordinaire
+comme sous AddressSanitizer — c'est cette dernière qui garantit que la réécriture de
+`clean()` ne libère pas deux fois.
+
+---
 
 ### 2026-08-06 — A3, la couronne de nœuds fantômes
 
@@ -2711,7 +2769,7 @@ python3 Tests/runtests.py -v     # + la raison de chaque XFAIL
 
 Elle distingue trois familles :
 
-- **30 invariants** (`PASS`) — propriétés physiques et numériques qui doivent tenir
+- **32 invariants** (`PASS`) — propriétés physiques et numériques qui doivent tenir
   **avant comme après** les corrections. Un `FAIL` est une régression.
 - **plus aucun `XFAIL`** : tous les défauts couverts par la suite sont corrigés. Les entrées ci-dessous — chacun étiqueté avec son identifiant ci-dessous. Ils
   doivent basculer en `XPASS` au fur et à mesure des corrections, puis être reclassés en
@@ -2743,14 +2801,16 @@ Elle distingue trois familles :
 | T28 | ~~A7~~ | **corrigé** : plus de dépassement sous AddressSanitizer après un retrait de points |
 | T29 | ~~A8~~ | **corrigé** : un calcul simple échelle survit à `ReactivateCHCLBonds` |
 | T30 | ~~A3~~ | **corrigé** : un bloc au coin de la grille se comporte comme le même bloc au milieu |
+| T31 | ~~B12~~, ~~C1~~ | **corrigé** : ouvrir un conf-file dans `see` laisse les fichiers d'espions intacts |
+| T32 | ~~D14~~ | **corrigé** : un calcul interrompu par `SIGTERM` rend 143, pas 0 |
 
 **T28 ne prouve son défaut que sous sanitizer.** Le dépassement d'A7 ne durait qu'un pas et
 n'était pas observable autrement ; en construction ordinaire, T28 ne vérifie que le
 comportement visible du retrait (les bons points partent, les bons restent). La marche à
 suivre pour une construction ASan est dans le journal, à l'entrée du 2026-08-06.
 
-Non couverts : **A3** (B-splines, éléments de bord), **B8**, **B12** à **B14**, toute la
-classe C et tout le double échelle. `Tests/README.md` détaille ce qui
+Non couverts : **B8**, **B13**, **B14**, le reste de la classe C et — c'est le trou le plus
+sérieux — **tout le double échelle**, qui est pourtant la raison d'être du code. `Tests/README.md` détaille ce qui
 manque et pourquoi.
 
 Deux invariants méritent d'être signalés parce qu'ils surveillent des corrections à venir :

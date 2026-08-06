@@ -139,8 +139,7 @@ class Case:
         # yeux de tout script. On le detecte sur la sortie.
         if CRASH_MARKER in out:
             crash = out[out.index(CRASH_MARKER):]
-            raise Fail("mpmbox a plante (code de retour %s, masque par le "
-                       "gestionnaire de signal)\n%s" % (rc, tail(crash, 10)))
+            raise Fail("mpmbox a plante (code de retour %s)\n%s" % (rc, tail(crash, 10)))
         if not expectFailure and rc != 0:
             raise Fail("mpmbox a retourne %s\n%s" % (describeRC(rc), tail(out)))
         return rc, out
@@ -185,7 +184,10 @@ def describeRC(rc):
 
 BANNER = ("_/", "The current local time", "OpenMP", "No multithreading")
 
-# Imprime par StackTracer quand un signal est intercepte.
+# Imprime par mySigHandler quand un signal est intercepte. Depuis la correction
+# de D14, un plantage rend aussi 128 + signal, donc le code de retour suffirait ;
+# ce marqueur reste utile pour les constructions sous sanitizer et pour reperer
+# la cause dans la sortie.
 CRASH_MARKER = "The Simulation received the following signal"
 
 
@@ -948,6 +950,76 @@ def t30(ctx):
     ctx.expect(ecart < 1e-12,
                "le bloc au bord de la grille ne se comporte pas comme le meme bloc "
                "au milieu : ecart de %.3e m sur un deplacement de %.3e m" % (ecart, ampl))
+
+
+@test("T31", "see_nefface_pas_les_resultats", INVARIANT, doc="""
+Quatre espions sur six ouvrent leur fichier de sortie sans regarder
+computationMode. Or see lit les conf-files avec le meme MPMbox::read, qui
+execute spy->read(file) : ouvrir dans see une configuration portant une ligne
+Spy -- ce que fait la procedure de reprise decrite dans le manuel -- OUVRE le
+fichier de resultats en ecriture, donc le vide.
+
+Et comme clean() ne vide pas Spies (defaut C1), chaque conf-file relu ajoute une
+instance de plus, qui rouvre donc revide le fichier.""")
+def t31(ctx):
+    exe = os.path.join(os.path.dirname(ctx.exe), "see")
+    if not os.path.isfile(exe):
+        raise Fail("l'executable 'see' est introuvable a cote de mpmbox (%s)" % exe)
+
+    c = ctx.case("T31_spy")
+    c.write("input.txt", timedHeader(1e-5, 400) + HOOKE + GRID + "\n" + BLOCK
+            + "Spy MeanStress 20 meanStress.txt\n")
+    c.run()
+
+    data = os.path.join(c.dir, "meanStress.txt")
+    before = open(data).read()
+    ctx.expect(len(before.strip().split("\n")) > 5,
+               "l'espion n'a rien ecrit : le test ne prouve rien")
+
+    # la configuration telle qu'on la prepare pour une reprise
+    conf = os.path.join(c.dir, "conf1.txt")
+    with open(conf, "a") as f:
+        f.write("Spy MeanStress 20 meanStress.txt\n")
+
+    p = subprocess.Popen([exe, "conf1.txt"], cwd=c.dir,
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    deadline = time.time() + 2.5
+    while p.poll() is None and time.time() < deadline:
+        time.sleep(0.2)
+    if p.poll() is None:
+        p.kill()
+    p.wait()
+
+    after = open(data).read()
+    ctx.expect(after == before,
+               "see a modifie le fichier de l'espion : %d octets avant, %d apres"
+               % (len(before), len(after)))
+
+
+@test("T32", "code_de_retour_apres_un_signal", INVARIANT, doc="""
+mpmbox installe un gestionnaire de signal qui imprime une trace de pile lisible,
+puis laisse sortir le processus avec le code 0. Rien de ce qui appelle mpmbox --
+script d'enchainement, make, ordonnanceur de calcul -- ne peut alors distinguer
+un calcul mene a son terme d'un calcul interrompu.
+
+On interrompt donc un calcul en cours par SIGTERM et on attend le code
+conventionnel 128 + signal, soit 143.""")
+def t32(ctx):
+    c = ctx.case("T32_signal")
+    # colonne encastree : elle reste en place aussi longtemps qu on la laisse tourner
+    c.write("input.txt", timedHeader(1e-6, 4000000) + HOOKE + GRID + "\n" + COLUMN)
+
+    t0 = time.time()
+    p = subprocess.Popen([ctx.exe, "input.txt", "-v", "1"], cwd=c.dir,
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    time.sleep(0.6)
+    ctx.expect(p.poll() is None, "le calcul s'est arrete tout seul : le test ne prouve rien")
+    p.terminate()                       # SIGTERM
+    rc = p.wait()
+    ctx.elapsed += time.time() - t0
+    ctx.expect(rc == 143,
+               "mpmbox interrompu par SIGTERM retourne %s, alors que 143 (128 + 15) "
+               "est attendu : un plantage passe pour un succes" % rc)
 
 
 @test("T20", "modele_inconnu", INVARIANT, doc="""

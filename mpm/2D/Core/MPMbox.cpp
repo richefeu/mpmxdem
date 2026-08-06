@@ -290,17 +290,52 @@ void MPMbox::setVerboseLevel(int v) {
 // models to prevent memory leaks. After calling this function, the MPMbox
 // object is reset to an empty state.
 //
+//
+// Release everything that read() has built, so that another conf-file can be
+// read into the same MPMbox.
+//
+// This matters far more for 'see' than for 'mpmbox': the viewer calls clean()
+// then read() at every change of conf-file, so anything left behind here is not
+// just leaked once at exit, it PILES UP. Spies and Schedulers used to accumulate
+// that way -- a hundred conf-files browsed meant a hundred instances of each,
+// and each new spy re-opened, hence emptied, its output file (see B12).
+//
 void MPMbox::clean() {
   nodes.clear();
   Elem.clear();
+  liveNodeNum.clear();
+
+  // Each double-scale Material Point owns its DEM sample; MP.clear() destroys
+  // the points without touching what they point to.
+  for (size_t p = 0; p < MP.size(); p++) {
+    delete MP[p].PBC;
+    MP[p].PBC = nullptr;
+  }
   MP.clear();
 
-  for (size_t i = 0; i < Obstacles.size(); i++) { delete (Obstacles[i]); }
+  for (size_t i = 0; i < Obstacles.size(); i++) { delete Obstacles[i]; }
   Obstacles.clear();
+
+  for (size_t s = 0; s < Spies.size(); s++) { delete Spies[s]; }
+  Spies.clear();
+
+  for (size_t s = 0; s < Scheduled.size(); s++) { delete Scheduled[s]; }
+  Scheduled.clear();
 
   std::map<std::string, ConstitutiveModel *>::iterator itModel;
   for (itModel = models.begin(); itModel != models.end(); ++itModel) { delete itModel->second; }
   models.clear();
+
+  // read() writes both of these again -- save() puts a 'ShapeFunction' and an
+  // 'oneStepType' line in every conf-file -- and it deletes the old one before
+  // replacing it, so leaving a null pointer here is what it expects.
+  delete shapeFunction;
+  shapeFunction = nullptr;
+  delete oneStep;
+  oneStep = nullptr;
+
+  controlledMP.clear();
+  BFLCommandStored.clear();
 }
 
 //

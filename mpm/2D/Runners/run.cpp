@@ -1,4 +1,6 @@
 #include <ctime>
+#include <csignal>
+#include <cstdlib>
 #include <filesystem>
 #include <regex>
 
@@ -11,6 +13,19 @@
 
 ExecChrono SimuChrono;
 MPMbox *SimuHandler;
+
+// Names of the signals StackTracer installs a handler for.
+static const char *signalName(int sig) {
+  switch (sig) {
+    case SIGABRT: return "(Abort) Abnormal termination, such as is initiated by the abort function.";
+    case SIGFPE: return "(Floating-Point Exception) Erroneous arithmetic operation.";
+    case SIGILL: return "(Illegal Instruction) Invalid function image.";
+    case SIGINT: return "(Interrupt) Interactive attention signal.";
+    case SIGSEGV: return "(Segmentation Violation) Invalid access to storage.";
+    case SIGTERM: return "(Terminate) Termination request sent to program.";
+    default: return "(Unknown signal)";
+  }
+}
 
 void mySigHandler(int sig) {
   std::cerr << std::endl << std::endl;
@@ -26,7 +41,21 @@ tmp_out.printTimeTable();
 */
 
   // SimuHandler->save_state("data", SimuHandler->step);
-  StackTracer::defaultSigHandler(sig);
+
+  // StackTracer::defaultSigHandler would print the trace and then call
+  // exit(EXIT_SUCCESS): the process would end with the code 0, and nothing that
+  // drives mpmbox -- a script, make, a batch scheduler -- could tell a
+  // computation carried to its end from one that blew up at the third step. The
+  // trace is printed here instead, followed by the conventional code for a death
+  // by signal. (The exit(EXIT_SUCCESS) is in deps/toofus-src/stackTracer.hpp,
+  // which is fetched by CMake, so it is not ours to patch.)
+  std::cerr << std::endl << "The Simulation received the following signal:" << std::endl;
+  std::cerr << signalName(sig) << std::endl;
+  if (sig != SIGINT) { std::cerr << StackTracer::StackTrace() << std::endl; }
+
+  // _Exit rather than exit: we are inside a signal handler, where destructors and
+  // atexit handlers are not safe to run.
+  std::_Exit(128 + sig);
 }
 
 //

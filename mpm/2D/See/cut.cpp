@@ -10,6 +10,10 @@ void try_to_readConf(int num, MPMbox& CF, std::string ca) {
   sprintf(file_name, "%s%d.txt", ca.c_str(), num);
   std::cout << "Read " << file_name << std::endl;
   CF.clean();
+  // Same precaution as in see: MPMbox::read runs the Spy commands of the
+  // conf-file, and a spy opens its output file in write mode -- which truncates
+  // it. Nothing here computes anything, so nothing here may write.
+  CF.computationMode = false;
   CF.read(file_name);
   CF.postProcess(SmoothedData);
 }
