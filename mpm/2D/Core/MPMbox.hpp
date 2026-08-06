@@ -193,6 +193,7 @@ public:
   void init();
 
   void MPinGridCheck();
+  void buildGrid();
   void checkSettings();
   void convergenceConditions();
   void run();

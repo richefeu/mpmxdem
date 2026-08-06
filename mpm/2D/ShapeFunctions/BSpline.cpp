@@ -11,18 +11,6 @@ std::string BSpline::getRegistrationName() { return std::string("BSpline"); }
 BSpline::BSpline() : TwoThirds(2.0 / 3.0), FourThirds(4.0 / 3.0), OneSixth(1.0 / 6.0) { element::nbNodes = 16; }
 
 //
-// Position of the 16 nodes of the patch, relative to the node 0 of the element,
-// counted in cells. It follows the numbering built by set_node_grid:
-//
-//    13 12 11 10
-//    14  3  2  9
-//    15  0  1  8
-//     4  5  6  7
-//
-static const int dxOff[16] = {0, 1, 1, 0, -1, 0, 1, 2, 2, 2, 2, 1, 0, -1, -1, -1};
-static const int dyOff[16] = {0, 0, 1, 1, -1, -1, -1, -1, 0, 1, 2, 2, 2, 2, 1, 0};
-
-//
 // The B-spline is a tensor product: N_k = Phi(x_k) * Phi(y_k). The 16 nodes of
 // the patch only take FOUR distinct positions in each direction -- the offsets
 // above all belong to {-1, 0, 1, 2} -- so there are 4 + 4 = 8 distinct factors,
@@ -45,16 +33,14 @@ void BSpline::computeInterpolationValues(MPMbox& MPM, size_t p) {
   const size_t ie = MPM.MP[p].e % MPM.Grid.Nx;
   const size_t je = MPM.MP[p].e / MPM.Grid.Nx;
 
-  // The outer ring of the patch has to exist. On the first and last rows and
-  // columns of elements, set_node_grid leaves I[4..15] at 0 (see A3 in
-  // Doc/BUGS.md): every shape function would silently be piled onto node 0.
-  // Better to say so than to return a plausible-looking result.
-  if (ie < 1 || ie + 2 > MPM.Grid.Nx || je < 1 || je + 2 > MPM.Grid.Ny) {
-    Logger::critical("@BSpline::computeInterpolationValues, the Material Point {} at ({}, {}) sits in a border "
-                     "element ({}, {}), whose outer ring of nodes does not exist",
-                     p, MPM.MP[p].pos.x, MPM.MP[p].pos.y, ie, je);
-    Logger::critical("  The B-splines need one row of elements of margin all around the material.");
-    Logger::critical("  Enlarge the grid, or keep the material away from its border.");
+  // The outer ring of the patch is guaranteed to exist: MPMbox::buildGrid puts a
+  // ghost ring of nodes around the element grid as soon as the elements hold 16
+  // nodes (defect A3). The only way to get here without it is to have built the
+  // grid before the shape function was known, which the grid commands refuse.
+  if (MPM.Grid.pad < 1) {
+    Logger::critical("@BSpline::computeInterpolationValues, the node grid has no ghost ring");
+    Logger::critical("  The B-splines read one node beyond each element; the grid has to be built");
+    Logger::critical("  after 'ShapeFunction BSpline', so that MPMbox::buildGrid knows to pad it.");
     exit(EXIT_FAILURE);
   }
 
@@ -98,8 +84,8 @@ void BSpline::computeInterpolationValues(MPMbox& MPM, size_t p) {
   }
 
   for (int i = 0; i < 16; i++) {
-    const int kx = dxOff[i] + 1;
-    const int ky = dyOff[i] + 1;
+    const int kx = element::dxOff[i] + 1;
+    const int ky = element::dyOff[i] + 1;
     MPM.N(p)[i] = phix[kx] * phiy[ky];
     MPM.gradN(p)[i].x = dphix[kx] * phiy[ky];
     MPM.gradN(p)[i].y = phix[kx] * dphiy[ky];

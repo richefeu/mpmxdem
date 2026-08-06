@@ -904,6 +904,52 @@ def t29(ctx):
     ctx.expect(len(c.conf(1).MP) == 64, "les points ont disparu")
 
 
+@test("T30", "bspline_au_bord_de_la_grille", INVARIANT, doc="""
+Les elements de bord d'une grille a 16 noeuds n'avaient pas de couronne
+exterieure : douze indices sur seize restaient a zero, et toutes les fonctions
+de forme d'un point situe la etaient empilees sur le noeud 0 (defaut A3).
+
+La grille etant reguliere et infinie de proche en proche, un probleme entier
+translate d'un nombre entier de mailles doit donner exactement le meme resultat.
+On pose donc deux fois le meme bloc sur le meme obstacle : une fois contre le
+coin de la grille, une fois deux mailles plus loin. Les deplacements doivent
+coincider au bruit d'arrondi.
+
+Sans la couronne fantome, le premier cas est soit faux, soit refuse.""")
+def t30(ctx):
+    LX, LY = 0.02, 0.01
+
+    def build(name, ox, oy):
+        c = ctx.case(name)
+        c.write("input.txt",
+                timedHeader(5e-6, 3000, sf="BSpline")
+                + HOOKE
+                + "set_node_grid Nx.Ny.lx.ly 20 20 %g %g\n" % (LX, LY)
+                + "set_MP_grid 0 HK 2000.0 %g %g %g %g 0.005\n"
+                  % (ox, oy + LY, ox + 4 * LX, oy + LY + 0.04)
+                + "Obstacle Line 1 %g %g %g %g freeze\n"
+                  % (ox + 6 * LX, oy + LY, ox, oy + LY)
+                + "BoundaryForceLaw frictionalViscoElastic 1\n"
+                + "set kn 0 1 1e6\nset kt 0 1 1e6\nset mu 0 1 0.4\nset viscRate 0 1 0.2\n")
+        c.run()
+        return c
+
+    # au coin de la grille : le bloc occupe la premiere colonne d'elements
+    bord = build("T30_bord", 0.0, 0.0)
+    # le meme, translate de deux mailles en x et en y
+    loin = build("T30_loin", 2 * LX, 2 * LY)
+
+    noNaN(ctx, bord, "bloc au bord")
+    d0, d1 = displacements(bord.conf(0), bord.conf(1)), displacements(loin.conf(0), loin.conf(1))
+    ctx.expect(len(d0) == len(d1) and len(d0) > 0, "les deux cas n'ont pas le meme nombre de points")
+    ecart = max(max(abs(a[0] - b[0]), abs(a[1] - b[1])) for a, b in zip(d0, d1))
+    ampl = max(max(abs(a[0]), abs(a[1])) for a in d1)
+    ctx.expect(ampl > 1e-6, "le bloc n'a pas bouge (%.2e) : le test ne prouve rien" % ampl)
+    ctx.expect(ecart < 1e-12,
+               "le bloc au bord de la grille ne se comporte pas comme le meme bloc "
+               "au milieu : ecart de %.3e m sur un deplacement de %.3e m" % (ecart, ampl))
+
+
 @test("T20", "modele_inconnu", INVARIANT, doc="""
 Une faute de frappe sur le nom d'un modele doit produire un message et un arret
 propre. Corrige le 2026-08-05 (A4) : l'iterateur de fin de la map etait

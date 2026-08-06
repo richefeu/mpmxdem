@@ -1029,6 +1029,55 @@ void MPMbox::checkSettings() {
 // This function will check if any Material Point is outside the grid before the start of the simulation. If any
 // Material Point is found to be outside the grid, a warning message will be printed.
 //
+//
+// Build the nodes and the elements from Grid.Nx, Grid.Ny, Grid.lx and Grid.ly,
+// which the calling command has already set.
+//
+// The shape function decides how many nodes an element holds, and therefore how
+// many ghost rings the node grid needs: a 16-node element reads the ring around
+// itself, which does not exist on the border of an unpadded grid. That was the
+// defect A3 -- twelve of the sixteen indices were left at zero there, and every
+// shape function of a border element was silently piled onto the node 0.
+//
+// set_node_grid and new_set_grid used to hold two verbatim copies of this code,
+// including the same border special case.
+//
+void MPMbox::buildGrid() {
+  Grid.pad = (element::nbNodes == 16) ? 1 : 0;
+  const long pad = (long)Grid.pad;
+
+  nodes.clear();
+  nodes.resize(Grid.nbNodes());
+  for (long j = -pad; j <= (long)Grid.Ny + pad; j++) {
+    for (long i = -pad; i <= (long)Grid.Nx + pad; i++) {
+      const size_t n = Grid.nodeNumber(i, j);
+      nodes[n].number = n;
+      nodes[n].pos.set((double)i * Grid.lx, (double)j * Grid.ly);
+    }
+  }
+
+  Elem.clear();
+  Elem.reserve(Grid.Nx * Grid.Ny);
+  element E;
+  for (long j = 0; j < (long)Grid.Ny; j++) {
+    for (long i = 0; i < (long)Grid.Nx; i++) {
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        E.I[r] = Grid.nodeNumber(i + element::dxOff[r], j + element::dyOff[r]);
+      }
+      Elem.push_back(E);
+    }
+  }
+
+  liveNodeNum.clear();
+  liveNodeNum.reserve(nodes.size());
+  for (size_t n = 0; n < nodes.size(); n++) { liveNodeNum.push_back(n); }
+
+  if (Grid.pad > 0) {
+    Logger::info("@MPMbox::buildGrid, {} x {} elements of {} x {}, {} x {} nodes including {} ghost ring", Grid.Nx,
+                 Grid.Ny, Grid.lx, Grid.ly, Grid.nbNodeCols(), Grid.nbNodeRows(), Grid.pad);
+  }
+}
+
 void MPMbox::MPinGridCheck() {
   // checking for MP outside the grid before the start of the simulation
   // The bounds are the same as in ShapeFunction::locateElement (the far sides

@@ -21,10 +21,26 @@ void set_BC_line::exec() {
     exit(EXIT_FAILURE);
   }
 
-  size_t f = line_num * (box->Grid.Nx + 1);
-  for (size_t i = column0; i <= column1; i++) {
-    node& N = box->nodes[f + i];
-    N.xfixed = Xfixed;
-    N.yfixed = Yfixed;
+  // The logical indices of the grid, and the ghost ring if there is one.
+  //
+  // A boundary condition that reaches the edge of the grid is CONTINUED into the
+  // ghost layer: the fixed line is the physical edge of the domain, and a
+  // B-spline reads one node beyond it. Leaving that node free would let the
+  // material slip through the very wall it is held by. With pad = 0 -- the
+  // linear interpolations -- the loop below is exactly the historical one.
+  const long pad = (long)box->Grid.pad;
+  long j0 = (long)line_num, j1 = (long)line_num;
+  if (line_num == 0) { j0 = -pad; }
+  if (line_num == box->Grid.Ny) { j1 = (long)box->Grid.Ny + pad; }
+  long i0 = (long)column0, i1 = (long)column1;
+  if (column0 == 0) { i0 = -pad; }
+  if (column1 == box->Grid.Nx) { i1 = (long)box->Grid.Nx + pad; }
+
+  for (long j = j0; j <= j1; j++) {
+    for (long i = i0; i <= i1; i++) {
+      node &N = box->nodes[box->Grid.nodeNumber(i, j)];
+      N.xfixed = Xfixed;
+      N.yfixed = Yfixed;
+    }
   }
 }

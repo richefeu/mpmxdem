@@ -21,9 +21,21 @@ void set_BC_column::exec() {
     exit(EXIT_FAILURE);
   }
 
-  for (size_t j = (size_t)line0; j <= (size_t)line1; j++) {
-    node& N = box->nodes[j * (box->Grid.Nx + 1) + (size_t)column_num];
-    N.xfixed = Xfixed;
-    N.yfixed = Yfixed;
+  // See the note in set_BC_line.cpp: a boundary condition that reaches the edge
+  // of the grid is continued into the ghost layer.
+  const long pad = (long)box->Grid.pad;
+  long i0 = (long)column_num, i1 = (long)column_num;
+  if (column_num == 0) { i0 = -pad; }
+  if ((size_t)column_num == box->Grid.Nx) { i1 = (long)box->Grid.Nx + pad; }
+  long j0 = (long)line0, j1 = (long)line1;
+  if (line0 == 0) { j0 = -pad; }
+  if ((size_t)line1 == box->Grid.Ny) { j1 = (long)box->Grid.Ny + pad; }
+
+  for (long j = j0; j <= j1; j++) {
+    for (long i = i0; i <= i1; i++) {
+      node &N = box->nodes[box->Grid.nodeNumber(i, j)];
+      N.xfixed = Xfixed;
+      N.yfixed = Yfixed;
+    }
   }
 }

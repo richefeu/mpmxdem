@@ -93,18 +93,18 @@ n'est venu de *l'alignement* des données. Le seul effet mémoire démontré est
 
 ## 4. Justesse et robustesse
 
-La revue a recensé **54 défauts** (plus une entrée de rappel), classés A à D. **26 sont
+La revue a recensé **55 défauts** (plus une entrée de rappel), classés A à D. **27 sont
 corrigés.**
 
 | Classe | Ce que c'est | Corrigés |
 |---|---|---|
-| **A — critique** | comportement indéfini : hors bornes, pointeur nul, division par zéro | **9 / 11** |
+| **A — critique** | comportement indéfini : hors bornes, pointeur nul, division par zéro | **10 / 11** |
 | **B — majeur** | le calcul tourne et produit un résultat faux, sans message | **11 / 15** |
 | **C — moyen** | robustesse, reprise, fuites mémoire, cas limites | 3 / 15 |
-| **D — mineur** | incohérences, code mort, messages trompeurs | 3 / 13 |
+| **D — mineur** | incohérences, code mort, messages trompeurs | 3 / 14 |
 
-Des deux défauts de classe A qui restent, **A11 est sans objet** (`See/cut.cpp` n'est compilé
-par aucune cible). Il n'en reste donc qu'un seul de réellement vivant, **A3**.
+Le seul défaut de classe A qui reste, **A11, est sans objet** : `See/cut.cpp` n'est compilé par
+aucune cible. **Il n'y a donc plus de comportement indéfini connu dans le code qui tourne.**
 
 Ce qui a changé de nature, plus que de chiffre :
 
@@ -119,11 +119,11 @@ Ce qui a changé de nature, plus que de chiffre :
 - **Le critère de pas de temps fait son travail** (§ 2), ce qui est la correction la plus
   lourde de conséquences de toute la campagne : elle change les résultats de tout cas dont
   les points sont petits devant la maille.
-
-Un effet de bord à connaître : la réécriture de `BSpline` fait qu'un point matériel dans un
-élément **de bord** est maintenant refusé net, au lieu d'être interpolé faux. C'est le défaut
-**A3**, qui était silencieux et qui est devenu visible. Aucun exemple livré ne le déclenche,
-mais c'est la première chose à traiter.
+- **Les éléments de bord ont enfin leurs seize nœuds.** Un point matériel situé dans la
+  première ou la dernière rangée d'éléments voyait douze de ses seize fonctions de forme
+  empilées sur le nœud 0. La grille porte désormais une couronne de nœuds fantômes dès que
+  les éléments en comptent seize, et un problème translaté d'un nombre entier de mailles donne
+  le même résultat où qu'il soit posé — c'était le défaut **A3**, le dernier de sa classe.
 
 ---
 
@@ -131,7 +131,7 @@ mais c'est la première chose à traiter.
 
 Rien de ce qui précède n'aurait dû être tenté sans lui, et il a servi à chaque lot.
 
-- **`python3 Tests/runtests.py`** — 29 tests, 8 secondes, stdlib Python seule. Aucun ne fige
+- **`python3 Tests/runtests.py`** — 30 tests, 8 secondes, stdlib Python seule. Aucun ne fige
   de valeur numérique de référence : chacun exhibe une propriété que le code *devrait*
   vérifier (partition de l'unité, conservation de la masse, travail du poids, indépendance
   au pas de temps, indépendance à `proxPeriod`…). Une empreinte numérique prise avant
@@ -152,24 +152,22 @@ sont le filet et le compte rendu, pas le solveur.
 
 ## 6. Ce qui reste, dans l'ordre
 
-1. **A3** — la couronne de nœuds fantômes, pour que les éléments de bord cessent d'être un
-   cas particulier. C'est le seul défaut critique vivant, et il est devenu visible.
-2. **B12 + C1** — quatre espions sur six ouvrent leur fichier sans vérifier
+1. **B12 + C1** — quatre espions sur six ouvrent leur fichier sans vérifier
    `computationMode` : **ouvrir un conf-file dans `see` efface les résultats**. Et `clean()`
    ne vide pas `Spies`, si bien que chaque relecture ajoute une instance et rouvre — donc
    revide — le fichier. Les deux se traitent d'une seule passe.
-3. **C3** — le format des conf-files. La reprise n'est pas exacte, et la liste s'est allongée
+2. **C3** — le format des conf-files. La reprise n'est pas exacte, et la liste s'est allongée
    du fait même de l'optimisation : `hardeningForce`, `outOfPlaneEp` et `viscousStress` ne
    sont toujours pas sauvegardés. C3 débloque aussi les 96 derniers octets de
    `MaterialPoint` (`strain`, `plasticStrain`, `stressCorrection`), qui ne peuvent en sortir
    sans toucher à la lecture et à l'écriture.
-4. **B8** et **C6** — `VonMises` écrase la déformation plastique au lieu de la cumuler ;
+3. **B8** et **C6** — `VonMises` écrase la déformation plastique au lieu de la cumuler ;
    l'apex de `MohrCoulomb` est divisé par `sin φ` et ne converge pas silencieusement. Les
    deux changent des résultats publiables : à valider sur un cas de référence.
-5. **D14** — `mpmbox` sort avec le code 0 quand il plante. Une ligne, et tout ce qui appelle
+4. **D14** — `mpmbox` sort avec le code 0 quand il plante. Une ligne, et tout ce qui appelle
    le solveur (script, `make`, ordonnanceur SLURM) redevient capable de distinguer un calcul
    terminé d'un calcul explosé.
-6. **D11** — `t += dt` fait manquer le dernier conf-file. Cosmétique sur le papier ; c'est
+5. **D11** — `t += dt` fait manquer le dernier conf-file. Cosmétique sur le papier ; c'est
    arrivé deux fois pendant l'écriture des tests.
 
 Et un point qui n'est pas un défaut du code : `Examples/BoulderImpact_NRJ/input.txt` déclare

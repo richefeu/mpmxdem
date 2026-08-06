@@ -385,7 +385,7 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 |---|---|---|
 | ~~A1~~ | ~~Indice d'élément jamais borné + garde de sécurité morte (`&&` au lieu de `||`)~~ — **corrigé le 2026-08-05** | `ShapeFunctions/ShapeFunction.cpp` |
 | ~~A2~~ | ~~`BSpline` : la branche d'erreur n'empile rien → lecture hors bornes de `Phi`~~ — **corrigé le 2026-08-05** | `ShapeFunctions/BSpline.cpp:43` |
-| **A3** | Éléments de bord à 16 nœuds : `I[4..15]` restent à 0 | `Commands/set_node_grid.cpp:98` |
+| ~~**A3**~~ | ~~Éléments de bord à 16 nœuds : `I[4..15]` restent à 0~~ **corrigé** | `Core/MPMbox.cpp` (`buildGrid`) |
 | ~~A4~~ | ~~Déréférencement de `models.end()` (5 occurrences)~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:529` |
 | ~~A5~~ | ~~`DataTable::get` hors bornes dès qu'un groupe n'a pas de `set`~~ — **corrigé le 2026-08-05** | `BoundaryForceLaw/*.cpp` |
 | ~~A6~~ | ~~`BoundaryForceLaw` inconnu → pointeur nul déréférencé à chaque pas~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:444` |
@@ -437,6 +437,7 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | **D11** | `t += dt` : le dernier conf-file peut manquer | `Core/MPMbox.cpp:857` |
 | ~~D13~~ | ~~`MaterialPoint::q` n'est utilisé nulle part~~ — **corrigé le 2026-08-06** | `Core/MaterialPoint.hpp:36` |
 | **D14** | Un plantage sort avec le code de retour 0 | `Runners/run.cpp` |
+| **D15** | Deuxième lecteur de `Nodes`, inatteignable | `Core/MPMbox.cpp:594` |
 | **D12** | Rappel des défauts déjà documentés (annexe B du manuel) | — |
 
 ---
@@ -531,7 +532,7 @@ invalider les listes de voisins (voir **A7**).
 
 ## ~~A2~~ — `BSpline` : la branche d'erreur n'empile rien
 
-> **CORRIGÉ le 2026-08-05**, en même temps que le passage de `BSpline` aux tableaux de pile (voir `Doc/OPTIM.md`). La branche écrit désormais des zéros et avertit une seule fois. **A3, la cause racine, reste ouvert.** Le texte ci-dessous décrit l'état d'avant correction.
+> **CORRIGÉ le 2026-08-05**, en même temps que le passage de `BSpline` aux tableaux de pile (voir `Doc/OPTIM.md`). La branche écrit désormais des zéros et avertit une seule fois. **A3, la cause racine, a été corrigé le 2026-08-06.** Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichier** : `ShapeFunctions/BSpline.cpp:36-59`
 
@@ -571,7 +572,9 @@ l'unité n'est plus vérifiée près des bords même avec cette rustine.
 
 ---
 
-## A3 — Éléments de bord à 16 nœuds : `I[4..15]` restent à zéro
+## ~~A3~~ — Éléments de bord à 16 nœuds : `I[4..15]` restent à zéro
+
+> **CORRIGÉ le 2026-08-06** — voir le journal en tête du document. Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichiers** : `Commands/set_node_grid.cpp:91-117`, `Commands/new_set_grid.cpp:60-86`
 
@@ -2537,6 +2540,25 @@ constructions sous sanitizer).
 
 ---
 
+## D15 — Deuxième lecteur de `Nodes`, inatteignable
+
+**Fichier** : `Core/MPMbox.cpp:594-605`
+
+`MPMbox::read` contient **deux** branches `} else if (token == "Nodes") {` dans la même
+chaîne de `if`/`else if`, sans accolade fermante entre les deux. La première (ligne 533) est
+celle qui sert : elle lit un nombre d'enregistrements puis, pour chacun, un numéro de nœud
+qu'elle vérifie — c'est la correction de **C14**. La seconde est **inatteignable**.
+
+C'est aussi un vestige d'un format plus ancien : elle lit `nodes.size()` enregistrements sans
+numéro de nœud, alors que `MPMbox::save` n'écrit que les nœuds non nuls, chacun précédé de son
+numéro. Si elle était atteinte, elle désynchroniserait le flux.
+
+**Correction proposée** : la supprimer. Vérifier au passage que son avertissement
+(« cannot set the node-datasets if the grid has not been set ») n'apporte rien de plus que le
+message de la branche vivante, qui arrête le calcul.
+
+---
+
 ## D12 — Rappel des défauts déjà documentés
 
 Ces trois points figurent déjà à l'annexe B du manuel utilisateur et ne sont pas repris
@@ -2551,6 +2573,62 @@ ci-dessus :
 
 Deux candidats à ajouter à cette annexe : `planeStrain` (**D2**) et
 `splittingExtremeShearing` (**D3**).
+
+### 2026-08-06 — A3, la couronne de nœuds fantômes
+
+Un élément à 16 nœuds lit la couronne qui l'entoure : pour l'élément (i, j), les nœuds i-1 à
+i+2 et j-1 à j+2. Sur la première et la dernière rangée d'éléments, cette couronne tombait
+hors d'une grille qui n'a que Nx+1 par Ny+1 nœuds, et douze indices sur seize restaient à
+zéro — toutes les fonctions de forme d'un point de bord étaient empilées sur le nœud 0.
+
+**`grid::pad`** vaut désormais 1 dès que les éléments portent 16 nœuds, et 0 pour les
+interpolations linéaires. Les nœuds portent des indices logiques allant de `-pad` à `Nx+pad`,
+et `grid::nodeNumber(i, j)` est le seul endroit qui les traduit en numéros. **Les éléments ne
+changent pas** : il y en a toujours Nx par Ny, numérotés `e = i + j*Nx`, couvrant le même
+domaine. Rien en dehors de la numérotation des nœuds n'a à connaître les fantômes —
+`locateElement` en particulier est inchangé.
+
+Trois conséquences sur le reste du code :
+
+- La construction de la grille, que `set_node_grid` et `new_set_grid` dupliquaient **mot pour
+  mot**, cas particulier de bord compris, est factorisée dans `MPMbox::buildGrid()`. Les deux
+  commandes se réduisent à poser `Grid.Nx/Ny/lx/ly` et à l'appeler.
+- La numérotation des 16 nœuds n'est plus écrite qu'une fois, dans `element::dxOff` /
+  `element::dyOff`. `buildGrid` remplit `element::I` avec, et `BSpline` lit ses fonctions de
+  forme dans le même ordre : les deux **doivent** s'accorder, donc ils ne doivent pas être
+  deux tables. Les quatre premières entrées sont exactement la disposition QUA4, si bien que
+  la même table sert aux deux sortes d'élément.
+- **Une condition limite qui atteint le bord de la grille est prolongée dans la couronne
+  fantôme.** La ligne fixée est le bord physique du domaine, et une B-spline lit un nœud
+  au-delà : le laisser libre reviendrait à laisser la matière traverser le mur qui la retient.
+  Avec `pad = 0`, les boucles de `set_BC_line` et `set_BC_column` redeviennent exactement
+  celles d'avant.
+
+`BSpline::computeInterpolationValues` ne refuse donc plus les éléments de bord — ce refus,
+introduit lors de la réécriture tensorielle, avait rendu A3 visible au lieu de silencieux. Il
+ne reste qu'un garde-fou sur `Grid.pad`, pour le cas où la grille aurait été bâtie avant que
+la fonction de forme ne soit connue (ce que les deux commandes refusent déjà).
+
+**Test T30** : la grille étant régulière, un problème entier translaté d'un nombre entier de
+mailles doit donner exactement le même résultat. Le même bloc est donc posé deux fois sur le
+même obstacle, une fois contre le coin de la grille, une fois deux mailles plus loin ; les
+déplacements coïncident à moins de 1e-12. Sans la couronne, le premier cas est refusé net.
+
+**Vérifié sur `Examples/CantileverBeam`**, seul exemple livré qui pose des conditions limites,
+et dont les deux `set_BC_column 3 0 6` et `4 0 6` touchent le haut et le bas de la grille :
+résultat **identique au bit près** après 215 fichiers de configuration, pour une flèche de
+3,5 mm en bout de poutre. Le prolongement dans la couronne ne change rien tant qu'aucune
+matière n'atteint les nœuds concernés — il n'agit que là où il est nécessaire.
+
+**Incompatibilité à connaître** : le nombre et la numérotation des nœuds changent pour les
+calculs en B-splines. Un conf-file écrit avant cette correction reste lisible — la grille est
+reconstruite depuis la commande qu'il contient — mais son bloc `Nodes` porte des numéros de
+l'ancienne numérotation, et ses données (masse, quantité de mouvement, `xfixed`/`yfixed`)
+tomberaient sur les mauvais nœuds. Cela n'affecte que la reprise et l'affichage des repères
+de nœuds bloqués dans `see`, pas la position des points matériels. La reprise exacte est de
+toute façon le chantier **C3**.
+
+---
 
 ### 2026-08-06 — A7, A8, C13
 
@@ -2585,7 +2663,7 @@ sont reconstruites au pas suivant — et n'est pas observable de façon détermi
 cmake -S . -B BUILD-asan -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
       -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
-cmake --build BUILD-asan --target mpmbox -j8
+cmake --build BUILD-asan --target mpmbox see -j8   # 'see' aussi : T19 le lance
 python3 Tests/runtests.py --exe BUILD-asan/mpmbox
 ```
 
@@ -2633,7 +2711,7 @@ python3 Tests/runtests.py -v     # + la raison de chaque XFAIL
 
 Elle distingue trois familles :
 
-- **29 invariants** (`PASS`) — propriétés physiques et numériques qui doivent tenir
+- **30 invariants** (`PASS`) — propriétés physiques et numériques qui doivent tenir
   **avant comme après** les corrections. Un `FAIL` est une régression.
 - **plus aucun `XFAIL`** : tous les défauts couverts par la suite sont corrigés. Les entrées ci-dessous — chacun étiqueté avec son identifiant ci-dessous. Ils
   doivent basculer en `XPASS` au fur et à mesure des corrections, puis être reclassés en
@@ -2664,6 +2742,7 @@ Elle distingue trois familles :
 | T19 | — | garde-fou : `see` doit pouvoir ouvrir un conf-file (ajouté après un `SIGSEGV`) |
 | T28 | ~~A7~~ | **corrigé** : plus de dépassement sous AddressSanitizer après un retrait de points |
 | T29 | ~~A8~~ | **corrigé** : un calcul simple échelle survit à `ReactivateCHCLBonds` |
+| T30 | ~~A3~~ | **corrigé** : un bloc au coin de la grille se comporte comme le même bloc au milieu |
 
 **T28 ne prouve son défaut que sous sanitizer.** Le dépassement d'A7 ne durait qu'un pas et
 n'était pas observable autrement ; en construction ordinaire, T28 ne vérifie que le
