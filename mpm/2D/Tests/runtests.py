@@ -134,6 +134,13 @@ class Case:
             rc, out = None, "*** timeout apres %d s ***" % timeout
         self.ctx.elapsed += time.time() - t0
         self.last = (rc, out)
+        # mpmbox installe un gestionnaire de signal qui imprime une pile d'appels
+        # puis sort avec le code 0 : un plantage passe donc pour un succes aux
+        # yeux de tout script. On le detecte sur la sortie.
+        if CRASH_MARKER in out:
+            crash = out[out.index(CRASH_MARKER):]
+            raise Fail("mpmbox a plante (code de retour %s, masque par le "
+                       "gestionnaire de signal)\n%s" % (rc, tail(crash, 10)))
         if not expectFailure and rc != 0:
             raise Fail("mpmbox a retourne %s\n%s" % (describeRC(rc), tail(out)))
         return rc, out
@@ -177,6 +184,9 @@ def describeRC(rc):
 
 
 BANNER = ("_/", "The current local time", "OpenMP", "No multithreading")
+
+# Imprime par StackTracer quand un signal est intercepte.
+CRASH_MARKER = "The Simulation received the following signal"
 
 
 def tail(text, n=8):
@@ -839,6 +849,59 @@ def t19(ctx):
             continue
         out = p.stdout.read().decode("utf-8", "replace")
         raise Fail("see %s s'est arrete avec %s\n%s" % (conf, describeRC(rc), tail(out)))
+
+
+@test("T28", "retrait_de_points_materiels", INVARIANT, doc="""
+Le scheduler RemoveMaterialPoint compacte le tableau des points materiels.
+Or les listes de voisins des obstacles reperent les points par leur INDICE
+dans ce tableau : apres compactage, ces indices designent d'autres points, ou
+sortent du tableau.
+
+L'ordre dans MPMbox::run est checkProximity, puis les schedulers, puis le pas
+de calcul : les points sont donc retires APRES la reconstruction des listes et
+AVANT le pas qui les utilise. La detection par MP.size() != number_MP_before
+n'intervient qu'au pas suivant, trop tard.
+
+Le cas retire la majorite des points, pour que les indices survivants soient
+loin au-dela de la nouvelle taille du tableau.""")
+def t28(ctx):
+    c = ctx.case("T28_retrait")
+    c.write("input.txt",
+            timedHeader(1e-5, 2000)
+            + "model HookeElasticity HK 1.0e7 0.3\n"
+            + "model HookeElasticity ATTENDU 1.0e7 0.3\n"
+            + GRID + "\n"
+            # le gros bloc part, le petit reste : ses indices sont les plus hauts
+            + "set_MP_grid 0 HK 2000.0 0.06 0.10 0.34 0.16 0.005\n"
+            # pose sur l'obstacle : c'est ce bloc, et lui seul, qui peuple la
+            # liste de voisins (Line retient dstn < 2*size, soit 0.01 ici)
+            + "set_MP_grid 0 ATTENDU 2000.0 0.06 0.03 0.10 0.05 0.005\n"
+            + "Obstacle Line 1 0.36 0.03 0.04 0.03 freeze\n"
+            + "BoundaryForceLaw frictionalViscoElastic 1\n"
+            + "set kn 0 1 1e6\nset kt 0 1 1e6\nset mu 0 1 0.4\nset viscRate 0 1 0.2\n"
+            + "Scheduled RemoveMaterialPoint HK 0.005\n")
+    c.run()
+    c0, c1 = c.conf(0), c.conf(1)
+    noNaN(ctx, c, "retrait de points")
+    ctx.expect(len(c1.MP) < len(c0.MP),
+               "aucun point n'a ete retire : le test ne prouve rien")
+    for p in c1.MP:
+        ctx.expect(p.model == "ATTENDU",
+                   "le MP %d porte le modele '%s' : le mauvais bloc a ete retire" % (p.nb, p.model))
+
+
+@test("T29", "reactivation_des_liens_sans_dem", INVARIANT, doc="""
+Le scheduler ReactivateCHCLBonds appelle PBC->ActivateBonds sur TOUS les points
+materiels. PBC vaut nullptr pour un point simple echelle : un calcul sans
+modele CHCL ou ce scheduler traine plante.""")
+def t29(ctx):
+    c = ctx.case("T29_reactivation")
+    c.write("input.txt",
+            timedHeader(1e-5, 500) + HOOKE + GRID + "\n" + BLOCK
+            + "Scheduled ReactivateCHCLBonds 1.0e-5 0.002\n")
+    c.run()
+    noNaN(ctx, c, "reactivation sans DEM")
+    ctx.expect(len(c.conf(1).MP) == 64, "les points ont disparu")
 
 
 @test("T20", "modele_inconnu", INVARIANT, doc="""

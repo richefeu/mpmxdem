@@ -12,6 +12,9 @@ void ReactivateCHCLBonds::write(std::ostream& os) {
 void ReactivateCHCLBonds::check() {
   if (box->t >= timeBondReactivation - box->dt && box->t <= timeBondReactivation + box->dt) {
     for (size_t p = 0; p < box->MP.size(); p++) {
+      // PBC is null for every single-scale point: only a numerically
+      // homogeneised law owns a DEM sample with bonds to reactivate.
+      if (box->MP[p].isDoubleScale == false || box->MP[p].PBC == nullptr) { continue; }
       box->MP[p].PBC->ActivateBonds(bondingDistance, bondedStateDam);
     }
   }

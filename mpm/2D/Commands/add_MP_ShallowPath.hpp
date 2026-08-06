@@ -14,12 +14,12 @@ struct add_MP_ShallowPath : public Command {
   double lineEquation(const vec2r& point1, const vec2r& point2, const double xpos);
 
   std::string modelName;
-  int groupNb;
-  int nbPathPoints;
+  int groupNb{0};
+  int nbPathPoints{0};
   vec2r pathPoint;
-  double height;
-  double rho;
-  double size;
+  double height{0.0};
+  double rho{0.0};
+  double size{0.0};
   std::vector<vec2r> pathPoints;
 };
 

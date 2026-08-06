@@ -19,8 +19,8 @@
 #include "transitFunc.hpp"
 
 struct SinfoniettaCrush : public ConstitutiveModel {
-  double Young;
-  double Poisson;
+  double Young{0.0};
+  double Poisson{0.0};
   Rigidity C;
 
   // See page 49 of Quentin's PhD

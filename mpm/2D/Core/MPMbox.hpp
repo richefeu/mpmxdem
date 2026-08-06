@@ -172,7 +172,7 @@ public:
   inline MPModelState &modelState(size_t p) { return modelStateStore[p]; }
   inline mat4r &prevF(size_t p) { return prevFstore[p]; }
 
-  size_t number_MP_before_any_split; // used to check proximity if # of MP has changed
+  size_t number_MP_before_any_split{0}; // used to check proximity if # of MP has changed
                                      // (some "unknown" points could enter the obstacle and suddenly be detected
                                      // once they are way inside)
 

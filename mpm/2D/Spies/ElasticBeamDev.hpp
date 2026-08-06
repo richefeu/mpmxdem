@@ -16,5 +16,5 @@ struct ElasticBeamDev : public Spy {
   std::string filename;
   std::ofstream file;
 
-  double KinEnergyTot;
+  double KinEnergyTot{0.0};
 };

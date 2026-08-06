@@ -899,8 +899,15 @@ void MPMbox::run() {
       iconf++;
     }
 
+    // The neighbor lists are rebuilt every proxPeriod steps, and also as soon as
+    // the number of Material Points has changed -- a split shifts the indices
+    // the lists are made of. number_MP_before_any_split is refreshed at the top
+    // of advanceOneStep, i.e. BEFORE adaptativeRefinement: a split is therefore
+    // seen at the next step.
+    // A removal, on the other hand, happens just below, between this test and
+    // advanceOneStep, so the refresh wipes it out and this guard never sees it.
+    // RemoveMaterialPoint rebuilds the lists itself for that reason (see A7).
     if (step % proxPeriod == 0 || MP.size() != number_MP_before_any_split) {
-      // second condition is needed because of the splitting
       checkProximity();
     }
 

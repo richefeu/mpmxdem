@@ -19,16 +19,16 @@
 
 // Ce sera renomer SinfoniettaCrunch
 struct SinfoniettaClassica : public ConstitutiveModel {
-  double Young;
-  double Poisson;
+  double Young{0.0};
+  double Poisson{0.0};
   Rigidity C;
 
   // See page 49 of Quentin's PhD
-  double beta;    // non-associativity characterisation (beta = 3 => associated)
-  double beta_p;  // plastic compliance (1/H)
-  double kappa;   // shear hardening parameter (often 0)
-  double varphi;  // friction angle (characteristic state)
-  double pc0;     // pre-consolidation pressure
+  double beta{0.0};    // non-associativity characterisation (beta = 3 => associated)
+  double beta_p{0.0};  // plastic compliance (1/H)
+  double kappa{0.0};   // shear hardening parameter (often 0)
+  double varphi{0.0};  // friction angle (characteristic state)
+  double pc0{0.0};     // pre-consolidation pressure
 
   // double phi_star_0;
   // double Epv0; // début (approx) du plateau à phi_star_0
@@ -53,5 +53,5 @@ struct SinfoniettaClassica : public ConstitutiveModel {
 
   const double epsilon_pressure{1e-13};
   const double yield_tol{1e-8};
-  double z;  // depends on varphi
+  double z{0.0};  // depends on varphi
 };

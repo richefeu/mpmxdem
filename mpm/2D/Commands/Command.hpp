@@ -4,7 +4,7 @@
 class MPMbox;
 
 struct Command {
-  MPMbox* box;
+  MPMbox* box{nullptr};
 
   virtual void plug(MPMbox* Box);
 

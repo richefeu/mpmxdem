@@ -12,9 +12,9 @@
 #include "ConstitutiveModel.hpp"
 
 struct VonMisesElastoPlasticity : public ConstitutiveModel {
-  double Young;
-  double Poisson;
-  double PlasticYieldStress;
+  double Young{0.0};
+  double Poisson{0.0};
+  double PlasticYieldStress{0.0};
 
   VonMisesElastoPlasticity(double young = 200.0e6, double poisson = 0.2, double plasticYieldStress = 100.0e3);
   std::string getRegistrationName();

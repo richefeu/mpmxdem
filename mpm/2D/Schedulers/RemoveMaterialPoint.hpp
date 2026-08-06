@@ -14,5 +14,5 @@ struct RemoveMaterialPoint : public Scheduler {
 
  private:
   std::string CMkey;  // this is the key-name given to a ConstitutiveModel
-  double removeTime;  // time of removal
+  double removeTime{0.0};  // time of removal
 };

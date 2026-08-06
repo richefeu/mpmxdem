@@ -7,5 +7,5 @@ struct set_uniform_pressure : public Command {
   void exec();
 
  private:
-  double pressure;
+  double pressure{0.0};
 };

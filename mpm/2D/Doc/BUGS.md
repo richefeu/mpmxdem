@@ -389,8 +389,8 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | ~~A4~~ | ~~Déréférencement de `models.end()` (5 occurrences)~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:529` |
 | ~~A5~~ | ~~`DataTable::get` hors bornes dès qu'un groupe n'a pas de `set`~~ — **corrigé le 2026-08-05** | `BoundaryForceLaw/*.cpp` |
 | ~~A6~~ | ~~`BoundaryForceLaw` inconnu → pointeur nul déréférencé à chaque pas~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:444` |
-| **A7** | `RemoveMaterialPoint` laisse des indices périmés dans les listes de voisins | `Schedulers/RemoveMaterialPoint.cpp:22` |
-| **A8** | `ReactivateCHCLBonds` déréférence `PBC` sans vérifier `isDoubleScale` | `Schedulers/ReactivateCHCLBonds.cpp:15` |
+| ~~**A7**~~ | ~~`RemoveMaterialPoint` laisse des indices périmés dans les listes de voisins~~ **corrigé** | `Schedulers/RemoveMaterialPoint.cpp` |
+| ~~**A8**~~ | ~~`ReactivateCHCLBonds` déréférence `PBC` sans vérifier `isDoubleScale`~~ **corrigé** | `Schedulers/ReactivateCHCLBonds.cpp` |
 | ~~A9~~ | ~~`set_BC_line` / `set_BC_column` : avertissent puis continuent, aucune borne~~ — **corrigé le 2026-08-05** | `Commands/set_BC_line.cpp:8` |
 | ~~A10~~ | ~~Périodes à zéro (`confPeriod`, `proxPeriod`, `nstep`, `nrec`) → `SIGFPE`~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:817` |
 | **A11** | `cut.cpp` : accès à `corner[4]` sur un tableau de 4 — *mais `cut.cpp` n'est compilé par aucune cible* | `See/cut.cpp:63` |
@@ -421,7 +421,7 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | **C10** | `MPTracking` : sélecteur exécuté à la lecture, donc avant la création des MP | `Spies/MPTracking.cpp:27` |
 | **C11** | `MaterialPoint::nb` non unique | `Commands/set_MP_grid.cpp:48` |
 | ~~C12~~ | ~~`set <nom>` accepte silencieusement n'importe quel nom de paramètre~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:392` |
-| **C13** | Pointeurs et membres non initialisés | `ConstitutiveModels/ConstitutiveModel.hpp:11` |
+| ~~**C13**~~ | ~~Pointeurs et membres non initialisés~~ **corrigé** | 24 en-têtes |
 | ~~C14~~ | ~~`Nodes` lu avant la grille : avertissement puis accès hors bornes~~ — **corrigé le 2026-08-05** | `Core/MPMbox.cpp:491` |
 | **C15** | `frictionalViscoElastofragile` : seuil non homogène, `sigma_n` toujours positif | `BoundaryForceLaw/frictionalViscoElastofragile.cpp:43` |
 | **D1** | Deuxième bloc `Nodes` mort dans `read()` | `Core/MPMbox.cpp:537` |
@@ -436,6 +436,7 @@ passent, dont le nouveau `T18` qui contrôle les deux propriétés sur les trois
 | **D10** | `Neighbor::dt` jamais alimenté, `contactf` écrasé | `BoundaryForceLaw/frictionalViscoElastic.cpp:60` |
 | **D11** | `t += dt` : le dernier conf-file peut manquer | `Core/MPMbox.cpp:857` |
 | ~~D13~~ | ~~`MaterialPoint::q` n'est utilisé nulle part~~ — **corrigé le 2026-08-06** | `Core/MaterialPoint.hpp:36` |
+| **D14** | Un plantage sort avec le code de retour 0 | `Runners/run.cpp` |
 | **D12** | Rappel des défauts déjà documentés (annexe B du manuel) | — |
 
 ---
@@ -742,7 +743,9 @@ suffit.
 
 ---
 
-## A7 — `RemoveMaterialPoint` laisse des indices périmés dans les listes de voisins
+## ~~A7~~ — `RemoveMaterialPoint` laisse des indices périmés dans les listes de voisins
+
+> **CORRIGÉ le 2026-08-06** — voir le journal en tête du document. Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichier** : `Schedulers/RemoveMaterialPoint.cpp:13-23`
 
@@ -793,7 +796,9 @@ un retrait des points sortis de la grille, cf. **A1**).
 
 ---
 
-## A8 — `ReactivateCHCLBonds` déréférence `PBC` sans vérification
+## ~~A8~~ — `ReactivateCHCLBonds` déréférence `PBC` sans vérification
+
+> **CORRIGÉ le 2026-08-06** — voir le journal en tête du document. Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichier** : `Schedulers/ReactivateCHCLBonds.cpp:12-17`
 
@@ -2229,7 +2234,9 @@ vérification est donc immédiate.
 
 ---
 
-## C13 — Pointeurs et membres non initialisés
+## ~~C13~~ — Pointeurs et membres non initialisés
+
+> **CORRIGÉ le 2026-08-06** — voir le journal en tête du document. Le texte ci-dessous décrit l'état d'avant correction.
 
 **Fichiers** : `ConstitutiveModels/ConstitutiveModel.hpp:11`, `Schedulers/Scheduler.hpp:7`,
 `Core/MPMbox.hpp:140`, `Schedulers/ReactivateCHCLBonds.hpp:12-13`,
@@ -2242,9 +2249,13 @@ class  MPMbox { ... size_t number_MP_before_any_split; ... };       // non initi
 struct ReactivateCHCLBonds { double bondingDistance; double timeBondReactivation; };
 ```
 
-Tous sont affectés avant usage dans le déroulement actuel — `number_MP_before_any_split`
-est protégé par le court-circuit de `step % proxPeriod == 0` au pas 0, ce qui est fragile —
-mais rien ne le garantit pour un plugin futur. C'est exactement le motif qui a produit le
+Tous sont affectés avant usage dans le déroulement actuel. Le cas de
+`number_MP_before_any_split` mérite d'être détaillé, parce qu'il est instructif : il est
+affecté en tête de `advanceOneStep` — dans les **trois** schémas d'intégration, ce qui est
+déjà une duplication — donc à partir du pas 1 il vaut ce qu'il doit valoir. Au pas 0, il n'a
+encore jamais été écrit, mais le `||` de `step % proxPeriod == 0` court-circuite avant de le
+lire. Il n'y a donc pas de lecture indéterminée ; il n'y a qu'un invariant tenu par la
+conjonction de trois fichiers et d'un ordre d'évaluation. C'est exactement le motif qui a produit le
 bug `nbElemY` de `set_node_grid` corrigé récemment.
 
 **Correction proposée** — initialiser systématiquement à la déclaration :
@@ -2494,6 +2505,38 @@ ni affiché, la suppression est donc sans effet de bord.
 
 ---
 
+## D14 — Un plantage sort avec le code de retour 0
+
+**Fichier** : `Runners/run.cpp` (`mySigHandler`), `deps/toofus-src/stackTracer.hpp`
+
+`mpmbox` installe un gestionnaire pour `SIGSEGV`, `SIGBUS`, `SIGFPE`, `SIGABRT` et
+`SIGTERM`. Il imprime une trace de pile lisible — ce qui est précieux — puis rend la main
+de telle sorte que le processus se termine avec le **code 0**.
+
+Conséquence : rien de ce qui appelle `mpmbox` ne peut distinguer un calcul mené à son terme
+d'un calcul qui a explosé au troisième pas. Ni un script d'enchaînement, ni un ordonnanceur
+de calcul (SLURM, PBS…), ni `make`, ni la suite de tests — qui a d'ailleurs manqué un
+plantage franc pour cette raison, jusqu'à ce qu'elle apprenne à repérer la trace de pile
+dans la sortie plutôt que le code de retour.
+
+**Correction proposée** — terminer sur le code conventionnel `128 + signal` :
+
+```cpp
+static void mySigHandler(int sig) {
+  SimuChrono.stop();
+  for (size_t s = 0; s < Simu.Spies.size(); ++s) { Simu.Spies[s]->end(); }
+  StackTracer::defaultSigHandler(sig);   // imprime la trace
+  std::_Exit(128 + sig);                 // ... et le fait savoir
+}
+```
+
+`std::_Exit` plutôt que `exit` : on est dans un gestionnaire de signal, les destructeurs et
+les `atexit` n'y sont pas sûrs. Une fois cela fait, `Tests/runtests.py` pourra revenir à un
+simple test du code de retour (la détection par la trace de pile restera utile pour les
+constructions sous sanitizer).
+
+---
+
 ## D12 — Rappel des défauts déjà documentés
 
 Ces trois points figurent déjà à l'annexe B du manuel utilisateur et ne sont pas repris
@@ -2508,6 +2551,54 @@ ci-dessus :
 
 Deux candidats à ajouter à cette annexe : `planeStrain` (**D2**) et
 `splittingExtremeShearing` (**D3**).
+
+### 2026-08-06 — A7, A8, C13
+
+**A7** — `RemoveMaterialPoint` compacte le tableau des points matériels, ce qui décale tous
+les indices situés après ceux qu'il retire. Les listes de voisins des obstacles sont faites
+de tels indices, et l'ordre dans `MPMbox::run` est `checkProximity()`, puis les
+ordonnanceurs, puis `advanceOneStep()` : les listes sont construites avant le retrait et
+utilisées après, **dans le même pas**. Le garde-fou du haut de `run`
+(`MP.size() != number_MP_before_any_split`) ne peut rien y faire : `advanceOneStep` réaffecte
+ce compteur à son entrée, donc après le retrait — il ne détecte que les *découpages*, qui ont
+lieu plus tard dans le pas. Les listes sont désormais vidées et reconstruites par
+l'ordonnanceur lui-même, juste après le compactage. L'échantillon DEM des points double
+échelle retirés est libéré au passage (il n'était pas désalloué).
+
+**A8** — `ReactivateCHCLBonds::check` appelait `PBC->ActivateBonds` sur **tous** les points ;
+`PBC` est nul pour un point simple échelle. Un calcul sans loi homogénéisée où cet
+ordonnanceur traîne plantait à `timeBondReactivation`. Les points sans échantillon DEM sont
+maintenant ignorés.
+
+**C13** — 65 membres de données initialisés à la déclaration dans 24 en-têtes : les `box`
+des familles `Command` et `Scheduler`, les paramètres de tous les modèles de comportement,
+des ordonnanceurs, des commandes, des obstacles et des espions. Aucun n'était lu avant
+affectation dans le déroulement actuel, mais c'est exactement le motif qui a produit le bug
+`nbElemY` de `set_node_grid`.
+
+**Point de méthode.** Le dépassement de tableau d'A7 ne dure **qu'un seul pas** — les listes
+sont reconstruites au pas suivant — et n'est pas observable de façon déterministe : il lit et
+écrit dans le tas au-delà du tableau, ce qui ne plante pas à tout coup. Il a été mis en
+évidence, puis vérifié corrigé, avec une construction sous **AddressSanitizer** :
+
+```sh
+cmake -S . -B BUILD-asan -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
+      -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
+cmake --build BUILD-asan --target mpmbox -j8
+python3 Tests/runtests.py --exe BUILD-asan/mpmbox
+```
+
+Avant correction, le cas **T28** produisait `AddressSanitizer: BUS ... READ memory access` dans
+`Line::touch`, appelé depuis `advanceOneStep`. Après, la suite est propre. **Toute correction
+portant sur des indices ou des durées de vie devrait être validée ainsi** : la suite ordinaire
+ne voit pas ces défauts.
+
+**Défaut découvert en écrivant les tests** — voir **D14** : `mpmbox` sort avec le **code 0**
+quand il plante, son gestionnaire de signal masquant le code d'erreur. Le lanceur de tests
+détecte donc désormais la trace de pile dans la sortie, et non le code de retour.
+
+---
 
 ### 2026-08-05 — Optimisation : pistes 1 et 2 (et **A2**)
 
@@ -2542,7 +2633,7 @@ python3 Tests/runtests.py -v     # + la raison de chaque XFAIL
 
 Elle distingue trois familles :
 
-- **26 invariants** (`PASS`) — propriétés physiques et numériques qui doivent tenir
+- **29 invariants** (`PASS`) — propriétés physiques et numériques qui doivent tenir
   **avant comme après** les corrections. Un `FAIL` est une régression.
 - **plus aucun `XFAIL`** : tous les défauts couverts par la suite sont corrigés. Les entrées ci-dessous — chacun étiqueté avec son identifiant ci-dessous. Ils
   doivent basculer en `XPASS` au fur et à mesure des corrections, puis être reclassés en
@@ -2570,9 +2661,17 @@ Elle distingue trois familles :
 | T16 | ~~B9~~, ~~B10~~ | **corrigé** : la dérive ne dépend plus de `proxPeriod` (identique à 6 décimales) |
 | T14 | ~~B11~~ | **corrigé** : numéros uniques, un seul découpage par pas |
 | T17 | ~~B15~~ | **corrigé** : les trois schémas restent à moins de 2,3e-4 de det F = 1 |
+| T19 | — | garde-fou : `see` doit pouvoir ouvrir un conf-file (ajouté après un `SIGSEGV`) |
+| T28 | ~~A7~~ | **corrigé** : plus de dépassement sous AddressSanitizer après un retrait de points |
+| T29 | ~~A8~~ | **corrigé** : un calcul simple échelle survit à `ReactivateCHCLBonds` |
 
-Non couverts : **A2**, **A3** (B-splines), **B4**, **B5**, **B8**, **B10**, **B12** à
-**B14**, toute la classe C et tout le double échelle. `Tests/README.md` détaille ce qui
+**T28 ne prouve son défaut que sous sanitizer.** Le dépassement d'A7 ne durait qu'un pas et
+n'était pas observable autrement ; en construction ordinaire, T28 ne vérifie que le
+comportement visible du retrait (les bons points partent, les bons restent). La marche à
+suivre pour une construction ASan est dans le journal, à l'entrée du 2026-08-06.
+
+Non couverts : **A3** (B-splines, éléments de bord), **B8**, **B12** à **B14**, toute la
+classe C et tout le double échelle. `Tests/README.md` détaille ce qui
 manque et pourquoi.
 
 Deux invariants méritent d'être signalés parce qu'ils surveillent des corrections à venir :
