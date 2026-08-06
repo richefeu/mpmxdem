@@ -20,13 +20,6 @@ MaterialPoint::MaterialPoint(int Group, double Size, double Rho, ConstitutiveMod
   F      = mat4r::unit();
   prev_F = F;
 
-  for (int i = 0; i < 16; i++) { N[i] = 0.0; }
-
-  gradN[0].reset();
-  gradN[1].reset();
-  gradN[2].reset();
-  gradN[3].reset();
-
   corner[0].reset();
   corner[1].reset();
   corner[2].reset();

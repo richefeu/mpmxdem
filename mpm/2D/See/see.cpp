@@ -1012,6 +1012,13 @@ void buildMenu() {
 // =====================================================================
 
 int main(int argc, char *argv[]) {
+  // The profiler has to be initialised here too, and not only in Runners/run.cpp:
+  // its START_TIMER dereferences the 'current' timer, which INIT_TIMERS is what
+  // allocates. Any function shared with mpmbox may carry a timer -- postProcess
+  // reaches updateLiveNodeList, for instance -- and would otherwise crash the
+  // viewer on a null pointer.
+  INIT_TIMERS();
+
   Conf.computationMode = false;
 
   if (argc == 1) {

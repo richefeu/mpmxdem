@@ -57,8 +57,11 @@ struct MaterialPoint {
   double outOfPlaneViscousStress{0.0};
   double hardeningForce{0.0};   // memory for hardening
 
-  double N[16];    // Value of shape function according to the position of the Material Point
-  vec2r gradN[16]; // Gradient of shape function according to the position of the Material Point
+  // The shape functions N and their gradients gradN used to live here, as
+  // double N[16] and vec2r gradN[16], i.e. 384 bytes -- 43 % of this structure.
+  // They now sit in two contiguous arrays of MPMbox, reachable through
+  // MPMbox::N(p) and MPMbox::gradN(p): the array of Material Points shrinks by
+  // as much, and the shape functions are read as a stream. See Doc/OPTIM.md.
   size_t e{0};     // Identify the element to which the point belongs
   mat4r F;         // Deformation gradient matrix
   mat4r velGrad;   // Gradient of velocity (required eg. for computation of F)

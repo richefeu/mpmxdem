@@ -962,6 +962,14 @@ void MPMbox::checkProximity() {
 //     that never appears in a 'set' line reads outside the vectors.
 //
 void MPMbox::checkSettings() {
+  // Refreshing MaterialPoint::corner[] at every step costs four matrix-vector
+  // products and 64 bytes written per point. Only Polygon::getContactFrame
+  // reads them during the step -- the viewer recomputes them in postProcess.
+  needMPCorners = false;
+  for (size_t o = 0; o < Obstacles.size(); o++) {
+    if (Obstacles[o]->getRegistrationName() == "Polygon") { needMPCorners = true; }
+  }
+
   if (confPeriod <= 0) {
     Logger::critical("@MPMbox::checkSettings, confPeriod = {}; it is used as a modulo and has to be at least 1",
                      confPeriod);
@@ -1159,6 +1167,67 @@ void MPMbox::convergenceConditions() {
 // ===================================================
 
 //
+// Make room in shapeN and shapeGradN for the current number of Material Points.
+//
+// Called at the beginning of each time step and of postProcess. The test costs
+// nothing, and the arrays only grow when points are created -- by a command, by
+// the adaptive splitting -- or when the shape function changes the number of
+// nodes per element. The values themselves are recomputed at every step by
+// computeInterpolationValues, so there is nothing to preserve.
+//
+void MPMbox::resizeShapeArrays() {
+  const size_t need = MP.size() * element::nbNodes;
+  if (shapeN.size() != need) {
+    shapeN.resize(need, 0.0);
+    shapeGradN.resize(need);
+  }
+}
+
+//
+// Rebuild liveNodeNum, the list of the nodes that carry at least one Material
+// Point at this time step.
+//
+// The nodes are marked in a scratch array indexed by node number, with the
+// rebuild counter as the mark: a node already seen during this rebuild carries
+// the current mark and is not added twice. No search, no sorting, no
+// allocation once the array is dimensioned.
+//
+// The previous implementation inserted every (Material Point, node) pair into a
+// std::set -- 6144 insertions into a red-black tree per step on the reference
+// benchmark, each one allocating. It weighed 13 % of the time step, against
+// 2 % now. Replacing the set by push_back + sort + unique, which was tried,
+// brings nothing: the sorting costs as much as the tree.
+//
+// The list is NOT sorted any more. Nothing depends on it: the nodes are then
+// treated one by one, with no summation across the list, and the order stays
+// deterministic since it follows the order of the Material Points.
+//
+void MPMbox::updateLiveNodeList() {
+  START_TIMER("live node list");
+
+  if (nodeStamp.size() != nodes.size()) {
+    nodeStamp.assign(nodes.size(), 0);
+    stampTag = 0;
+  }
+  ++stampTag;
+  if (stampTag == 0) { // wrapped around after 4e9 rebuilds
+    std::fill(nodeStamp.begin(), nodeStamp.end(), 0);
+    stampTag = 1;
+  }
+
+  liveNodeNum.clear();
+  for (size_t p = 0; p < MP.size(); p++) {
+    size_t *I = &(Elem[MP[p].e].I[0]);
+    for (size_t r = 0; r < element::nbNodes; r++) {
+      if (nodeStamp[I[r]] != stampTag) {
+        nodeStamp[I[r]] = stampTag;
+        liveNodeNum.push_back(I[r]);
+      }
+    }
+  }
+}
+
+//
 // Update the velocity gradient for all material points.
 //
 // The velocity gradient of a material point is computed as the sum of the
@@ -1181,11 +1250,12 @@ void MPMbox::updateVelocityGradient() {
   size_t *I;
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
+    const vec2r *gNp = gradN(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
-      MP[p].velGrad.xx += (MP[p].gradN[r].x * nodes[I[r]].vel.x);
-      MP[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
-      MP[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
-      MP[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
+      MP[p].velGrad.xx += (gNp[r].x * nodes[I[r]].vel.x);
+      MP[p].velGrad.yy += (gNp[r].y * nodes[I[r]].vel.y);
+      MP[p].velGrad.xy += (gNp[r].y * nodes[I[r]].vel.x);
+      MP[p].velGrad.yx += (gNp[r].x * nodes[I[r]].vel.y);
     }
   }
 }
@@ -1248,9 +1318,15 @@ void MPMbox::updateTransformationGradient() {
   updateVelocityGradient();
   if (CHCL.hasDoubleScale == true) limitTimeStepForDEM();
 
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].prev_F = MP[p].F;
-    MP[p].F      = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
+  // prev_F n'est lu que par CHCL_DEM : 32 octets ecrits par point et par pas,
+  // pour rien, dans un calcul simple echelle.
+  if (CHCL.hasDoubleScale == true) {
+    for (size_t p = 0; p < MP.size(); p++) {
+      MP[p].prev_F = MP[p].F;
+      MP[p].F      = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F;
+    }
+  } else {
+    for (size_t p = 0; p < MP.size(); p++) { MP[p].F = (mat4r::unit() + dt * MP[p].velGrad) * MP[p].F; }
   }
 }
 
@@ -1412,16 +1488,11 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
 
   // Preparation for smoothed data
   size_t *I;
+  resizeShapeArrays();
   for (size_t p = 0; p < MP.size(); p++) { shapeFunction->computeInterpolationValues(*this, p); }
 
   // Update Vector of node indices
-  std::set<size_t> sortedLive;
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) { sortedLive.insert(I[r]); }
-  }
-  liveNodeNum.clear();
-  std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
+  updateLiveNodeList();
 
   // Reset nodal mass
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
@@ -1434,9 +1505,10 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
   // Nodal mass
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
+    const double *Np = N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
-      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
-      nodes[I[r]].outOfPlaneStress += MP[p].N[r] * MP[p].outOfPlaneStress;
+      nodes[I[r]].mass += Np[r] * MP[p].mass;
+      nodes[I[r]].outOfPlaneStress += Np[r] * MP[p].outOfPlaneStress;
     }
   }
 
@@ -1444,22 +1516,25 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
   // MP -> nodes
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
+    const double *Np = N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
-      nodes[I[r]].vel += MP[p].N[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
-      nodes[I[r]].stress += MP[p].N[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
+      nodes[I[r]].vel += Np[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
+      nodes[I[r]].stress += Np[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
     }
   }
   // nodes -> MPs
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
+    const double *Np = N(p);
+    const vec2r *gNp = gradN(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
-      Data[p].vel += nodes[I[r]].vel * MP[p].N[r];
-      Data[p].stress += nodes[I[r]].stress * MP[p].N[r];
-      Data[p].velGrad.xx += (MP[p].gradN[r].x * nodes[I[r]].vel.x);
-      Data[p].velGrad.yy += (MP[p].gradN[r].y * nodes[I[r]].vel.y);
-      Data[p].velGrad.xy += (MP[p].gradN[r].y * nodes[I[r]].vel.x);
-      Data[p].velGrad.yx += (MP[p].gradN[r].x * nodes[I[r]].vel.y);
-      Data[p].outOfPlaneStress += MP[p].N[r] * nodes[I[r]].outOfPlaneStress;
+      Data[p].vel += nodes[I[r]].vel * Np[r];
+      Data[p].stress += nodes[I[r]].stress * Np[r];
+      Data[p].velGrad.xx += (gNp[r].x * nodes[I[r]].vel.x);
+      Data[p].velGrad.yy += (gNp[r].y * nodes[I[r]].vel.y);
+      Data[p].velGrad.xy += (gNp[r].y * nodes[I[r]].vel.x);
+      Data[p].velGrad.yx += (gNp[r].x * nodes[I[r]].vel.y);
+      Data[p].outOfPlaneStress += Np[r] * nodes[I[r]].outOfPlaneStress;
     }
     Data[p].pos    = MP[p].pos;
     Data[p].strain = MP[p].F;

@@ -84,6 +84,8 @@ public:
   std::vector<ControlMP> controlledMP; // force or velocity controls on some MP
 
   bool computationMode{true}; // true for computation; false for visualisation
+  bool needMPCorners{false};  // true only if an obstacle reads MaterialPoint::corner[]
+                             // (Polygon does; see recomputes them in postProcess)
 
   std::string result_folder{"."}; // The folder into which the result files will be saved
   bool planeStrain{false};        // Plane strain assumption
@@ -140,6 +142,24 @@ public:
 
   std::vector<size_t> liveNodeNum; // list of node numbers being updated and used during each time step
                                    // It holds only the number of nodes concerned by the proximity of MP
+                                   // (rebuilt by updateLiveNodeList; NOT sorted)
+
+  std::vector<uint32_t> nodeStamp; // scratch used by updateLiveNodeList: one mark per node
+  uint32_t stampTag{0};            // current mark, incremented at each rebuild
+
+  // Shape functions and their gradients, for every Material Point and every
+  // node of its element: element::nbNodes values per point, laid out one point
+  // after the other. Kept out of MaterialPoint so that the array of points --
+  // whose size is what limits a large computation, see Doc/OPTIM.md -- stays as
+  // small as possible, and so that these values are read as a stream.
+  // Use N(p) and gradN(p) rather than indexing by hand.
+  std::vector<double> shapeN;
+  std::vector<vec2r> shapeGradN;
+
+  // Shape functions of the Material Point p: nbNodes values, indexed by the
+  // local node number.
+  inline double *N(size_t p) { return shapeN.data() + p * element::nbNodes; }
+  inline vec2r *gradN(size_t p) { return shapeGradN.data() + p * element::nbNodes; }
 
   size_t number_MP_before_any_split; // used to check proximity if # of MP has changed
                                      // (some "unknown" points could enter the obstacle and suddenly be detected
@@ -167,6 +187,8 @@ public:
   void run();
 
   // Functions called in OneStep
+  void resizeShapeArrays();
+  void updateLiveNodeList();
   void updateVelocityGradient();
   void limitTimeStepForDEM();
   void updateTransformationGradient();

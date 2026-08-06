@@ -47,11 +47,12 @@ void MohrCoulomb::updateStrainAndStress(MPMbox &MPM, size_t p) {
   // Compute a strain increment (during dt) from the node-velocities
   // vec2r vn;
   mat4r dstrain{};
+  const vec2r *gNp = MPM.gradN(p);
   for (size_t r = 0; r < element::nbNodes; r++) {
-    dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
+    dstrain.xx += (MPM.nodes[I[r]].vel.x * gNp[r].x) * MPM.dt;
     dstrain.xy +=
-        0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;
+        0.5 * (MPM.nodes[I[r]].vel.x * gNp[r].y + MPM.nodes[I[r]].vel.y * gNp[r].x) * MPM.dt;
+    dstrain.yy += (MPM.nodes[I[r]].vel.y * gNp[r].y) * MPM.dt;
   }
   dstrain.yx = dstrain.xy;
 

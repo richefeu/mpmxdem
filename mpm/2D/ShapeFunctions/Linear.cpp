@@ -38,21 +38,21 @@ void Linear::computeInterpolationValues(MPMbox& MPM, size_t p) {
   double etaM = 1.0 - eta;
   double etaP = 1.0 + eta;
 
-  MPM.MP[p].N[0] = xiM * etaM;
-  MPM.MP[p].N[1] = xiP * etaM;
-  MPM.MP[p].N[2] = xiP * etaP;
-  MPM.MP[p].N[3] = xiM * etaP;
+  MPM.N(p)[0] = xiM * etaM;
+  MPM.N(p)[1] = xiP * etaM;
+  MPM.N(p)[2] = xiP * etaP;
+  MPM.N(p)[3] = xiM * etaP;
 
   double qx = 0.25 * invx;
   double qy = 0.25 * invy;
 
-  MPM.MP[p].gradN[0].x = -qx * etaM;
-  MPM.MP[p].gradN[1].x = qx * etaM;
-  MPM.MP[p].gradN[2].x = qx * etaP;
-  MPM.MP[p].gradN[3].x = -qx * etaP;
+  MPM.gradN(p)[0].x = -qx * etaM;
+  MPM.gradN(p)[1].x = qx * etaM;
+  MPM.gradN(p)[2].x = qx * etaP;
+  MPM.gradN(p)[3].x = -qx * etaP;
 
-  MPM.MP[p].gradN[0].y = -qy * (1.0 - xi);
-  MPM.MP[p].gradN[1].y = -qy * (1.0 + xi);
-  MPM.MP[p].gradN[2].y = qy * (1.0 + xi);
-  MPM.MP[p].gradN[3].y = qy * (1.0 - xi);
+  MPM.gradN(p)[0].y = -qy * (1.0 - xi);
+  MPM.gradN(p)[1].y = -qy * (1.0 + xi);
+  MPM.gradN(p)[2].y = qy * (1.0 + xi);
+  MPM.gradN(p)[3].y = qy * (1.0 - xi);
 }

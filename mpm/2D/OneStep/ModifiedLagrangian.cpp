@@ -35,6 +35,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   size_t* I;  // use as node index
 
   // ==== Discard previous grid
+  {
+    START_TIMER("grid reset");
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     nodes[liveNodeNum[n]].mass = 0.0;
     nodes[liveNodeNum[n]].outOfPlaneStress = 0.0;
@@ -47,11 +49,15 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 
   MPM.number_MP_before_any_split = MPM.MP.size();
 
+  // shapeN / shapeGradN suivent le nombre de points
+  MPM.resizeShapeArrays();
+
   // ==== Reset the resultant forces of MPs
   // (velGrad is cleared by MPMbox::updateVelocityGradient, so that no
   //  integration scheme can forget it)
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].f.reset();
+  }
   }
 
   // ==== Delete computed resultants (force and moment) of rigid obstacles
@@ -60,20 +66,15 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Compute interpolation values
-  for (size_t p = 0; p < MPM.MP.size(); p++) {
-    MPM.shapeFunction->computeInterpolationValues(MPM, p);
+  {
+    START_TIMER("shape functions");
+    for (size_t p = 0; p < MPM.MP.size(); p++) {
+      MPM.shapeFunction->computeInterpolationValues(MPM, p);
+    }
   }
 
   // ==== Update Vector of node indices
-  std::set<size_t> sortedLive;
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      sortedLive.insert(I[r]);
-    }
-  }
-  liveNodeNum.clear();
-  std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
+  MPM.updateLiveNodeList();
 
   // ==== Move the rigid obstacles according to their mode of driving
   for (size_t o = 0; o < Obstacles.size(); ++o) {
@@ -81,14 +82,17 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Initialize grid state (mass and momentum)
+  {
+    START_TIMER("P2G mass momentum");
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       // Nodal mass
-      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
-      nodes[I[r]].outOfPlaneStress += MP[p].N[r] * MP[p].outOfPlaneStress;
-      nodes[I[r]].q += MP[p].N[r] * MP[p].vel * MP[p].mass;
+      nodes[I[r]].mass += Np[r] * MP[p].mass;
+      nodes[I[r]].outOfPlaneStress += Np[r] * MP[p].outOfPlaneStress;
+      nodes[I[r]].q += Np[r] * MP[p].vel * MP[p].mass;
 
       if (nodes[I[r]].xfixed) {
         nodes[I[r]].q.x = 0.0;
@@ -98,36 +102,48 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       }
     }
   }
+  }
 
   // ==== Compute internal and external forces
+  {
+    START_TIMER("P2G internal forces");
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
+    const double *Np = MPM.N(p);
+    const vec2r *gNp = MPM.gradN(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       // Internal forces
-      nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
+      nodes[I[r]].f += -MP[p].vol * (MP[p].stress * gNp[r]);
       // External forces (gravity)
-      nodes[I[r]].f += MP[p].mass * MPM.gravity * MP[p].N[r];
+      nodes[I[r]].f += MP[p].mass * MPM.gravity * Np[r];
     }
+  }
   }
 
   // Updating free boundary conditions
-  for (size_t o = 0; o < Obstacles.size(); ++o) {
-    Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
-  }
+  {
+    START_TIMER("contact forces");
+    for (size_t o = 0; o < Obstacles.size(); ++o) {
+      Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
+    }
 
-  for (size_t o = 0; o < Obstacles.size(); ++o) {
-    OneStep::moveDEM2(Obstacles[o], dt);
-  }
+    for (size_t o = 0; o < Obstacles.size(); ++o) {
+      OneStep::moveDEM2(Obstacles[o], dt);
+    }
 
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      nodes[I[r]].fb += MP[p].f * MP[p].N[r];
+    for (size_t p = 0; p < MP.size(); p++) {
+      I = &(Elem[MP[p].e].I[0]);
+      const double *Np = MPM.N(p);
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        nodes[I[r]].fb += MP[p].f * Np[r];
+      }
     }
   }
 
   // ==== Compute rate of momentum and update nodes
+  {
+    START_TIMER("nodal update");
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     // sum of boundary and volume forces:
     nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].fb + nodes[liveNodeNum[n]].f;
@@ -139,6 +155,7 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       nodes[liveNodeNum[n]].qdot.y = 0.0;
     }
     nodes[liveNodeNum[n]].q += dt * nodes[liveNodeNum[n]].qdot;
+  }
   }
 
   // ==== Calculate velocity in MP (to then update q). sort of smoothing
@@ -157,17 +174,21 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
 #endif
 
   // ==== Calculate updated velocity in nodes to compute deformation
+  {
+    START_TIMER("P2G velocity remap");
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     double invmass;
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
-        nodes[I[r]].vel += invmass * MP[p].N[r] * MP[p].vel * MP[p].mass;
+        nodes[I[r]].vel += invmass * Np[r] * MP[p].vel * MP[p].mass;
       } else {
         nodes[I[r]].vel.reset();
       }
     }
+  }
   }
 
   // ==== Deformation gradient
@@ -177,6 +198,8 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   OneStep::updateStrainAndStress(MPM);
 
   // ==== Update positions avec le q provisoire
+  {
+    START_TIMER("G2P position");
   for (size_t p = 0; p < MP.size(); p++) {
     // Same place as in UpdateStressFirst and UpdateStressLast: prev_pos holds
     // the position at the end of the previous step, so that pos - prev_pos is
@@ -186,15 +209,19 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     MP[p].prev_pos = MP[p].pos;
     I = &(Elem[MP[p].e].I[0]);
     double invmass;
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > MPM.tolmass) {
         invmass = 1.0f / nodes[I[r]].mass;
-        MP[p].pos += MP[p].N[r] * dt * (nodes[I[r]].q) * invmass;
+        MP[p].pos += Np[r] * dt * (nodes[I[r]].q) * invmass;
       }
     }
   }
+  }
 
   // ==== Update Volume and density
+  {
+    START_TIMER("MP volume corners");
   for (size_t p = 0; p < MP.size(); p++) {
     double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy + MP[p].deltaStrain.det();
     MP[p].vol *= (1.0 + volumetricdStrain);
@@ -204,7 +231,10 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
   // ==== Update the corner positions of the MPs
   // They are what Polygon::getContactFrame builds its contact frame on, and
   // this scheme was the only one not refreshing them.
-  for (size_t p = 0; p < MP.size(); p++) { MP[p].updateCornersFromF(); }
+  if (MPM.needMPCorners) {
+    for (size_t p = 0; p < MP.size(); p++) { MP[p].updateCornersFromF(); }
+  }
+  }
 
   return 0;
 }

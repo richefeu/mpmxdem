@@ -42,19 +42,21 @@ void OneStep::updateMPVelocity(MPMbox& MPM) {
 
     if (MPM.activePIC == true) {
       vec2r PICvelocity;
+      const double *Np = MPM.N(p);
       for (size_t r = 0; r < element::nbNodes; r++) {
         if (nodes[I[r]].mass > MPM.tolmass) {
           const double invmass = 1.0 / nodes[I[r]].mass;
-          PICvelocity += MP[p].N[r] * nodes[I[r]].q * invmass;
-          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+          PICvelocity += Np[r] * nodes[I[r]].q * invmass;
+          MP[p].vel += Np[r] * dt * nodes[I[r]].qdot * invmass;
         }
       }
       MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelocity;
     } else {
+      const double *Np = MPM.N(p);
       for (size_t r = 0; r < element::nbNodes; r++) {
         if (nodes[I[r]].mass > MPM.tolmass) {
           const double invmass = 1.0 / nodes[I[r]].mass;
-          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+          MP[p].vel += Np[r] * dt * nodes[I[r]].qdot * invmass;
         }
       }
     }
@@ -74,7 +76,26 @@ void OneStep::updateStrainAndStress(MPMbox& MPM) {
 
   std::vector<MaterialPoint>& MP = MPM.MP;
 
+  // Each iteration writes into MP[p] alone and only reads the grid: there is no
+  // data race. The constitutive models are shared between the Material Points
+  // that refer to them, but none of them writes into its own members here --
+  // checked one by one, including the helpers of SinfoniettaClassica and
+  // Rigidity::getStress.
+  //
+  // No size threshold, but the gain does depend on the size, and not the way one
+  // would expect. Measured on 4 cores (see Doc/OPTIM.md):
+  //
+  //     384 points   0.90x   the loop is too short, the team of threads costs
+  //                          more than it saves
+  //    1536 points   1.35x   the sweet spot: it fits in cache
+  //   32000 points   1.05x   the computation has become bound by memory
+  //                          bandwidth, more cores do not help
+  //
+  // With a single thread -- the default of the command line -- the directive
+  // costs nothing measurable. Asking for threads on a case of a few hundred
+  // points is what loses 10 %, and such a case runs in a second anyway.
   if (MPM.CHCL.hasDoubleScale == false) {
+#pragma omp parallel for default(shared)
     for (size_t p = 0; p < MP.size(); p++) { MP[p].constitutiveModel->updateStrainAndStress(MPM, p); }
     return;
   }

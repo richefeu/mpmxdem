@@ -53,6 +53,9 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
 
   MPM.number_MP_before_any_split = MPM.MP.size();
 
+  // shapeN / shapeGradN suivent le nombre de points
+  MPM.resizeShapeArrays();
+
   // ==== Reset the resultant forces on MPs
   // (velGrad is cleared by MPMbox::updateVelocityGradient)
   for (size_t p = 0; p < MP.size(); p++) { MP[p].f.reset(); }
@@ -64,13 +67,7 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
   for (size_t p = 0; p < MP.size(); p++) { MPM.shapeFunction->computeInterpolationValues(MPM, p); }
 
   // ==== Update Vector of node indices
-  std::set<size_t> sortedLive;
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) { sortedLive.insert(I[r]); }
-  }
-  liveNodeNum.clear();
-  std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
+  MPM.updateLiveNodeList();
 
   // ==== Move the rigid obstacles according to their mode of driving
   for (size_t o = 0; o < Obstacles.size(); ++o) { OneStep::moveDEM1(Obstacles[o], dt); }
@@ -79,11 +76,12 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       // Nodal mass
-      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+      nodes[I[r]].mass += Np[r] * MP[p].mass;
       // Nodal momentum
-      nodes[I[r]].q += MP[p].N[r] * MP[p].mass * MP[p].vel;
+      nodes[I[r]].q += Np[r] * MP[p].mass * MP[p].vel;
 
       // Blocked DOFs (at nodes)
       if (nodes[I[r]].xfixed) { nodes[I[r]].q.x = 0.0; }
@@ -113,11 +111,13 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
   // ==== Compute internal and external forces
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
+    const double *Np = MPM.N(p);
+    const vec2r *gNp = MPM.gradN(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       // Internal forces
-      nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
+      nodes[I[r]].f += -MP[p].vol * (MP[p].stress * gNp[r]);
       // External forces (gravity)
-      nodes[I[r]].f += MP[p].mass * gravity * MP[p].N[r];
+      nodes[I[r]].f += MP[p].mass * gravity * Np[r];
     }
   }
 
@@ -129,7 +129,8 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
 
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) { nodes[I[r]].fb += MP[p].f * MP[p].N[r]; }
+    const double *Np = MPM.N(p);
+    for (size_t r = 0; r < element::nbNodes; r++) { nodes[I[r]].fb += MP[p].f * Np[r]; }
   }
 
   // ==== Compute rate of momentum and update nodes
@@ -150,16 +151,19 @@ int UpdateStressFirst::advanceOneStep(MPMbox &MPM) {
     I              = &(Elem[MP[p].e].I[0]);
     MP[p].prev_pos = MP[p].pos;
     double invmass;
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > tolmass) {
         invmass = 1.0 / nodes[I[r]].mass;
-        MP[p].pos += dt * MP[p].N[r] * nodes[I[r]].q * invmass;
+        MP[p].pos += dt * Np[r] * nodes[I[r]].q * invmass;
       }
     }
   }
 
   // ==== Update the corner positions of the MPs
-  for (size_t p = 0; p < MP.size(); p++) { MP[p].updateCornersFromF(); }
+  if (MPM.needMPCorners) {
+    for (size_t p = 0; p < MP.size(); p++) { MP[p].updateCornersFromF(); }
+  }
 
   return 0;
 }

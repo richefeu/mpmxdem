@@ -21,6 +21,7 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
 
   vec2r vn;
   mat4r dstrain;
+  const vec2r *gNp = MPM.gradN(p);
   for (size_t r = 0; r < element::nbNodes; r++) {
     if (MPM.nodes[I[r]].mass > MPM.tolmass) {
       vn = MPM.nodes[I[r]].q / MPM.nodes[I[r]].mass;
@@ -28,9 +29,9 @@ void VonMisesElastoPlasticity::updateStrainAndStress(MPMbox& MPM, size_t p) {
       continue;
     }
 
-    dstrain.xx += (vn.x * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.xy += 0.5 * (vn.x * MPM.MP[p].gradN[r].y + vn.y * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.yy += (vn.y * MPM.MP[p].gradN[r].y) * MPM.dt;
+    dstrain.xx += (vn.x * gNp[r].x) * MPM.dt;
+    dstrain.xy += 0.5 * (vn.x * gNp[r].y + vn.y * gNp[r].x) * MPM.dt;
+    dstrain.yy += (vn.y * gNp[r].y) * MPM.dt;
   }
   dstrain.yx = dstrain.xy;
 
