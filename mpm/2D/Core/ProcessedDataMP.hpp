@@ -23,7 +23,9 @@ struct ProcessedDataMP {
   vec2r vel;                    // Smoothed velocity
   mat4r strain;                 // strain
   mat4r stress;                 // Smoothed total stress
-  double outOfPlaneStress{0.0}; // third principal stress
+  double outOfPlaneStress{0.0};  // Out-of-plane normal stress, sigma_zz
+  double outOfPlaneShearXZ{0.0}; // Out-of-plane shear, sigma_xz
+  double outOfPlaneShearYZ{0.0}; // Out-of-plane shear, sigma_yz
   mat4r velGrad;                // Smothed velocity gradient
   double rho{0.0};              // density
 

@@ -70,6 +70,13 @@ class PBC3Dbox;
 
 class MPMbox {
 public:
+  // Version marker written at the top of every conf-file, and checked when one
+  // is read. Bump it whenever the layout of the saved data changes, so that an
+  // older file is refused with a clear message instead of being misread field
+  // by field. 'September 2026' added sigma_xz and sigma_yz to the Material
+  // Point lines.
+  static constexpr const char *confFileVersion = "Version September 2026";
+
   std::vector<node> nodes;           // The nodes of the Eulerian grid
   std::vector<element> Elem;         // Quad-elements of the grid
   std::vector<MaterialPoint> MP;     // Material Points

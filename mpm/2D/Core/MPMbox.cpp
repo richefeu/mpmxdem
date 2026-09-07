@@ -359,7 +359,26 @@ void MPMbox::read(const char *name) {
   file >> token;
   while (file) {
     if (token[0] == '/' || token[0] == '#' || token[0] == '!') {
+      // The version marker is written as a comment, but it is not decoration:
+      // the layout of the 'MPs' lines changes with it. Reading an older file
+      // with the current parser would shift every field of every Material
+      // Point, so such a file is refused rather than silently misread.
       getline(file, token);
+      size_t pos = token.find("MPM_CONFIGURATION_FILE");
+      if (pos != std::string::npos) {
+        std::string version = token.substr(pos + std::string("MPM_CONFIGURATION_FILE").size());
+        size_t b            = version.find_first_not_of(" \t");
+        version             = (b == std::string::npos) ? "" : version.substr(b);
+        size_t e            = version.find_last_not_of(" \t\r");
+        if (e != std::string::npos) { version = version.substr(0, e + 1); }
+        if (version != confFileVersion) {
+          Logger::critical("@MPMbox::read, '{}' announces '{}' but this build writes '{}'", name, version,
+                           confFileVersion);
+          Logger::critical("  The Material Point lines gained sigma_xz and sigma_yz, so the two layouts cannot");
+          Logger::critical("  be read by the same parser. Re-run the computation, or use the matching build.");
+          exit(EXIT_FAILURE);
+        }
+      }
     } else if (token == "result_folder") {
       file >> result_folder;
       // If result_folder does not exist, it is created
@@ -610,7 +629,7 @@ void MPMbox::read(const char *name) {
         // Pas maintenant, pour ne pas casser la compatibilité...
         file >> modelName >> P.nb >> P.groupNb >> P.vol0 >> P.vol >> P.density >> P.pos >> P.vel >> P.strain >>
             P.plasticStrain >> P.stress >> P.stressCorrection >> P.splitCount >> P.F >> P.outOfPlaneStress >>
-            P.contactf;
+            P.outOfPlaneShearXZ >> P.outOfPlaneShearYZ >> P.contactf;
 
         auto itCM = models.find(modelName);
         if (itCM == models.end()) {
@@ -706,7 +725,7 @@ void MPMbox::read(int num) {
 void MPMbox::save(const char *name) {
   std::ofstream file(name);
 
-  file << "# MPM_CONFIGURATION_FILE Version May 2021\n";
+  file << "# MPM_CONFIGURATION_FILE " << confFileVersion << "\n";
 
   if (planeStrain == true) { file << "planeStrain\n"; }
   file << "oneStepType " << oneStep->getRegistrationName() << '\n';
@@ -817,8 +836,8 @@ void MPMbox::save(const char *name) {
     file << MP[iMP].constitutiveModel->key << ' ' << MP[iMP].nb << ' ' << MP[iMP].groupNb << ' ' << MP[iMP].vol0 << ' '
          << MP[iMP].vol << ' ' << MP[iMP].density << ' ' << MP[iMP].pos << ' ' << MP[iMP].vel << ' ' << MP[iMP].strain
          << ' ' << MP[iMP].plasticStrain << ' ' << MP[iMP].stress << ' ' << MP[iMP].stressCorrection << ' '
-         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' ' << MP[iMP].contactf
-         << '\n';
+         << MP[iMP].splitCount << ' ' << MP[iMP].F << ' ' << MP[iMP].outOfPlaneStress << ' '
+         << MP[iMP].outOfPlaneShearXZ << ' ' << MP[iMP].outOfPlaneShearYZ << ' ' << MP[iMP].contactf << '\n';
   }
 
   // Obstacle Neighbors
@@ -1564,7 +1583,9 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
   // Reset nodal mass
   for (size_t n = 0; n < liveNodeNum.size(); n++) {
     nodes[liveNodeNum[n]].mass             = 0.0;
-    nodes[liveNodeNum[n]].outOfPlaneStress = 0.0;
+    nodes[liveNodeNum[n]].outOfPlaneStress  = 0.0;
+    nodes[liveNodeNum[n]].outOfPlaneShearXZ = 0.0;
+    nodes[liveNodeNum[n]].outOfPlaneShearYZ = 0.0;
     nodes[liveNodeNum[n]].vel.reset();
     nodes[liveNodeNum[n]].stress.reset();
   }
@@ -1573,20 +1594,28 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     const double *Np = N(p);
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      nodes[I[r]].mass += Np[r] * MP[p].mass;
-      nodes[I[r]].outOfPlaneStress += Np[r] * MP[p].outOfPlaneStress;
-    }
+    for (size_t r = 0; r < element::nbNodes; r++) { nodes[I[r]].mass += Np[r] * MP[p].mass; }
   }
 
   // smooth procedure
   // MP -> nodes
+  //
+  // The weights Np * m_p / m_node sum to one over the Material Points of a
+  // node, so what lands there is an average and not a sum. The out-of-plane
+  // stress used to be accumulated in the loop above as a bare 'Np * sigma_zz',
+  // with neither the mass weighting nor the division by the nodal mass: the
+  // result was not an average at all but a quantity growing with the number of
+  // Material Points in the support of the node, which made sigma_zz
+  // inconsistent with the in-plane components it is meant to complete.
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     const double *Np = N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       nodes[I[r]].vel += Np[r] * MP[p].mass * MP[p].vel / nodes[I[r]].mass;
       nodes[I[r]].stress += Np[r] * MP[p].mass * MP[p].stress / nodes[I[r]].mass;
+      nodes[I[r]].outOfPlaneStress += Np[r] * MP[p].mass * MP[p].outOfPlaneStress / nodes[I[r]].mass;
+      nodes[I[r]].outOfPlaneShearXZ += Np[r] * MP[p].mass * MP[p].outOfPlaneShearXZ / nodes[I[r]].mass;
+      nodes[I[r]].outOfPlaneShearYZ += Np[r] * MP[p].mass * MP[p].outOfPlaneShearYZ / nodes[I[r]].mass;
     }
   }
   // nodes -> MPs
@@ -1602,6 +1631,8 @@ void MPMbox::postProcess(std::vector<ProcessedDataMP> &Data) {
       Data[p].velGrad.xy += (gNp[r].y * nodes[I[r]].vel.x);
       Data[p].velGrad.yx += (gNp[r].x * nodes[I[r]].vel.y);
       Data[p].outOfPlaneStress += Np[r] * nodes[I[r]].outOfPlaneStress;
+      Data[p].outOfPlaneShearXZ += Np[r] * nodes[I[r]].outOfPlaneShearXZ;
+      Data[p].outOfPlaneShearYZ += Np[r] * nodes[I[r]].outOfPlaneShearYZ;
     }
     Data[p].pos    = MP[p].pos;
     Data[p].strain = MP[p].F;

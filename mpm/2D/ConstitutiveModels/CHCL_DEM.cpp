@@ -31,6 +31,11 @@ void CHCL_DEM::init(MaterialPoint& MP) {
     MP.stress.yx = -MP.PBC->Sig.yx;
     MP.stress.yy = -MP.PBC->Sig.yy;
     MP.outOfPlaneStress = -MP.PBC->Sig.zz;
+    // The DEM cell is 3D and its stress has no reason to be plane-strain.
+    // Without these two the deviatoric invariant of the cell is truncated, and
+    // with it the effective friction seen by the post-processing.
+    MP.outOfPlaneShearXZ = -0.5 * (MP.PBC->Sig.xz + MP.PBC->Sig.zx);
+    MP.outOfPlaneShearYZ = -0.5 * (MP.PBC->Sig.yz + MP.PBC->Sig.zy);
   }
 }
 
@@ -88,4 +93,7 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].stress.yx = -SigAvg.yx;
   MPM.MP[p].stress.yy = -SigAvg.yy;
   MPM.MP[p].outOfPlaneStress = -SigAvg.zz;
+  // SigAvg has just been symmetrized, so xz == zx and yz == zy here.
+  MPM.MP[p].outOfPlaneShearXZ = -SigAvg.xz;
+  MPM.MP[p].outOfPlaneShearYZ = -SigAvg.yz;
 }

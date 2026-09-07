@@ -66,7 +66,17 @@ struct MaterialPoint {
   mat4r stress;                 // Total stress
   mat4r stressCorrection;       // Plastic Stress (REMARQUE à enlever ou renomer). C'est la correction plastic en
                                 // fait. Ce truc avait été ajouté par Fabio.
-  double outOfPlaneStress{0.0}; // Out-of-plane total stress component
+  double outOfPlaneStress{0.0}; // Out-of-plane total stress component (sigma_zz)
+
+  // Out-of-plane SHEAR components, sigma_xz and sigma_yz. They play no part in
+  // the momentum balance of a 2D plane-strain MPM and stay at zero for every
+  // classical constitutive model, for which the out-of-plane direction is
+  // principal. They exist for CHCL_DEM: a periodic DEM cell is genuinely 3D
+  // and its stress tensor has no reason to be plane-strain, so without them
+  // the deviatoric invariant of the cell -- hence its effective friction -- is
+  // lost on the way up to the Material Point.
+  double outOfPlaneShearXZ{0.0};
+  double outOfPlaneShearYZ{0.0};
 
   // The shape functions N and their gradients gradN used to live here, as
   // double N[16] and vec2r gradN[16], i.e. 384 bytes -- 43 % of this structure.
