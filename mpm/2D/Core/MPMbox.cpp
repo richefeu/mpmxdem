@@ -20,10 +20,10 @@
 #include "Commands/set_uniform_pressure.hpp"
 
 #include "ConstitutiveModels/ConstitutiveModel.hpp"
-#include "ConstitutiveModels/HookeElasticity.hpp"
 #include "ConstitutiveModels/DruckerPrager.hpp"
 #include "ConstitutiveModels/DruckerPragerCap.hpp"
 #include "ConstitutiveModels/DruckerPragerCapNoDensification.hpp"
+#include "ConstitutiveModels/HookeElasticity.hpp"
 
 #include "Obstacles/Circle.hpp"
 #include "Obstacles/Line.hpp"
@@ -40,19 +40,20 @@
 #include "ShapeFunctions/RegularQuadLinear.hpp"
 #include "ShapeFunctions/ShapeFunction.hpp"
 
+#include "Spies/DPCPlot.hpp"
+#include "Spies/DPCPlotMean.hpp"
+#include "Spies/DPCPlotSingle.hpp"
+#include "Spies/DPPlotSingle.hpp"
 #include "Spies/ElasticBeamDev.hpp"
-#include "Spies/EnergyBalance.hpp"
 #include "Spies/Energies.hpp"
+#include "Spies/EnergyBalance.hpp"
 #include "Spies/MPTracking.hpp"
 #include "Spies/MeanStress.hpp"
 #include "Spies/MeanStressPQ_2D.hpp"
 #include "Spies/ObstacleTracking.hpp"
+#include "Spies/SigmaN_vs_fN.hpp"
 #include "Spies/Spy.hpp"
 #include "Spies/Work.hpp"
-#include "Spies/DPPlotSingle.hpp"
-#include "Spies/SigmaN_vs_fN.hpp"
-#include "Spies/DPCPlotSingle.hpp"
-#include "Spies/DPCPlot.hpp"
 
 #include "Schedulers/GravityRamp.hpp"
 #include "Schedulers/MoveObstacle.hpp"
@@ -169,15 +170,16 @@ void MPMbox::ExplicitRegistrations() {
       "set_uniform_pressure", [](void) -> Command * { return new set_uniform_pressure(); });
 
   // ConstitutiveModel =========
-  
+
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "HookeElasticity", [](void) -> ConstitutiveModel * { return new HookeElasticity(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
       "DruckerPrager", [](void) -> ConstitutiveModel * { return new DruckerPrager(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "DruckerPragerCap", [](void) -> ConstitutiveModel * { return new DruckerPragerCap(); });    
+      "DruckerPragerCap", [](void) -> ConstitutiveModel * { return new DruckerPragerCap(); });
   Factory<ConstitutiveModel, std::string>::Instance()->RegisterFactoryFunction(
-      "DruckerPragerCapNoDensification", [](void) -> ConstitutiveModel * { return new DruckerPragerCapNoDensification(); });    
+      "DruckerPragerCapNoDensification",
+      [](void) -> ConstitutiveModel * { return new DruckerPragerCapNoDensification(); });
   // Obstacle ==================
   Factory<Obstacle, std::string>::Instance()->RegisterFactoryFunction("Circle",
                                                                       [](void) -> Obstacle * { return new Circle(); });
@@ -240,11 +242,13 @@ void MPMbox::ExplicitRegistrations() {
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPPlotSingle",
                                                                  [](void) -> Spy * { return new DPPlotSingle(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("SigmaN_vs_fN",
-                                                                 [](void) -> Spy * { return new SigmaN_vs_fN(); });  
+                                                                 [](void) -> Spy * { return new SigmaN_vs_fN(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPCPlotSingle",
-                                                                 [](void) -> Spy * { return new DPCPlotSingle(); });      
+                                                                 [](void) -> Spy * { return new DPCPlotSingle(); });
   Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPCPlot",
-                                                                 [](void) -> Spy * { return new DPCPlot(); });                                                                                                                                                                                    
+                                                                 [](void) -> Spy * { return new DPCPlot(); });
+  Factory<Spy, std::string>::Instance()->RegisterFactoryFunction("DPCPlotMean",
+                                                                 [](void) -> Spy * { return new DPCPlotMean(); });
 }
 
 //
@@ -805,10 +809,10 @@ void MPMbox::init() {
     }
   }
 
-  for (size_t p = 0; p < MP.size(); p++) { 
+  for (size_t p = 0; p < MP.size(); p++) {
     MP[p].prev_pos = MP[p].pos;
-    MP[p].prev_vel = MP[p].vel; 
-    }
+    MP[p].prev_vel = MP[p].vel;
+  }
 }
 
 //
@@ -962,17 +966,27 @@ void MPMbox::convergenceConditions() {
   velMax = sqrt(velMax);
   rayMin = sqrt(rayMin);
 
+  double E_temp;
   if (Obstacles.size() > 0) {
-    for (size_t o = 0; o < Obstacles.size(); ++o) { groupsObs.insert(Obstacles[o]->group); }
-  }
-
-  std::set<int>::iterator it;
-  std::set<int>::iterator it2;
-  for (it = groupsMP.begin(); it != groupsMP.end(); ++it) {
-    for (it2 = groupsObs.begin(); it2 != groupsObs.end(); ++it2) {
-      if (dataTable.get(id_kn, *it, *it2) > knMax) { knMax = dataTable.get(id_kn, *it, *it2); }
+    for (size_t o = 0; o < Obstacles.size(); ++o) {
+      groupsObs.insert(Obstacles[o]->group);
+      for (size_t nn = 0; nn < Obstacles[o]->Neighbors.size(); nn++) {
+        size_t pn = Obstacles[o]->Neighbors[nn].PointNumber;
+        if (MP[pn].constitutiveModel->getRegistrationName() == "DruckerPragerCap") {
+          E_temp = MP[pn].constitutiveModel->getOtherParams(pn)[4];
+          if (E_temp > knMax) { knMax = E_temp; }
+        }
+      }
     }
   }
+
+  // std::set<int>::iterator it;
+  // std::set<int>::iterator it2;
+  // for (it = groupsMP.begin(); it != groupsMP.end(); ++it) {
+  //   for (it2 = groupsObs.begin(); it2 != groupsObs.end(); ++it2) {
+  //     if (dataTable.get(id_kn, *it, *it2) > knMax) { knMax = dataTable.get(id_kn, *it, *it2); }
+  //   }
+  // }
 
   // compute the 3 timestep conditions
   double collision_crit_dt  = sqrt(massMin / knMax);

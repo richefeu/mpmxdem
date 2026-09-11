@@ -2,41 +2,63 @@
 
 OneStep::~OneStep() {}
 
-void OneStep::resetDEM(Obstacle* obst, vec2r gravity) {
+void OneStep::resetDEM(Obstacle *obst, vec2r gravity) {
   // ==== Delete computed resultants (force and moment) of rigid obstacles
-  obst->force.reset();
-  obst->mom = 0.0;
-  obst->acc = gravity;
+  switch (obst->drive_mode) {
+  case IMPOSE_FORCE:
+    obst->force = obst->impForces[0] * obst->normal;
+    obst->acc.reset();
+    break;
+  default:
+    obst->force.reset();
+    obst->acc = gravity;
+    break;
+  }
+  obst->mom  = 0.0;
   obst->arot = 0.0;
 }
 
-void OneStep::moveDEM1(Obstacle* obst, double dt) {
+void OneStep::moveDEM1(Obstacle *obst, double dt) {
   // ==== Move the rigid obstacles according to their mode of driving
-  if (obst->isFree) {
-		
-    double dt_2 = 0.5 * dt;
-    double dt2_2 = dt_2 * dt;
+  double dt_2  = 0.5 * dt;
+  double dt2_2 = dt_2 * dt;
+  switch (obst->drive_mode) {
+  case IS_FREE:
     obst->pos += obst->vel * dt + obst->acc * dt2_2;
     obst->vel += obst->acc * dt_2;
     obst->rot += obst->vrot * dt + obst->arot * dt2_2;
     obst->vrot += obst->arot * dt_2;
-		
-  } else {  // velocity is imposed (rotations are supposed blocked)
-  
+    break;
+
+  case IMPOSE_VELOCITY:
     obst->pos += obst->vel * dt;
-  
-	}
+    break;
+
+  case IMPOSE_FORCE:
+    obst->pos += obst->vel * dt + obst->acc * dt2_2;
+    obst->vel += obst->acc * dt_2;
+    break;
+
+  default:
+    break;
+  }
 }
 
-void OneStep::moveDEM2(Obstacle* obst, double dt) {
-  if (obst->isFree) {
-		
-    double dt_2 = 0.5 * dt;
+void OneStep::moveDEM2(Obstacle *obst, double dt) {
+  double dt_2 = 0.5 * dt;
+  switch (obst->drive_mode) {
+  case IS_FREE:
     obst->acc = obst->force / obst->mass;
     obst->vel += obst->acc * dt_2;
     obst->arot = obst->mom / obst->I;
     obst->vrot += obst->arot * dt_2;
-		
+    break;
+  case IMPOSE_FORCE:
+    obst->acc = obst->force / obst->mass - obst->damp * obst->vel;
+    obst->vel += obst->acc * dt_2;
+    break;
+  default:
+    break;
   }
 }
 

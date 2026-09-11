@@ -16,4 +16,7 @@ class MPMbox;
 struct ModifiedLagrangian : public OneStep {
   std::string getRegistrationName();
   int advanceOneStep(MPMbox& MPM);
+
+  private:
+  bool debug{false};  
 };

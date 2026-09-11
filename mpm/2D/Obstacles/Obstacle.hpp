@@ -11,12 +11,15 @@
 class MPMbox;
 struct MaterialPoint;
 struct BoundaryForceLaw;
+#define IS_FREE 0
+#define FREEZE 1
+#define IMPOSE_VELOCITY 2
+#define IMPOSE_FORCE 3
 
 struct Obstacle {
   int group{0};          // group for interaction parameters
   double securDist{0.0}; // security distance for detecting contact with MPs (seen as a disk)
-  bool isFree{false};    // true -> x, y, and rot free; false -> vx and vy imposed, and vrot = 0
-  
+  int drive_mode{FREEZE};
   
   double mass{0.0}; // mass is requiered when free motion is allowed
   double I{0.0};    // Inertia is requiered when rotation free motion is allowed
@@ -28,8 +31,10 @@ struct Obstacle {
   vec2r normal;
 
   int steps{0};  // if > 1 -> vx and vy are each imposed during multiple steps (useful for loading then unloading)
-  std::vector<vec2r> impVels;    // Vector to stock imposed velocities
-  std::vector<double> stepTimes; // Vector to stock the duration of the steps as fractions of the total time
+  std::vector<vec2r> impVels;    // Vector to store imposed velocities
+  std::vector<double> stepTimes; // Vector to store the duration of the steps as fractions of the total time
+  std::vector<double> impForces;
+  double damp;
 
   double rot{0.0};  // angular position
   double vrot{0.0}; // angular velocity

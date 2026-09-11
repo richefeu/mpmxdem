@@ -13,173 +13,194 @@
 
 #include "PBC3D.hpp"
 
-std::string ModifiedLagrangian::getRegistrationName() { return std::string("ModifiedLagrangian"); }
+std::string ModifiedLagrangian::getRegistrationName() {
+  return std::string("ModifiedLagrangian");
+}
 
-// 
+//
 // One step of the Modified Lagrangian or Modified Update Stress Last (MUSL) integration scheme.
-// 
+//
 // Updates the positions, velocities, deformation gradients, strains, and stresses of all MaterialPoints.
-// 
-int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
+//
+int ModifiedLagrangian::advanceOneStep(MPMbox &MPM) {
   START_TIMER("MUSL step");
 
   // Defining aliases ======================================
-  std::vector<node>& nodes = MPM.nodes;
-  std::vector<size_t>& liveNodeNum = MPM.liveNodeNum;
-  std::vector<element>& Elem = MPM.Elem;
-  std::vector<MaterialPoint>& MP = MPM.MP;
-  std::vector<Obstacle*>& Obstacles = MPM.Obstacles;
-  double& dt = MPM.dt;
+  std::vector<node> &nodes           = MPM.nodes;
+  std::vector<size_t> &liveNodeNum   = MPM.liveNodeNum;
+  std::vector<element> &Elem         = MPM.Elem;
+  std::vector<MaterialPoint> &MP     = MPM.MP;
+  std::vector<Obstacle *> &Obstacles = MPM.Obstacles;
+  double &dt                         = MPM.dt;
   // End of aliases ========================================
 
-  size_t* I;  // use as node index
+  size_t *I; // use as node index
+  {
+    START_TIMER("initializeStep");
+    if (debug) {std::cout << "initializeStep" << std::endl;}     
+    
+    // ==== Discard previous grid
+    {
+      START_TIMER("discardPreviousGrid");
+      if (debug) {std::cout << "discardPreviousGrid" << std::endl;} 
+      for (size_t n = 0; n < liveNodeNum.size(); n++) {
+        nodes[liveNodeNum[n]].mass             = 0.0;
+        nodes[liveNodeNum[n]].outOfPlaneStress = 0.0;
+        nodes[liveNodeNum[n]].q.reset();
+        nodes[liveNodeNum[n]].qdot.reset();
+        nodes[liveNodeNum[n]].f.reset();
+        nodes[liveNodeNum[n]].fb.reset();
+        nodes[liveNodeNum[n]].vel.reset();
+      }
+    }
 
-  // ==== Discard previous grid
-  for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    nodes[liveNodeNum[n]].mass = 0.0;
-    nodes[liveNodeNum[n]].outOfPlaneStress = 0.0;
-    nodes[liveNodeNum[n]].q.reset();
-    nodes[liveNodeNum[n]].qdot.reset();
-    nodes[liveNodeNum[n]].f.reset();
-    nodes[liveNodeNum[n]].fb.reset();
-    nodes[liveNodeNum[n]].vel.reset();
-  }
+    MPM.number_MP_before_any_split = MPM.MP.size();
+   
+    // ==== Reset the resultant forces and velGrad of MPs
+    {
+      START_TIMER("resetResultantForces");
+      if (debug) {
+      std::cout << "resetResultantForces" << std::endl;   
+      }  
+      for (size_t p = 0; p < MP.size(); p++) {
+        MP[p].f.reset();
+        MP[p].velGrad.reset();
+      }
+      // ==== Delete computed resultants (force and moment) of rigid obstacles
+      for (size_t o = 0; o < Obstacles.size(); ++o) { OneStep::resetDEM(Obstacles[o], MPM.gravity); }
+    }
+    
+    // ==== Compute interpolation values
+    {
+      START_TIMER("computeInterpolationValues");
+      if (debug) {
+        std::cout << "computeInterpolationValues" << std::endl;
+      }
+      for (size_t p = 0; p < MPM.MP.size(); p++) { MPM.shapeFunction->computeInterpolationValues(MPM, p); }
+    }
 
-  MPM.number_MP_before_any_split = MPM.MP.size();
-
-  // ==== Reset the resultant forces and velGrad of MPs
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].f.reset();
-    MP[p].velGrad.reset();
-  }
-
-  // ==== Delete computed resultants (force and moment) of rigid obstacles
-  for (size_t o = 0; o < Obstacles.size(); ++o) {
-    OneStep::resetDEM(Obstacles[o], MPM.gravity);
-  }
-
-  // ==== Compute interpolation values
-  for (size_t p = 0; p < MPM.MP.size(); p++) {
-    MPM.shapeFunction->computeInterpolationValues(MPM, p);
-  }
-
-  // ==== Update Vector of node indices
-  std::set<size_t> sortedLive;
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      sortedLive.insert(I[r]);
+    // ==== Update Vector of node indices
+    {
+      START_TIMER("updateVectorIndices");
+      if (debug) {
+      std::cout << "updateVectorIndices" << std::endl;}
+      std::set<size_t> sortedLive;
+      for (size_t p = 0; p < MP.size(); p++) {
+        I = &(Elem[MP[p].e].I[0]);
+        for (size_t r = 0; r < element::nbNodes; r++) { sortedLive.insert(I[r]); }
+      }
+      liveNodeNum.clear();
+      std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
     }
   }
-  liveNodeNum.clear();
-  std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
-
+  
   // ==== Move the rigid obstacles according to their mode of driving
-  for (size_t o = 0; o < Obstacles.size(); ++o) {
-    OneStep::moveDEM1(Obstacles[o], dt);
+  {
+    START_TIMER("moveObstacles");
+    if (debug) {std::cout << "moveObstacles" << std::endl;}
+    for (size_t o = 0; o < Obstacles.size(); ++o) { OneStep::moveDEM1(Obstacles[o], dt); }
   }
-
+  
   // ==== Initialize grid state (mass and momentum)
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
+  {
+    START_TIMER("computeNodalMassAndMomentum")
+    if (debug) {std::cout << "computeNodalMassAndMomentum" << std::endl;}
 
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      // Nodal mass
-      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
-      nodes[I[r]].outOfPlaneStress += MP[p].N[r] * MP[p].outOfPlaneStress;
-      nodes[I[r]].q += MP[p].N[r] * MP[p].vel * MP[p].mass;
+    for (size_t p = 0; p < MP.size(); p++) {
+      I = &(Elem[MP[p].e].I[0]);
 
-      if (nodes[I[r]].xfixed) {
-        nodes[I[r]].q.x = 0.0;
-      }
-      if (nodes[I[r]].yfixed) {
-        nodes[I[r]].q.y = 0.0;
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        // Nodal mass
+        nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+        nodes[I[r]].outOfPlaneStress += MP[p].N[r] * MP[p].outOfPlaneStress;
+        nodes[I[r]].q += MP[p].N[r] * MP[p].vel * MP[p].mass;
+
+        if (nodes[I[r]].xfixed) { nodes[I[r]].q.x = 0.0; }
+        if (nodes[I[r]].yfixed) { nodes[I[r]].q.y = 0.0; }
       }
     }
   }
 
   // ==== Compute internal and external forces
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
+  {
+    START_TIMER("computeGridForces");
+    if (debug) {std::cout << "computeGridForces" << std::endl;}
+    for (size_t p = 0; p < MP.size(); p++) {
+      I = &(Elem[MP[p].e].I[0]);
 
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      // Internal forces
-      nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
-      // External forces (gravity)
-      nodes[I[r]].f += MP[p].mass * MPM.gravity * MP[p].N[r];
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        // Internal forces
+        nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
+        // External forces (gravity)
+        nodes[I[r]].f += MP[p].mass * MPM.gravity * MP[p].N[r];
+      }
     }
   }
 
+  {
+    START_TIMER("updateBoundaryConditions");
+    if (debug) {std::cout << "updateBoundaryConditions" << std::endl;}
 
-  // Updating free boundary conditions
+    // Updating free boundary conditions
 
-  for (size_t o = 0; o < Obstacles.size(); ++o) {
-    Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
-    if (Obstacles[o]->steps > 1) {
-      Obstacles[o]->updateImposedVelocity(MPM);
+    for (size_t o = 0; o < Obstacles.size(); ++o) {
+      Obstacles[o]->boundaryForceLaw->computeForces(MPM, o);
+      // if (Obstacles[o]->steps > 1) {
+      //   Obstacles[o]->updateImposedVelocity(MPM);
+      // }
+    }
+
+    for (size_t o = 0; o < Obstacles.size(); ++o) { OneStep::moveDEM2(Obstacles[o], dt); }
+
+    for (size_t p = 0; p < MP.size(); p++) {
+      I = &(Elem[MP[p].e].I[0]);
+      for (size_t r = 0; r < element::nbNodes; r++) { nodes[I[r]].fb += MP[p].f * MP[p].N[r]; }
     }
   }
 
-  for (size_t o = 0; o < Obstacles.size(); ++o) {
-    OneStep::moveDEM2(Obstacles[o], dt);
-  }
-
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      nodes[I[r]].fb += MP[p].f * MP[p].N[r];
-    }
-  }
-  
-  // for (size_t p = 0; p < MP.size(); p++) {
-  //     I = &(Elem[MP[p].e].I[0]);
-  //     for (size_t r = 0; r < element::nbNodes; r++) {
-  //         if (nodes[I[r]].mass > MPM.tolmass) {
-  //           MP[p].f += MP[p].N[r] * nodes[I[r]].f;
-  //           }
-  //       }
-  //   }
-  
   // ==== Compute rate of momentum and update nodes
-  for (size_t n = 0; n < liveNodeNum.size(); n++) {
-    // sum of boundary and volume forces:
-    nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].fb + nodes[liveNodeNum[n]].f;
+  {
+    START_TIMER("computeNodalAccelerations");
+    if (debug) {std::cout << "computeNodalAccelerations" << std::endl;}
+    for (size_t n = 0; n < liveNodeNum.size(); n++) {
+      // sum of boundary and volume forces:
+      nodes[liveNodeNum[n]].qdot = nodes[liveNodeNum[n]].fb + nodes[liveNodeNum[n]].f;
 
-    if (nodes[liveNodeNum[n]].xfixed) {
-      nodes[liveNodeNum[n]].qdot.x = 0.0;
+      if (nodes[liveNodeNum[n]].xfixed) { nodes[liveNodeNum[n]].qdot.x = 0.0; }
+      if (nodes[liveNodeNum[n]].yfixed) { nodes[liveNodeNum[n]].qdot.y = 0.0; }
+      nodes[liveNodeNum[n]].q += dt * nodes[liveNodeNum[n]].qdot;
     }
-    if (nodes[liveNodeNum[n]].yfixed) {
-      nodes[liveNodeNum[n]].qdot.y = 0.0;
-    }
-    nodes[liveNodeNum[n]].q += dt * nodes[liveNodeNum[n]].qdot;
   }
 
   // ==== Calculate velocity in MP (to then update q). sort of smoothing
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    MP[p].prev_vel = MP[p].vel;
-    if (MPM.activePIC) {
-      double invmass;
-      vec2r PICvelocity;
-      for (size_t r = 0; r < element::nbNodes; r++) {
-        if (nodes[I[r]].mass > MPM.tolmass) {
-          invmass = 1.0f / nodes[I[r]].mass;
-          PICvelocity += MP[p].N[r] * nodes[I[r]].q * invmass;
-          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+  {
+    START_TIMER("updateMPVelocities");
+    if (debug) {std::cout << "updateMPVelocities" << std::endl;}
+    for (size_t p = 0; p < MP.size(); p++) {
+      I              = &(Elem[MP[p].e].I[0]);
+      MP[p].prev_vel = MP[p].vel;
+      if (MPM.activePIC) {
+        double invmass;
+        vec2r PICvelocity;
+        for (size_t r = 0; r < element::nbNodes; r++) {
+          if (nodes[I[r]].mass > MPM.tolmass) {
+            invmass = 1.0f / nodes[I[r]].mass;
+            PICvelocity += MP[p].N[r] * nodes[I[r]].q * invmass;
+            MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+          }
         }
-      }
-      MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelocity;
-    } else {
-      double invmass;
-      for (size_t r = 0; r < element::nbNodes; r++) {
-        if (nodes[I[r]].mass > MPM.tolmass) {
-          invmass = 1.0f / nodes[I[r]].mass;
-          MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+        MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelocity;
+      } else {
+        double invmass;
+        for (size_t r = 0; r < element::nbNodes; r++) {
+          if (nodes[I[r]].mass > MPM.tolmass) {
+            invmass = 1.0f / nodes[I[r]].mass;
+            MP[p].vel += MP[p].N[r] * dt * nodes[I[r]].qdot * invmass;
+          }
         }
       }
     }
   }
-
   // ==== We may impose x- or y-velocity of some MP (it will overwrite those just computed)
 #if 0
   for (size_t cMP = 0; cMP < MPM.controlledMP.size(); cMP++) {
@@ -191,24 +212,26 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
     }
   }
 
-#endif 
+#endif
   // ==== Calculate updated velocity in nodes to compute deformation
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    double invmass;
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      if (nodes[I[r]].mass > MPM.tolmass) {
-        invmass = 1.0f / nodes[I[r]].mass;
-        nodes[I[r]].vel += invmass * MP[p].N[r] * MP[p].vel * MP[p].mass;
-      } 
-      else {
-        nodes[I[r]].vel.reset();
+  {
+    START_TIMER("updateNodalVelocities");
+    if (debug) {std::cout << "updateNodalVelocities" << std::endl;}
+    for (size_t p = 0; p < MP.size(); p++) {
+      I = &(Elem[MP[p].e].I[0]);
+      double invmass;
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        if (nodes[I[r]].mass > MPM.tolmass) {
+          invmass = 1.0f / nodes[I[r]].mass;
+          nodes[I[r]].vel += invmass * MP[p].N[r] * MP[p].vel * MP[p].mass;
+        } else {
+          nodes[I[r]].vel.reset();
+        }
       }
     }
   }
-
   // ==== Deformation gradient
-  MPM.updateTransformationGradient();    // ==== Update strain and stress  
+  MPM.updateTransformationGradient(); // ==== Update strain and stress
   {
     if (MPM.CHCL.hasDoubleScale == true) { // ===================
       START_TIMER("updateStrainAndStress");
@@ -235,42 +258,43 @@ int ModifiedLagrangian::advanceOneStep(MPMbox& MPM) {
       for (size_t q = 0; q < doubleScaleVector.size(); q++) {
         MP[doubleScaleVector[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScaleVector[q]);
         Logger::trace("Stress for MP #{} = xx={} / xy={} / yx={} / yy={}", doubleScaleVector[q],
-                                      MP[doubleScaleVector[q]].stress.xx, MP[doubleScaleVector[q]].stress.xy,
-                                      MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
+                      MP[doubleScaleVector[q]].stress.xx, MP[doubleScaleVector[q]].stress.xy,
+                      MP[doubleScaleVector[q]].stress.yx, MP[doubleScaleVector[q]].stress.yy);
       }
 
     } else { // ===================
-
+      START_TIMER("updateStrainAndStress");
       // Every MPs are single-scale with a constitutive model
-      for (size_t p = 0; p < MP.size(); p++) {
-        MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
-      }
+      for (size_t p = 0; p < MP.size(); p++) { MP[p].constitutiveModel->updateStrainAndStress(MPM, p); }
 
     } // ==================
-  } 
+  }
 
   // ==== Update positions avec le q provisoire
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    // if (p==MP.size()-1) {
-    //   std::cout<<"Step : "<<MP[p].prev_pos<<" "<<MP[p].pos<<std::endl;
-    //   }
-    MP[p].prev_pos = MP[p].pos;
-    double invmass;
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      if (nodes[I[r]].mass > MPM.tolmass) {
-        invmass = 1.0f / nodes[I[r]].mass;
-        MP[p].pos += MP[p].N[r] * dt * (nodes[I[r]].q) * invmass;
+  {
+    START_TIMER("updateMPPositions");
+    if (debug) {std::cout << "updateMPPositions" << std::endl;}
+    for (size_t p = 0; p < MP.size(); p++) {
+      I = &(Elem[MP[p].e].I[0]);
+      MP[p].prev_pos = MP[p].pos;
+      double invmass;
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        if (nodes[I[r]].mass > MPM.tolmass) {
+          invmass = 1.0f / nodes[I[r]].mass;
+          MP[p].pos += MP[p].N[r] * dt * (nodes[I[r]].q) * invmass;
+        }
       }
     }
   }
-
   // ==== Update Volume and density
-  for (size_t p = 0; p < MP.size(); p++) {
-    double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy + MP[p].deltaStrain.det();
-    MP[p].vol *= (1.0 + volumetricdStrain);
-    MP[p].density /= (1.0 + volumetricdStrain);
+  {
+    START_TIMER("updateVolumeAndDensity");
+    if (debug) {std::cout << "updateVolumeAndDensity" << std::endl;}
+    for (size_t p = 0; p < MP.size(); p++) {
+      double volumetricdStrain = MP[p].deltaStrain.xx + MP[p].deltaStrain.yy + MP[p].deltaStrain.det();
+      MP[p].vol *= (1.0 + volumetricdStrain);
+      MP[p].density /= (1.0 + volumetricdStrain);
+    }
   }
-
   return 0;
 }

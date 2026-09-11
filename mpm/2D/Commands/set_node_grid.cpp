@@ -3,7 +3,7 @@
 #include "Core/MPMbox.hpp"
 #include "set_node_grid.hpp"
 
-void set_node_grid::read(std::istream& is) {
+void set_node_grid::read(std::istream &is) {
 
   //   +---+---+---+
   //   |   |   |   |
@@ -51,19 +51,39 @@ void set_node_grid::exec() {
   // Create the nodes and set their positions
   if (!box->nodes.empty()) box->nodes.clear();
   node N;
-  N.mass = 0.0;
+  N.mass   = 0.0;
   N.number = 0;
   N.q.reset();
   N.f.reset();
   N.fb.reset();
-  N.xfixed = false;
-  N.yfixed = false;
+  N.xfixed       = false;
+  N.yfixed       = false;
   size_t counter = 0;
   for (size_t j = 0; j <= box->Grid.Ny; j++) {
     for (size_t i = 0; i <= box->Grid.Nx; i++) {
       N.number = counter;
-      N.pos.x = (double)i * box->Grid.lx;
-      N.pos.y = (double)j * box->Grid.ly;
+      N.pos.x  = (double)i * box->Grid.lx;
+      N.pos.y  = (double)j * box->Grid.ly;
+      // if (i == 0 || i == box->Grid.Nx) {
+      //   N.nodeTypeX = AT_BOUNDARY;
+      // } else if (i == 1) {
+      //   N.nodeTypeX = NEXT_TO_BOUNDARY_BOTTOM_OR_LEFT;
+      // } else if (i == box->Grid.Nx - 1) {
+      //   N.nodeTypeX = NEXT_TO_BOUNDARY_TOP_OR_RIGHT;
+      // } else {
+      //   N.nodeTypeX = DEFAULT;
+      // }
+      // if (j == 0 || j == box->Grid.Ny) {
+      //   N.nodeTypeY = AT_BOUNDARY;
+      // } else if (j == 1) {
+      //   N.nodeTypeY = NEXT_TO_BOUNDARY_BOTTOM_OR_LEFT;
+      // } else if (j == box->Grid.Ny - 1) {
+      //   N.nodeTypeY = NEXT_TO_BOUNDARY_TOP_OR_RIGHT;
+      // } else {
+      //   N.nodeTypeY = DEFAULT;
+      // }
+      // std::cout << "Node ids : " << i << ' ' << j << ", Node types : " << N.nodeTypeX << ' ' << N.nodeTypeY
+      //           << std::endl;
       box->nodes.push_back(N);
       counter++;
     }
@@ -101,8 +121,8 @@ void set_node_grid::exec() {
           E.I[6] = (box->Grid.Nx + 1) * (j - 1) + i + 1;
           E.I[7] = (box->Grid.Nx + 1) * (j - 1) + i + 2;
 
-          E.I[8] = (box->Grid.Nx + 1) * j + i + 2;
-          E.I[9] = (box->Grid.Nx + 1) * (j + 1) + i + 2;
+          E.I[8]  = (box->Grid.Nx + 1) * j + i + 2;
+          E.I[9]  = (box->Grid.Nx + 1) * (j + 1) + i + 2;
           E.I[10] = (box->Grid.Nx + 1) * (j + 2) + i + 2;
 
           E.I[11] = (box->Grid.Nx + 1) * (j + 2) + i + 1;
@@ -120,7 +140,5 @@ void set_node_grid::exec() {
   }
 
   // initial nodes for the first time
-  for (size_t i = 0; i < box->nodes.size(); i++) {
-    box->liveNodeNum.push_back(i);
-  }
+  for (size_t i = 0; i < box->nodes.size(); i++) { box->liveNodeNum.push_back(i); }
 }

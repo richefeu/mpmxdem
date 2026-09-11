@@ -7,7 +7,7 @@
 #include "fileTool.hpp"
 
 void DPCPlot::read(std::istream& is) {
-  is >> nrec >> curve_period >> nMP;
+  is >> nrec >> nMP;
   nstep = nrec;
 
   Pvals.resize(nMP);
@@ -16,6 +16,9 @@ void DPCPlot::read(std::istream& is) {
   betavals.resize(nMP);
   Rvals.resize(nMP);
   dvals.resize(nMP);
+  Evals.resize(nMP);
+  Nuvals.resize(nMP);
+  RDvals.resize(nMP);
 
   PQ_files.resize(nMP);
   PQ_filenames.resize(nMP);
@@ -63,6 +66,9 @@ void DPCPlot::exec() {
       Rvals[i] = params[1];
       betavals[i] = params[2];
       dvals[i] = params[3];
+      Evals[i] = params[4];
+      Nuvals[i] = params[5];
+      RDvals[i] = params[6];
     }
     else {
       std::cout<<"Error : MP n°"<< MP_id << " does not follow the DPC constitutive model" << std::endl;
@@ -71,23 +77,23 @@ void DPCPlot::exec() {
 }
 
 void DPCPlot::record() {
-  if (iter == 0) {
+  if (start) {
     for (int i = 0 ; i < nMP ; i++) {
       (*PQ_files[i]) << "#t(s)\t P(N/m²)\t Q(N/m²)" << std::endl; 
-      (*parameters_files[i]) << "#Pb(N/m²)\t R(1)\t beta(rad)\t d(N/m²)" << std::endl;
+      (*parameters_files[i]) << "#t(s)\t Pb(N/m²)\t R(1)\t beta(rad)\t d(N/m²)\t E(N/m²)\t ν(1)\t RD" << std::endl;
     }
+    start = false;
   }
 
   for (int i = 0 ; i < nMP ; i++) {
     (*PQ_files[i]) << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
     (*PQ_files[i]) << box->t << ' ' << Pvals[i] << ' ' << Qvals[i] << std::endl; 
 
-    if (iter % curve_period == 0 || box->t >= box->finalTime) {
-      (*parameters_files[i]) << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-      (*parameters_files[i]) << Pbvals[i] << " " << Rvals[i] <<" " << betavals[i] << " " << dvals[i] << std::endl;
-    } 
+    (*parameters_files[i]) << std::scientific << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+    (*parameters_files[i]) << box->t << " "  << Pbvals[i] << " " << Rvals[i] << " " << betavals[i] << " " << dvals[i] 
+                          << " " << Evals[i] << " " << Nuvals[i] << " " << RDvals[i]<< std::endl;
+    
   }
-  iter++;
 }
 
 void DPCPlot::end() { 

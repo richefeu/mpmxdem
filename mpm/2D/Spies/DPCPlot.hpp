@@ -17,8 +17,7 @@ struct DPCPlot : public Spy {
 
  private:
   int nMP;
-  int curve_period = 25;
-  int iter;
+  bool start = true;
 
   mat4r MPStress;
   mat4r MPStrain;
@@ -34,6 +33,8 @@ struct DPCPlot : public Spy {
   std::vector<double> betavals;
   std::vector<double> Rvals;
   std::vector<double> dvals;
-  
+  std::vector<double> Evals;
+  std::vector<double> Nuvals;
+  std::vector<double> RDvals;
 };
 

@@ -11,13 +11,13 @@ void Circle::read(std::istream& is) {
   std::string driveMode;
   is >> driveMode;
   if (driveMode == "freeze") {
-    isFree = false;
+    drive_mode = FREEZE;
     vel.reset();
   } else if (driveMode == "velocity") {
-    isFree = false;
+    drive_mode = IMPOSE_VELOCITY;
     is >> vel;
   } else if (driveMode == "free") {
-    isFree = true;
+    drive_mode = IS_FREE;   
     double density;
     is >> density;
     mass = M_PI * R * R * density;
@@ -30,7 +30,7 @@ void Circle::read(std::istream& is) {
 
 void Circle::write(std::ostream& os) {
   os << group << ' ' << pos << ' ' << R << ' ';
-  if (isFree == false) {
+  if (drive_mode != IS_FREE) {
     os << "velocity " << vel << '\n';
   } else {
     double density = mass / (M_PI * R * R);
@@ -100,4 +100,11 @@ bool Circle::inside(vec2r& x) {
   return (norm2(l) < R * R);
 }
 
-void Circle::updateImposedVelocity(MPMbox &MPM) {}
+void Circle::updateImposedVelocity(MPMbox& MPM) {
+  for (int i = 0; i < steps ; i++) {
+    if (MPM.t <= MPM.finalTime * stepTimes [i]){
+      vel = impVels[i];
+      break;
+    }
+  }
+}

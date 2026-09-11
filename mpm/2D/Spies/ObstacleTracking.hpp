@@ -21,4 +21,5 @@ private:
   int obstacleNumber;
   std::string filename;
   std::ofstream file;
+  bool start = true;
 };

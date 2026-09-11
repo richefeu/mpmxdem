@@ -18,13 +18,13 @@ void Polygon::read(std::istream& is) {
   std::string driveMode;
   is >> driveMode;
   if (driveMode == "freeze") {
-    isFree = false;
+    drive_mode =FREEZE;
     vel.reset();
   } else if (driveMode == "velocity") {
-    isFree = false;
+    drive_mode =IMPOSE_VELOCITY;
     is >> vel;
   } else if (driveMode == "free") {
-    isFree = true;
+    drive_mode =IS_FREE;
     double density;
     is >> density;
     double area = Area();
@@ -43,7 +43,7 @@ void Polygon::read(std::istream& is) {
 
 void Polygon::write(std::ostream& os) {
   os << group << ' ' << nVertices << ' ' << pos << ' ' << rot << ' ' << R << ' ';
-  if (isFree == false) {
+  if (drive_mode != IS_FREE) {
     os << "velocity " << vel << '\n';
   } else {
     double density = mass / (Mth::pi * R * R); // FAKE !!!!!
@@ -180,7 +180,14 @@ double Polygon::Area() {
   return 0.5 * sum;
 }
 
-void Polygon::updateImposedVelocity(MPMbox &MPM) {}
+void Polygon::updateImposedVelocity(MPMbox& MPM) {
+  for (int i = 0; i < steps ; i++) {
+    if (MPM.t <= MPM.finalTime * stepTimes [i]){
+      vel = impVels[i];
+      break;
+    }
+  }
+}
 
 void Polygon::createPolygon(std::vector<vec2r>& vect) {
 

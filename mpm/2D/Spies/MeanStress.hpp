@@ -14,7 +14,10 @@ struct MeanStress : public Spy {
   void end();
 
  private:
+
+  bool start = true;
   std::string filename;
   std::ofstream file;
 	mat4r meanStress;
+  mat4r meanStrain;
 };

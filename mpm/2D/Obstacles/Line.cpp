@@ -15,14 +15,14 @@ void Line::read(std::istream& is) {
   std::string driveMode;
   is >> driveMode;
   if (driveMode == "freeze") {
-    isFree = false;
+    drive_mode =FREEZE;
     vel.reset();
   } else if (driveMode == "velocity") {
-    isFree = false;
+    drive_mode =IMPOSE_VELOCITY;
     steps = 1;
     is >> vel;
-  }  else if (driveMode == "Steps") {
-    isFree = false;
+  } else if (driveMode == "Steps") {
+    drive_mode =IMPOSE_VELOCITY;
     is >> steps;
     for (int i = 0; i < steps ; i++) {
       double stepTime;
@@ -32,6 +32,13 @@ void Line::read(std::istream& is) {
       impVels.push_back(impVel);
     }
     vel = impVels[0];
+  } else if (driveMode == "force") {
+    drive_mode =IMPOSE_FORCE;
+    steps = 1;
+    double impForce;
+    double damp;
+    is >> impForce >> mass >> damp;
+    impForces.push_back(impForce);
   } else {
     std::cerr << "@Line::read, driveMode " << driveMode << " is not allowed!" << std::endl;
   }
@@ -45,20 +52,50 @@ int Line::touch(MaterialPoint& MP, double& dn) {
   int Touch = -1;
   vec2r c = MP.pos - pos;
   double radiusMP = 0.5 * MP.size;
-  dn = c *normal- radiusMP;
+  double proj = c * udir;
+  vec2r N ;
+  // Determine normal vector depending if the MP is within the line or at one of its ends
+    if (proj >= 0.0 && proj <= len) { 
+      N = normal;
+    }
+    else if (proj < 0){
+      c.normalize();
+      N = c;
+    }
+    else {
+      c -= len*udir;
+      c.normalize();
+      N = c;
+    }
+  dn = c *N- radiusMP;
   if (dn < 0.0) {
-    double proj = c * udir;
-    if (proj >= 0.0 && proj <= len) {
       Touch = 1;
     }
-  }
   return Touch;
 }
 
-void Line::getContactFrame(MaterialPoint&, vec2r& N, vec2r& T) {
-  // Remark: the line is not supposed to rotate
-  N = normal;
-  T = udir;
+void Line::getContactFrame(MaterialPoint& MP, vec2r& N, vec2r& T) {
+  // // Remark: the line is not supposed to rotate
+  // N = normal;
+  // T = udir;
+  vec2r c = MP.pos - pos;
+  double proj = c * udir;
+  if (proj >= 0.0 && proj <= len) {
+    N = normal;
+    T = udir;
+  }
+  else if (proj < 0.0) {
+    N = c;
+    N.normalize();
+    T.x = -N.y;
+    T.y = N.x;
+  }else if (proj > len) {
+    c -= len*udir;
+    N = c;
+    N.normalize();
+    T.x = -N.y;
+    T.y = N.x;
+  }
 }
 
 void Line::checkProximity(MPMbox& MPM) {
