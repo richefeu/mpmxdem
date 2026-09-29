@@ -142,10 +142,10 @@ bool PostSession::loadConf(int num) {
 //
 // Undo the grid projection.
 //
-// Of everything MPMbox::postProcess puts in a ProcessedDataMP, only three
-// fields are actually smoothed -- the velocity, the stress and its
-// out-of-plane component. They are the ones sent to the nodes with the
-// weights Np m_p / m_node and brought back with Np. The position, the
+// Of everything MPMbox::postProcess puts in a ProcessedDataMP, five fields
+// are actually smoothed -- the velocity, the in-plane stress, and the three
+// out-of-plane stress components. They are the ones sent to the nodes with
+// the weights Np m_p / m_node and brought back with Np. The position, the
 // deformation gradient (stored in the field named 'strain'), the density and
 // the four corners are copied straight from the Material Point, so they are
 // already raw and nothing has to be done to them.
@@ -160,9 +160,17 @@ bool PostSession::loadConf(int num) {
 //
 void PostSession::useRawMPData() {
   for (size_t p = 0; p < Conf.MP.size(); p++) {
-    Data[p].vel              = Conf.MP[p].vel;
-    Data[p].stress           = Conf.MP[p].stress;
-    Data[p].outOfPlaneStress = Conf.MP[p].outOfPlaneStress;
+    Data[p].vel               = Conf.MP[p].vel;
+    Data[p].stress            = Conf.MP[p].stress;
+    Data[p].outOfPlaneStress  = Conf.MP[p].outOfPlaneStress;
+    // The two out-of-plane shears belong to the same tensor as the four
+    // components above: leaving them smoothed here would hand ScalarTools
+    // a stress mixing raw and grid-averaged components, and tau = sqrt(J2)
+    // uses all six. Harmless for a plane-strain continuum, where both are
+    // exactly zero, but not for a double-scale run where the DEM cell fills
+    // them.
+    Data[p].outOfPlaneShearXZ = Conf.MP[p].outOfPlaneShearXZ;
+    Data[p].outOfPlaneShearYZ = Conf.MP[p].outOfPlaneShearYZ;
   }
 }
 

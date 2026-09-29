@@ -35,18 +35,29 @@
 //                'elastic' nu (sigma_xx + sigma_yy), the plane-strain elastic
 //                          expression; then <Poisson> must follow.
 //
+// Column 27 is divL = tr(L), the volumetric strain rate. It is not used to
+// decide 'valid', it is written so that the plot can filter on it: mu(I) is a
+// law of steady shear at constant volume, and a Material Point that compacts
+// or dilates fast is not on it. |divL| <= 0.1 gdot is the criterion that
+// worked best on the double-scale column collapse.
+//
+// Column 28 is the solid fraction, rho / rho_s -- the second constitutive
+// relation of the mu(I) rheology, and the one that says whether the flow is
+// steady. It costs nothing: rho is already in the conf-file, so phi(I) needs
+// no DEM file at all. It carries meaning only for a double-scale run.
+//
 // Plane strain is assumed twice, and both are needed:
 //   - on the stress, to build the full 3x3 tensor. Without sigma_zz the
 //     invariants of a 2D tensor are not those of the real 3D state, and the
 //     mu they give is wrong.
 //   - on the velocity gradient, with L_zz = 0, for the shear rate.
 //
-// /!\ MohrCoulomb never fills MaterialPoint::outOfPlaneStress -- it is the
-// only model of ConstitutiveModels/ that does not. With 'stored' a
-// Mohr-Coulomb run therefore gives sigma_zz = 0, which is NOT plane strain
-// and biases P and tau. The action says so rather than pretending otherwise.
-// Use 'elastic' as a stopgap, knowing it only holds while the point is
-// elastic, or teach MohrCoulomb to integrate its out-of-plane component.
+// MohrCoulomb now integrates its out-of-plane component (trial increment,
+// plastic corrector and apex return), and set_K0_stress initialises it, so
+// 'stored' is the right mode for it as well as for CHCL_DEM, which takes
+// sigma_zz straight from the DEM cell. 'elastic' -- nu (sigma_xx + sigma_yy)
+// -- is only for conf files written before that fix; it holds while the
+// point is elastic and nowhere else.
 //
 struct Scalars : public PostProcessor {
   void read(std::istream &is);

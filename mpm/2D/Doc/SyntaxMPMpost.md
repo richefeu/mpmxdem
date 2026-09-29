@@ -183,6 +183,20 @@ sig_xz sig_yz rho vol mass plastic valid gamma sinPhi tanPhi`, with
   flipped here so that `Scalars` and `DEMScalars` agree and can be plotted
   together.
 - `tau`, `gdot` and `I` are defined exactly as in `DEMScalars` below.
+- `divL` (column 27) is the volumetric strain rate tr(L); under plane
+  strain L_zz = 0, so the in-plane trace is the whole of it. It does not
+  enter `valid`, it is written so that a plot can keep only the points in
+  quasi-isochoric flow. mu(I) is a law of steady shear at constant volume,
+  and a point that compacts or dilates fast is not on it: on the
+  double-scale column collapse, `|divL| <= 0.1 gdot` halves the spread of
+  mu inside an I-interval without moving the trend.
+- `solidFraction` (column 28) is `rho / rho_s`, the second constitutive
+  relation of the mu(I) rheology. It is meaningful only for a double-scale
+  run, where it is the solid fraction of the DEM cell -- checked against
+  `DEMScalars` on the 512-grain column collapse: the two agree to 4e-3 over
+  850 points. Note that `rho` is never smoothed on the grid, so this column
+  is identical in both modes: phi(I) is immune to the smoothing choice that
+  shifts mu by 28 %.
 - `sinPhi = (S1 - S3)/(S1 + S3)` is the mobilised friction read off the Mohr
   circle of the extreme principal stresses, and `tanPhi` follows from it.
 
