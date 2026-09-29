@@ -20,16 +20,16 @@
 
 struct MohrCoulomb : public ConstitutiveModel {
  private:
-  double sinFrictionAngle;
-  double cosFrictionAngle;
-  double sinDilatancyAngle;
+  double sinFrictionAngle{0.0};
+  double cosFrictionAngle{0.0};
+  double sinDilatancyAngle{0.0};
 
  public:
-  double Young;
-  double Poisson;
-  double FrictionAngle;
-  double Cohesion;
-  double DilatancyAngle;
+  double Young{0.0};
+  double Poisson{0.0};
+  double FrictionAngle{0.0};
+  double Cohesion{0.0};
+  double DilatancyAngle{0.0};
 
   MohrCoulomb(double young = 200.0e6, double poisson = 0.2, double frictionAngle = 0.5, double cohesion = 0.0,
               double dilatancyAngle = 0.3);

@@ -31,6 +31,11 @@ void CHCL_DEM::init(MaterialPoint& MP) {
     MP.stress.yx = -MP.PBC->Sig.yx;
     MP.stress.yy = -MP.PBC->Sig.yy;
     MP.outOfPlaneStress = -MP.PBC->Sig.zz;
+    // The DEM cell is 3D and its stress has no reason to be plane-strain.
+    // Without these two the deviatoric invariant of the cell is truncated, and
+    // with it the effective friction seen by the post-processing.
+    MP.outOfPlaneShearXZ = -0.5 * (MP.PBC->Sig.xz + MP.PBC->Sig.zx);
+    MP.outOfPlaneShearYZ = -0.5 * (MP.PBC->Sig.yz + MP.PBC->Sig.zy);
   }
 }
 
@@ -40,18 +45,19 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   // Get the total strain increment from node velocities
   vec2r vn;
   mat4r dstrain;
+  const vec2r *gNp = MPM.gradN(p);
   for (size_t r = 0; r < element::nbNodes; r++) {
-    dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
+    dstrain.xx += (MPM.nodes[I[r]].vel.x * gNp[r].x) * MPM.dt;
     dstrain.xy +=
-        0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;
+        0.5 * (MPM.nodes[I[r]].vel.x * gNp[r].y + MPM.nodes[I[r]].vel.y * gNp[r].x) * MPM.dt;
+    dstrain.yy += (MPM.nodes[I[r]].vel.y * gNp[r].y) * MPM.dt;
   }
   dstrain.yx = dstrain.xy;  // symmetic tensor
 
   MPM.MP[p].strain += dstrain;
   MPM.MP[p].deltaStrain = dstrain;
 
-  mat4r prev_F_inv = MPM.MP[p].prev_F;
+  mat4r prev_F_inv = MPM.prevF(p);
   prev_F_inv.inverse();
   mat4r Finc2D = MPM.MP[p].F * prev_F_inv;
 
@@ -87,4 +93,7 @@ void CHCL_DEM::updateStrainAndStress(MPMbox& MPM, size_t p) {
   MPM.MP[p].stress.yx = -SigAvg.yx;
   MPM.MP[p].stress.yy = -SigAvg.yy;
   MPM.MP[p].outOfPlaneStress = -SigAvg.zz;
+  // SigAvg has just been symmetrized, so xz == zx and yz == zy here.
+  MPM.MP[p].outOfPlaneShearXZ = -SigAvg.xz;
+  MPM.MP[p].outOfPlaneShearYZ = -SigAvg.yz;
 }

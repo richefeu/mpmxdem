@@ -8,7 +8,7 @@ struct new_set_grid : public Command {
 
  private:
   //int groupNb;
-  double lengthX;
-  double lengthY;
-  double spacing;
+  double lengthX{0.0};
+  double lengthY{0.0};
+  double spacing{0.0};
 };

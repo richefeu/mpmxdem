@@ -16,7 +16,10 @@ void EnergyBalance::read(std::istream& is) {
 
   filename = box->result_folder + fileTool::separator() + Filename;
   std::cout << "Work: filename is " << filename << std::endl;
-  file.open(filename.c_str());
+  // In visualisation mode -- see, cut -- MPMbox::read runs this very function on
+  // the conf-file, and opening the output file in write mode TRUNCATES it. The
+  // results of a computation must survive being looked at.
+  if (box->computationMode == true) { file.open(filename.c_str()); }
 }
 
 void EnergyBalance::exec() {
@@ -60,6 +63,7 @@ void EnergyBalance::exec() {
 }
 
 void EnergyBalance::record() {
+  if (file.is_open() == false) { return; }
   file << box->t << " " << -Wn_tot << " " << -Wt_tot << " " << Wint_tot << " " << -Wn_tot - Wt_tot + Wint_tot << " "
        << Wp_tot << std::endl;
 }

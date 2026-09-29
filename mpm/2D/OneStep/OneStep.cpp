@@ -1,6 +1,146 @@
 #include "OneStep.hpp"
 
+#include "ConstitutiveModels/ConstitutiveModel.hpp"
+#include "Core/Element.hpp"
+#include "Core/MPMbox.hpp"
+#include "Core/MaterialPoint.hpp"
+#include "Core/Node.hpp"
+
 OneStep::~OneStep() {}
+
+//
+// Update the velocity of the Material Points from the nodal quantities.
+//
+// The raw MPM update is a FLIP one: the point keeps its own velocity and
+// receives the increment carried by the grid,
+//
+//   v_p <- v_p + sum_r N_r dt qdot_r / m_r
+//
+// which conserves the fine-grained fluctuations, hence very little numerical
+// dissipation -- and a fair amount of noise. The PIC update, on the contrary,
+// reads the velocity straight from the grid,
+//
+//   v_p <- sum_r N_r q_r / m_r
+//
+// which filters everything, at the price of a strong artificial damping. What
+// is used here is the usual blend of the two, with ratioFLIP = 1 - ratioPIC:
+// pure FLIP for ratioFLIP = 1, pure PIC for ratioFLIP = 0.
+//
+// This is what the 'enablePIC' and 'disablePIC' keywords, and the
+// PICDissipation and PICDissipationByPIC schedulers, act upon.
+//
+void OneStep::updateMPVelocity(MPMbox& MPM) {
+  START_TIMER("updateMPVelocity");
+
+  std::vector<node>& nodes = MPM.nodes;
+  std::vector<element>& Elem = MPM.Elem;
+  std::vector<MaterialPoint>& MP = MPM.MP;
+  const double dt = MPM.dt;
+
+  for (size_t p = 0; p < MP.size(); p++) {
+    size_t* I = &(Elem[MP[p].e].I[0]);
+
+    if (MPM.activePIC == true) {
+      vec2r PICvelocity;
+      const double *Np = MPM.N(p);
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        if (nodes[I[r]].mass > MPM.tolmass) {
+          const double invmass = 1.0 / nodes[I[r]].mass;
+          PICvelocity += Np[r] * nodes[I[r]].q * invmass;
+          MP[p].vel += Np[r] * dt * nodes[I[r]].qdot * invmass;
+        }
+      }
+      MP[p].vel = MPM.ratioFLIP * MP[p].vel + (1.0 - MPM.ratioFLIP) * PICvelocity;
+    } else {
+      const double *Np = MPM.N(p);
+      for (size_t r = 0; r < element::nbNodes; r++) {
+        if (nodes[I[r]].mass > MPM.tolmass) {
+          const double invmass = 1.0 / nodes[I[r]].mass;
+          MP[p].vel += Np[r] * dt * nodes[I[r]].qdot * invmass;
+        }
+      }
+    }
+  }
+}
+
+//
+// Call the constitutive model of every Material Point.
+//
+// When at least one point carries a computationally homogenised law (CHCL), the
+// points are sorted into two lists before being run in parallel: a DEM cell
+// costs orders of magnitude more than a closed-form law, so mixing them in a
+// single OpenMP loop would leave most threads waiting.
+//
+void OneStep::updateStrainAndStress(MPMbox& MPM) {
+  START_TIMER("updateStrainAndStress");
+
+  std::vector<MaterialPoint>& MP = MPM.MP;
+
+  // Each iteration writes into MP[p] alone and only reads the grid: there is no
+  // data race. The constitutive models are shared between the Material Points
+  // that refer to them, but none of them writes into its own members here --
+  // checked one by one, including the helpers of SinfoniettaClassica and
+  // Rigidity::getStress.
+  //
+  // No size threshold, but the gain does depend on the size, and not the way one
+  // would expect. Measured on 4 cores (see Doc/OPTIM.md):
+  //
+  //     384 points   0.90x   the loop is too short, the team of threads costs
+  //                          more than it saves
+  //    1536 points   1.35x   the sweet spot: it fits in cache
+  //   32000 points   1.05x   the computation has become bound by memory
+  //                          bandwidth, more cores do not help
+  //
+  // With a single thread -- the default of the command line -- the directive
+  // costs nothing measurable. Asking for threads on a case of a few hundred
+  // points is what loses 10 %, and such a case runs in a second anyway.
+  if (MPM.CHCL.hasDoubleScale == false) {
+#pragma omp parallel for default(shared)
+    for (size_t p = 0; p < MP.size(); p++) { MP[p].constitutiveModel->updateStrainAndStress(MPM, p); }
+    return;
+  }
+
+  std::vector<size_t> simpleScale;
+  std::vector<size_t> doubleScale;
+  for (size_t p = 0; p < MP.size(); p++) {
+    if (MP[p].isDoubleScale) {
+      doubleScale.push_back(p);
+    } else {
+      simpleScale.push_back(p);
+    }
+  }
+
+  // Single-scale MPs
+#pragma omp parallel for default(shared)
+  for (size_t q = 0; q < simpleScale.size(); q++) {
+    MP[simpleScale[q]].constitutiveModel->updateStrainAndStress(MPM, simpleScale[q]);
+  }
+
+  // Two-scale MPs
+#pragma omp parallel for default(shared)
+  for (size_t q = 0; q < doubleScale.size(); q++) {
+    MP[doubleScale[q]].constitutiveModel->updateStrainAndStress(MPM, doubleScale[q]);
+    Logger::trace("Stress for MP #{} = xx={} / xy={} / yx={} / yy={}", doubleScale[q], MP[doubleScale[q]].stress.xx,
+                  MP[doubleScale[q]].stress.xy, MP[doubleScale[q]].stress.yx, MP[doubleScale[q]].stress.yy);
+  }
+}
+
+//
+// Keep the density consistent with the current volume.
+//
+// The mass of a Material Point does not change, so the density has to follow
+// the volume. Deriving it from mass / vol rather than applying a multiplicative
+// correction keeps 'mass = vol * density' exact, however long the computation
+// runs. The density is what the viewer displays and what feeds rhoMin in
+// MPMbox::convergenceConditions; UpdateStressFirst and UpdateStressLast used to
+// leave it at its initial value for ever.
+//
+void OneStep::updateDensityFromVolume(MPMbox& MPM) {
+  std::vector<MaterialPoint>& MP = MPM.MP;
+  for (size_t p = 0; p < MP.size(); p++) {
+    if (MP[p].vol > 0.0) { MP[p].density = MP[p].mass / MP[p].vol; }
+  }
+}
 
 void OneStep::resetDEM(Obstacle* obst, vec2r gravity) {
   // ==== Delete computed resultants (force and moment) of rigid obstacles

@@ -102,19 +102,8 @@ void Polygon::checkProximity(MPMbox& MPM) {
     }
   }
 
-  // Get the known forces back
-  size_t istore = 0;
-  for (size_t inew = 0; inew < Neighbors.size(); inew++) {
-    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) {++istore;}
-    if (istore == Store.size()) {break;}
-
-    if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
-      Neighbors[inew].fn = Store[istore].fn;
-      Neighbors[inew].ft = Store[istore].ft;
-
-      ++istore;
-    }
-  }
+  // Get the contact history back
+  restoreNeighborHistory(Store);
 }
 
 
@@ -145,7 +134,10 @@ bool Polygon::pointinPolygon(vec2r& point, MaterialPoint& MP,
   }
   if (c == true) {  // if there is contact we find normal and tangent.
     // FIXME: this assumes that contact only takes place on top of the MP!
-    tang = MP.corner[2] - MP.corner[3];
+    // The top edge of the Material Point is corner[2] - corner[3], which is
+    // exactly F * (size, 0): the deformation gradient is enough, and it is up
+    // to date -- the corners were not, which was the defect B4.
+    tang = MP.F * vec2r(MP.size, 0.0);
     tang.normalize();
     normal.x = tang.y;
     normal.y = -tang.x;

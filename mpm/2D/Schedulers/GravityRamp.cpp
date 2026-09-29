@@ -5,6 +5,10 @@
 void GravityRamp::read(std::istream& is) {
   is >> gravityFrom >> rampStart;
   is >> gravityTo >> rampStop;
+  if (rampStop <= rampStart) {
+    Logger::critical("@GravityRamp::read, the ramp ends at t = {} but starts at t = {}", rampStop, rampStart);
+    exit(EXIT_FAILURE);
+  }
 }
 
 void GravityRamp::write(std::ostream& os) {
@@ -28,6 +32,10 @@ void GravityRamp::check() {
   } else if (box->t >= rampStop) {
     box->gravity = gravityTo;
   } else {
-    box->gravity = (box->t - rampStart) / (rampStop - rampStart) * (gravityTo - gravityFrom);
+    // The constant term used to be missing, so the gravity jumped to
+    // -gravityFrom at rampStart and back to gravityTo at rampStop. With the
+    // most common ramp (gravityFrom = 0 0) the mistake was invisible.
+    const double s = (box->t - rampStart) / (rampStop - rampStart);
+    box->gravity = gravityFrom + s * (gravityTo - gravityFrom);
   }
 }

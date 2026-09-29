@@ -6,8 +6,10 @@ class MPMbox;
 struct Spy {
   MPMbox* box{nullptr};
 
-  int nstep{0};  // Period for exec
-  int nrec{0};   // Period for record
+  // Both are used as a modulo in MPMbox::run(), so they must never be zero.
+  // MPMbox::checkSettings() refuses to start if a Spy leaves them at 0 or below.
+  int nstep{1};  // Period for exec
+  int nrec{1};   // Period for record
 
   virtual void plug(MPMbox* Box);
 

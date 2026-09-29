@@ -1,0 +1,31 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+\node[base=6.4cm, anchor=north west] (B) at (0,0)
+  {\classname{OneStep}{the time marching:\\ everything done within one time step}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  UpdateStressFirst/{USF} : the stress is updated before the motion,
+  UpdateStressLast/{USL} : the stress is updated after the motion%
+} {
+  \node[deriv=10.2cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+\node[accent=10.2cm, anchor=north west] (D3) at ($(S)+(0.9cm,-0.85cm*3+0.52cm)$)
+  {\variant{ModifiedLagrangian}{(MUSL) smoothed variant; the only scheme
+   compatible with the MPM$\times$DEM coupling}};
+\draw[spine] (S) |- (D3.west);
+
+\node[mpmcap, anchor=north west, text width=9.0cm] at ($(D3.south west)+(0,-0.2cm)$)
+  {the three variants follow the same cycle: they differ in when the stress
+   is updated};
+
+\end{tikzpicture}
+\end{document}

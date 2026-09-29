@@ -1,5 +1,16 @@
-// This file is actually NOT anymore used and thus NOT really maintained
-// AVOID TO USE IT
+// USL -- Update Stress Last.
+//
+// The internal forces are built on the stress of the previous step, and the
+// stress is computed at the END of the step, from the nodal velocities obtained
+// AFTER the momenta have been updated. Unlike ModifiedLagrangian, those end-of-
+// step velocities come straight from the nodal momenta and are not mapped back
+// from the Material Points -- that mapping is precisely what the 'Modified' of
+// MUSL stands for.
+//
+// Reserve for double-scale computations: the deformation gradient, hence the
+// DEM time-step limiter, is only known at the end of the step, so the limit
+// applies to the NEXT one. Prefer ModifiedLagrangian or UpdateStressFirst
+// there; a warning is issued at the first step.
 
 #include "UpdateStressLast.hpp"
 
@@ -17,6 +28,8 @@
 std::string UpdateStressLast::getRegistrationName() { return std::string("UpdateStressLast"); }
 
 int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
+  START_TIMER("USL step");
+
   // Defining aliases ==============================
   std::vector<node>& nodes = MPM.nodes;
   std::vector<size_t>& liveNodeNum = MPM.liveNodeNum;
@@ -28,7 +41,14 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   vec2r& gravity = MPM.gravity;
   // End of aliases =================================
 
-  if (MPM.step == 0) std::cout << "Running UpdateStressLast" << std::endl;
+  if (MPM.step == 0) {
+    Logger::info("Running UpdateStressLast");
+    if (MPM.CHCL.hasDoubleScale == true) {
+      Logger::warn("UpdateStressLast computes the deformation gradient at the end of the step, so the DEM "
+                   "time-step limiter only constrains the NEXT step");
+      Logger::warn("  Prefer ModifiedLagrangian, or UpdateStressFirst, for double-scale computations");
+    }
+  }
   size_t* I;  // use as node index
 
   // ==== Discard previous grid
@@ -42,8 +62,12 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   }
 
   MPM.number_MP_before_any_split = MP.size();
+
+  // shapeN / shapeGradN suivent le nombre de points
+  MPM.resizeMPArrays();
   
-  // ==== Reset the resultant forces on MPs and velGrad
+  // ==== Reset the resultant forces on MPs
+  // (velGrad is cleared by MPMbox::updateVelocityGradient)
   for (size_t p = 0; p < MP.size(); p++) {
     MP[p].f.reset();
   }
@@ -59,15 +83,7 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   }
 
   // ==== Update Vector of node indices
-  std::set<size_t> sortedLive;
-  for (size_t p = 0; p < MP.size(); p++) {
-    I = &(Elem[MP[p].e].I[0]);
-    for (size_t r = 0; r < element::nbNodes; r++) {
-      sortedLive.insert(I[r]);
-    }
-  }
-  liveNodeNum.clear();
-  std::copy(sortedLive.begin(), sortedLive.end(), std::back_inserter(liveNodeNum));
+  MPM.updateLiveNodeList();
 
   // ==== Move the rigid obstacles according to their mode of driving
   for (size_t o = 0; o < Obstacles.size(); ++o) {
@@ -78,11 +94,12 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       // Nodal mass
-      nodes[I[r]].mass += MP[p].N[r] * MP[p].mass;
+      nodes[I[r]].mass += Np[r] * MP[p].mass;
       // Nodal momentum
-      nodes[I[r]].q += MP[p].N[r] * MP[p].mass * MP[p].vel;
+      nodes[I[r]].q += Np[r] * MP[p].mass * MP[p].vel;
 
       // Blocked DOFs (at nodes)
       if (nodes[I[r]].xfixed) {
@@ -106,18 +123,14 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
 
+    const double *Np = MPM.N(p);
+    const vec2r *gNp = MPM.gradN(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       // Internal forces
-      nodes[I[r]].f += -MP[p].vol * (MP[p].stress * MP[p].gradN[r]);
+      nodes[I[r]].f += -MP[p].vol * (MP[p].stress * gNp[r]);
       // External forces (gravity)
-      nodes[I[r]].f += MP[p].mass * gravity * MP[p].N[r];
+      nodes[I[r]].f += MP[p].mass * gravity * Np[r];
     }
-  }
-
-  // 2a) ====Deformation gradient and Volume (C)
-  MPM.updateTransformationGradient();
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].vol = MP[p].F.det() * MP[p].vol0;
   }
 
   for (size_t o = 0; o < Obstacles.size(); ++o) {
@@ -131,8 +144,9 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
 
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
-      nodes[I[r]].fb += MP[p].f * MP[p].N[r];
+      nodes[I[r]].fb += MP[p].f * Np[r];
     }
   }
 
@@ -146,29 +160,53 @@ int UpdateStressLast::advanceOneStep(MPMbox& MPM) {
     nodes[liveNodeNum[n]].q += nodes[liveNodeNum[n]].qdot * dt;
   }
 
-  // 4) ==== Update positions and velocities of the MPs
+  // 4) ==== Update velocities of the MPs (FLIP/PIC blending)
+  OneStep::updateMPVelocity(MPM);
+
+  // 4') ==== Update positions of the MPs
   for (size_t p = 0; p < MP.size(); p++) {
     I = &(Elem[MP[p].e].I[0]);
     MP[p].prev_pos = MP[p].pos;
     double invmass;
+    const double *Np = MPM.N(p);
     for (size_t r = 0; r < element::nbNodes; r++) {
       if (nodes[I[r]].mass > tolmass) {
         invmass = 1.0 / nodes[I[r]].mass;
-        MP[p].vel += dt * MP[p].N[r] * nodes[I[r]].qdot * invmass;
-        MP[p].pos += dt * MP[p].N[r] * nodes[I[r]].q * invmass;
+        MP[p].pos += dt * Np[r] * nodes[I[r]].q * invmass;
       }
     }
   }
 
-  // 5) ==== Update strain and stress
-  for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].constitutiveModel->updateStrainAndStress(MPM, p);
+  // 4a) ==== End-of-step nodal velocities
+  //
+  // This is what makes the scheme an 'update stress LAST': the strain increment
+  // has to be built on the velocity field AFTER the momenta have been updated
+  // in 3). Reading here the velocities computed in 1a), i.e. those of the
+  // beginning of the step, while the internal forces of 2) come from the stress
+  // of the previous step, is a combination known to be unstable -- and it was
+  // indeed enough to make a simple elastic column diverge and throw a Material
+  // Point out of the grid. ModifiedLagrangian does the same refresh before its
+  // own stress update; UpdateStressFirst does not need it, since it computes
+  // the stress before the forces.
+  for (size_t n = 0; n < liveNodeNum.size(); n++) {
+    if (nodes[liveNodeNum[n]].mass > tolmass)
+      nodes[liveNodeNum[n]].vel = nodes[liveNodeNum[n]].q / nodes[liveNodeNum[n]].mass;
+    else
+      nodes[liveNodeNum[n]].vel.reset();
   }
 
-  // ==== Update the corner positions of the MPs
+  // 4b) ==== Deformation gradient and Volume (C)
+  // Moved down from before the force computation: it reads nodes[].vel through
+  // updateVelocityGradient and has to see the refreshed field too.
+  MPM.updateTransformationGradient();
   for (size_t p = 0; p < MP.size(); p++) {
-    MP[p].updateCornersFromF();
+    MP[p].vol = MP[p].F.det() * MP[p].vol0;
   }
+  OneStep::updateDensityFromVolume(MPM);
+
+  // 5) ==== Update strain and stress (CHCL models included)
+  OneStep::updateStrainAndStress(MPM);
+
 	
   return 0;
 }

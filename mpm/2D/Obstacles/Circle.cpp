@@ -76,23 +76,8 @@ void Circle::checkProximity(MPMbox& MPM) {
     }
   }
 
-  // Get the known forces back
-  size_t istore = 0;
-  for (size_t inew = 0; inew < Neighbors.size(); inew++) {
-    while (istore < Store.size() && Neighbors[inew].PointNumber < Store[istore].PointNumber) {
-      ++istore;
-    }
-    if (istore == Store.size()) {
-      break;
-    }
-
-    if (Store[istore].PointNumber == Neighbors[inew].PointNumber) {
-      Neighbors[inew].fn = Store[istore].fn;
-      Neighbors[inew].ft = Store[istore].ft;
-
-      ++istore;
-    }
-  }
+  // Get the contact history back
+  restoreNeighborHistory(Store);
 }
 
 bool Circle::inside(vec2r& x) {

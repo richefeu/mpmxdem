@@ -1,0 +1,29 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+\def\R{4.6cm}
+
+\node[data=3.9cm] (N1) at ( 90:\R) {{\bfseries 1. points $\rightarrow$ grille}\\ masse et quantité de mouvement portées aux nœuds};
+\node[base=3.9cm, font=\sffamily\scriptsize] (N2) at ( 30:\R) {{\bfseries 2. forces aux nœuds}\\ internes (contraintes) et externes (gravité, contacts)};
+\node[base=3.9cm, font=\sffamily\scriptsize] (N3) at (-30:\R) {{\bfseries 3. résolution}\\ accélérations et vitesses des nœuds};
+\node[data=3.9cm] (N4) at (-90:\R) {{\bfseries 4. grille $\rightarrow$ points}\\ vitesses et positions des points matériels};
+\node[data=3.9cm] (N5) at (-150:\R) {{\bfseries 5. déformation, puis contrainte}\\ c'est ici qu'agit le modèle de comportement};
+\node[base=3.9cm, font=\sffamily\scriptsize] (N6) at ( 150:\R) {{\bfseries 6. la grille est oubliée}\\ remise à zéro pour le pas suivant};
+
+\foreach \a/\b in {1/2,2/3,3/4,4/5,5/6,6/1} {
+  \draw[link, line width=0.9pt] (N\a) to[bend left=12] (N\b);
+}
+
+\node[text width=4.0cm, align=center, font=\sffamily\small, text=mpmGrey] at (0,0)
+  {{\bfseries un pas de temps}\\[3pt]
+   {\scriptsize la grille ne se déforme jamais, d'où la robustesse en grandes déformations}};
+
+\node[mpmcap, anchor=north, text width=11cm, align=center] at (0,-7.2)
+  {\tikz\node[data=0.5cm, inner sep=2pt]{}; ce qui concerne les points matériels
+   \qquad
+   \tikz\node[base=0.5cm, inner sep=2pt]{}; ce qui concerne la grille};
+
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,52 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+% ================= Command =================
+\node[base=6.0cm, anchor=north west] (B) at (0,0)
+  {\classname{Command}{la mise en données :\\ exécutée une seule fois, à la lecture du fichier}};
+
+\coordinate (S) at ($(B.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (S) -- ($(B.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  {créer la matière}/{\ttfamily set\_MP\_grid} · {\ttfamily set\_MP\_polygon} · {\ttfamily add\_MP\_ShallowPath},
+  {définir la grille}/{\ttfamily new\_set\_grid} · {\ttfamily set\_node\_grid},
+  {conditions aux limites}/{\ttfamily set\_BC\_line} · {\ttfamily set\_BC\_column},
+  {état initial}/{\ttfamily set\_K0\_stress} · {\ttfamily set\_uniform\_pressure},
+  {retouches}/{\ttfamily move\_MP} · {\ttfamily reset\_model},
+  {marquer des points}/{\ttfamily select\_tracked\_MP} · {\ttfamily select\_controlled\_MP}%
+} {
+  \node[deriv=9.6cm, anchor=north west] (D\i) at ($(S)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {{\bfseries\itshape \nm}\quad \ds};
+  \draw[spine] (S) |- (D\i.west);
+}
+
+% ================= Scheduler =================
+\node[base=6.0cm, anchor=north west] (C) at (0,-7.4)
+  {\classname{Scheduler}{le scénario :\\ consulté à chaque pas de temps}};
+
+\coordinate (T) at ($(C.south west)+(0.9cm,-0.40cm)$);
+\draw[spine,-{Triangle[open,fill=white,length=5pt,width=5pt]}] (T) -- ($(C.south west)+(0.9cm,0)$);
+
+\foreach \nm/\ds [count=\i] in {%
+  GravityRamp/la gravité est montée progressivement,
+  MoveObstacle/déclenche le mouvement d'un obstacle,
+  RemoveObstacle/retire une paroi{,} provoque un lâcher,
+  RemoveMaterialPoint/évacue des points matériels,
+  PICDissipation/dose l'amortissement numérique,
+  PICDissipationByPIC/la même chose{,} avec un autre critère,
+  ReactivateCHCLBonds/recolle les liens dans les échantillons DEM%
+} {
+  \node[deriv=8.2cm, anchor=north west] (E\i) at ($(T)+(0.9cm,-0.85cm*\i+0.62cm)$)
+    {\variant{\nm}{\ds}};
+  \draw[spine] (T) |- (E\i.west);
+}
+
+\node[mpmcap, anchor=north west, text width=8.6cm] at ($(E7.south west)+(0,-0.2cm)$)
+  {« laisser consolider, puis retirer la paroi, puis couper l'amortissement » :
+   un scénario s'écrit en empilant des Scheduler};
+
+\end{tikzpicture}
+\end{document}

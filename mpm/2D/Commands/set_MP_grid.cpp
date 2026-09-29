@@ -9,14 +9,22 @@
 void set_MP_grid::read(std::istream& is) { is >> groupNb >> modelName >> rho >> x0 >> y0 >> x1 >> y1 >> size; }
 
 void set_MP_grid::exec() {
+  if (size <= 0.0) {
+    Logger::critical("@set_MP_grid::exec, the MP size has to be positive (given: {})", size);
+    exit(EXIT_FAILURE);
+  }
   if (box->Grid.lx / size < 2.0 || box->Grid.ly / size < 2.0) {
-    Logger::warn("@set_MP_grid::exec, Check Grid size - MP size ratio (should not be more than 2)");
-    exit(0);
+    Logger::critical("@set_MP_grid::exec, the MP size ({}) is too large for the grid cells ({} x {}): "
+                     "there has to be at least 2 points per cell in each direction",
+                     size, box->Grid.lx, box->Grid.ly);
+    exit(EXIT_FAILURE);
   }
 
   auto itCM = box->models.find(modelName);
   if (itCM == box->models.end()) {
-    Logger::error("@set_MP_grid::exec, model {} not found", modelName);
+    Logger::critical("@set_MP_grid::exec, the model '{}' is not defined", modelName);
+    Logger::critical("  A 'model' line has to declare it before this command");
+    exit(EXIT_FAILURE);
   }
   ConstitutiveModel* CM = itCM->second;
 
@@ -52,14 +60,12 @@ void set_MP_grid::exec() {
   }
 
   for (size_t p = 0; p < box->MP.size(); p++) {
-    box->MP[p].updateCornersFromF();
-  }
-
-  for (size_t p = 0; p < box->MP.size(); p++) {
     if (box->MP[p].pos.x > (double)box->Grid.Nx * box->Grid.lx || box->MP[p].pos.x < 0.0 ||
         box->MP[p].pos.y > (double)box->Grid.Ny * box->Grid.ly || box->MP[p].pos.y < 0.0) {
-      Logger::error("@set_MP_grid::exec, Check before simulation: Some MPs are not inside the grid");
-      exit(0);
+      Logger::critical("@set_MP_grid::exec, the Material Point {} at ({}, {}) is outside the grid [0, {}] x [0, {}]", p,
+                       box->MP[p].pos.x, box->MP[p].pos.y, (double)box->Grid.Nx * box->Grid.lx,
+                       (double)box->Grid.Ny * box->Grid.ly);
+      exit(EXIT_FAILURE);
     }
   }
 }

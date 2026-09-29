@@ -10,6 +10,6 @@ struct reset_model : public Command {
 
  private:
   std::string modelName;
-  int groupNb;
+  int groupNb{0};
   double rho, x0, y0, x1, y1;
 };

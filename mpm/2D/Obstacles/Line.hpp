@@ -3,7 +3,7 @@
 #include "Obstacle.hpp"
 
 struct Line : public Obstacle {
-  double len;
+  double len{0.0};
   vec2r n; // unit normal oriented 'towards the left' when going from start to end 
 	vec2r udir; // rename udir
   

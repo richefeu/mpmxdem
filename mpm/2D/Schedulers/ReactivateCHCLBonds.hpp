@@ -9,6 +9,6 @@ struct ReactivateCHCLBonds : public Scheduler {
   void check();
 
  private:
-  double bondingDistance;
-  double timeBondReactivation;
+  double bondingDistance{0.0};
+  double timeBondReactivation{0.0};
 };

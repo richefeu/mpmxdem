@@ -4,8 +4,8 @@
 
 struct Polygon : public Obstacle {
 
-  double R;
-  int nVertices;
+  double R{0.0};
+  int nVertices{0};
   std::vector<vec2r> verticePos;
   vec2r normal;
   vec2r tang;

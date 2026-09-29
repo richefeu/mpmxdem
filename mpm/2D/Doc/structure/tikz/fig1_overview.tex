@@ -1,0 +1,45 @@
+\documentclass[border=5pt]{standalone}
+\input{mpmbox-style}
+\begin{document}
+\begin{tikzpicture}
+
+% ---- le chef d'orchestre
+\node[base=4.4cm] (BOX) at (0,0)
+  {\classname{MPMbox}{lit les données,\\ boucle en temps,\\ écrit les résultats}};
+
+% ---- ce qui est simulé
+\node[data=4.8cm] (MP)   at (-6.2, 2.1) {{\bfseries MaterialPoint}\\ points matériels porteurs de la matière\\ (masse, vitesse, contrainte)};
+\node[data=4.4cm] (GRID) at (-6.2, 0.0) {{\bfseries grid / node / element}\\ grille fixe de calcul,\\ remise à zéro à chaque pas};
+\node[data=4.4cm] (OBS)  at (-6.2,-2.1) {{\bfseries Obstacle}\\ corps rigides qui bornent\\ ou pilotent l'écoulement};
+
+% ---- les ingrédients interchangeables
+\node[base=4.0cm] (CM)  at (6.0, 2.55) {{\bfseries ConstitutiveModel}\\[1pt]{\scriptsize\itshape comportement du matériau\\ un par point matériel}};
+\node[base=4.0cm] (SF)  at (6.0, 0.85) {{\bfseries ShapeFunction}\\[1pt]{\scriptsize\itshape transfert points $\leftrightarrow$ grille}};
+\node[base=4.0cm] (OS)  at (6.0,-0.85) {{\bfseries OneStep}\\[1pt]{\scriptsize\itshape schéma d'intégration}};
+\node[base=4.0cm] (BFL) at (6.0,-2.55) {{\bfseries BoundaryForceLaw}\\[1pt]{\scriptsize\itshape loi de contact\\ une par obstacle}};
+
+\node[base=4.0cm] (CMD) at (10.8, 2.55) {{\bfseries Command}\\[1pt]{\scriptsize\itshape mise en données}};
+\node[base=4.0cm] (SCH) at (10.8, 0.85) {{\bfseries Scheduler}\\[1pt]{\scriptsize\itshape scénario au cours du temps}};
+\node[base=4.0cm] (SPY) at (10.8,-0.85) {{\bfseries Spy}\\[1pt]{\scriptsize\itshape mesures pendant le calcul}};
+% ---- regroupements
+\begin{scope}[on background layer]
+  \node[draw=mpmData, densely dashed, rounded corners=4pt, inner sep=9pt,
+        fit=(MP)(GRID)(OBS)] (GDATA) {};
+  \node[draw=mpmBase, densely dashed, rounded corners=4pt, inner sep=9pt,
+        fit=(CM)(BFL)(CMD)(SPY)] (GCHOIX) {};
+\end{scope}
+
+\node[font=\sffamily\small\bfseries, text=mpmData, anchor=south]
+  at ($(GDATA.north)+(0,3pt)$) {ce qui est simulé};
+\node[font=\sffamily\small\bfseries, text=mpmBase, anchor=south]
+  at ($(GCHOIX.north)+(0,3pt)$) {ce que l'utilisateur choisit, par un mot-clé du fichier d'entrée};
+
+\draw[link, line width=1pt] (BOX.west)  -- (GDATA.east);
+\draw[link, line width=1pt] (BOX.east)  -- (GCHOIX.west);
+
+\node[mpmcap, anchor=north, text width=13cm, align=center] at ($(GCHOIX.south)+(-3.0cm,-0.35cm)$)
+  {le cœur du code ne connaît que les familles de gauche et de droite,
+   jamais la variante réellement choisie};
+
+\end{tikzpicture}
+\end{document}

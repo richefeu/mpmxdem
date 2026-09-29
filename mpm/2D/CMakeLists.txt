@@ -106,16 +106,19 @@ file(
   Spies/*.cpp
   Schedulers/*.cpp)
 
-# The set of object files that constitute the library
-add_library(core_obj OBJECT ${core_object_files})
+# The static library that holds everything but the runners: 'libMPMbox.a'.
+# mpmbox, see and mpmpost all link against it.
+#
+# The target is named 'mpmbox_lib' rather than 'MPMbox': macOS file systems
+# are case-insensitive by default, so a target 'MPMbox' and the executable
+# 'mpmbox' would fight over the same CMakeFiles/<target>.dir directory. Only
+# the OUTPUT_NAME matters for the file that is produced.
+add_library(mpmbox_lib STATIC ${core_object_files})
+set_target_properties(mpmbox_lib PROPERTIES OUTPUT_NAME MPMbox)
+target_link_libraries(mpmbox_lib PUBLIC ${PLUGGED_DEM_LIBRARY})
 
-if(OpenMP_CXX_FOUND)
-  add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
-  target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY})
-else()
-  add_executable(mpmbox Runners/run.cpp $<TARGET_OBJECTS:core_obj>)
-  target_link_libraries(mpmbox PUBLIC ${PLUGGED_DEM_LIBRARY})
-endif()
+add_executable(mpmbox Runners/run.cpp)
+target_link_libraries(mpmbox PUBLIC mpmbox_lib)
 
 
 # ##############################################################################
@@ -129,10 +132,23 @@ endif()
 # make
 # sudo make install
 
-add_executable(see See/see.cpp $<TARGET_OBJECTS:core_obj>)
+add_executable(see See/see.cpp)
 target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR}
                                        ${GLUT_INCLUDE_DIRS} /usr/local/include)
-target_link_libraries(see PUBLIC OpenGL::GL OpenGL::GLU ${GLUT_LIBRARIES}
-                                 ${PLUGGED_DEM_LIBRARY})
+target_link_libraries(see PUBLIC mpmbox_lib OpenGL::GL OpenGL::GLU
+                                 ${GLUT_LIBRARIES})
+
+
+# ##############################################################################
+# mpmpost
+#
+# Post-processing driven by a command file. See Doc/SyntaxMPMpost.md.
+# The main is in Runners/, so that Post/*.cpp holds only the actions.
+
+file(GLOB post_object_files CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}
+     Post/*.cpp)
+
+add_executable(mpmpost Runners/post.cpp ${post_object_files})
+target_link_libraries(mpmpost PUBLIC mpmbox_lib)
 
 

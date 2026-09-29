@@ -13,6 +13,6 @@ struct GravityRamp : public Scheduler {
  private:
   vec2r gravityFrom;
   vec2r gravityTo;
-  double rampStart;
-  double rampStop;
+  double rampStart{0.0};
+  double rampStop{0.0};
 };

@@ -19,7 +19,7 @@ struct HookeElasticity : public ConstitutiveModel {
   double getPoisson();
 
 private:
-  double Young;
-  double Poisson;
+  double Young{0.0};
+  double Poisson{0.0};
   Rigidity C;
 };

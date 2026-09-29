@@ -54,9 +54,9 @@
 #include "Grid.hpp"
 #include "Neighbor.hpp"
 #include "Node.hpp"
+#include "MaterialPoint.hpp"
 #include "ProcessedDataMP.hpp"
 
-struct MaterialPoint;
 struct Obstacle;
 struct Command;
 struct Spy;
@@ -70,6 +70,13 @@ class PBC3Dbox;
 
 class MPMbox {
 public:
+  // Version marker written at the top of every conf-file, and checked when one
+  // is read. Bump it whenever the layout of the saved data changes, so that an
+  // older file is refused with a clear message instead of being misread field
+  // by field. 'September 2026' added sigma_xz and sigma_yz to the Material
+  // Point lines.
+  static constexpr const char *confFileVersion = "Version September 2026";
+
   std::vector<node> nodes;           // The nodes of the Eulerian grid
   std::vector<element> Elem;         // Quad-elements of the grid
   std::vector<MaterialPoint> MP;     // Material Points
@@ -117,7 +124,11 @@ public:
   bool extremeShearing{false};     // Extreme shearing
   double extremeShearingval{0.0};  // Extreme shearing val is max ratio xx/xy or yy/yx that can be reached
   double splitCriterionValue{2.0}; // Elongation ratio for activating a split (whatever the direction)
-  double shearLimit{0.0};          // max Fxy or Fyx value. After this F becomes Identity matrix
+  double shearLimit{-1.0};         // max Fxy or Fyx value. After this F becomes Identity matrix.
+                                   // A negative value disables the mechanism: with the former
+                                   // default of 0.0 the condition |F.xy| > shearLimit was true as
+                                   // soon as the shear was not exactly zero, so enabling 'splitting'
+                                   // reset F to identity at every single step.
   int MaxSplitNumber{5};           // The maximum number of splits
 
   // integration scheme dissipation
@@ -136,8 +147,39 @@ public:
 
   std::vector<size_t> liveNodeNum; // list of node numbers being updated and used during each time step
                                    // It holds only the number of nodes concerned by the proximity of MP
+                                   // (rebuilt by updateLiveNodeList; NOT sorted)
 
-  size_t number_MP_before_any_split; // used to check proximity if # of MP has changed
+  std::vector<uint32_t> nodeStamp; // scratch used by updateLiveNodeList: one mark per node
+  uint32_t stampTag{0};            // current mark, incremented at each rebuild
+
+  // Shape functions and their gradients, for every Material Point and every
+  // node of its element: element::nbNodes values per point, laid out one point
+  // after the other. Kept out of MaterialPoint so that the array of points --
+  // whose size is what limits a large computation, see Doc/OPTIM.md -- stays as
+  // small as possible, and so that these values are read as a stream.
+  // Use N(p) and gradN(p) rather than indexing by hand.
+  std::vector<double> shapeN;
+  std::vector<vec2r> shapeGradN;
+
+  // State owned by the constitutive models (see MPModelState), one entry per
+  // Material Point. Out of MaterialPoint for the same reason as the shape
+  // functions: it is only read inside updateStrainAndStress, which is a tenth
+  // of a time step.
+  std::vector<MPModelState> modelStateStore;
+
+  // Deformation gradient at the previous step. Only CHCL_DEM reads it, so the
+  // array is only allocated for a double-scale computation.
+  std::vector<mat4r> prevFstore;
+
+  // Shape functions of the Material Point p: nbNodes values, indexed by the
+  // local node number.
+  inline double *N(size_t p) { return shapeN.data() + p * element::nbNodes; }
+  inline vec2r *gradN(size_t p) { return shapeGradN.data() + p * element::nbNodes; }
+
+  inline MPModelState &modelState(size_t p) { return modelStateStore[p]; }
+  inline mat4r &prevF(size_t p) { return prevFstore[p]; }
+
+  size_t number_MP_before_any_split{0}; // used to check proximity if # of MP has changed
                                      // (some "unknown" points could enter the obstacle and suddenly be detected
                                      // once they are way inside)
 
@@ -158,10 +200,14 @@ public:
   void init();
 
   void MPinGridCheck();
+  void buildGrid();
+  void checkSettings();
   void convergenceConditions();
   void run();
 
   // Functions called in OneStep
+  void resizeMPArrays();
+  void updateLiveNodeList();
   void updateVelocityGradient();
   void limitTimeStepForDEM();
   void updateTransformationGradient();

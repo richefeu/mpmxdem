@@ -4,7 +4,7 @@ class MPMbox;
 #include <fstream>
 
 struct Scheduler {
-	MPMbox* box;
+	MPMbox* box{nullptr};
 	
 	virtual void plug(MPMbox* Box);
 	

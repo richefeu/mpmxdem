@@ -19,7 +19,9 @@ struct node {
   bool xfixed{false};           // Null-velocity boolean along x
   bool yfixed{false};           // Null-velocity boolean along y
   mat4r stress;                 // Node-stress (used e.g. for smoothing)
-  double outOfPlaneStress{0.0}; // third principal stress
+  double outOfPlaneStress{0.0}; // Out-of-plane normal stress (used e.g. for smoothing)
+  double outOfPlaneShearXZ{0.0};// Out-of-plane shear components (idem)
+  double outOfPlaneShearYZ{0.0};
   vec2r vel;                    // Node-velocity (used e.g. for smoothing)
   size_t number{0};             // An identifier number
 

@@ -12,6 +12,14 @@ std::string MohrCoulomb::getRegistrationName() {
 //   - plane strain
 //   - take care of the apex-area
 //   - DO NOT apply correction on the displacement in case of return to the apex-area
+//
+//  The yield function and the plastic potential are written on the in-plane
+//  principal stresses only. This amounts to assuming that sigma_zz is the
+//  INTERMEDIATE principal stress -- the usual plane-strain situation, but not
+//  something the model checks. sigma_zz is integrated (see
+//  updateStrainAndStress) so that MaterialPoint::outOfPlaneStress carries a
+//  meaningful value, without any of it feeding back into the in-plane
+//  response.
 // ==================================================================================
 
 MohrCoulomb::MohrCoulomb(double young, double poisson, double frictionAngle, double cohesion, double dilatancyAngle)
@@ -47,11 +55,12 @@ void MohrCoulomb::updateStrainAndStress(MPMbox &MPM, size_t p) {
   // Compute a strain increment (during dt) from the node-velocities
   // vec2r vn;
   mat4r dstrain{};
+  const vec2r *gNp = MPM.gradN(p);
   for (size_t r = 0; r < element::nbNodes; r++) {
-    dstrain.xx += (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].x) * MPM.dt;
+    dstrain.xx += (MPM.nodes[I[r]].vel.x * gNp[r].x) * MPM.dt;
     dstrain.xy +=
-        0.5 * (MPM.nodes[I[r]].vel.x * MPM.MP[p].gradN[r].y + MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].x) * MPM.dt;
-    dstrain.yy += (MPM.nodes[I[r]].vel.y * MPM.MP[p].gradN[r].y) * MPM.dt;
+        0.5 * (MPM.nodes[I[r]].vel.x * gNp[r].y + MPM.nodes[I[r]].vel.y * gNp[r].x) * MPM.dt;
+    dstrain.yy += (MPM.nodes[I[r]].vel.y * gNp[r].y) * MPM.dt;
   }
   dstrain.yx = dstrain.xy;
 
@@ -75,6 +84,19 @@ void MohrCoulomb::updateStrainAndStress(MPMbox &MPM, size_t p) {
   MPM.MP[p].stress.yy += De12 * dstrain.xx + De22 * dstrain.yy;
   MPM.MP[p].stress.xy += De33 * dstrain.xy;
   MPM.MP[p].stress.yx = MPM.MP[p].stress.xy;
+
+  // Out-of-plane component of the trial stress. Plane strain means
+  // dstrain_zz = 0, so the third line of the 3D elastic matrix leaves only
+  //
+  //     dsigma_zz = De12 (dstrain_xx + dstrain_yy)
+  //
+  // De12 being the Lame coefficient lambda. Note that sigma_zz takes no part
+  // in what follows: the yield function and the plastic potential are written
+  // on the in-plane principal stresses alone, so carrying it changes nothing
+  // to the in-plane response. It only makes the stress state a complete 3D
+  // tensor -- which post-processing needs, since the invariants of the 2D
+  // tensor alone are not those of the real state.
+  MPM.MP[p].outOfPlaneStress += De12 * (dstrain.xx + dstrain.yy);
 
   double diff_3_1 = sqrt(4.0 * MPM.MP[p].stress.xy * MPM.MP[p].stress.xy +
                          (MPM.MP[p].stress.xx - MPM.MP[p].stress.yy) * (MPM.MP[p].stress.xx - MPM.MP[p].stress.yy));
@@ -128,6 +150,14 @@ void MohrCoulomb::updateStrainAndStress(MPMbox &MPM, size_t p) {
 
         MPM.MP[p].stress -= delta_sigma_corrector;
 
+        // The plastic potential is written on the in-plane principal stresses
+        // only, so it does not depend on sigma_zz: the plastic strain has no
+        // zz component, and the out-of-plane corrector reduces to the Lame
+        // term lambda (deps^p_xx + deps^p_yy). With deps_zz = deps^p_zz = 0,
+        // the elastic part of the out-of-plane strain stays zero, as plane
+        // strain requires.
+        MPM.MP[p].outOfPlaneStress -= De12 * (deltaPlasticStrain.xx + deltaPlasticStrain.yy);
+
         // saving the plastic stress to a mat4 variable
         MPM.MP[p].stressCorrection += delta_sigma_corrector;
 
@@ -139,8 +169,12 @@ void MohrCoulomb::updateStrainAndStress(MPMbox &MPM, size_t p) {
 
       } // end iterations
     } else { // case in the apex-area
+      // The apex of the Mohr-Coulomb cone is the isotropic tension
+      // c cos(phi)/sin(phi): all three principal stresses are equal there, so
+      // the out-of-plane component takes the same value as the in-plane ones.
       MPM.MP[p].stress.xx = MPM.MP[p].stress.yy = apex;
       MPM.MP[p].stress.xy = MPM.MP[p].stress.yx = 0.0;
+      MPM.MP[p].outOfPlaneStress               = apex;
     }
   } // end if (yieldD > 0.0)
 }

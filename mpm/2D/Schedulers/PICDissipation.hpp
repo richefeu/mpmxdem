@@ -9,5 +9,5 @@ struct PICDissipation : public Scheduler {
   void check();
   
  private:
-  double endTime;
+  double endTime{0.0};
 };
