@@ -33,7 +33,7 @@ set(CMAKE_CXX_FLAGS "-O3 -Wall -Wextra -DENABLE_PROFILING -lpthread")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 include(FetchContent)
-set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/deps)
+set(FETCHCONTENT_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 
 # ##############################################################################
 # Fetching TOOFUS
@@ -59,7 +59,9 @@ endif()
 
 # ##############################################################################
 # OpenGL
-find_package(OpenGL REQUIRED)
+# OpenGL and glut are only needed by the 'see' viewer, which is skipped
+# when they are not found.
+find_package(OpenGL)
 if(OPENGL_FOUND)
   message(STATUS "OPENGL_INCLUDE_DIR = " ${OPENGL_INCLUDE_DIR})
   message(STATUS "OPENGL_LIBRARIES = " ${OPENGL_LIBRARIES})
@@ -67,7 +69,7 @@ endif()
 
 # ##############################################################################
 # glut (freeglut)
-find_package(GLUT REQUIRED)
+find_package(GLUT)
 if(GLUT_FOUND)
   message(STATUS "GLUT_INCLUDE_DIR = " ${GLUT_INCLUDE_DIR})
   message(STATUS "GLUT_LIBRARIES = " ${GLUT_LIBRARIES})
@@ -76,11 +78,15 @@ endif()
 # ##############################################################################
 # mpmbox
 
-# Remark: Before being able to compile, the file 'libPBC3D.a' needs to be
-# already compiled
+# Remark: when built on its own, the file 'libPBC3D.a' needs to be already
+# compiled. When built from the root CMakeLists.txt, the PBC3D target is used.
 set(PLUGGED_DEM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone)
-set(PLUGGED_DEM_LIBRARY
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
+if(TARGET PBC3D)
+  set(PLUGGED_DEM_LIBRARY PBC3D)
+else()
+  set(PLUGGED_DEM_LIBRARY
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../dem/3D_sandstone/libPBC3D.a)
+endif()
 
 message(STATUS "PLUGGED_DEM_INCLUDE_DIR = " ${PLUGGED_DEM_INCLUDE_DIR})
 message(STATUS "PLUGGED_DEM_LIBRARY = " ${PLUGGED_DEM_LIBRARY})
@@ -132,11 +138,15 @@ target_link_libraries(mpmbox PUBLIC mpmbox_lib)
 # make
 # sudo make install
 
-add_executable(see See/see.cpp)
-target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR}
-                                       ${GLUT_INCLUDE_DIRS} /usr/local/include)
-target_link_libraries(see PUBLIC mpmbox_lib OpenGL::GL OpenGL::GLU
-                                 ${GLUT_LIBRARIES})
+if(OPENGL_FOUND AND GLUT_FOUND)
+  add_executable(see See/see.cpp)
+  target_include_directories(see PRIVATE ${OPENGL_INCLUDE_DIR}
+                                         ${GLUT_INCLUDE_DIRS} /usr/local/include)
+  target_link_libraries(see PUBLIC mpmbox_lib OpenGL::GL OpenGL::GLU
+                                   ${GLUT_LIBRARIES})
+else()
+  message(WARNING "OpenGL/GLUT not found: the 'see' viewer will not be built")
+endif()
 
 
 # ##############################################################################
@@ -152,3 +162,17 @@ add_executable(mpmpost Runners/post.cpp ${post_object_files})
 target_link_libraries(mpmpost PUBLIC mpmbox_lib)
 
 
+
+
+# ##############################################################################
+# Installation of headers (sub-directory layout kept, e.g. Core/MPMbox.hpp)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+        DESTINATION include/mpmxdem/mpm2D
+        FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+        PATTERN ".vscode" EXCLUDE
+        PATTERN "build" EXCLUDE
+        PATTERN "deps" EXCLUDE
+        PATTERN "Examples" EXCLUDE
+        PATTERN "Doc" EXCLUDE
+        PATTERN "sphinxdoc" EXCLUDE
+        PATTERN "Tests" EXCLUDE)
